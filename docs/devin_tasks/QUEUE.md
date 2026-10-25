@@ -6,7 +6,7 @@
 
 | ID | 依頼文 | 依存 | 状態 | 備考 |
 |---|---|---|---|---|
-| T-01 | [T-01_scaffold.md](T-01_scaffold.md) | ― | todo | |
+| T-01 | [T-01_scaffold.md](T-01_scaffold.md) | ― | done | |
 | T-02 | [T-02_rng.md](T-02_rng.md) | T-01 | todo | |
 | T-03 | [T-03_time.md](T-03_time.md) | T-01 | todo | |
 | T-04 | [T-04_state.md](T-04_state.md) | T-02, T-03 | todo | |

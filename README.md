@@ -28,3 +28,15 @@
 | [docs/research_notes.md](docs/research_notes.md) | 参考ゲームの調査メモ（出典付き） |
 | [docs/devin_tasks/](docs/devin_tasks/QUEUE.md) | Devinへの依頼文とタスクキュー。夜間自走のセットアップは [AUTOMATION_SETUP.md](docs/devin_tasks/AUTOMATION_SETUP.md) |
 | [AGENTS.md](AGENTS.md) | AIエージェント（Devin等）向け作業ルール |
+
+## 開発の始め方
+
+- **Node**: `.nvmrc` のバージョン（22 LTS）。**パッケージマネージャ**: pnpm（`packageManager` フィールドのバージョン）。
+- `pnpm install` — 依存をインストール（lockfile 固定）
+- `pnpm check` — lint → フォーマット → 型検査 → テスト → コンテンツのスキーマ検証 → ビルド → e2e を1コマンドで実行（CI と同じ）
+- `pnpm dev` — `apps/web` の開発サーバーを起動
+- `pnpm play:cli` — CLI で遊ぶ
+- `pnpm sim:growth` / `pnpm sim:retention` — バランスCIゲート（`docs/02_growth_system.md` §10）
+- `pnpm lore:check` — 物語アトムの検証（`docs/07_story.md` §5）
+
+e2e を初めて実行するときは `pnpm --filter @trace/web exec playwright install chromium` が必要。

@@ -1,0 +1,23 @@
+{
+  "name": "@trace/sim",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "sim:growth": "tsx src/cli.ts sim:growth",
+    "sim:retention": "tsx src/cli.ts sim:retention",
+    "play:cli": "tsx src/cli.ts play:cli"
+  },
+  "dependencies": {
+    "@trace/content": "workspace:*",
+    "@trace/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5"
+  }
+}

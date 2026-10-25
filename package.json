@@ -1,0 +1,36 @@
+{
+  "name": "trace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @trace/web dev",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run check:content && pnpm run build && pnpm run test:e2e",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "vitest run",
+    "check:content": "pnpm --filter @trace/content run validate",
+    "build": "pnpm -r --if-present run build",
+    "test:e2e": "pnpm --filter @trace/web run test:e2e",
+    "sim:growth": "pnpm --filter @trace/sim run sim:growth",
+    "sim:retention": "pnpm --filter @trace/sim run sim:retention",
+    "lore:check": "pnpm --filter @trace/lore-check run check",
+    "play:cli": "pnpm --filter @trace/sim run play:cli"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  }
+}
