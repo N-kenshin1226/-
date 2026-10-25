@@ -3,6 +3,7 @@
 ## 最初に読むもの
 1. `docs/01_concept.md`：5本柱（P1〜P5）。判断に迷ったらこれに従う
 2. タスクで指定された docs の節
+3. 夜間の自走では `.agents/skills/nightly-run/SKILL.md` に従う
 
 ## 絶対ルール
 - `packages/core` は DOM・ブラウザAPI・React に依存しない。`Math.random()` と `Date.now()` は禁止（`rng/` と `time/` を使う）
