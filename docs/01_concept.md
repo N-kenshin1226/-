@@ -79,5 +79,5 @@
 
 - プレイヤー：なろう／ラノベ読者、ステータス画面が好きな人、Elona・Kenshi・Stardew Valleyが好きな人
 - 規模：ソロ開発・趣味。システムはデータ駆動で作り、コンテンツを後から足せるようにする
-- 配布：無料。ブラウザ（itch.io ＋ Cloudflare Pages）
+- 配布：**公開は未定。まず自分用。** ブラウザで動かす（ローカル、またはCloudflareの非公開デプロイ）。公開する場合はitch.io＋Cloudflare Pages
 - 見た目：テキスト＋UI中心。ミニゲームのみ簡素な2D/Canvas

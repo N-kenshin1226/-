@@ -11,7 +11,7 @@
 | 乱数 | シード付きPRNG（例：mulberry32 / xoshiro128）を自前実装 | 決定論的。テストを再現できる。世界シードと同じ仕組み |
 | テスト | **Vitest**（core）＋ **Playwright**（UIのスモークテスト・スクリーンショット） | Devinが「動かして画面を撮って確認する」までを自走できる |
 | セーブ | **IndexedDB**（`idb`ライブラリ）＋ JSONのエクスポート／インポート | ブラウザのデータ削除に備える。クラウド同期はMVP後 |
-| 配布 | **itch.io**（ブラウザゲームとして無料公開）＋ **Cloudflare Pages** | どちらも無料。Steam（$100/本）は将来の選択肢 |
+| 配布 | まず自分用：ローカル実行、または **Cloudflare Pages ＋ Cloudflare Access**（自分だけが開ける非公開デプロイ）。公開する場合は itch.io | どちらも無料。Steam（$100/本）は将来の選択肢 |
 | 管理 | pnpm workspaces | monorepo |
 
 ### 不採用の理由
