@@ -34,6 +34,27 @@ export const balanceSchema = z
         initialStatValue: z.number().nonnegative(),
       })
       .strict(),
+    /** docs/02_growth_system.md §2。core/growth/gain.ts の GainConfig に対応 */
+    gain: z
+      .object({
+        base: z.record(z.string(), z.number().nonnegative()),
+        challengePoints: z
+          .array(z.tuple([z.number(), z.number()]))
+          .min(2)
+          .refine(
+            (pts) => pts.every((p, i) => i === 0 || p[0] > pts[i - 1]![0]),
+            "挑戦係数の制御点は Δ の昇順で",
+          ),
+        challengeTrainCap: z.number().positive(),
+        noveltyK: z.number().nonnegative(),
+        noveltyWindow: z.number().int().positive(),
+        failMultiplier: z.number().positive(),
+        modifierCap: z.number().positive(),
+        diminishBase: z.number().positive(),
+        diminishExponent: z.number().positive(),
+        fatigueScale: z.number().positive(),
+      })
+      .strict(),
   })
   .strict();
 

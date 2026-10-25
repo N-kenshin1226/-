@@ -10,7 +10,9 @@ export type ActionEvent =
   /** 行動を消化した。kind はコマンド側の分類、target は行動の相手 */
   | { type: "actionPerformed"; kind: string; day: number; target?: string }
   /** 睡眠した。from/to は GameTime */
-  | { type: "slept"; from: GameTime; to: GameTime };
+  | { type: "slept"; from: GameTime; to: GameTime }
+  /** 未定着経験を得た。amount は今回の増分 */
+  | { type: "gainApplied"; skill: string; amount: number };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -35,6 +37,8 @@ export const counterSubscriber: Subscriber = (state, event) => {
         counters: { ...state.counters, "days.slept": (state.counters["days.slept"] ?? 0) + 1 },
       };
     }
+    default:
+      return state;
   }
 };
 

@@ -1,5 +1,6 @@
 import { subscribers, type ActionEvent } from "./events/index.js";
-import type { GameState } from "./state/types.js";
+import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
+import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
 
 /**
@@ -12,9 +13,14 @@ export interface StepConfig {
   time: TimeConfig;
   /** actionLog の保持上限（balance.json state.actionLogMax） */
   actionLogMax: number;
+  gain: GainConfig;
 }
 
-export type Command = { type: "wait" } | { type: "sleep" };
+export type Command =
+  | { type: "wait" }
+  | { type: "sleep" }
+  /** 訓練：安全だが挑戦係数に上限がある（02 §8）。difficulty は行動の難度 */
+  | { type: "train"; skill: SkillId; difficulty: number; failed?: boolean };
 
 export interface StepResult {
   state: GameState;
@@ -50,6 +56,36 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const from = next.time;
       next.time = sleepTime(next.time);
       events.push({ type: "slept", from, to: next.time });
+      break;
+    }
+    case "train": {
+      const skill = next.player.skills[command.skill];
+      if (!skill) throw new Error(`train: 未知のスキル ${command.skill}`);
+
+      const repeats = recentRepeats(next.actionLog, "train", command.skill, cfg.gain.noveltyWindow);
+      const { amount } = computeGain(
+        {
+          kind: "train",
+          skill: skill.value,
+          delta: command.difficulty - skill.value,
+          repeats,
+          potential: skill.potential,
+          fatigue: next.player.fatigue,
+          failed: command.failed,
+          isTraining: true,
+        },
+        cfg.gain,
+      );
+      skill.pending += amount;
+      skill.lastUsedDay = next.time.day;
+      next.time = advanceTime(next.time, cfg.time);
+      events.push({
+        type: "actionPerformed",
+        kind: "train",
+        day: next.time.day,
+        target: command.skill,
+      });
+      events.push({ type: "gainApplied", skill: command.skill, amount });
       break;
     }
   }

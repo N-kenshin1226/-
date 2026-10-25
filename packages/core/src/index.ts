@@ -4,6 +4,16 @@ export { createRng, restoreRng } from "./rng/index.js";
 export type { Rng, RngState } from "./rng/index.js";
 export { advance, canAct, describe, sleep } from "./time/index.js";
 export type { GameTime, MoonPhase, TimeConfig, TimeDescription, TimeOfDay } from "./time/index.js";
+export {
+  baseGain,
+  challenge,
+  computeGain,
+  diminishing,
+  fatigueFactor,
+  novelty,
+  recentRepeats,
+} from "./growth/gain.js";
+export type { GainConfig, GainResult, GainTerms } from "./growth/gain.js";
 export { step } from "./step.js";
 export type { Command, StepConfig, StepResult } from "./step.js";
 export { newGame } from "./state/newGame.js";

@@ -20,6 +20,23 @@ const cfg: StepConfig = {
     startAge: 15,
   },
   actionLogMax: 5,
+  gain: {
+    base: { train: 1.0 },
+    challengePoints: [
+      [-20, 0.05],
+      [0, 1.0],
+      [10, 1.6],
+      [30, 0],
+    ],
+    challengeTrainCap: 0.6,
+    noveltyK: 1.0,
+    noveltyWindow: 10,
+    failMultiplier: 0.6,
+    modifierCap: 2.5,
+    diminishBase: 110,
+    diminishExponent: 1.5,
+    fatigueScale: 0.8,
+  },
 };
 
 function deepFreeze<T>(o: T): T {
