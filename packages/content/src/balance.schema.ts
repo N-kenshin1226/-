@@ -55,6 +55,29 @@ export const balanceSchema = z
         fatigueScale: z.number().positive(),
       })
       .strict(),
+    /** docs/02_growth_system.md §3。core/growth/consolidate.ts の SleepConfig に対応 */
+    sleep: z
+      .object({
+        nightlyCapPerSkill: z.number().positive(),
+        carryoverRatio: z.number().min(0).max(1),
+        innFactors: z
+          .object({
+            cheap: z.number().positive(),
+            normal: z.number().positive(),
+            good: z.number().positive(),
+          })
+          .strict(),
+        dinnerFactors: z
+          .object({
+            withDinner: z.number().positive(),
+            noDinner: z.number().positive(),
+          })
+          .strict(),
+        qualityMin: z.number().positive(),
+        qualityMax: z.number().positive(),
+        potentialDecayPerPoint: z.number().min(0).max(1),
+      })
+      .strict(),
   })
   .strict();
 

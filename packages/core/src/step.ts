@@ -1,4 +1,5 @@
 import { subscribers, type ActionEvent } from "./events/index.js";
+import { consolidateSleep, type InnRank, type SleepConfig } from "./growth/consolidate.js";
 import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
 import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
@@ -14,11 +15,13 @@ export interface StepConfig {
   /** actionLog の保持上限（balance.json state.actionLogMax） */
   actionLogMax: number;
   gain: GainConfig;
+  sleep: SleepConfig;
 }
 
 export type Command =
   | { type: "wait" }
-  | { type: "sleep" }
+  /** 宿で寝る。inn/dinner は睡眠の質（2要因のみ） */
+  | { type: "sleep"; inn?: InnRank; dinner?: boolean }
   /** 訓練：安全だが挑戦係数に上限がある（02 §8）。difficulty は行動の難度 */
   | { type: "train"; skill: SkillId; difficulty: number; failed?: boolean };
 
@@ -54,8 +57,17 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     }
     case "sleep": {
       const from = next.time;
+      // 今日の行動が終わる前に未定着経験を定着させ、起床ログを作る
+      const { state: rested, report } = consolidateSleep(
+        next,
+        command.inn ?? "normal",
+        command.dinner ?? false,
+        cfg.sleep,
+      );
+      next = rested;
       next.time = sleepTime(next.time);
       events.push({ type: "slept", from, to: next.time });
+      events.push({ type: "wakeReport", report });
       break;
     }
     case "train": {

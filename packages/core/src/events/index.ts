@@ -1,5 +1,6 @@
 import type { GameState } from "../state/types.js";
 import type { GameTime } from "../time/index.js";
+import type { WakeReport } from "../growth/consolidate.js";
 
 /**
  * ActionEvent — step() が発行する出来事。称号・作品台帳・通知・統計などの
@@ -12,7 +13,9 @@ export type ActionEvent =
   /** 睡眠した。from/to は GameTime */
   | { type: "slept"; from: GameTime; to: GameTime }
   /** 未定着経験を得た。amount は今回の増分 */
-  | { type: "gainApplied"; skill: string; amount: number };
+  | { type: "gainApplied"; skill: string; amount: number }
+  /** 起床ログの構造化データ（睡眠時に発行） */
+  | { type: "wakeReport"; report: WakeReport };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
