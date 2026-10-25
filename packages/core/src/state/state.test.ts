@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame } from "./newGame.js";
 import { step, type Command, type StepConfig } from "../step.js";
-import { deserialize, serialize } from "../save/index.js";
+import { deserialize, SAVE_VERSION, serialize } from "../save/index.js";
 import type { GameState } from "./types.js";
 
 const SKILL_IDS = ["swordplay", "evasion", "observation", "smithing", "mining", "eloquence"];
@@ -46,6 +46,16 @@ const cfg: StepConfig = {
     qualityMax: 1.2,
     potentialDecayPerPoint: 0.01,
   },
+  tailwind: {
+    defs: [],
+    tailwindFactor: 1.3,
+    headwindFactor: 0.8,
+    recentDays: 3,
+    headwindBiasK: 1.5,
+    tailwindBoostK: 0.5,
+    drawMin: 1,
+    drawMax: 2,
+  },
 };
 
 function deepFreeze<T>(o: T): T {
@@ -69,7 +79,7 @@ describe("newGame", () => {
     });
     expect(g.player.stats.strength).toBe(10);
     expect(g.player.fatigue).toBe(0);
-    expect(g.version).toBe(1);
+    expect(g.version).toBe(2);
   });
 });
 
@@ -130,7 +140,7 @@ describe("save", () => {
     expect(restored).toEqual(g);
   });
 
-  it("version 0 のダミーデータが移行関数で version 1 になる", () => {
+  it("version 0 のダミーデータが移行関数で最新 version になる", () => {
     const g = newGame("seed-8", "移行", newGameCfg);
     const v0 = {
       version: 0,
@@ -139,10 +149,20 @@ describe("save", () => {
       player: g.player,
     };
     const restored = deserialize(JSON.stringify(v0));
-    expect(restored.version).toBe(1);
+    expect(restored.version).toBe(SAVE_VERSION);
     expect(restored.seed).toBe(g.seed);
     expect(restored.counters).toEqual({});
     expect(restored.time).toEqual({ day: 0, action: 0 });
+    expect(restored.today).toEqual({ winds: [] });
+  });
+
+  it("version 1 のセーブ（today 無し）は version 2 に移行される", () => {
+    const g = newGame("seed-9", "移行2", newGameCfg);
+    const v1 = { ...JSON.parse(serialize(g)), version: 1 } as Record<string, unknown>;
+    delete v1["today"];
+    const restored = deserialize(JSON.stringify(v1));
+    expect(restored.version).toBe(2);
+    expect(restored.today).toEqual({ winds: [] });
   });
 
   it("未知のバージョンは拒否する", () => {

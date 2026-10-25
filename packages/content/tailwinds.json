@@ -1,0 +1,52 @@
+{
+  "tailwinds": [
+    {
+      "id": "tw.smithing",
+      "label": "《鍛冶》の伸び ↑",
+      "target": { "kind": "skill", "id": "smithing" },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.swordplay",
+      "label": "《剣術》の伸び ↑",
+      "target": { "kind": "skill", "id": "swordplay" },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.mining",
+      "label": "《採掘》の伸び ↑",
+      "target": { "kind": "skill", "id": "mining" },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.observation",
+      "label": "《観察》の伸び ↑",
+      "target": { "kind": "skill", "id": "observation" },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.eloquence",
+      "label": "《弁舌》の伸び ↑",
+      "target": { "kind": "skill", "id": "eloquence" },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.evasion",
+      "label": "《回避》の伸び ↑",
+      "target": { "kind": "skill", "id": "evasion" },
+      "direction": "tailwind"
+    },
+    {
+      "id": "hw.train",
+      "label": "訓練での伸び ↓",
+      "target": { "kind": "action", "id": "train" },
+      "direction": "headwind"
+    },
+    {
+      "id": "hw.smithing",
+      "label": "《鍛冶》の伸び ↓",
+      "target": { "kind": "skill", "id": "smithing" },
+      "direction": "headwind"
+    }
+  ]
+}

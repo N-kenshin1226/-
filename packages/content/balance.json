@@ -42,5 +42,14 @@
     "qualityMin": 0.6,
     "qualityMax": 1.2,
     "potentialDecayPerPoint": 0.01
+  },
+  "tailwind": {
+    "tailwindFactor": 1.3,
+    "headwindFactor": 0.8,
+    "recentDays": 3,
+    "headwindBiasK": 1.5,
+    "tailwindBoostK": 0.5,
+    "drawMin": 1,
+    "drawMax": 2
   }
 }

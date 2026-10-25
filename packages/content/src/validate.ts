@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { balanceSchema } from "./balance.schema.js";
 import { skillsFileSchema } from "./skills.schema.js";
+import { tailwindsFileSchema } from "./tailwinds.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -36,6 +37,7 @@ function check(
 
 check("balance.json", balanceSchema);
 check("skills.json", skillsFileSchema);
+check("tailwinds.json", tailwindsFileSchema);
 
 // 隠し要素ディレクトリは中身を検証しない（ネタバレ防止。docs/07_story.md §5）
 // hidden/ が空でなければ警告だけ出す

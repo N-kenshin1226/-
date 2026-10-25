@@ -46,5 +46,6 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     counters: {},
     flags: {},
     actionLog: [],
+    today: { winds: [] },
   };
 }

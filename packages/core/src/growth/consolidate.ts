@@ -55,8 +55,8 @@ export interface WakeReport {
    * 現時点では常に空。該当する機能が実装されたら末尾に置く。
    */
   surprises: string[];
-  /** 翌日の追い風（T-07 で充填） */
-  tailwinds: { id: string; direction: "tailwind" | "headwind" }[];
+  /** 翌日の追い風 */
+  tailwinds: { id: string; label: string; direction: "tailwind" | "headwind" }[];
 }
 
 export interface ConsolidateResult {

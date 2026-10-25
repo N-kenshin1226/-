@@ -22,6 +22,8 @@ export type {
   WakeLine,
   WakeReport,
 } from "./growth/consolidate.js";
+export { rollTailwind, windFor } from "./growth/tailwind.js";
+export type { RolledWind, TailwindConfig, TailwindDef, WindDirection } from "./growth/tailwind.js";
 export { step } from "./step.js";
 export type { Command, StepConfig, StepResult } from "./step.js";
 export { newGame } from "./state/newGame.js";
@@ -33,6 +35,7 @@ export type {
   SkillId,
   SkillState,
   StatId,
+  TodayState,
 } from "./state/types.js";
 export { subscribers } from "./events/index.js";
 export type { ActionEvent, Subscriber } from "./events/index.js";

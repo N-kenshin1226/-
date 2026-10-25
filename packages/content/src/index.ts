@@ -4,3 +4,6 @@ export type { Balance } from "./balance.schema.js";
 export { skills } from "./skills.js";
 export { skillSchema, skillsFileSchema } from "./skills.schema.js";
 export type { Skill, SkillsFile } from "./skills.schema.js";
+export { tailwinds } from "./tailwinds.js";
+export { tailwindsFileSchema } from "./tailwinds.schema.js";
+export type { TailwindDef, TailwindsFile } from "./tailwinds.schema.js";

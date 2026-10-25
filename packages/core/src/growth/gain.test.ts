@@ -53,6 +53,16 @@ const cfg: StepConfig = {
     qualityMax: 1.2,
     potentialDecayPerPoint: 0.01,
   },
+  tailwind: {
+    defs: [],
+    tailwindFactor: 1.3,
+    headwindFactor: 0.8,
+    recentDays: 3,
+    headwindBiasK: 1.5,
+    tailwindBoostK: 0.5,
+    drawMin: 1,
+    drawMax: 2,
+  },
 };
 
 const newGameCfg = {

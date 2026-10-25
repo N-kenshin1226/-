@@ -1,3 +1,4 @@
+import type { RolledWind } from "../growth/tailwind.js";
 import type { RngState } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
 
@@ -42,6 +43,11 @@ export interface ActionLogEntry {
   target?: string;
 }
 
+/** 今日だけ有効なもの（追い風・気配など）。睡眠時に更新される */
+export interface TodayState {
+  winds: RolledWind[];
+}
+
 export interface GameState {
   /** セーブスキーマのバージョン（save/ の SAVE_VERSION と一致させる） */
   version: number;
@@ -55,4 +61,5 @@ export interface GameState {
   flags: Record<string, boolean>;
   /** 直近の行動ログ（古い順。上限は balance.json の state.actionLogMax） */
   actionLog: ActionLogEntry[];
+  today: TodayState;
 }

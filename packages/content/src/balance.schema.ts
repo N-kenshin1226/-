@@ -78,6 +78,19 @@ export const balanceSchema = z
         potentialDecayPerPoint: z.number().min(0).max(1),
       })
       .strict(),
+    /** docs/02_growth_system.md §4。core/growth/tailwind.ts の TailwindConfig に対応 */
+    tailwind: z
+      .object({
+        tailwindFactor: z.number().min(1).max(2),
+        headwindFactor: z.number().min(0.5).max(1),
+        recentDays: z.number().int().min(1).max(14),
+        headwindBiasK: z.number().min(0).max(10),
+        tailwindBoostK: z.number().min(0).max(10),
+        drawMin: z.number().int().min(1),
+        drawMax: z.number().int().min(1),
+      })
+      .strict()
+      .refine((t) => t.drawMin <= t.drawMax, { message: "drawMin <= drawMax が必要" }),
   })
   .strict();
 

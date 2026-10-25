@@ -1,6 +1,8 @@
 import { subscribers, type ActionEvent } from "./events/index.js";
 import { consolidateSleep, type InnRank, type SleepConfig } from "./growth/consolidate.js";
 import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
+import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js";
+import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
 
@@ -16,6 +18,7 @@ export interface StepConfig {
   actionLogMax: number;
   gain: GainConfig;
   sleep: SleepConfig;
+  tailwind: TailwindConfig;
 }
 
 export type Command =
@@ -65,6 +68,16 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         cfg.sleep,
       );
       next = rested;
+      // 翌日の追い風を抽選して保持し、起床ログに含める
+      const rng = restoreRng(next.rng);
+      const winds = rollTailwind(next, rng, cfg.tailwind);
+      next.rng = rng.state();
+      next.today = { ...next.today, winds };
+      report.tailwinds = winds.map((w) => ({
+        id: w.id,
+        label: w.label,
+        direction: w.direction,
+      }));
       next.time = sleepTime(next.time);
       events.push({ type: "slept", from, to: next.time });
       events.push({ type: "wakeReport", report });
@@ -83,6 +96,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           repeats,
           potential: skill.potential,
           fatigue: next.player.fatigue,
+          wind: windFor(next, "train", command.skill),
           failed: command.failed,
           isTraining: true,
         },
