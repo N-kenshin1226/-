@@ -5,7 +5,7 @@
 | 領域 | 採用 | 理由 |
 |---|---|---|
 | 言語 | **TypeScript（strict）** | 開発者の既存スキル。DevinはテキストのコードとテストでBest |
-| UI | **React + Vite**（DOM中心） | ステータス・ログ・掲示板などUI主体のゲーム。将来マップを付けるならPixiJSのCanvasを部分的に足す |
+| UI | **React + Vite**（DOM中心） | ステータス・ログ・瓦版などUI主体のゲーム。ミニゲームだけCanvas（PixiJSなど）を部分的に使う |
 | ゲームロジック | **`packages/core`：純TS、描画やDOMへの依存ゼロ** | ヘッドレスでテスト・シミュレーションできる。Devinが自分で検証できる |
 | データ | JSON ＋ **zod** スキーマ | コンテンツ追加をコード変更なしで行える。CIで検証できる |
 | 乱数 | シード付きPRNG（例：mulberry32 / xoshiro128）を自前実装 | 決定論的。テストを再現できる。世界シードと同じ仕組み |
@@ -32,13 +32,16 @@
 │  │  ├─ events/             # ActionEventバス
 │  │  ├─ growth/             # 経験式・定着・錆・素質
 │  │  ├─ combat/             # CT制戦闘・予兆
+│  │  ├─ minigame/           # MiniGame<Input,Result>の型と3エンジン（タイミング／盤面／駆け引き）
+│  │  ├─ ledger/             # 作品台帳（成長・称号・瓦版・年代記の元データ）
 │  │  ├─ conditions/         # 条件DSLの評価器
-│  │  ├─ world/              # 世界生成・歴史・ユニーク
-│  │  ├─ npc/                # NPC冒険者シミュレーション
-│  │  ├─ board/              # 掲示板スレッド生成
+│  │  ├─ society/            # 身分×生業・認定・立志
+│  │  ├─ notify/             # 通知予算（S/A/B）・気配の一行
+│  │  ├─ world/              # 手作りの世界＋出現抽選・噂/瓦版テンプレート
+│  │  ├─ chronicle/          # 年代記・伝記・継承（セーブとは別領域・別バージョン）
 │  │  └─ save/               # シリアライズとバージョン移行
 │  ├─ content/               # JSONデータ＋zodスキーマ（スキル、敵、称号、balance.json…）
-│  └─ sim/                   # ヘッドレスのボット・バランス検証CLI
+│  └─ sim/                   # ヘッドレスのボット・バランスCIゲート（sim:growth / sim:retention）
 └─ apps/
    └─ web/                   # React UI（coreを呼ぶだけ。ゲームルールを書かない）
 ```
@@ -46,9 +49,10 @@
 ### アーキテクチャ原則
 1. **状態は1つの `GameState`（シリアライズ可能なプレーンオブジェクト）**。UIは読み取って描画し、`dispatch(command)` で変更を依頼する
 2. `core` の公開APIは `step(state, command, rng) → { state, events }` の形を基本にする（純関数・決定論的）
-3. イベントの購読者（称号・掲示板・台帳・統計）は `events` を受け取って派生状態を更新する
+3. イベントの購読者（称号・作品台帳・通知・瓦版・統計）は `events` を受け取って派生状態を更新する
 4. すべての数値は `balance.json` から読む
-5. セーブにはスキーマのバージョンを入れ、移行関数を必ず書く
+5. セーブにはスキーマのバージョンを入れ、移行関数を必ず書く。年代記は周回をまたぐので、セーブとは別の領域・別のバージョンで保存する
+6. ミニゲームは固定タイムステップの状態機械にする。入力は時刻付きの列として記録し、リプレイでテストする。判定窓などの数値は `balance.json` に置く（手触りの調整はオーナーが数値で行う）
 
 ## 3. Devinの使い方
 
@@ -82,7 +86,7 @@ docs/02_growth_system.md §2〜3 に従う。
 - [ ] 〈テスト可能な条件〉
 - [ ] `pnpm check` が通る
 ### 検証方法
-`pnpm --filter core test growth` と `pnpm sim:growth --days 30` の出力をPRに貼る
+`pnpm --filter core test growth` と `pnpm sim:growth` / `pnpm sim:retention` の出力の要約をPRに貼る
 ```
 
 ## 4. アセット方針
