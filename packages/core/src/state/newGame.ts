@@ -1,5 +1,5 @@
 import { createRng } from "../rng/index.js";
-import type { GameState, PlayerState, SkillState, StatId } from "./types.js";
+import { STAT_IDS, type GameState, type PlayerState, type SkillState } from "./types.js";
 import { SAVE_VERSION } from "../save/index.js";
 
 /** balance.json から必要な初期値だけを受け取る */
@@ -11,15 +11,6 @@ export interface NewGameConfig {
   /** 基礎能力の初期値 */
   initialStatValue: number;
 }
-
-const STAT_IDS: readonly StatId[] = [
-  "strength",
-  "endurance",
-  "agility",
-  "dexterity",
-  "perception",
-  "spirit",
-];
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
   const skills: PlayerState["skills"] = {};
@@ -36,16 +27,24 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
   const stats = Object.fromEntries(
     STAT_IDS.map((id) => [id, cfg.initialStatValue]),
   ) as PlayerState["stats"];
+  const load = Object.fromEntries(STAT_IDS.map((id) => [id, 0])) as PlayerState["load"];
 
   return {
     version: SAVE_VERSION,
     seed,
     rng: createRng(seed).state(),
     time: { day: 0, action: 0 },
-    player: { name, skills, stats, fatigue: 0 },
+    player: {
+      name,
+      skills,
+      stats,
+      load,
+      fatigue: 0,
+      overwork: { streakDays: 0, active: false },
+    },
     counters: {},
     flags: {},
     actionLog: [],
-    today: { winds: [] },
+    today: { winds: [], loads: 0 },
   };
 }

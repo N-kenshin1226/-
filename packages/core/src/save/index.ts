@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -24,6 +24,28 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
     }),
     /** 1 → 2: today（追い風の保持）を追加 */
     1: (old) => ({ ...old, version: 2, today: { winds: [] } }),
+    /** 2 → 3: 基礎能力の負荷プール・オーバーワーク・今日の負荷合計を追加 */
+    2: (old) => {
+      const p = (old.player ?? {}) as Record<string, unknown>;
+      const today = (old.today ?? {}) as Record<string, unknown>;
+      return {
+        ...old,
+        version: 3,
+        player: {
+          ...p,
+          load: {
+            strength: 0,
+            endurance: 0,
+            agility: 0,
+            dexterity: 0,
+            perception: 0,
+            spirit: 0,
+          },
+          overwork: { streakDays: 0, active: false },
+        },
+        today: { ...today, loads: 0 },
+      };
+    },
   };
 
 export function serialize(state: GameState): string {

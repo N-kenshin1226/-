@@ -57,6 +57,12 @@ export interface WakeReport {
   surprises: string[];
   /** 翌日の追い風 */
   tailwinds: { id: string; label: string; direction: "tailwind" | "headwind" }[];
+  /** 疲労の推移（睡眠でどれだけ回復したか） */
+  fatigue: { from: number; to: number };
+  /** この睡眠でオーバーワークに陥った／継続中 */
+  overwork: { active: boolean; became: boolean };
+  /** 行動0回で眠った休養日か */
+  restDay: boolean;
 }
 
 export interface ConsolidateResult {
@@ -64,15 +70,23 @@ export interface ConsolidateResult {
   report: WakeReport;
 }
 
-/** 全スキルの pending を定着させる。pending は「1スキルごと」に上限を適用する */
+/**
+ * 全スキルの pending を定着させる。pending は「1スキルごと」に上限を適用する。
+ * opts.capFactor: オーバーワーク等で上限ごと下げる倍率（省略時 1）
+ * opts.qualityOverride: rest コマンドなど宿・夕食を通さない場合の質の直接指定
+ */
 export function consolidateSleep(
   state: GameState,
   inn: InnRank,
   dinner: boolean,
   cfg: SleepConfig,
+  opts?: { capFactor?: number; qualityOverride?: number },
 ): ConsolidateResult {
-  const quality = sleepQuality(inn, dinner, cfg);
-  const cap = cfg.nightlyCapPerSkill * quality;
+  const quality =
+    opts?.qualityOverride !== undefined
+      ? Math.min(cfg.qualityMax, Math.max(cfg.qualityMin, opts.qualityOverride))
+      : sleepQuality(inn, dinner, cfg);
+  const cap = cfg.nightlyCapPerSkill * quality * (opts?.capFactor ?? 1);
   const lines: WakeLine[] = [];
 
   const skills = { ...state.player.skills };
@@ -97,7 +111,17 @@ export function consolidateSleep(
 
   return {
     state: { ...state, player: { ...state.player, skills } },
-    report: { quality, inn, dinner, lines, surprises: [], tailwinds: [] },
+    report: {
+      quality,
+      inn,
+      dinner,
+      lines,
+      surprises: [],
+      tailwinds: [],
+      fatigue: { from: state.player.fatigue, to: state.player.fatigue },
+      overwork: { active: false, became: false },
+      restDay: false,
+    },
   };
 }
 

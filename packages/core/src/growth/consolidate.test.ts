@@ -54,6 +54,19 @@ const cfg: StepConfig = {
     drawMin: 1,
     drawMax: 2,
   },
+  body: {
+    fatiguePerAction: { wait: 1, train: 6 },
+    fatigueDefaultPerAction: 2,
+    fatigueRecover: 60,
+    statLoadPerAction: { train: { strength: 2, endurance: 2, dexterity: 1 } },
+    statGainPerLoad: 0.05,
+    overloadThreshold: 15,
+    overworkStreakDays: 3,
+    overworkConsolidateFactor: 0.5,
+    restQuality: 0.9,
+    restPotentialRecover: 3,
+    potentialMax: 100,
+  },
 };
 
 const newGameCfg = {

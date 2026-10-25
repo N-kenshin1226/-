@@ -78,6 +78,34 @@ export const balanceSchema = z
         potentialDecayPerPoint: z.number().min(0).max(1),
       })
       .strict(),
+    /** docs/02_growth_system.md §5。core/growth/body.ts の BodyConfig に対応 */
+    body: z
+      .object({
+        fatiguePerAction: z.record(z.string(), z.number().nonnegative()),
+        fatigueDefaultPerAction: z.number().nonnegative(),
+        fatigueRecover: z.number().positive(),
+        statLoadPerAction: z.record(
+          z.string(),
+          z
+            .object({
+              strength: z.number().nonnegative().optional(),
+              endurance: z.number().nonnegative().optional(),
+              agility: z.number().nonnegative().optional(),
+              dexterity: z.number().nonnegative().optional(),
+              perception: z.number().nonnegative().optional(),
+              spirit: z.number().nonnegative().optional(),
+            })
+            .strict(),
+        ),
+        statGainPerLoad: z.number().nonnegative(),
+        overloadThreshold: z.number().nonnegative(),
+        overworkStreakDays: z.number().int().positive(),
+        overworkConsolidateFactor: z.number().min(0).max(1),
+        restQuality: z.number().positive(),
+        restPotentialRecover: z.number().nonnegative(),
+        potentialMax: z.number().positive(),
+      })
+      .strict(),
     /** docs/02_growth_system.md §4。core/growth/tailwind.ts の TailwindConfig に対応 */
     tailwind: z
       .object({

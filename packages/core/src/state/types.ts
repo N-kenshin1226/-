@@ -13,6 +13,16 @@ export type SkillId = string;
 /** 基礎能力（docs/02_growth_system.md §5）：筋力・持久・敏捷・器用・知覚・精神 */
 export type StatId = "strength" | "endurance" | "agility" | "dexterity" | "perception" | "spirit";
 
+/** 基礎能力の全ID（newGame・移行で列挙に使う） */
+export const STAT_IDS: readonly StatId[] = [
+  "strength",
+  "endurance",
+  "agility",
+  "dexterity",
+  "perception",
+  "spirit",
+];
+
 export interface SkillState {
   /** 現在値 0.0〜100.0（錆は将来表示側で扱う） */
   value: number;
@@ -30,8 +40,12 @@ export interface PlayerState {
   name: string;
   skills: Record<SkillId, SkillState>;
   stats: Record<StatId, number>;
+  /** 基礎能力への負荷。睡眠時に stats へ定着する（超回復） */
+  load: Record<StatId, number>;
   /** 0〜100 の1本だけ */
   fatigue: number;
+  /** オーバーワーク（02 §5：過負荷が連続すると発生。休養日で解除） */
+  overwork: { streakDays: number; active: boolean };
 }
 
 /** 行動の記録（新規性・追い風の偏り判定などに使う直近N件） */
@@ -46,6 +60,8 @@ export interface ActionLogEntry {
 /** 今日だけ有効なもの（追い風・気配など）。睡眠時に更新される */
 export interface TodayState {
   winds: RolledWind[];
+  /** 今日溜まった身体への負荷の合計（過負荷の判定用） */
+  loads: number;
 }
 
 export interface GameState {

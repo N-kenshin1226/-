@@ -1,4 +1,10 @@
 import { subscribers, type ActionEvent } from "./events/index.js";
+import {
+  applyActionLoad,
+  consolidateBody,
+  updateOverwork,
+  type BodyConfig,
+} from "./growth/body.js";
 import { consolidateSleep, type InnRank, type SleepConfig } from "./growth/consolidate.js";
 import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
 import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js";
@@ -19,12 +25,15 @@ export interface StepConfig {
   gain: GainConfig;
   sleep: SleepConfig;
   tailwind: TailwindConfig;
+  body: BodyConfig;
 }
 
 export type Command =
   | { type: "wait" }
   /** 宿で寝る。inn/dinner は睡眠の質（2要因のみ） */
   | { type: "sleep"; inn?: InnRank; dinner?: boolean }
+  /** 休養：家で休んで眠る。行動0回なら休養日（素質回復・オーバーワーク解除） */
+  | { type: "rest" }
   /** 訓練：安全だが挑戦係数に上限がある（02 §8）。difficulty は行動の難度 */
   | { type: "train"; skill: SkillId; difficulty: number; failed?: boolean };
 
@@ -55,19 +64,41 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   switch (command.type) {
     case "wait": {
       next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "wait", cfg.body);
       events.push({ type: "actionPerformed", kind: "wait", day: next.time.day });
       break;
     }
-    case "sleep": {
+    case "sleep":
+    case "rest": {
       const from = next.time;
+      // 行動0回で眠る日は休養日（オーバーワーク解除・素質回復）
+      const restDay = !next.actionLog.some((e) => e.day === next.time.day);
+
+      // オーバーワークの連続カウントを更新し、今晩の定着係数を決める
+      const { overwork, becameOverwork } = updateOverwork(next, cfg.body, restDay);
+      next = { ...next, player: { ...next.player, overwork } };
+      const capFactor = overwork.active ? cfg.body.overworkConsolidateFactor : 1;
+
       // 今日の行動が終わる前に未定着経験を定着させ、起床ログを作る
+      const isRest = command.type === "rest";
       const { state: rested, report } = consolidateSleep(
         next,
-        command.inn ?? "normal",
-        command.dinner ?? false,
+        isRest ? "normal" : (command.inn ?? "normal"),
+        isRest ? false : (command.dinner ?? false),
         cfg.sleep,
+        { capFactor, ...(isRest ? { qualityOverride: cfg.body.restQuality } : {}) },
       );
       next = rested;
+
+      // 身体側の定着：負荷 → 基礎能力、疲労回復、休養日の素質回復
+      const bodyRes = consolidateBody(next, report.quality, cfg.body, { restDay, capFactor });
+      next = bodyRes.state;
+      report.lines.push(...bodyRes.lines);
+      report.lines.sort((a, b) => a.delta - b.delta);
+      report.fatigue.to = next.player.fatigue;
+      report.overwork = { active: overwork.active, became: becameOverwork };
+      report.restDay = restDay;
+
       // 翌日の追い風を抽選して保持し、起床ログに含める
       const rng = restoreRng(next.rng);
       const winds = rollTailwind(next, rng, cfg.tailwind);
@@ -105,6 +136,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       skill.pending += amount;
       skill.lastUsedDay = next.time.day;
       next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "train", cfg.body);
       events.push({
         type: "actionPerformed",
         kind: "train",

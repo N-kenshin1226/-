@@ -22,6 +22,8 @@ export type {
   WakeLine,
   WakeReport,
 } from "./growth/consolidate.js";
+export { applyActionLoad, consolidateBody, updateOverwork } from "./growth/body.js";
+export type { BodyConfig, BodyNightResult } from "./growth/body.js";
 export { rollTailwind, windFor } from "./growth/tailwind.js";
 export type { RolledWind, TailwindConfig, TailwindDef, WindDirection } from "./growth/tailwind.js";
 export { step } from "./step.js";
