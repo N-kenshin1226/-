@@ -18,6 +18,7 @@
 - **Godot**：Web書き出しはCompatibilityレンダラーのみ、C#はWeb不可、Safariに問題あり。`.tscn` はDevinが扱いにくい
 - **Unity**：シーンやプレハブの差分が読みにくく、AIエージェント主導の開発に不向き
 - **LLMによるNPC（MVPでは不採用）**：サーバー経由のAPIは無料ゲームではコストが利用者数に比例して増え、続かない。ブラウザ内LLM（WebLLM、Chromeの組み込みPrompt API）は端末の要件が重い（Prompt APIは空き容量22GB以上、VRAM 4GB超など）。そこで**拡張点だけを用意する**：`DialogueProvider` インターフェースを置き、`TemplateProvider`（標準）と `LocalLLMProvider`（対応ブラウザでのみ有効にするオプション）を差し替えられるようにする
+- **LLMは開発時のテキスト生成にだけ使う**：物・場所・NPCの物語（ストーリー・アトム）を Gemini 3.8 Flash で下書きし、検証とレビューを通したJSONを同梱する。プレイ中にAPIは呼ばない（`07_story.md` §5）
 
 ## 2. ディレクトリ構成
 
@@ -41,6 +42,7 @@
 │  │  ├─ chronicle/          # 年代記・伝記・継承（セーブとは別領域・別バージョン）
 │  │  └─ save/               # シリアライズとバージョン移行
 │  ├─ content/               # JSONデータ＋zodスキーマ（スキル、敵、称号、balance.json…）
+│  ├─ lore-gen/              # 開発時の物語生成・検証CLI（pnpm lore:gen / lore:check）。ゲーム本体には含めない
 │  └─ sim/                   # ヘッドレスのボット・バランスCIゲート（sim:growth / sim:retention）
 └─ apps/
    └─ web/                   # React UI（coreを呼ぶだけ。ゲームルールを書かない）

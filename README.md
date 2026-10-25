@@ -9,6 +9,7 @@
 - 自由な生き方：立場×職業の2軸。ミニゲームは多め（アクション系も含む）で、日常の作業ではなく「ここ一番の勝負所」で出る
 - 一生＝1周：任意の引退 → 伝記 → 転生（継承）で周回する
 - 世界観：王道の異世界ファンタジー（加護によってステータスが見える世界）
+- 物語：一本道のメインストーリーではなく、物・場所・NPCの小さな物語がつながっていくネットワーク型
 
 ## ドキュメント
 
@@ -20,6 +21,7 @@
 | [docs/04_tech_and_devin.md](docs/04_tech_and_devin.md) | 技術スタック・アーキテクチャ・Devin運用 |
 | [docs/05_roadmap.md](docs/05_roadmap.md) | マイルストーン（M0〜M4）・Devin用タスク一覧 |
 | [docs/06_endgame.md](docs/06_endgame.md) | 寿命・転生・エンドコンテンツ |
+| [docs/07_story.md](docs/07_story.md) | ストーリー（物・場所・NPCの小さな物語のネットワーク）とLLM生成パイプライン |
 | [docs/meeting_2026-10-25.md](docs/meeting_2026-10-25.md) | 設計会議の議事録（5視点×2ラウンド） |
 | [docs/research_notes.md](docs/research_notes.md) | 参考ゲームの調査メモ（出典付き） |
 | [AGENTS.md](AGENTS.md) | AIエージェント（Devin等）向け作業ルール |
