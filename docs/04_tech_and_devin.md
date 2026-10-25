@@ -17,8 +17,8 @@
 ### 不採用の理由
 - **Godot**：Web書き出しはCompatibilityレンダラーのみ、C#はWeb不可、Safariに問題あり。`.tscn` はDevinが扱いにくい
 - **Unity**：シーンやプレハブの差分が読みにくく、AIエージェント主導の開発に不向き
-- **LLMによるNPC（MVPでは不採用）**：サーバー経由のAPIは無料ゲームではコストが利用者数に比例して増え、続かない。ブラウザ内LLM（WebLLM、Chromeの組み込みPrompt API）は端末の要件が重い（Prompt APIは空き容量22GB以上、VRAM 4GB超など）。そこで**拡張点だけを用意する**：`DialogueProvider` インターフェースを置き、`TemplateProvider`（標準）と `LocalLLMProvider`（対応ブラウザでのみ有効にするオプション）を差し替えられるようにする
-- **LLMの役割分担**：物語の執筆は Claude Opus 5.5、コードは Devin（SWE-2）、Gemini 3.8 Flash はプログラムから呼ぶAPI用途だけ（台詞の言い換えなど）。詳細は `07_story.md` §5
+- **実行時のLLM（M1では入れない）**：`NarrationProvider` で差し替え可能にし、標準はテンプレート。APIはCloudflare Workers経由で、キーを隠し、利用上限を付ける。ブラウザ内LLM（WebLLM、Chromeの組み込みPrompt API）は端末の要件が重い（Prompt APIは空き容量22GB以上、VRAM 4GB超など）ので将来の候補
+- **LLMの役割分担**：物語の執筆は Claude Opus 5.5、コードは Devin（SWE-2）。プレイ中の語り（新聞・NPCの一言・伝記）は実行時のLLMで生成する。プロバイダーは規約の確認後に決める。詳細は `07_story.md` §5〜6
 
 ## 2. ディレクトリ構成
 
@@ -42,7 +42,7 @@
 │  │  ├─ chronicle/          # 年代記・伝記・継承（セーブとは別領域・別バージョン）
 │  │  └─ save/               # シリアライズとバージョン移行
 │  ├─ content/               # JSONデータ＋zodスキーマ（スキル、敵、称号、balance.json…）
-│  ├─ lore-gen/              # 開発時の物語生成・検証CLI（pnpm lore:gen / lore:check）。ゲーム本体には含めない
+│  ├─ lore-check/            # 物語アトムの検証CLI（pnpm lore:check）。ゲーム本体には含めない
 │  └─ sim/                   # ヘッドレスのボット・バランスCIゲート（sim:growth / sim:retention）
 └─ apps/
    └─ web/                   # React UI（coreを呼ぶだけ。ゲームルールを書かない）

@@ -48,7 +48,7 @@
 - T-18 通知予算（S/A/B）と気配の一行
 - T-19 立場×職業と認定の条件
 - T-19b 物語：アトムのzodスキーマ、正史 `canon.json` の型、`pnpm lore:check`（参照・事実・文体・重複の検証）、見聞録とつながりの報酬（`07_story.md`）
-- T-19c `pnpm lore:gen --provider gemini`（Gemini 3.8 Flash APIの構造化出力で、台詞の言い換えなどの量産用の下書きを生成。APIキーは環境変数から読み、リポジトリに入れない）
+- T-19c `NarrationProvider` の型と `TemplateProvider`（実行時のLLMはプロバイダー決定後。`07_story.md` §6）
 - T-20〜 Web UI（ステータス・起床ログ・ミニゲーム・戦闘・宿）。**スタイルガイドを人間が先に渡す**
 
 ## 人間（あなた）がやること
