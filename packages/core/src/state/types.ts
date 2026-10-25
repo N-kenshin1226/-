@@ -78,4 +78,6 @@ export interface GameState {
   /** 直近の行動ログ（古い順。上限は balance.json の state.actionLogMax） */
   actionLog: ActionLogEntry[];
   today: TodayState;
+  /** 獲得済みの称号ID（titles.json の id） */
+  titles: string[];
 }

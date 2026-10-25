@@ -1,0 +1,60 @@
+{
+  "titles": [
+    {
+      "id": "title.smith_apprentice",
+      "name": "鍛冶見習い",
+      "rank": "B",
+      "hidden": false,
+      "condition": { "skill": "smithing", "gte": 25 },
+      "effect": { "note": "鍛冶の仕事の信頼が少し上がる（M1 で接続）" },
+      "message": "――称号《鍛冶見習い》を獲得しました。"
+    },
+    {
+      "id": "title.continuing",
+      "name": "続ける者",
+      "rank": "B",
+      "hidden": false,
+      "condition": { "counter": "days.slept", "gte": 14 },
+      "effect": { "note": "継続の記録（M1 で接続）" },
+      "message": "――称号《続ける者》を獲得しました。"
+    },
+    {
+      "id": "title.three_legs",
+      "name": "三足のわらじ",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "and": [
+          { "skill": "swordplay", "gte": 10 },
+          { "skill": "smithing", "gte": 10 },
+          { "skill": "eloquence", "gte": 10 }
+        ]
+      },
+      "effect": { "note": "多角の記録（M1 で接続）" },
+      "message": "――称号《三足のわらじ》を獲得しました。"
+    },
+    {
+      "id": "title.routine",
+      "name": "日課",
+      "rank": "B",
+      "hidden": false,
+      "condition": { "within": { "days": 3, "kind": "train", "atLeast": 9 } },
+      "effect": { "note": "日課の記録（M1 で接続）" },
+      "message": "――称号《日課》を獲得しました。"
+    },
+    {
+      "id": "title.veteran_trainee",
+      "name": "鍛錬の徒",
+      "rank": "A",
+      "hidden": false,
+      "condition": {
+        "and": [
+          { "counter": "action.train", "gte": 200 },
+          { "skill": "swordplay", "gte": 40 }
+        ]
+      },
+      "effect": { "gainVs": { "train": 1.05 } },
+      "message": "――称号《鍛錬の徒》を獲得しました。"
+    }
+  ]
+}

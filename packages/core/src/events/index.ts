@@ -15,7 +15,9 @@ export type ActionEvent =
   /** 未定着経験を得た。amount は今回の増分 */
   | { type: "gainApplied"; skill: string; amount: number }
   /** 起床ログの構造化データ（睡眠時に発行） */
-  | { type: "wakeReport"; report: WakeReport };
+  | { type: "wakeReport"; report: WakeReport }
+  /** 称号を獲得した。rank は通知ランク（S/A/B） */
+  | { type: "titleGained"; id: string; rank: "S" | "A" | "B" };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -38,6 +40,12 @@ export const counterSubscriber: Subscriber = (state, event) => {
       return {
         ...state,
         counters: { ...state.counters, "days.slept": (state.counters["days.slept"] ?? 0) + 1 },
+      };
+    }
+    case "titleGained": {
+      return {
+        ...state,
+        counters: { ...state.counters, "title.total": (state.counters["title.total"] ?? 0) + 1 },
       };
     }
     default:

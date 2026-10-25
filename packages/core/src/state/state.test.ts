@@ -69,6 +69,7 @@ const cfg: StepConfig = {
     restPotentialRecover: 3,
     potentialMax: 100,
   },
+  titles: [],
 };
 
 function deepFreeze<T>(o: T): T {
@@ -174,7 +175,7 @@ describe("save", () => {
     const v1 = { ...JSON.parse(serialize(g)), version: 1 } as Record<string, unknown>;
     delete v1["today"];
     const restored = deserialize(JSON.stringify(v1));
-    expect(restored.version).toBe(3);
+    expect(restored.version).toBe(SAVE_VERSION);
     expect(restored.today).toEqual({ winds: [], loads: 0 });
     expect(restored.player.load.strength).toBe(0);
     expect(restored.player.overwork).toEqual({ streakDays: 0, active: false });

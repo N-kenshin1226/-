@@ -7,3 +7,7 @@ export type { Skill, SkillsFile } from "./skills.schema.js";
 export { tailwinds } from "./tailwinds.js";
 export { tailwindsFileSchema } from "./tailwinds.schema.js";
 export type { TailwindDef, TailwindsFile } from "./tailwinds.schema.js";
+export { condSchema } from "./conditions.schema.js";
+export { titles } from "./titles.js";
+export { titlesFileSchema } from "./titles.schema.js";
+export type { Title, TitlesFile } from "./titles.schema.js";

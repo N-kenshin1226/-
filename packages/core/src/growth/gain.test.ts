@@ -76,6 +76,7 @@ const cfg: StepConfig = {
     restPotentialRecover: 3,
     potentialMax: 100,
   },
+  titles: [],
 };
 
 const newGameCfg = {

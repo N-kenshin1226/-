@@ -42,3 +42,6 @@ export type {
 export { subscribers } from "./events/index.js";
 export type { ActionEvent, Subscriber } from "./events/index.js";
 export { deserialize, migrations, SAVE_VERSION, serialize } from "./save/index.js";
+export { evaluate } from "./conditions/index.js";
+export type { Compare, Cond } from "./conditions/index.js";
+export { findContradictions, isContradiction } from "./conditions/check.js";

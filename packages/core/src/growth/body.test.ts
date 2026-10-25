@@ -67,6 +67,7 @@ const cfg: StepConfig = {
     drawMax: 2,
   },
   body,
+  titles: [],
 };
 
 const newGameCfg = {

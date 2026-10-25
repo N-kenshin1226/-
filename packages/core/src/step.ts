@@ -1,3 +1,4 @@
+import { evaluate, type Cond } from "./conditions/index.js";
 import { subscribers, type ActionEvent } from "./events/index.js";
 import {
   applyActionLoad,
@@ -26,6 +27,8 @@ export interface StepConfig {
   sleep: SleepConfig;
   tailwind: TailwindConfig;
   body: BodyConfig;
+  /** 称号の定義（content/titles.json。core が必要とする最小形） */
+  titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond }[];
 }
 
 export type Command =
@@ -152,6 +155,22 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   for (const event of events) {
     for (const sub of subscribers) next = sub(next, event);
     next = recordAction(next, event, cfg.actionLogMax);
+  }
+
+  // 称号の判定（購読者がカウンタを更新した後の state で評価。
+  // 1ステップに複数取れてよいが、同じ称号は二度取らない）
+  const titleEvents: ActionEvent[] = [];
+  for (const def of cfg.titles) {
+    if (next.titles.includes(def.id)) continue;
+    if (evaluate(def.condition, next, cfg.time)) {
+      next = { ...next, titles: [...next.titles, def.id] };
+      titleEvents.push({ type: "titleGained", id: def.id, rank: def.rank });
+    }
+  }
+  for (const event of titleEvents) {
+    for (const sub of subscribers) next = sub(next, event);
+    next = recordAction(next, event, cfg.actionLogMax);
+    events.push(event);
   }
 
   return { state: next, events };
