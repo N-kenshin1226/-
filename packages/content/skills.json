@@ -1,0 +1,10 @@
+{
+  "skills": [
+    { "id": "swordplay", "name": "剣術" },
+    { "id": "evasion", "name": "回避" },
+    { "id": "observation", "name": "観察" },
+    { "id": "smithing", "name": "鍛冶" },
+    { "id": "mining", "name": "採掘" },
+    { "id": "eloquence", "name": "弁舌" }
+  ]
+}

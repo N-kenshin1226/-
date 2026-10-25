@@ -9,7 +9,7 @@
 | T-01 | [T-01_scaffold.md](T-01_scaffold.md) | ― | done | |
 | T-02 | [T-02_rng.md](T-02_rng.md) | T-01 | done | |
 | T-03 | [T-03_time.md](T-03_time.md) | T-01 | done | |
-| T-04 | [T-04_state.md](T-04_state.md) | T-02, T-03 | todo | |
+| T-04 | [T-04_state.md](T-04_state.md) | T-02, T-03 | done | |
 | T-05 | [T-05_gain.md](T-05_gain.md) | T-04 | todo | |
 | T-06 | [T-06_consolidation.md](T-06_consolidation.md) | T-05 | todo | |
 | T-07 | [T-07_tailwind.md](T-07_tailwind.md) | T-06 | todo | |

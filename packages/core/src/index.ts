@@ -4,3 +4,18 @@ export { createRng, restoreRng } from "./rng/index.js";
 export type { Rng, RngState } from "./rng/index.js";
 export { advance, canAct, describe, sleep } from "./time/index.js";
 export type { GameTime, MoonPhase, TimeConfig, TimeDescription, TimeOfDay } from "./time/index.js";
+export { step } from "./step.js";
+export type { Command, StepConfig, StepResult } from "./step.js";
+export { newGame } from "./state/newGame.js";
+export type { NewGameConfig } from "./state/newGame.js";
+export type {
+  ActionLogEntry,
+  GameState,
+  PlayerState,
+  SkillId,
+  SkillState,
+  StatId,
+} from "./state/types.js";
+export { subscribers } from "./events/index.js";
+export type { ActionEvent, Subscriber } from "./events/index.js";
+export { deserialize, migrations, SAVE_VERSION, serialize } from "./save/index.js";

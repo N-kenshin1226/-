@@ -9,5 +9,12 @@
     "moonCycleDays": 28,
     "moonPhaseWindowDays": 1,
     "startAge": 15
+  },
+  "state": {
+    "actionLogMax": 100
+  },
+  "player": {
+    "initialPotential": 100,
+    "initialStatValue": 10
   }
 }

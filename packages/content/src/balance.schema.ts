@@ -21,6 +21,19 @@ export const balanceSchema = z
         startAge: z.number().int().positive(),
       })
       .strict(),
+    /** GameState 周りの保持上限など */
+    state: z
+      .object({
+        actionLogMax: z.number().int().positive(),
+      })
+      .strict(),
+    /** newGame の初期値 */
+    player: z
+      .object({
+        initialPotential: z.number().positive(),
+        initialStatValue: z.number().nonnegative(),
+      })
+      .strict(),
   })
   .strict();
 
