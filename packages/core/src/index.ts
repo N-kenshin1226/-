@@ -2,3 +2,5 @@
 // Math.random / Date.now / new Date は禁止（rng/, time/ を使う）。eslint.config.mjs 参照。
 export { createRng, restoreRng } from "./rng/index.js";
 export type { Rng, RngState } from "./rng/index.js";
+export { advance, canAct, describe, sleep } from "./time/index.js";
+export type { GameTime, MoonPhase, TimeConfig, TimeDescription, TimeOfDay } from "./time/index.js";

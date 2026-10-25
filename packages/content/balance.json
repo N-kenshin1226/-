@@ -1,3 +1,13 @@
 {
-  "version": 1
+  "version": 1,
+  "time": {
+    "actionsPerDay": 5,
+    "timeOfDay": ["morning", "morning", "noon", "evening", "night"],
+    "daysPerWeek": 7,
+    "daysPerSeason": 28,
+    "seasonsPerYear": 4,
+    "moonCycleDays": 28,
+    "moonPhaseWindowDays": 1,
+    "startAge": 15
+  }
 }
