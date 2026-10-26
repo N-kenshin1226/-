@@ -394,6 +394,24 @@
       "message": "――称号《伝説の職人》を獲得しました。神器を遺した者の名です。"
     },
     {
+      "id": "title.great_sage",
+      "name": "大賢者",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "flag": "pinnacle.great_sage.apex"
+      },
+      "effect": {
+        "gainVs": {
+          "observation": 1.05,
+          "appraisal": 1.05
+        },
+        "note": "世界の真理を知る者の眼は冴え続ける（頂点ルート X-4、pinnacles.json great_sage の最終段）"
+      },
+      "message": "――称号《大賢者》を獲得しました。世界の真理を知る者の名です。"
+    },
+    {
       "id": "title.unique_hunter",
       "name": "強個体狩り",
       "rank": "B",

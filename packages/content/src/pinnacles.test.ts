@@ -1,12 +1,27 @@
-import { findContradictions } from "@trace/core";
+import {
+  checkPinnacles,
+  evaluate,
+  findContradictions,
+  newGame,
+  nextStage,
+  pinnacleFlag,
+  pinnacleReached,
+  type GameState,
+  type TimeConfig,
+  type Work,
+} from "@trace/core";
 import { describe, expect, it } from "vitest";
 import { pinnacles } from "./pinnacles.js";
 import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 import { titles } from "./titles.js";
 
 describe("pinnacles.json（T-41 頂点ルート）", () => {
-  it("剣聖・伝説の職人の2ルートがあり、各段は id/name/rank/notice/condition を持つ", () => {
-    expect(pinnacles.pinnacles.map((r) => r.id)).toEqual(["sword_saint", "legendary_artisan"]);
+  it("剣聖・伝説の職人・大賢者の3ルートがあり、各段は id/name/rank/notice/condition を持つ", () => {
+    expect(pinnacles.pinnacles.map((r) => r.id)).toEqual([
+      "sword_saint",
+      "legendary_artisan",
+      "great_sage",
+    ]);
     for (const r of pinnacles.pinnacles) {
       expect(r.name.length).toBeGreaterThan(0);
       expect(r.desc.length).toBeGreaterThan(0);
@@ -53,6 +68,81 @@ describe("pinnacles.json（T-41 頂点ルート）", () => {
         expect(findContradictions([{ id: `${r.id}.${s.id}`, condition: s.condition }])).toEqual([]);
       }
     }
+  });
+
+  it("大賢者ルートは読了数・知識フラグ・仕事の条件で4段を順に越えて頂点に至る", () => {
+    const route = pinnacles.pinnacles.find((r) => r.id === "great_sage")!;
+    const time: TimeConfig = {
+      actionsPerDay: 5,
+      timeOfDay: ["morning", "morning", "noon", "evening", "night"],
+      daysPerWeek: 7,
+      daysPerSeason: 28,
+      seasonsPerYear: 4,
+      moonCycleDays: 28,
+      moonPhaseWindowDays: 1,
+      startAge: 15,
+    };
+    const mkWork = (w: Partial<Work>): Work => ({
+      id: "w1",
+      kind: "appraisal",
+      maker: "賢者",
+      quality: 60,
+      tier: 3,
+      flags: [],
+      day: 0,
+      worldSeed: "seed",
+      marketValue: 100,
+      ...w,
+    });
+    const setSkill = (st: GameState, id: string, v: number): GameState => ({
+      ...st,
+      player: {
+        ...st.player,
+        skills: { ...st.player.skills, [id]: { ...st.player.skills[id]!, value: v } },
+      },
+    });
+    let s = newGame("seed", "賢者", {
+      skillIds: ["observation", "appraisal", "eloquence"],
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    expect(nextStage(s, route)?.id).toBe("voracity");
+
+    // 段1 読書の虫：読了4回＋観察20
+    s = setSkill(s, "observation", 20);
+    s = { ...s, counters: { "action.read": 4 } };
+    let r = checkPinnacles(s, [route], time);
+    expect(r.reached.map((x) => x.stage.id)).toEqual(["voracity"]);
+
+    // 段2 鑑定の眼：鑑定45＋鑑定の仕事でティア3＋読了累計7
+    s = setSkill(r.state, "appraisal", 45);
+    s = {
+      ...s,
+      counters: { ...s.counters, "action.read": 7 },
+      ledger: [mkWork({})],
+    };
+    r = checkPinnacles(s, [route], time);
+    expect(r.reached.map((x) => x.stage.id)).toEqual(["discerning"]);
+
+    // 段3 禁書の探索：知識フラグ＋鑑定65＋弁舌50（旗が無いと進まない）
+    s = setSkill(setSkill(r.state, "appraisal", 65), "eloquence", 50);
+    expect(checkPinnacles(s, [route], time).reached).toEqual([]);
+    s = { ...s, flags: { ...s.flags, "found.taboo_codex": true } };
+    r = checkPinnacles(s, [route], time);
+    expect(r.reached.map((x) => x.stage.id)).toEqual(["forbidden"]);
+
+    // 段4 世界の真理：禁書の知識フラグ＋鑑定90＋観察75
+    s = setSkill(setSkill(r.state, "appraisal", 90), "observation", 75);
+    expect(checkPinnacles(s, [route], time).reached).toEqual([]);
+    s = { ...s, flags: { ...s.flags, "knows.world_truth": true } };
+    r = checkPinnacles(s, [route], time);
+    expect(r.reached.map((x) => x.stage.id)).toEqual(["apex"]);
+    expect(r.state.flags[pinnacleFlag("great_sage", "apex")]).toBe(true);
+    expect(pinnacleReached(r.state, route)).toBe(true);
+
+    // 頂点称号（title.great_sage）の条件はそのまま最終段フラグを見る
+    const title = titles.titles.find((t) => t.id === route.title)!;
+    expect(evaluate(title.condition, r.state, time)).toBe(true);
   });
 
   it("スキーマ違反は弾かれる（最終段がSでない・段の重複・書式違反）", () => {
