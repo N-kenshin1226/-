@@ -23,6 +23,7 @@
 | [docs/04_tech_and_devin.md](docs/04_tech_and_devin.md) | 技術スタック・アーキテクチャ・Devin運用 |
 | [docs/05_roadmap.md](docs/05_roadmap.md) | マイルストーン（M0〜M4）・Devin用タスク一覧 |
 | [docs/06_endgame.md](docs/06_endgame.md) | 寿命・転生・エンドコンテンツ |
+| [docs/08_world_crisis.md](docs/08_world_crisis.md) | 世界の危機と真エンド（シードごとの危機・鍵・平凡な主人公） |
 | [docs/07_story.md](docs/07_story.md) | ストーリー（物・場所・NPCの小さな物語のネットワーク）とLLM生成パイプライン |
 | [docs/meeting_2026-10-25.md](docs/meeting_2026-10-25.md) | 設計会議の議事録（5視点×2ラウンド） |
 | [docs/research_notes.md](docs/research_notes.md) | 参考ゲームの調査メモ（出典付き） |
