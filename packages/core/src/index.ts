@@ -50,6 +50,8 @@ export type { Compare, Cond } from "./conditions/index.js";
 export { timingEngine, boardEngine, dealEngine } from "./minigame/index.js";
 export { smithingGame, simpleJudgmentQuality } from "./minigame/index.js";
 export type { SmithingConfig, SmithingResult } from "./minigame/index.js";
+export { miningGame } from "./minigame/index.js";
+export type { MiningConfig, MiningResult } from "./minigame/index.js";
 export type {
   MiniGame,
   MiniGameCtx,

@@ -145,6 +145,19 @@ export const balanceSchema = z
               .strict(),
           })
           .strict(),
+        mining: z
+          .object({
+            width: z.number().int().positive(),
+            height: z.number().int().positive(),
+            oreCount: z.number().int().positive(),
+            rockCount: z.number().int().nonnegative(),
+            oreQuality: z.number().positive(),
+            hintRadiusBase: z.number().nonnegative(),
+            hintRadiusPerSkill: z.number().nonnegative(),
+            criticalFlag: z.string().min(1),
+            failFlag: z.string().min(1),
+          })
+          .strict(),
       })
       .strict(),
     /** docs/02_growth_system.md §4。core/growth/tailwind.ts の TailwindConfig に対応 */

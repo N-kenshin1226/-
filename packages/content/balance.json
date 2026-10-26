@@ -118,6 +118,17 @@
         "seeTemperatureAt": 20,
         "seeOrderHintsAt": 40
       }
+    },
+    "mining": {
+      "width": 5,
+      "height": 4,
+      "oreCount": 5,
+      "rockCount": 2,
+      "oreQuality": 20,
+      "hintRadiusBase": 1,
+      "hintRadiusPerSkill": 0.04,
+      "criticalFlag": "会心",
+      "failFlag": "大崩れ"
     }
   }
 }

@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import {
   canAct,
   deserialize,
+  miningGame,
   newGame,
   serialize,
   simpleJudgmentQuality,
@@ -11,6 +12,7 @@ import {
   smithingGame,
   step,
   type ActionEvent,
+  type BoardState,
   type GameState,
   type InnRank,
   type StepConfig,
@@ -130,6 +132,62 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     return { quality: r.quality, flags: r.flags };
   };
 
+  /** 盤面の表示（未開=・ 空地=ヒント残り 鉱=◆ 岩=×） */
+  const boardLines = (s: BoardState): string[] => {
+    const head = "    " + Array.from({ length: s.width }, (_, x) => x + 1).join(" ");
+    const rows = Array.from({ length: s.height }, (_, y) => {
+      const row = Array.from({ length: s.width }, (_, x) => {
+        const c = s.cells[y * s.width + x]!;
+        if (!c.revealed) return "・";
+        return c.kind === "ore" ? "◆" : c.kind === "rock" ? "×" : "□";
+      }).join(" ");
+      return `${String(y + 1).padStart(2)}  ${row}`;
+    });
+    return [head, ...rows];
+  };
+
+  /** 採掘（盤面推理）を手動で遊ぶ */
+  const playMining = async (
+    order: Order,
+    st: GameState,
+  ): Promise<{ quality: number; flags: string[] } | null> => {
+    const mg = miningGame(balance.minigame.mining);
+    let s = mg.init({ skill: st.player.skills[order.kind]?.value ?? 0, seed: st.seed });
+    out(tpl(t.text.miningStart, { name: order.name }));
+    while (!s.done) {
+      outAll(boardLines(s));
+      const line = await ask(t.text.miningPrompt);
+      if (line === null || line.trim().toLowerCase() === "q") return null;
+      const [xs, ys] = line.trim().split(",");
+      const x = Number.parseInt(xs ?? "", 10);
+      const y = Number.parseInt(ys ?? "", 10);
+      if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        x < 1 ||
+        y < 1 ||
+        x > s.width ||
+        y > s.height
+      ) {
+        out(t.text.invalidInput);
+        continue;
+      }
+      const before = s;
+      s = mg.tick(s, { x: x - 1, y: y - 1 });
+      const cell = s.cells[(y - 1) * s.width + (x - 1)]!;
+      if (cell.kind === "ore" && s.ores > before.ores) {
+        out(tpl(t.text.miningOre, { ores: s.ores, total: s.oresTotal }));
+      } else if (cell.kind === "rock") {
+        out(t.text.miningRock);
+      } else if (s.lastHint !== null) {
+        out(tpl(t.text.miningHint, { radius: s.hintRadius, n: s.lastHint }));
+      }
+    }
+    if (s.ores >= s.oresTotal && s.rocksHit === 0) out(t.text.miningDone);
+    const r = mg.result(s);
+    return { quality: r.quality, flags: r.flags };
+  };
+
   // ---- ループ ----
   for (;;) {
     outAll(statusLines(state, cfg, t));
@@ -211,6 +269,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       let expFactor: number | undefined;
       if (playManual && order.kind === "smithing") {
         const r = await playSmithing(order, state);
+        if (r === null) return state;
+        quality = r.quality;
+        flags = r.flags;
+      } else if (playManual && order.kind === "mining") {
+        const r = await playMining(order, state);
         if (r === null) return state;
         quality = r.quality;
         flags = r.flags;

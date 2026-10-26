@@ -95,6 +95,12 @@
     "workBeat": "{n}打目――打て！",
     "workSimple": "――簡易判定で仕上げました。",
     "workResult": "《{name}》 品質 {quality}（{flags}） 経験 +{amount}",
-    "workResultTier": "――自己ベストの作品です。ティア {tier} に更新。"
+    "workResultTier": "――自己ベストの作品です。ティア {tier} に更新。",
+    "miningStart": "《{name}》 —— 盤面を掘ります。「列,行」で指定（例: 2,3）。qで中止。岩を穿つと盤面は崩れます。",
+    "miningPrompt": "掘る場所（列,行）",
+    "miningOre": "鉱脈だ！（{ores}/{total}）",
+    "miningHint": "空地。周囲{radius}マスに鉱脈は {n} 個。",
+    "miningRock": "――岩に当たった。盤面は崩れた。",
+    "miningDone": "――鉱脈を掘り切った。"
   }
 }
