@@ -8,6 +8,7 @@ import {
   describe,
   isSkillUnlocked,
   lifespanProgress,
+  shelfBooks,
   type GameState,
   type InnRank,
 } from "@trace/core";
@@ -271,9 +272,11 @@ export function SleepScreen({
 }
 
 // ---- 書店（T-26） ----
+// 棚に並ぶのは条件を満たす書物だけ（X-5：失われた手記は転生フラグが立つと現れる）
 export function BookScreen({ state, act, back }: { state: GameState; act: Act; back: () => void }) {
   const canRead = canAct(state.time, cfg.time);
-  const entries: MenuEntry[] = bookList.flatMap((b): MenuEntry[] => {
+  const shelf = shelfBooks(state, { books: bookList }, cfg.time);
+  const entries: MenuEntry[] = shelf.flatMap((b): MenuEntry[] => {
     const owned = state.books.owned.includes(b.id);
     const read = state.books.read.some((r) => r.id === b.id);
     const mark = read ? "読了" : owned ? "読める" : `${b.price}G`;

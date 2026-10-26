@@ -27,11 +27,7 @@ export interface LostBookConfig {
  * （転生の再入・再読み込みで、末尾が別の生になっていても直前の人生を確実に拾う）。
  * 閾値を超えた技能の上位から maxBooks 件。無ければ空配列。
  */
-export function lostBookFlags(
-  chronicle: Chronicle,
-  cfg: LostBookConfig,
-  seed?: string,
-): string[] {
+export function lostBookFlags(chronicle: Chronicle, cfg: LostBookConfig, seed?: string): string[] {
   const lives = chronicle.lives;
   for (let i = lives.length - 1; i >= 0; i--) {
     const life = lives[i]!;

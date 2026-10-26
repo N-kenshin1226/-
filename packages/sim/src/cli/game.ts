@@ -14,6 +14,8 @@ import {
   hasLifeRecord,
   heirGenerationOf,
   legacyOf,
+  lostBookFlags,
+  lostBookSkillId,
   miningGame,
   negotiationGame,
   newGame,
@@ -244,6 +246,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     origin: Origin,
     legacy?: Legacy,
     fate?: { tendency: TendencyId; vows: string[] },
+    flags?: readonly string[],
   ): GameState =>
     newGame(seed2, t.text.playerName, {
       skillIds: skillList.map((s) => s.id),
@@ -255,6 +258,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       initialMoney: balance.player.initialMoney,
       ...(legacy !== undefined ? { legacy } : {}),
       ...(fate !== undefined ? { tendency: fate.tendency, vows: fate.vows } : {}),
+      ...(flags !== undefined && flags.length > 0 ? { flags } : {}),
     });
 
   /** 称号ID → 表示名 */
@@ -798,13 +802,23 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       ...(artifactId !== undefined ? { artifactId } : {}),
     });
 
+    // 失われた書物（X-5、06 §2）：直前の人生の代表技能が閾値超なら、その技能の
+    // 「先達の手記」が次の世界の書店に並ぶ。GameState の形は増やさず flags に刻む
+    const lostFlags = lostBookFlags(chronicle, balance.lostBooks, st.seed);
+
     // 転生：新しいシードの世界へ（旧セーブは新しい周に置き換わる）。
     // 生まれ変わった世の傾向と新たな誓約もここで選ぶ（T-45/T-46）
     const nextOrigin = await pickOrigin();
-    const next = startLife(nextWorldSeed(st), nextOrigin, legacy, {
-      tendency: await pickTendency(),
-      vows: await pickVows(),
-    });
+    const next = startLife(
+      nextWorldSeed(st),
+      nextOrigin,
+      legacy,
+      {
+        tendency: await pickTendency(),
+        vows: await pickVows(),
+      },
+      lostFlags,
+    );
     save(next);
     out(t.text.rebirthStart);
     const bonus = Object.entries(legacy.potentialBonus)
@@ -816,6 +830,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     }
     if (legacy.artifact !== null) {
       out(tpl(t.text.rebirthArtifact, { name: artifactName(legacy.artifact) }));
+    }
+    if (lostFlags.length > 0) {
+      const names = lostFlags
+        .map((f) => {
+          const id = lostBookSkillId(f, balance.lostBooks);
+          return id !== null ? (skillNames.get(id) ?? id) : f;
+        })
+        .join("、");
+      out(tpl(t.text.rebirthLostBooks, { names }));
     }
     return next;
   };

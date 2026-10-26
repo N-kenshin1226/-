@@ -55,9 +55,7 @@ export function shelfBooks<T extends BookDefLike>(
   time: TimeConfig,
 ): T[] {
   if (cfg === undefined) return [];
-  return cfg.books.filter(
-    (b) => b.condition === undefined || evaluate(b.condition, state, time),
-  );
+  return cfg.books.filter((b) => b.condition === undefined || evaluate(b.condition, state, time));
 }
 
 /** 読了済みか */

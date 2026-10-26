@@ -188,6 +188,8 @@ export const cliTextSchema = z
         rebirthMemory: z.string(),
         rebirthArtifact: z.string(),
         rebirthPotential: z.string(),
+        /** 失われた書物（X-5。{names} は手記が現れた技能名を繋いだもの） */
+        rebirthLostBooks: z.string(),
         rebirthOriginPrompt: z.string(),
         rebirthBorn: z.string(),
         /** 継承延長（T-48）：生の継ぎ方の選択・次代の開始・刻まない告知・弱い素質補正 */
