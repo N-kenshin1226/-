@@ -85,5 +85,5 @@
 | X-5 | [X-5_lost_legacy.md](X-5_lost_legacy.md) | T-39, T-40 | done | 前世の技が次の世界に残る（失われた書物。年代記に代表技能を記録） |
 | X-7 | [X-7_stage_scaling.md](X-7_stage_scaling.md) | UI-01 | done | Stage の解像度スケーリング検証（e2e。UI-01 残り受け入れ） |
 | X-8 | [X-8_e2e_coverage.md](X-8_e2e_coverage.md) | UI-01 | done | 未カバー画面の e2e 追加（能力・立場・書店・新聞・記録削除・家で休む） |
-| X-9 | [X-9_hidden_pinnacles.md](X-9_hidden_pinnacles.md) | X-4 | doing | 伏せられた頂点ルート2本（商王・領主）。噂で匂わせる（06 §3A） |
+| X-9 | [X-9_hidden_pinnacles.md](X-9_hidden_pinnacles.md) | X-4 | done | 伏せられた頂点ルート2本（商王・領主）。噂で匂わせる（06 §3A） |
 | X-10 | [X-10_showdown_events.md](X-10_showdown_events.md) | T-13 | done | 勝負所の行事（品評会・決闘・大取引）。ミニゲームを「物語を動かす機会」として出す（03 §2） |
