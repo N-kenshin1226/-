@@ -7,11 +7,11 @@
 | ID | 依頼文 | 依存 | 状態 | 備考 |
 |---|---|---|---|---|
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
-| W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | needs_human | **保留**：設計見直し中。着手しない。 世界の危機の型と進行（docs/08_world_crisis.md） |
-| W-02 | [W-02_keys.md](W-02_keys.md) | W-01 | needs_human | **保留**：設計見直し中。着手しない。 鍵と3つの道・公示 |
-| W-03 | [W-03_npc_actors.md](W-03_npc_actors.md) | W-02 | needs_human | **保留**：設計見直し中。着手しない。 NPCも危機に挑む・関わり方 |
-| W-05 | [W-05_sim_crisis.md](W-05_sim_crisis.md) | W-03 | needs_human | **保留**：設計見直し中。着手しない。 危機のバランスCIゲート |
-| W-04 | [W-04_endings_ui.md](W-04_endings_ui.md) | W-03, UI-01 | needs_human | **保留**：設計見直し中。着手しない。 危機の表示・真エンド・滅びの結末の画面 |
+| W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | todo | 危機の筋書きと世界の備え（docs/08_world_crisis.md） |
+| W-02 | [W-02_touchpoints.md](W-02_touchpoints.md) | W-01 | todo | 接点（危機が日常に混ざる）と寄与 |
+| W-03 | [W-03_involvement.md](W-03_involvement.md) | W-02 | todo | 関与の段階と英雄への道 |
+| W-05 | [W-05_sim_crisis.md](W-05_sim_crisis.md) | W-03 | todo | 危機のバランスCIゲート |
+| W-04 | [W-04_endings_ui.md](W-04_endings_ui.md) | W-03, UI-01 | todo | 危機の見せ方と終幕の画面 |
 | C-01 | [C-01_crisis_content.md](C-01_crisis_content.md) | W-01 | needs_human | Opus 5.5 が担当。Devinは飛ばす |
 | T-01 | [T-01_scaffold.md](T-01_scaffold.md) | ― | done | |
 | T-02 | [T-02_rng.md](T-02_rng.md) | T-01 | done | |
@@ -83,4 +83,4 @@
 | X-3 | [X-3_cli_combat_split.md](X-3_cli_combat_split.md) | ― | done | cli/game.ts から戦闘・深層対話ループを combat.ts に切り出し（純粋リファクタ） |
 | X-4 | [X-4_true_end.md](X-4_true_end.md) | T-41 | todo | **範囲変更**：大賢者ルートの追加だけ行う。真エンドの部分はやらない（W-01〜W-05 に置き換え） |
 | X-5 | [X-5_lost_legacy.md](X-5_lost_legacy.md) | T-39, T-40 | todo | 前世の技が次の世界に残る（失われた書物。年代記に代表技能を記録） |
-| X-7 | [X-7_stage_scaling.md](X-7_stage_scaling.md) | UI-01 | todo | Stage の解像度スケーリング検証（e2e。UI-01 残り受け入れ） |
+| X-7 | [X-7_stage_scaling.md](X-7_stage_scaling.md) | UI-01 | done | Stage の解像度スケーリング検証（e2e。UI-01 残り受け入れ） |
