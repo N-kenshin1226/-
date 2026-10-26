@@ -71,6 +71,57 @@ export const thresholdsSchema = z
         notes: z.record(z.string(), z.string()).optional(),
       })
       .strict(),
+    /** 危機のバランスCIゲート（docs/08 §8、W-05） */
+    crisis: z
+      .object({
+        /** 回す世界シードの数（通常/重いの割合が出るだけの母数） */
+        seeds: z.number().int().positive(),
+        /** 1世界を追う最大日数（終幕を超える余裕を持たせる） */
+        maxDays: z.number().int().positive(),
+        /** 「世界が自分で動く」：通常危機の決着率の下限 */
+        worldResolves: z.object({ minResolvedRate: z.number().min(0).max(1) }).strict(),
+        /** 「滅びはたまに」：何もしないときの滅び率がこの帯に収まる */
+        ruin: z
+          .object({
+            expectedRate: z.number().min(0).max(1),
+            minRate: z.number().min(0).max(1),
+            maxRate: z.number().min(0).max(1),
+          })
+          .strict(),
+        /** 「どの生き方にも接点」：年あたり提示数の下限（全体・自分の分野） */
+        touchpoints: z
+          .object({
+            minOffersPerYear: z.number().min(0),
+            minDomainOffersPerYear: z.number().min(0),
+          })
+          .strict(),
+        /** 「英雄は勝ち取るもの」：集中で届く世界数と、普通遊びでの届かなさ */
+        hero: z
+          .object({
+            focusedStage4MinWorlds: z.number().int().nonnegative(),
+            casualStage4MaxRate: z.number().min(0).max(1),
+          })
+          .strict(),
+        /** 「縛られない」：混ざった生き方・頂点なしでも段階4に届く世界がある */
+        unbound: z
+          .object({
+            mixedStage4MinWorlds: z.number().int().nonnegative(),
+            noPinnacleStage4MinWorlds: z.number().int().nonnegative(),
+          })
+          .strict(),
+        /** 「関わると変わる」：段階3以上での決着率が何もしないよりこの差だけ高い */
+        involvement: z
+          .object({
+            minSuccessDelta: z.number().min(0).max(1),
+            minInvolvedWorlds: z.number().int().nonnegative(),
+          })
+          .strict(),
+        /** 「見える」：危機の兆しがこの実時間（分）以内に出る */
+        sign: z.object({ withinMinutes: z.number().positive() }).strict(),
+        /** しきい値の根拠の注記（JSON にコメントを書けないため） */
+        notes: z.record(z.string(), z.string()).optional(),
+      })
+      .strict(),
   })
   .strict();
 

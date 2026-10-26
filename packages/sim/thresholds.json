@@ -27,5 +27,25 @@
       "noveltyBandsExcludeSimple": "簡易判定のみ型は『同じ行動を延々と繰り返す』縮退方針であり、初体験が出ないのは新規性の設計どおりの応答。新規性の供給は行動を変えるプレイ方針で測る",
       "noveltyBandsExcludeSingleAt180plus": "単一集中型は中盤以降の新規性を追わない方針（主スキル一点）のため 180分以降の帯は多様型のみで判定"
     }
+  },
+  "crisis": {
+    "seeds": 40,
+    "maxDays": 220,
+    "worldResolves": { "minResolvedRate": 0.8 },
+    "ruin": { "expectedRate": 0.15, "minRate": 0.05, "maxRate": 0.3 },
+    "touchpoints": { "minOffersPerYear": 40, "minDomainOffersPerYear": 3 },
+    "hero": { "focusedStage4MinWorlds": 1, "casualStage4MaxRate": 0.05 },
+    "unbound": { "mixedStage4MinWorlds": 1, "noPinnacleStage4MinWorlds": 1 },
+    "involvement": { "minSuccessDelta": 0.05, "minInvolvedWorlds": 10 },
+    "sign": { "withinMinutes": 60 },
+    "notes": {
+      "worldResolves": "docs/08 §8『何もしなくても世界は決着に向かう（通常の危機の大半）』",
+      "ruin": "docs/08 §4『重い危機（約15%）は滅びうる』——滅び率が 15% 周辺の帯に収まるかを見る",
+      "touchpoints": "offersPerStage[1,2,3] で 1日1〜3件出る設計。自分の生き方の分野に届く分が年数件あることを見る（親和の設計どおり、全接点が全員に届く必要はない）",
+      "hero": "docs/08 §8『危機に集中すれば英雄になれる。普通に遊ぶだけではほぼ届かない』",
+      "unbound": "docs/08 §8『特定の生き方・頂点ルートを要求しない』",
+      "involvement": "docs/08 §8『関われば成否が動く』。同じ世界シードで何もしない走との差",
+      "sign": "docs/08 §8『危機の兆しが新聞・噂に早く出る』——開始1時間以内"
+    }
   }
 }
