@@ -9,7 +9,7 @@ import {
   type FateChoice,
 } from "../game.js";
 import { theme } from "../theme.js";
-import { Btn, css } from "../ui.js";
+import { Btn, CardTitle, css } from "../ui.js";
 
 /**
  * 運命の傾向（T-45）と誓約（T-46）の選択 UI（06 §3C）。
@@ -26,13 +26,13 @@ export function FatePickers({
   const pickedVows = fate.vows ?? [];
   return (
     <>
-      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.tendencyPick}</div>
+      <CardTitle>{t.text.tendencyPick}</CardTitle>
       <div data-testid="fate-tendency">
         {tendencyIds.map((id) => (
           <Btn
             key={id}
             testId={`tendency-${id}`}
-            primary={tendency === id}
+            sel={tendency === id}
             onClick={() => setFate({ ...fate, tendency: id })}
           >
             {t.display.tendencyNames[id] ?? id}
@@ -40,13 +40,13 @@ export function FatePickers({
           </Btn>
         ))}
       </div>
-      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.vowPick}</div>
+      <CardTitle>{t.text.vowPick}</CardTitle>
       <div data-testid="fate-vows">
         {vowList.map((v) => (
           <Btn
             key={v.id}
             testId={`vow-${v.id}`}
-            primary={pickedVows.includes(v.id)}
+            sel={pickedVows.includes(v.id)}
             onClick={() =>
               setFate({
                 ...fate,
@@ -79,21 +79,40 @@ export function TitleScreen({
   const lives = loadChronicle().lives.length;
   return (
     <main style={css.app} data-testid="app">
-      <h1 style={{ color: theme.colors.accent }}>TRACE</h1>
-      <p style={css.sys}>{t.text.intro}</p>
-      {lives > 0 && <p style={css.sys}>{tpl(t.text.chronicleLives, { count: lives })}</p>}
-      <FatePickers fate={fate} setFate={setFate} />
-      <p style={css.sys}>{t.text.originPick}</p>
-      {originList.map((o) => (
-        <Btn
-          key={o.id}
-          testId={`origin-${o.id.replace("origin.", "")}`}
-          onClick={() => startNew(o.id)}
-        >
-          {o.name}
-          <span style={{ color: theme.colors.textDim, fontSize: 12 }}> ― {o.desc}</span>
-        </Btn>
-      ))}
+      <h1
+        style={{
+          color: theme.colors.navy,
+          fontSize: 44,
+          fontWeight: 900,
+          letterSpacing: "0.12em",
+          margin: "18px 0 6px",
+          textShadow: "0 2px 0 rgba(44,58,94,0.15)",
+        }}
+      >
+        TRACE
+      </h1>
+      <div style={{ ...css.panel, ...css.panelHero }} className="pop-in">
+        <p style={{ margin: "0 0 6px" }}>{t.text.intro}</p>
+        {lives > 0 && (
+          <p style={{ ...css.sys, margin: 0 }}>{tpl(t.text.chronicleLives, { count: lives })}</p>
+        )}
+      </div>
+      <section style={css.panel}>
+        <FatePickers fate={fate} setFate={setFate} />
+        <CardTitle>{t.text.originPick}</CardTitle>
+        {originList.map((o) => (
+          <div key={o.id} style={{ margin: "6px 0" }}>
+            <Btn
+              primary
+              testId={`origin-${o.id.replace("origin.", "")}`}
+              onClick={() => startNew(o.id)}
+            >
+              {o.name}
+              <span style={{ ...css.dim, fontWeight: 500 }}> ― {o.desc}</span>
+            </Btn>
+          </div>
+        ))}
+      </section>
     </main>
   );
 }

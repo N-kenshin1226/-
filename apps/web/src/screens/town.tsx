@@ -13,7 +13,12 @@ import {
   t,
   tpl,
 } from "../game.js";
-import { Btn, css, type Act } from "../ui.js";
+import { titles } from "@trace/content";
+import { Btn, CardTitle, css, type Act } from "../ui.js";
+import { theme } from "../theme.js";
+
+/** 称号ID → 表示名 */
+const titleNameOf = (id: string) => titles.titles.find((x) => x.id === id)?.name ?? id;
 
 // ---- 鍛錬 ----
 export function TrainScreen({
@@ -29,19 +34,26 @@ export function TrainScreen({
   const sk = skillList.find((s) => s.id === picked);
   return (
     <section style={css.panel} data-testid="screen-train">
-      <div>{t.text.skillPick}</div>
+      <CardTitle>{t.text.skillPick}</CardTitle>
       <div>
         {skillList
           .filter((s) => isSkillUnlocked(state, { id: s.id, condition: s.unlock }))
           .map((s) => {
             const st = state.player.skills[s.id]!;
             return (
-              <Btn key={s.id} testId={`skill-${s.id}`} onClick={() => setPicked(s.id)}>
+              <Btn
+                key={s.id}
+                testId={`skill-${s.id}`}
+                sel={picked === s.id}
+                onClick={() => setPicked(s.id)}
+              >
                 {s.name}
                 <span style={css.dim}>
                   {" "}
                   {st.value.toFixed(1)}
-                  {st.pending > 0 && <span style={css.accent}> +{st.pending.toFixed(1)}</span>}
+                  {st.pending > 0 && (
+                    <span style={{ color: theme.colors.good }}> +{st.pending.toFixed(1)}</span>
+                  )}
                 </span>
               </Btn>
             );
@@ -87,7 +99,7 @@ export function SleepScreen({
   const [dinner, setDinner] = useState(true);
   return (
     <section style={css.panel} data-testid="screen-sleep">
-      <div>{t.text.innPick}</div>
+      <CardTitle>{t.text.innPick}</CardTitle>
       <div>
         {inns.map((inn) => {
           const cost = innCost(inn, state);
@@ -112,10 +124,10 @@ export function SleepScreen({
       </div>
       <div style={{ margin: "8px 0" }}>
         {t.text.dinnerPrompt}{" "}
-        <Btn testId="dinner-yes" primary={dinner} onClick={() => setDinner(true)}>
+        <Btn testId="dinner-yes" sel={dinner} onClick={() => setDinner(true)}>
           {t.display.dinnerNames.with}
         </Btn>
-        <Btn testId="dinner-no" primary={!dinner} onClick={() => setDinner(false)}>
+        <Btn testId="dinner-no" sel={!dinner} onClick={() => setDinner(false)}>
           {t.display.dinnerNames.without}
         </Btn>
       </div>
@@ -138,7 +150,7 @@ export function BookScreen({ state, act, back }: { state: GameState; act: Act; b
   const canRead = canAct(state.time, cfg.time);
   return (
     <section style={css.panel} data-testid="screen-book">
-      <div>{tpl(t.text.bookShopHeader, { money: state.player.money })}</div>
+      <CardTitle>{tpl(t.text.bookShopHeader, { money: state.player.money })}</CardTitle>
       {bookList.map((b) => {
         const owned = state.books.owned.includes(b.id);
         const read = state.books.read.some((r) => r.id === b.id);
@@ -201,31 +213,41 @@ export function BookScreen({ state, act, back }: { state: GameState; act: Act; b
 export function StatusScreen({ state, back }: { state: GameState; back: () => void }) {
   return (
     <section style={css.panel} data-testid="screen-status">
-      <div style={css.accent}>スキル</div>
+      <CardTitle>スキル</CardTitle>
       {skillList
         .filter((s) => isSkillUnlocked(state, { id: s.id, condition: s.unlock }))
         .map((s) => {
           const st = state.player.skills[s.id]!;
           return (
             <div key={s.id}>
-              {s.name} <span style={css.accent}>{st.value.toFixed(1)}</span>
-              {st.pending > 0 && <span style={css.dim}>（+{st.pending.toFixed(1)} 未定着）</span>}
+              {s.name}{" "}
+              <span style={{ fontWeight: 800, fontSize: 18, color: theme.colors.navy }}>
+                {st.value.toFixed(1)}
+              </span>
+              {st.pending > 0 && (
+                <span style={{ color: theme.colors.good }}>
+                  （+{st.pending.toFixed(1)} 未定着）
+                </span>
+              )}
               <span style={css.dim}> 素質 {Math.round(st.potential)}</span>
             </div>
           );
         })}
-      <div style={{ ...css.accent, marginTop: 8 }}>基礎能力</div>
+      <CardTitle>基礎能力</CardTitle>
       {(Object.keys(state.player.stats) as (keyof typeof state.player.stats)[]).map((id) => (
         <div key={id}>
           {t.display.statNames[id] ?? id}{" "}
-          <span style={css.accent}>{Math.round(state.player.stats[id])}</span>
+          <span style={{ fontWeight: 800, fontSize: 18, color: theme.colors.navy }}>
+            {Math.round(state.player.stats[id])}
+          </span>
           {(state.player.load[id] ?? 0) > 0 && (
             <span style={css.dim}>（負荷 {(state.player.load[id] ?? 0).toFixed(1)}）</span>
           )}
         </div>
       ))}
-      <div style={{ marginTop: 8, ...css.dim }}>
-        称号：{state.titles.length === 0 ? "―" : state.titles.join("、")}
+      <CardTitle tone="gold">称号</CardTitle>
+      <div style={css.dim}>
+        {state.titles.length === 0 ? "―" : state.titles.map((id) => titleNameOf(id)).join("、")}
       </div>
       <Btn onClick={back}>戻る</Btn>
     </section>

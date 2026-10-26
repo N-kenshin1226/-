@@ -25,7 +25,8 @@ import {
   uniqueOf,
   type CombatState,
 } from "../game.js";
-import { Btn, css, type Act, type Push, type Screen } from "../ui.js";
+import { Btn, CardTitle, css, type Act, type Push, type Screen } from "../ui.js";
+import { theme } from "../theme.js";
 
 // ---- 狩り（CT戦闘） ----
 export function HuntScreen({
@@ -37,10 +38,10 @@ export function HuntScreen({
 }) {
   return (
     <section style={css.panel} data-testid="screen-hunt">
-      <div>{t.text.huntPick}</div>
+      <CardTitle>{t.text.huntPick}</CardTitle>
       {enemyAreas.map(([area, group]) => (
-        <div key={area}>
-          <div style={css.dim}>{t.display.huntAreas[area] ?? area}</div>
+        <div key={area} style={{ marginBottom: 8 }}>
+          <div style={{ ...css.dim, fontWeight: 700 }}>{t.display.huntAreas[area] ?? area}</div>
           {group.map((e) => {
             const ue = uniqueOf(state, e);
             return (
@@ -52,8 +53,10 @@ export function HuntScreen({
                   {e.name}
                   <span style={css.dim}>（挑戦差 {e.challenge}）</span>
                 </Btn>
+                {/* 強個体は特別な相手なので金枠（T-44） */}
                 {ue !== null && (
                   <Btn
+                    gold
                     testId={`enemy-${e.id}-unique`}
                     onClick={() => setScreen({ name: "combat", enemy: ue })}
                   >
@@ -128,6 +131,7 @@ export function CombatScreen({
 
   return (
     <section style={css.panel} data-testid="screen-combat">
+      <CardTitle tone="red">{enemy.name}</CardTitle>
       <div>
         {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
           <div key={i} style={css.sys}>
@@ -135,7 +139,7 @@ export function CombatScreen({
           </div>
         ))}
       </div>
-      <div style={css.dim}>
+      <div style={{ fontWeight: 800, fontSize: 17, color: theme.colors.navy }}>
         {tpl(t.text.combatStatus, {
           playerHp: Math.max(0, cs.playerHp),
           playerMax: cs.playerHpMax,
@@ -163,7 +167,9 @@ export function CombatScreen({
           {cs.won ? "勝利を確定" : cs.fled ? "離脱した" : "結果を受け入れる"}
         </Btn>
       )}
-      <Btn onClick={() => setScreen({ name: "menu" })}>あきらめる</Btn>
+      <Btn danger onClick={() => setScreen({ name: "menu" })}>
+        あきらめる
+      </Btn>
     </section>
   );
 }
@@ -274,9 +280,12 @@ export function AbyssScreen({
 
   return (
     <section style={css.panel} data-testid="screen-abyss">
-      <div>
+      <div style={{ fontWeight: 800, fontSize: 17, color: theme.colors.navy }}>
         {tpl(t.text.abyssFloor, { floor: run.floor })}
-        <span style={css.dim}> {tpl(t.text.abyssLight, { light: run.light })}</span>
+        <span style={{ ...css.dim, fontWeight: 500 }}>
+          {" "}
+          {tpl(t.text.abyssLight, { light: run.light })}
+        </span>
       </div>
       {run.done ? (
         <Btn primary testId="abyss-commit" onClick={commit}>
@@ -298,7 +307,7 @@ export function AbyssScreen({
               {l}
             </div>
           ))}
-          <div style={css.dim}>
+          <div style={{ fontWeight: 800, fontSize: 17, color: theme.colors.navy }}>
             {tpl(t.text.combatStatus, {
               playerHp: Math.max(0, cs.playerHp),
               playerMax: cs.playerHpMax,

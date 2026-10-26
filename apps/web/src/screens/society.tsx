@@ -1,7 +1,7 @@
 /** 立場・目標と師匠の画面（X-2 で App.tsx から分離） */
 import { canAct, canApprentice, suggestGoals, type ActionEvent, type GameState } from "@trace/core";
 import { cfg, eventLines, mentorList, offerName, skillList, societyDefs, t, tpl } from "../game.js";
-import { Btn, css, type Act } from "../ui.js";
+import { Btn, CardTitle, css, type Act } from "../ui.js";
 
 // ---- 立場・目標 ----
 export function SocietyScreen({
@@ -20,13 +20,13 @@ export function SocietyScreen({
   const suggested = suggestGoals(state, cfg.society, 3);
   return (
     <section style={css.panel} data-testid="screen-society">
-      <div>
+      <CardTitle>
         {tpl(t.text.societyHeader, {
           standing: standing?.name ?? state.society.standing,
           profession: profession?.name ?? "―",
           goal: goal?.name ?? "―",
         })}
-      </div>
+      </CardTitle>
       {offers.length === 0 ? (
         <div style={css.dim}>{t.text.societyNoOffers}</div>
       ) : (
@@ -38,7 +38,9 @@ export function SocietyScreen({
           </div>
         ))
       )}
-      <div style={{ marginTop: 8 }}>{t.text.societyGoalsHeader}</div>
+      <div style={{ marginTop: 8 }}>
+        <CardTitle tone="gold">{t.text.societyGoalsHeader}</CardTitle>
+      </div>
       {goal ? (
         <div>
           <div>《{goal.name}》を目指しています</div>
@@ -96,13 +98,13 @@ export function MentorScreen({
     };
     return (
       <section style={css.panel} data-testid="screen-mentor">
-        <div>
+        <CardTitle>
           {tpl(t.text.mentorHeaderCurrent, {
             name: current.name,
             skill: skillName(current.skill),
             days: state.time.day - state.mentor!.sinceDay + 1,
           })}
-        </div>
+        </CardTitle>
         <div style={css.dim}>{current.desc}</div>
         <div style={{ ...css.dim, margin: "8px 0" }}>
           {tpl(t.text.difficultyPrompt, { recommended })}
@@ -142,7 +144,7 @@ export function MentorScreen({
 
   return (
     <section style={css.panel} data-testid="screen-mentor">
-      <div>{t.text.mentorHeaderNone}</div>
+      <CardTitle>{t.text.mentorHeaderNone}</CardTitle>
       {mentorList.map((m) => {
         const ok = canApprentice(state, m.id, cfg.mentors, cfg.time);
         return (

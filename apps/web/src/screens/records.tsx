@@ -14,13 +14,14 @@ import {
   tpl,
   workName,
 } from "../game.js";
-import { Btn, css, type Act, type Screen } from "../ui.js";
+import { Btn, CardTitle, css, type Act, type Screen } from "../ui.js";
+import { theme } from "../theme.js";
 
 // ---- 街の記録 ----
 export function RecordsScreen({ state, back }: { state: GameState; back: () => void }) {
   return (
     <section style={css.panel} data-testid="screen-records">
-      <div style={css.accent}>{t.text.recordsHeader}</div>
+      <CardTitle>{t.text.recordsHeader}</CardTitle>
       <div>{tpl(t.text.recordsLedger, { count: state.ledger.length })}</div>
       {state.ledger.length === 0 && <div style={css.dim}>{t.text.recordsLedgerEmpty}</div>}
       {state.ledger.slice(-10).map((w, i) => (
@@ -36,7 +37,12 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
         </div>
       ))}
       <div style={{ marginTop: 8 }}>
-        {tpl(t.text.recordsTitles, { titles: state.titles.join("、") || "―" })}
+        {tpl(t.text.recordsTitles, {
+          titles:
+            state.titles
+              .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
+              .join("、") || "―",
+        })}
       </div>
       <div style={{ marginTop: 8 }}>
         {tpl(t.text.recordsLore, {
@@ -63,7 +69,9 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
         ))}
       </div>
       {/* 討伐図鑑（T-44）：kill.species.* / kill.unique.* カウンタから実績一覧 */}
-      <div style={{ marginTop: 12 }}>{t.text.recordsHunt}</div>
+      <div style={{ marginTop: 12 }}>
+        <CardTitle>{t.text.recordsHunt}</CardTitle>
+      </div>
       {enemies.enemies.map((e) => {
         const kills = state.counters[`kill.species.${e.id}`] ?? 0;
         const uniques = state.counters[`kill.unique.${e.id}`] ?? 0;
@@ -89,9 +97,12 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
       </div>
       {/* ライバル・ランキング（T-47。派生値：state.rng は消費しない） */}
       <div style={{ marginTop: 12 }} data-testid="records-rivals">
-        <div>{t.text.recordsRivals}</div>
+        <CardTitle>{t.text.recordsRivals}</CardTitle>
         {rivalsOf(state, rivals, balance.rivals).entries.map((e) => (
-          <div key={e.rank} style={e.isPlayer ? undefined : css.dim}>
+          <div
+            key={e.rank}
+            style={e.isPlayer ? { fontWeight: 800, color: theme.colors.accentDark } : css.dim}
+          >
             {tpl(t.text.recordsRivalLine, {
               rank: e.rank,
               name: e.name,
@@ -115,7 +126,9 @@ function ChronicleView() {
   const chronicle = loadChronicle();
   return (
     <div style={{ marginTop: 12 }} data-testid="chronicle">
-      <div>{tpl(t.text.chronicleHeader, { count: chronicle.lives.length })}</div>
+      <CardTitle tone="gold">
+        {tpl(t.text.chronicleHeader, { count: chronicle.lives.length })}
+      </CardTitle>
       {chronicle.lives.length === 0 && <div style={css.dim}>{t.text.chronicleEmpty}</div>}
       {chronicle.lives.map((life, i) => {
         const epithet = life.epithet
@@ -184,7 +197,7 @@ export function LoreScreen({
     const read = state.lore.read.includes(atom.id);
     return (
       <section style={css.panel} data-testid="lore-atom">
-        <div style={css.accent}>《{atom.title}》</div>
+        <CardTitle tone="gold">《{atom.title}》</CardTitle>
         <div style={css.dim}>（{atom.kind}）</div>
         {read ? (
           <div style={{ margin: "8px 0", whiteSpace: "pre-wrap" }}>{atom.text}</div>
@@ -217,13 +230,13 @@ export function LoreScreen({
   }
   return (
     <section style={css.panel} data-testid="screen-lore">
-      <div>
+      <CardTitle>
         {tpl(t.text.loreListHeader, {
           read: state.lore.read.length,
           total: atomList.length,
           facts: state.lore.facts.length,
         })}
-      </div>
+      </CardTitle>
       {atomList.length === 0 && <div style={css.dim}>{t.text.loreNone}</div>}
       {atomList.map((a) => (
         <div key={a.id}>

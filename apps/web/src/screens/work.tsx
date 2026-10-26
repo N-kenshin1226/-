@@ -23,7 +23,7 @@ import {
   type TimingState,
 } from "../game.js";
 import { theme } from "../theme.js";
-import { Btn, css, type Act, type Push, type Screen } from "../ui.js";
+import { Btn, CardTitle, css, type Act, type Push, type Screen } from "../ui.js";
 
 /** 仕事結果の表示行（品質・フラグ・経験・報酬） */
 export function workResultLines(
@@ -83,8 +83,8 @@ export function WorkScreen({
   const list: (Order | SpecialOrder)[] = special ? [...orderList, special] : orderList;
   return (
     <section style={css.panel} data-testid="screen-work">
-      <div>{t.text.orderPick}</div>
-      {special && <div style={css.sys}>{t.text.specialOrder}</div>}
+      <CardTitle>{t.text.orderPick}</CardTitle>
+      {special && <div style={{ ...css.accent }}>{t.text.specialOrder}</div>}
       <div>
         {list.map((o) => {
           const kind = skillList.find((s) => s.id === o.kind)?.name ?? o.kind;
@@ -144,9 +144,8 @@ export function WorkModeScreen({
   };
   return (
     <section style={css.panel} data-testid="screen-workmode">
-      <div>
-        {order.name} — {order.note}
-      </div>
+      <CardTitle>{order.name}</CardTitle>
+      <div style={css.dim}>{order.note}</div>
       <div style={{ margin: "8px 0" }}>{t.text.workModePrompt}</div>
       <Btn
         primary
@@ -219,13 +218,13 @@ export function MinigameScreen({
 
   return (
     <section style={css.panel} data-testid="minigame">
-      <div>{startLine}</div>
+      <CardTitle>{startLine}</CardTitle>
       {isTimingKind(kind) && <TimingView kind={kind} gs={gs as TimingState} onTick={setGs} />}
       {isBoardKind(kind) && <BoardView kind={kind} gs={gs as BoardState} onTick={setGs} />}
       {kind === "negotiation" && <NegotiationView gs={gs as DealState} onTick={setGs} />}
       {res.done && (
-        <div data-testid="minigame-done" style={{ marginTop: 8 }}>
-          <div style={css.accent}>
+        <div data-testid="minigame-done" style={{ marginTop: 8 }} className="pop-in">
+          <div style={{ fontWeight: 800, fontSize: 18, color: theme.colors.accentDark }}>
             {res.detail}（品質 {res.quality}
             {res.flags.length > 0 ? `・${res.flags.join("・")}` : ""}）
           </div>
@@ -277,16 +276,16 @@ function TimingView({
         {tpl(beatText, { n: gs.cursor + 1 })}（{gs.hits} 命中 / 判定窓 ±{Math.round(gs.halfWidth)}
         ms）
       </div>
-      <div style={{ letterSpacing: 6, fontSize: 20, margin: "8px 0" }}>
+      <div style={{ letterSpacing: 6, fontSize: 22, margin: "8px 0" }}>
         {gs.beats.map((b, i) => (
           <span
             key={i}
             style={{
               color:
                 i < gs.cursor
-                  ? theme.colors.accent
+                  ? theme.colors.gold
                   : i === gs.cursor && near
-                    ? "#e8e4d8"
+                    ? theme.colors.good
                     : theme.colors.textDim,
             }}
           >
@@ -331,8 +330,8 @@ function BoardView({
         data-testid={`${kind}-board`}
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${gs.width}, 34px)`,
-          gap: 3,
+          gridTemplateColumns: `repeat(${gs.width}, 36px)`,
+          gap: 4,
           margin: "8px 0",
         }}
       >
@@ -342,9 +341,9 @@ function BoardView({
           const mark = !c.revealed ? "？" : c.kind === "ore" ? "◆" : c.kind === "rock" ? "▲" : "・";
           const color =
             c.kind === "ore" && c.revealed
-              ? theme.colors.accent
+              ? theme.colors.gold
               : c.kind === "rock" && c.revealed
-                ? "#d5736a"
+                ? theme.colors.bad
                 : theme.colors.textDim;
           return (
             <button
@@ -352,15 +351,8 @@ function BoardView({
               data-testid={`cell-${x}-${y}`}
               disabled={c.revealed || gs.done}
               onClick={() => onTick(tickMinigame(kind, gs, { x, y }) as BoardState)}
-              style={{
-                width: 34,
-                height: 34,
-                background: c.revealed ? "#12161c" : "#232b34",
-                color,
-                border: `1px solid ${theme.colors.panel}`,
-                fontFamily: theme.font.mono,
-                cursor: c.revealed ? "default" : "pointer",
-              }}
+              className={c.revealed ? "board-cell revealed" : "board-cell"}
+              style={{ color }}
             >
               {mark}
             </button>

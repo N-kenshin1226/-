@@ -36,74 +36,94 @@ export type Screen =
 export const css = {
   app: {
     minHeight: "100vh",
-    background: theme.colors.bg,
     color: theme.colors.text,
     fontFamily: theme.font.family,
     padding: "16px",
     boxSizing: "border-box" as const,
-    maxWidth: 720,
+    maxWidth: 760,
     margin: "0 auto",
   },
+  /** 通常カード（紙の面・濃紺の太枠）。主役の画面は panelHero を使う */
   panel: {
     background: theme.colors.panel,
-    borderRadius: 8,
-    padding: "12px 16px",
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: "14px 18px",
+    marginBottom: 14,
+    border: `2.5px solid ${theme.colors.navy}`,
+    boxShadow: "0 4px 0 rgba(44,58,94,0.14), 0 8px 20px rgba(44,58,94,0.10)",
   },
-  btn: {
-    background: "#232b34",
-    color: theme.colors.text,
-    border: `1px solid ${theme.colors.accent}`,
-    borderRadius: 6,
-    padding: "8px 14px",
-    margin: "4px 6px 4px 0",
-    fontFamily: theme.font.family,
-    fontSize: 15,
-    cursor: "pointer",
+  /** 主役カード（1画面に1つまで）：淡い金の面で大きく */
+  panelHero: {
+    background: "linear-gradient(160deg, #fffbe6 0%, #fffdf4 70%)",
+    borderColor: theme.colors.yellow,
+    boxShadow: "0 5px 0 rgba(232,164,0,0.35), 0 10px 24px rgba(44,58,94,0.14)",
   },
-  btnPrimary: {
-    background: theme.colors.accent,
-    color: "#101418",
-    fontWeight: 700,
+  /** 補助の薄い面（カード内の区切り・ログ欄） */
+  panelInset: {
+    background: theme.colors.panel2,
+    border: `1.5px solid ${theme.colors.textDim}`,
   },
   log: {
     fontFamily: theme.font.mono,
-    fontSize: 13,
-    lineHeight: 1.7,
+    fontSize: 14,
+    lineHeight: 1.75,
     whiteSpace: "pre-wrap" as const,
     maxHeight: 340,
     overflowY: "auto" as const,
   },
   dim: { color: theme.colors.textDim },
   sys: { color: theme.colors.system },
-  accent: { color: theme.colors.accent },
+  accent: { color: theme.colors.accentDark, fontWeight: 700 },
 };
+
+/** カードの見出し（濃紺テキスト＋色マーカー）。tone で意味を変える */
+export function CardTitle({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone?: "gold" | "red" | "green";
+}) {
+  return <div className={tone !== undefined ? `card-title ${tone}` : "card-title"}>{children}</div>;
+}
 
 export function Btn({
   children,
   primary,
+  gold,
+  danger,
+  sel,
+  big,
   disabled,
   onClick,
   testId,
 }: {
   children: React.ReactNode;
+  /** 主行動＝黄（1画面1つまで） */
   primary?: boolean;
+  /** 特別＝金枠（ユニーク・称号など） */
+  gold?: boolean;
+  /** 危険＝赤（記録を消す等） */
+  danger?: boolean;
+  /** 選択中＝琥珀（トグルの ON 表示） */
+  sel?: boolean;
+  big?: boolean;
   disabled?: boolean;
   onClick: () => void;
   testId?: string;
 }) {
+  const cls = [
+    "tbtn",
+    primary ? "primary" : "",
+    gold ? "gold" : "",
+    danger ? "danger" : "",
+    sel ? "sel" : "",
+    big ? "big" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
-    <button
-      data-testid={testId}
-      disabled={disabled}
-      onClick={onClick}
-      style={{
-        ...css.btn,
-        ...(primary ? css.btnPrimary : {}),
-        opacity: disabled ? 0.35 : 1,
-        cursor: disabled ? "default" : "pointer",
-      }}
-    >
+    <button data-testid={testId} disabled={disabled} onClick={onClick} className={cls}>
       {children}
     </button>
   );

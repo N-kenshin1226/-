@@ -13,14 +13,14 @@ import {
   workName,
   type FateChoice,
 } from "../game.js";
-import { Btn, css } from "../ui.js";
+import { Btn, CardTitle, css } from "../ui.js";
 import { FatePickers } from "./title.js";
 
 // ---- 引退（T-40。06 §1：いつでも選べる。確認は1回） ----
 export function RetireScreen({ onRetire }: { onRetire: (confirmed: boolean) => void }) {
   return (
     <section style={css.panel} data-testid="screen-retire">
-      <div style={{ marginBottom: 8 }}>{t.text.retireConfirm}</div>
+      <CardTitle tone="red">{t.text.retireConfirm}</CardTitle>
       <Btn primary testId="retire-yes" onClick={() => onRetire(true)}>
         引退する
       </Btn>
@@ -48,7 +48,7 @@ export function SuccessionScreen({
 }) {
   return (
     <section style={css.panel} data-testid="screen-succession">
-      <div style={{ marginBottom: 8 }}>{t.text.heirWayPick}</div>
+      <CardTitle>{t.text.heirWayPick}</CardTitle>
       <Btn primary testId="succession-rebirth" onClick={() => onChoose(prev, cause, "rebirth")}>
         新しい世界に転生する
         <span style={css.dim}> ― 年代記に刻まれ、継承は大きい</span>
@@ -100,13 +100,13 @@ export function HeirScreen({
       <div style={css.dim} data-testid="heir-nochronicle">
         {t.text.heirNoChronicle}
       </div>
-      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.rebirthOriginPrompt}</div>
+      <CardTitle>{t.text.rebirthOriginPrompt}</CardTitle>
       <div>
         {originList.map((o) => (
           <Btn
             key={o.id}
             testId={`heir-origin-${o.id.replace("origin.", "")}`}
-            primary={originId === o.id}
+            sel={originId === o.id}
             onClick={() => setOriginId(o.id)}
           >
             {o.name}
@@ -114,13 +114,13 @@ export function HeirScreen({
           </Btn>
         ))}
       </div>
-      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.vowPick}</div>
+      <CardTitle>{t.text.vowPick}</CardTitle>
       <div data-testid="heir-vows">
         {vowList.map((v) => (
           <Btn
             key={v.id}
             testId={`heir-vow-${v.id}`}
-            primary={pickedVows.includes(v.id)}
+            sel={pickedVows.includes(v.id)}
             onClick={() => toggleVow(v.id)}
           >
             {v.name}
@@ -203,7 +203,7 @@ export function RebirthScreen({
           })}
         </div>
       )}
-      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.legacyHeader}</div>
+      <CardTitle tone="gold">{t.text.legacyHeader}</CardTitle>
       {prev.titles.length > 0 ? (
         <div data-testid="rebirth-titles">
           <div style={css.dim}>
@@ -213,7 +213,7 @@ export function RebirthScreen({
             <Btn
               key={id}
               testId={`rebirth-title-${id}`}
-              primary={pickedTitles.includes(id)}
+              sel={pickedTitles.includes(id)}
               onClick={() => toggleTitle(id)}
             >
               {titles.titles.find((x) => x.id === id)?.name ?? id}
@@ -230,7 +230,7 @@ export function RebirthScreen({
             <Btn
               key={w.id}
               testId={`rebirth-artifact-${w.id}`}
-              primary={artifactId === w.id}
+              sel={artifactId === w.id}
               onClick={() => setArtifactId((a) => (a === w.id ? undefined : w.id))}
             >
               {workName(w)}
@@ -244,13 +244,13 @@ export function RebirthScreen({
       ) : (
         <div style={css.dim}>{t.text.legacyNoArtifact}</div>
       )}
-      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.rebirthOriginPrompt}</div>
+      <CardTitle>{t.text.rebirthOriginPrompt}</CardTitle>
       <div>
         {originList.map((o) => (
           <Btn
             key={o.id}
             testId={`rebirth-origin-${o.id.replace("origin.", "")}`}
-            primary={originId === o.id}
+            sel={originId === o.id}
             onClick={() => setOriginId(o.id)}
           >
             {o.name}

@@ -30,6 +30,7 @@ import {
   type FateChoice,
 } from "./game.js";
 import { css, type Act, type Push, type Screen } from "./ui.js";
+import { theme } from "./theme.js";
 import { TitleScreen } from "./screens/title.js";
 import { MenuScreen } from "./screens/menu.js";
 import { BookScreen, SleepScreen, StatusScreen, TrainScreen } from "./screens/town.js";
@@ -231,20 +232,23 @@ export function App() {
   return (
     <main style={css.app} data-testid="app">
       <StatusHeader state={state} />
-      <ScreenView
-        state={state}
-        screen={screen}
-        setScreen={setScreen}
-        act={act}
-        push={push}
-        reset={() => setState(null)}
-        onRetire={retire}
-        onBorn={born}
-        onChooseWay={chooseWay}
-        onHeirBorn={heirBorn}
-      />
+      {/* 画面切り替えのフェード（screen.name で remount して毎回アニメーションさせる） */}
+      <div key={screen.name} className="screen-fade">
+        <ScreenView
+          state={state}
+          screen={screen}
+          setScreen={setScreen}
+          act={act}
+          push={push}
+          reset={() => setState(null)}
+          onRetire={retire}
+          onBorn={born}
+          onChooseWay={chooseWay}
+          onHeirBorn={heirBorn}
+        />
+      </div>
       <section
-        style={{ ...css.panel, ...css.log }}
+        style={{ ...css.panel, ...css.panelInset, ...css.log }}
         data-testid="log"
         ref={logRef}
         aria-live="polite"
@@ -264,20 +268,30 @@ function StatusHeader({ state }: { state: GameState }) {
   const left = Math.max(0, cfg.time.actionsPerDay - state.time.action);
   const winds = state.today.winds.map((w) => w.label).join(" ／ ");
   return (
-    <header style={{ ...css.panel, ...css.dim }} data-testid="status">
-      {tpl(t.text.menuHeader, {
-        year: d.year + 1,
-        season: t.display.seasonNames[d.season] ?? "?",
-        day: d.dayOfSeason + 1,
-        weekday: t.display.weekdayNames[d.weekday] ?? "?",
-        timeOfDay: t.display.timeOfDayNames[d.timeOfDay] ?? "?",
-        age: d.age,
-        fatigue: Math.round(state.player.fatigue),
-        money: state.player.money,
-      })}
-      {state.player.overwork.active && <span style={{ color: "#d5736a" }}> ［過労］</span>}
-      <div>{winds ? tpl(t.text.menuWinds, { winds }) : t.text.menuNoWind}</div>
-      <div>{tpl(t.text.menuActionsLeft, { left, max: cfg.time.actionsPerDay })}</div>
+    <header
+      style={{ ...css.panel, padding: "10px 18px" }}
+      className="screen-fade"
+      data-testid="status"
+    >
+      <div style={{ fontWeight: 800, color: theme.colors.navy, fontSize: 15 }}>
+        {tpl(t.text.menuHeader, {
+          year: d.year + 1,
+          season: t.display.seasonNames[d.season] ?? "?",
+          day: d.dayOfSeason + 1,
+          weekday: t.display.weekdayNames[d.weekday] ?? "?",
+          timeOfDay: t.display.timeOfDayNames[d.timeOfDay] ?? "?",
+          age: d.age,
+          fatigue: Math.round(state.player.fatigue),
+          money: state.player.money,
+        })}
+        {state.player.overwork.active && <span style={{ color: theme.colors.bad }}> ［過労］</span>}
+      </div>
+      <div style={{ ...css.dim, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <span>{winds ? tpl(t.text.menuWinds, { winds }) : t.text.menuNoWind}</span>
+        <span style={{ fontWeight: 800, color: left > 0 ? theme.colors.good : theme.colors.bad }}>
+          {tpl(t.text.menuActionsLeft, { left, max: cfg.time.actionsPerDay })}
+        </span>
+      </div>
     </header>
   );
 }
