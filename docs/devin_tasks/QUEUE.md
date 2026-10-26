@@ -67,3 +67,10 @@
 | T-46 | [T-46_vows.md](T-46_vows.md) | T-45 | done | 誓約（難度修飾子5個＋称号） |
 | T-47 | [T-47_rivals.md](T-47_rivals.md) | T-38 | done | ライバル・ランキング（簡易版） |
 | T-48 | [T-48_heir.md](T-48_heir.md) | T-39, T-40 | done | 子・弟子への継承延長（同じ世界） |
+
+## 整理タスク
+
+| ID | 票 | 依存 | 状態 | 内容 |
+|---|---|---|---|---|
+| X-2 | [X-2_app_split.md](X-2_app_split.md) | ― | done | App.tsx を画面単位で分割（純粋リファクタ。screens/＋ui.tsx 新設） |
+| X-3 | [X-3_cli_combat_split.md](X-3_cli_combat_split.md) | ― | done | cli/game.ts から戦闘・深層対話ループを combat.ts に切り出し（純粋リファクタ） |
