@@ -28,6 +28,7 @@ import {
   minigameResult,
   narrator,
   newSession,
+  originList,
   offerName,
   orderList,
   playCombatTurn,
@@ -186,8 +187,8 @@ export function App() {
     [push],
   );
 
-  const startNew = () => {
-    const s = newSession();
+  const startNew = (originId?: string) => {
+    const s = newSession(originId);
     saveGame(s);
     setState(s);
     setLog([t.text.banner, "", t.text.intro]);
@@ -200,9 +201,17 @@ export function App() {
       <main style={css.app} data-testid="app">
         <h1 style={{ color: theme.colors.accent }}>TRACE</h1>
         <p style={css.sys}>{t.text.intro}</p>
-        <Btn primary testId="btn-new" onClick={startNew}>
-          {t.text.choiceNew}
-        </Btn>
+        <p style={css.sys}>{t.text.originPick}</p>
+        {originList.map((o) => (
+          <Btn
+            key={o.id}
+            testId={`origin-${o.id.replace("origin.", "")}`}
+            onClick={() => startNew(o.id)}
+          >
+            {o.name}
+            <span style={{ color: theme.colors.textDim, fontSize: 12 }}> ― {o.desc}</span>
+          </Btn>
+        ))}
       </main>
     );
   }

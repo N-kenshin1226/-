@@ -1,4 +1,5 @@
 import { evaluate, type Cond } from "./conditions/index.js";
+import { activeEffects, gainModifier, priceFactor, type Effect } from "./effects/index.js";
 import { subscribers, type ActionEvent } from "./events/index.js";
 import {
   applyActionLoad,
@@ -41,7 +42,7 @@ export interface StepConfig {
   /** 見聞録（07 §3。content/lore のアトムとつながり定義） */
   lore: LoreConfig;
   /** 称号の定義（content/titles.json。core が必要とする最小形） */
-  titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond }[];
+  titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond; effect?: Effect }[];
   /** 起床ログなどに出すスキル表示名（省略時はID） */
   skillNames?: Record<string, string>;
 }
@@ -204,6 +205,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           potential: skill.potential,
           fatigue: next.player.fatigue,
           wind: windFor(next, "train", command.skill),
+          modifiers: gainModifier(
+            activeEffects(next, cfg.titles, cfg.society.professions),
+            "train",
+            command.skill,
+          ),
           failed: command.failed,
           isTraining: true,
         },
@@ -239,6 +245,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const skill = next.player.skills[command.kind];
       const skillValue = skill?.value ?? 0;
       const repeats = recentRepeats(next.actionLog, "work", command.kind, cfg.gain.noveltyWindow);
+      // 称号・認定職の効果（T-35）：M 項の修正と報酬の値段変化
+      const effects = activeEffects(next, cfg.titles, cfg.society.professions);
       const { amount } = computeGain(
         {
           kind: "work",
@@ -248,7 +256,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           potential: skill?.potential ?? 0,
           fatigue: next.player.fatigue,
           wind: windFor(next, "work", command.kind),
-          ...(command.expFactor !== undefined ? { modifiers: command.expFactor } : {}),
+          modifiers: (command.expFactor ?? 1) * gainModifier(effects, "work", command.kind),
         },
         cfg.gain,
       );
@@ -270,8 +278,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (recorded.tierUp) {
         events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
       }
-      // 報酬が入る（注文の約定額があればそれ、無ければ市場価値）
-      const pay = Math.max(0, command.rewardMoney ?? recorded.work.marketValue);
+      // 報酬が入る（注文の約定額があればそれ、無ければ市場価値。認定の値段変化を乗せる）
+      const pay = Math.max(
+        0,
+        Math.round(
+          (command.rewardMoney ?? recorded.work.marketValue) * priceFactor(effects, command.kind),
+        ),
+      );
       next = {
         ...next,
         player: { ...next.player, money: next.player.money + pay },
@@ -288,6 +301,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         command.enemyId,
         cfg.gain.noveltyWindow,
       );
+      const effects = activeEffects(next, cfg.titles, cfg.society.professions);
       for (const skillId of ["swordplay", "evasion"] as const) {
         const skill = sks[skillId];
         if (!skill) continue;
@@ -300,6 +314,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             potential: skill.potential,
             fatigue: next.player.fatigue,
             wind: windFor(next, "combat", skillId),
+            modifiers: gainModifier(effects, "combat", skillId, command.enemyId),
             failed: !command.won,
           },
           cfg.gain,

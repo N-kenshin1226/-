@@ -240,4 +240,38 @@ describe("人生目標", () => {
     s = run(s, { type: "declareGoal", id: "goal.far" }, cfg).state;
     expect(s.society.goal).toBe("goal.far");
   });
+
+  it("打診の受諾は society.offer.<id> カウンタを進め、立場系の目標が達成できる", () => {
+    const cfg = base();
+    cfg.society = {
+      ...cfg.society,
+      lifeGoals: [
+        ...cfg.society.lifeGoals,
+        {
+          id: "goal.citizen",
+          name: "市民になる",
+          condition: { counter: "society.offer.citizen", gte: 1 },
+          reward: { pendingBySkill: { eloquence: 4 } },
+        },
+      ],
+    };
+    let s = newGame("s", "t", { skillIds: SKILL_IDS, initialPotential: 100, initialStatValue: 10 });
+    s = run(s, { type: "declareGoal", id: "goal.citizen" }, cfg).state;
+
+    // 3日眠る → 市民の打診が来るが、受諾するまでは目標は未達成
+    for (let i = 0; i < 3; i++) {
+      s = step(s, { type: "sleep", inn: "normal", dinner: false }, cfg).state;
+    }
+    expect(s.society.pendingOffers).toContain("citizen");
+    expect(s.counters["society.offer.citizen"] ?? 0).toBe(0);
+    expect(s.society.achievedGoals).toHaveLength(0);
+
+    // 受諾するとカウンタが進み、同じステップで宣言目標が達成される
+    const r = run(s, { type: "acceptOffer", id: "citizen" }, cfg);
+    expect(r.state.counters["society.offer.citizen"]).toBe(1);
+    expect(r.events.some((e) => e.type === "goalAchieved" && e.id === "goal.citizen")).toBe(true);
+    expect(r.state.society.achievedGoals).toContain("goal.citizen");
+    // eloquence の pending に 4 × goalRewardFactor が入る
+    expect(r.state.player.skills.eloquence!.pending).toBeCloseTo(4 * 1.5, 6);
+  });
 });

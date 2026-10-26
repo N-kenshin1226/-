@@ -16,7 +16,9 @@
   "player": {
     "initialPotential": 100,
     "initialStatValue": 10,
-    "initialMoney": 40
+    "initialMoney": 40,
+    "potentialInitMin": 80,
+    "potentialInitMax": 130
   },
   "gain": {
     "base": {

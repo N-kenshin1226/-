@@ -119,11 +119,43 @@ describe("newGame", () => {
       peak: 0,
       pending: 0,
       potential: 100,
+      potentialCap: 100,
       lastUsedDay: 0,
     });
     expect(g.player.stats.strength).toBe(10);
     expect(g.player.fatigue).toBe(0);
     expect(g.version).toBe(SAVE_VERSION);
+  });
+
+  it("出自を渡すと素質が 80〜130 に散り、potentialCap が初期値になる", () => {
+    const mk = () =>
+      newGame("seed-origin", "出自", {
+        ...newGameCfg,
+        origin: {
+          id: "origin.smith_child",
+          potentialBase: 90,
+          affinity: { swordplay: 30 },
+        },
+        potentialInitMin: 80,
+        potentialInitMax: 130,
+      });
+    const g = mk();
+    expect(g.player.origin).toBe("origin.smith_child");
+    for (const s of Object.values(g.player.skills)) {
+      expect(s.potential).toBeGreaterThanOrEqual(80);
+      expect(s.potential).toBeLessThanOrEqual(130);
+      expect(s.potentialCap).toBe(s.potential);
+    }
+    // 同じシードでは同じ素質分布（決定論）
+    expect(JSON.stringify(mk().player.skills)).toBe(JSON.stringify(g.player.skills));
+    // 出自が違えば分布も変わりうる（少なくとも affinity で差が出る）
+    const h = newGame("seed-origin", "出自", {
+      ...newGameCfg,
+      origin: { id: "origin.hunter_child", potentialBase: 95, affinity: {} },
+      potentialInitMin: 80,
+      potentialInitMax: 130,
+    });
+    expect(h.player.origin).toBe("origin.hunter_child");
   });
 });
 
@@ -209,6 +241,23 @@ describe("save", () => {
     expect(restored.today).toEqual({ winds: [], loads: 0 });
     expect(restored.player.load.strength).toBe(0);
     expect(restored.player.overwork).toEqual({ streakDays: 0, active: false });
+  });
+
+  it("version 9 のセーブは出自・potentialCap を補って version 10 へ移行される", () => {
+    const g = newGame("seed-10", "移行3", newGameCfg);
+    const v9 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v9["version"] = 9;
+    const p = v9["player"] as Record<string, unknown>;
+    delete p["origin"];
+    for (const s of Object.values(p["skills"] as Record<string, Record<string, unknown>>)) {
+      delete s["potentialCap"];
+    }
+    const restored = deserialize(JSON.stringify(v9));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.player.origin).toBe("origin.wanderer");
+    for (const s of Object.values(restored.player.skills)) {
+      expect(s.potentialCap).toBe(100);
+    }
   });
 
   it("未知のバージョンは拒否する", () => {

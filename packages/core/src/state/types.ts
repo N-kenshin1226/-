@@ -32,12 +32,16 @@ export interface SkillState {
   pending: number;
   /** 素質（学習効率 %。上達で下がり、休養・師匠・書物で回復） */
   potential: number;
+  /** 素質の回復上限（= 初期値。出自由来で 80〜130、v10〜） */
+  potentialCap: number;
   /** 最後に使った日（錆の判定用） */
   lastUsedDay: number;
 }
 
 export interface PlayerState {
   name: string;
+  /** 出自（origins.json の id。素質の初期値に幅を持たせる。v10〜） */
+  origin: string;
   skills: Record<SkillId, SkillState>;
   stats: Record<StatId, number>;
   /** 基礎能力への負荷。睡眠時に stats へ定着する（超回復） */

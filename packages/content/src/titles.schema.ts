@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { condSchema } from "./conditions.schema.js";
+import { effectSchema } from "./effects.schema.js";
 
 /** packages/content/titles.json。docs/03 §7 の称号定義 */
 export const titleSchema = z
@@ -13,8 +14,8 @@ export const titleSchema = z
     /** 成長シミュレーションの到達性検査の対象か。訓練系ボットでは到達できない条件（戦闘・台帳など）なら false */
     simReachable: z.boolean().optional(),
     condition: condSchema,
-    /** 効果（M1 で gain の M 項へ接続。今はデータとして保持するだけ） */
-    effect: z.record(z.string(), z.unknown()),
+    /** 効果（T-35：gain の M 項・与ダメージ・報酬に接続。語彙は effects.schema.ts） */
+    effect: effectSchema,
     /** システムメッセージ書式：「――」「《》」（AGENTS.md 文体） */
     message: z
       .string()

@@ -29,7 +29,9 @@ import {
   type TimingState,
 } from "@trace/core";
 import {
+  activeEffects,
   createRng,
+  damageFactor,
   startCombat,
   telegraphLines,
   TemplateProvider,
@@ -43,6 +45,7 @@ import {
   enemies,
   enemiesByArea,
   orders,
+  origins,
   skills,
   society,
   titles,
@@ -129,9 +132,24 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     }
   }
   if (!state) {
+    // 出自を選ぶ（素質の初期値 80〜130 に幅が出る。02：出自）
+    out(t.text.originPick);
+    origins.origins.forEach((o, i) =>
+      out(tpl(t.text.originLine, { index: i + 1, name: o.name, desc: o.desc })),
+    );
+    const oa = await ask(t.text.promptChoice);
+    const oi = Math.max(
+      0,
+      Math.min(origins.origins.length - 1, (parseInt(oa ?? "1", 10) || 1) - 1),
+    );
+    const origin = origins.origins[oi]!;
+    out(tpl(t.text.originChosen, { name: origin.name }));
     state = newGame(seed, t.text.playerName, {
       skillIds: skillList.map((s) => s.id),
       initialPotential: balance.player.initialPotential,
+      origin,
+      potentialInitMin: balance.player.potentialInitMin,
+      potentialInitMax: balance.player.potentialInitMax,
       initialStatValue: balance.player.initialStatValue,
       initialMoney: balance.player.initialMoney,
     });
@@ -601,7 +619,12 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         skill: 0,
         seed: `${state.seed}-combat-${state.counters["action.combat"] ?? 0}`,
       };
-      let cs = startCombat(enemy, balance.combat, state.player);
+      // 称号・認定職の与ダメージ効果（T-35。例《百狼斬り》の damageVs.wolf）
+      const atkFactor = damageFactor(
+        activeEffects(state, cfg.titles, cfg.society.professions),
+        enemy.id,
+      );
+      let cs = startCombat(enemy, balance.combat, state.player, atkFactor);
       out(tpl(t.text.combatStart, { name: enemy.name }));
       let printed = 0;
       while (!cs.done) {

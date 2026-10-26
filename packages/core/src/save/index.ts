@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -70,6 +70,26 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
     8: (old) => {
       const p = (old.player ?? {}) as Record<string, unknown>;
       return { ...old, version: 9, player: { ...p, money: 0 } };
+    },
+    /**
+     * 9 → 10: 出自（origin）と素質上限（potentialCap）を追加（T-25）。
+     * 旧セーブの出自は流浪人相当の "origin.wanderer"（content のIDと一致させる）、
+     * 素質上限は当時一律100の初期値を踏襲する
+     */
+    9: (old) => {
+      const p = (old.player ?? {}) as Record<string, unknown>;
+      const skills = (p.skills ?? {}) as Record<string, Record<string, unknown>>;
+      return {
+        ...old,
+        version: 10,
+        player: {
+          ...p,
+          origin: "origin.wanderer",
+          skills: Object.fromEntries(
+            Object.entries(skills).map(([id, s]) => [id, { ...s, potentialCap: 100 }]),
+          ),
+        },
+      };
     },
   };
 

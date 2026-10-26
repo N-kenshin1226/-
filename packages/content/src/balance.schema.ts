@@ -34,6 +34,9 @@ export const balanceSchema = z
         initialStatValue: z.number().nonnegative(),
         /** 初期所持金（G） */
         initialMoney: z.number().nonnegative(),
+        /** 出自あり新規ゲーム時の素質ばらつき範囲（02：80〜130%） */
+        potentialInitMin: z.number().positive(),
+        potentialInitMax: z.number().positive(),
       })
       .strict(),
     /** docs/02_growth_system.md §2。core/growth/gain.ts の GainConfig に対応 */

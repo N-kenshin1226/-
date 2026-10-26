@@ -1,5 +1,7 @@
 import {
+  activeEffects,
   computeGain,
+  gainModifier,
   recentRepeats,
   windFor,
   type Command,
@@ -52,6 +54,11 @@ export function expectedTrainGain(
       potential: s.potential,
       fatigue: g.player.fatigue,
       wind: windFor(g, "train", skill),
+      modifiers: gainModifier(
+        activeEffects(g, cfg.titles, cfg.society.professions),
+        "train",
+        skill,
+      ),
       isTraining: true,
     },
     cfg.gain,

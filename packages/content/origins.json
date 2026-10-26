@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "origins": [
+    {
+      "id": "origin.wanderer",
+      "name": "流れてきた孤児",
+      "desc": "素質はまばら。何者でもなかったことが、何者かになる余地を残す",
+      "potentialBase": 100,
+      "affinity": {}
+    },
+    {
+      "id": "origin.smith_child",
+      "name": "鍛冶屋の子",
+      "desc": "槌音の中で育った。腕と目は鍛えられているが、畑違いのことには疎い",
+      "potentialBase": 90,
+      "affinity": { "smithing": 30, "appraisal": 10, "mining": 10 }
+    },
+    {
+      "id": "origin.hunter_child",
+      "name": "猟師の子",
+      "desc": "山で獣の気配を読んで育った。街の仕事には不慣れだが、目は鋭い",
+      "potentialBase": 95,
+      "affinity": { "observation": 25, "fishing": 15 }
+    }
+  ]
+}

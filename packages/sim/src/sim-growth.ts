@@ -1,7 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { skills, titles } from "@trace/content";
+import { skills, society, titles } from "@trace/content";
+import { evaluate } from "@trace/core";
 import { makeSeekerBot, metricBots } from "./bots.js";
 import { simClock, stepConfig } from "./config.js";
 import { atMinutes, runBot, type RunResult } from "./runner.js";
@@ -130,6 +131,28 @@ export function runGrowth(): number {
   );
   if (excluded.length > 0) {
     notes.push(`到達性の対象外（戦闘・台帳など訓練で得られない条件）: ${excluded.join(", ")}`);
+  }
+
+  // 人生目標の到達可能性（T-34）：各ボットの最終状態で条件を評価する。
+  // 宣言の要否は見ず「条件が真になり得るか」を見る。戦闘・仕事・打診・読了系は
+  // 訓練ボットでは満たせないため society.json の simReachable:false で対象外
+  const simGoals = society.lifeGoals.filter((g) => g.simReachable !== false);
+  const goalExcluded = society.lifeGoals.filter((g) => g.simReachable === false).map((g) => g.id);
+  const finals = [...results.values()].map((r) => r.final);
+  finals.push(seekerRun.final);
+  const goalsHit = new Set(
+    simGoals.filter((g) => finals.some((f) => evaluate(g.condition, f, cfg.time))).map((g) => g.id),
+  );
+  const goalsMissing = simGoals.filter((g) => !goalsHit.has(g.id)).map((g) => g.id);
+  ok(
+    "人生目標の到達可能性",
+    `${goalsHit.size}/${simGoals.length} 到達可能（訓練シムの最終状態）${goalsMissing.length ? ` 未到達: ${goalsMissing.join(", ")}` : ""}`,
+    goalsMissing.length === 0,
+  );
+  if (goalExcluded.length > 0) {
+    notes.push(
+      `目標の到達性の対象外（戦闘・仕事・打診・読了など訓練で満たせない条件）: ${goalExcluded.join(", ")}`,
+    );
   }
 
   for (const n of notes) console.log(`  - ${n}`);

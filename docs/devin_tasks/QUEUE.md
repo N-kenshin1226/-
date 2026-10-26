@@ -38,7 +38,7 @@
 | T-22 | [T-22_titles.md](T-22_titles.md) | T-18 | done | 称号20個（B習慣系〜S頂点） |
 | T-23 | [T-23_areas.md](T-23_areas.md) | T-17 | done | 周辺2エリア（近郊の森/旧街道）＋敵5体 |
 | T-24 | [T-24_rust.md](T-24_rust.md) | T-06 | done | 錆：猶予14日→0.1/日低下・床peak×0.7・再習得3倍・脳容量 |
-| T-25 | [T-25_potential.md](T-25_potential.md) | T-08 | pending | 素質の回復（出自80〜130・休養日/師匠/書物） |
+| T-25 | [T-25_potential.md](T-25_potential.md) | T-08 | done | 素質の回復と出自（origins.json・potentialCap・セーブv10） |
 | T-26 | [T-26_books.md](T-26_books.md) | T-04 | pending | 書物（効果・読む行動・入手経路） |
 | T-27 | [T-27_mentors.md](T-27_mentors.md) | T-19, T-33 | pending | 師匠（弟子入り・M項/素質/ヒント効果） |
 | T-28 | [T-28_derived_skills.md](T-28_derived_skills.md) | T-10 | pending | 派生スキル（祖スキル条件で解放） |
@@ -47,5 +47,5 @@
 | T-31 | [T-29_skins.md](T-29_skins.md) | T-12 | done | 盤面皮拡張：鑑定 |
 | T-32 | [T-32_newspaper.md](T-32_newspaper.md) | T-19c | done | 新聞強化（作品・死亡・噂・立場差分） |
 | T-33 | [T-33_voices.md](T-33_voices.md) | T-19b | done | voices.json（NPC3人×立場の口調差分） |
-| T-34 | [T-34_life_goals.md](T-34_life_goals.md) | T-19 | pending | 人生目標カタログ拡充 |
+| T-34 | [T-34_life_goals.md](T-34_life_goals.md) | T-19 | done | 人生目標15件（society.offerカウンタ・simReachable・sim到達性ゲート） |
 | T-35 | [T-35_effects.md](T-35_effects.md) | T-19, T-22 | pending | 称号・職業の効果をgain/戦闘へ接続 |

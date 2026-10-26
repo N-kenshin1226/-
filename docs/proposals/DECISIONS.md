@@ -14,7 +14,7 @@
 | D-04 | `rest` は家で休む（宿・夕食を選ばない、質は `body.restQuality`=0.9 で固定） | 宿の選択と独立した「休む」概念が欲しいため。宿屋で休養日を取ることはできない | `balance.json` の値か、`rest` に inn/dinner を許可する形に変える | 要確認 |
 | D-05 | 基礎能力の負荷プールは翌日に持ち越さない（スキル pending の持ち越しと非対称） | 身体は「その日動いた分」だけ回復する、という保守的解釈 | `body.ts` の `consolidateBody` で load のクリア方法を変える | 要確認 |
 | D-06 | 条件 `within` は「直近N日に kind(×target) の行動が atLeast 回」に限定 | 汎用の「過去にcondが真」は履歴がない。actionLog ベースの具体形にした | `conditions/index.ts` の `within` 評価部を拡張する | 仮 |
-| D-07 | 称号の `effect` はまだ gain の M 項に接続しない（データ保持のみ） | 効果の語彙が未確定。M1 で接続時に zod を具体化する | `titles.json` の effect と `step.ts` の M 項計算を接続する | 仮 |
+| D-07 | 称号・認定職の `effect` を gain の M 項・与ダメージ・仕事報酬に接続済み（T-35）。語彙は `effects.schema.ts`（gainVs/damageVs/priceVs/note）で、効果の積は `effects/index.ts` | M1 接続時の約束どおり zod で具体化して接続 | `packages/core/src/effects/` と `step.ts` の M 項計算 | 仮 |
 | D-08 | 条件の矛盾検査は「and 内の数値範囲の交差」のみ | 完全な到達可能性は T-09 のボットで担保する。not の内部は追わない | `conditions/check.ts` を拡張する | 仮 |
 | D-09 | 素質の回復上限は `potentialMax`=100（balance 管理） | 出自による 80〜130 の幅は M2 で実装予定。今は一律100 | `balance.json` の `body.potentialMax` | 仮 |
 | D-10 | 怪我リスクの上昇（オーバーワーク中）は未実装 | 怪我システム自体が仕様未策定 | 怪我の仕様が決まったら `body.ts` に追加 | 要確認 |
@@ -45,3 +45,14 @@
 
 ### D-24: 新聞の死亡言及は「死亡歴>0」の通算カウンタで判断（T-32）
 - GameState を変えず「昨日死んだか」は判定できないため、通算 death.count>0 の日に death 行をプールへ混入する代替。死亡直後だけ強く出したい場合は counters に `death.lastDay` 等が必要
+
+### D-25: 出自による初期素質は base±15 の個人差＋affinity で 80〜130 にクランプ（T-25）
+- 仕様の「80〜130%の幅」を「出自の基準値＋個人差±15＋得意分野affinity」の合成にした
+- 回復上限は一律100ではなく「そのスキルの初期値」（potentialCap）。高素質スタートほど伸びしろが大きい
+- 旧セーブは origin=origin.wanderer・potentialCap=100 に移行（当時の一律初期値を踏襲）
+
+### D-26: 目標の差し替えペナルティは「取り下げた日は再宣言不可（翌日冷却）」を仮案として保留（T-34）
+- 仕様は「途中で変えてもよい（ペナルティは軽い）」（03 §1）とだけあり、軽さの中身は未定義
+- 仮案：abandonGoal した日は新しい目標を宣言できない。宣言に行動を消費しない設計のまま、変更に「一日待つ」最小の摩擦だけを乗せる
+- 実装は見送り（仕様未策定のため）。実装するなら `counters["goal.lastAbandonDay"]` に冷却開始日を置く方式が GameState 不変で済む（セーブバージョン据置）。`society.goalAbandonedDay` を持たせる方式は要マイグレーション
+- 代替案：ペナルティなし（現状維持）／宣言した目標の「気配」表示だけリセットする演出のみ

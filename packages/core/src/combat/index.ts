@@ -128,10 +128,14 @@ export interface CombatResult {
   ticks: number;
 }
 
-/** プレイヤー側の戦闘数値（stats + スキルから導出） */
+/**
+ * プレイヤー側の戦闘数値（stats + スキルから導出）。
+ * attackFactor は称号などの与ダメージ倍率（effects の damageVs。既定1）
+ */
 export function playerCombatStats(
   player: { stats: Record<string, number>; skills: Record<string, { value: number }> },
   cfg: CombatConfig,
+  attackFactor = 1,
 ): { hp: number; attack: number; ct: number; agility: number; observe: number } {
   const agility = player.stats["agility"] ?? 0;
   return {
@@ -141,6 +145,7 @@ export function playerCombatStats(
         (cfg.attackBase +
           (player.skills["swordplay"]?.value ?? 0) * cfg.attackPerSwordplay +
           (player.stats["strength"] ?? 0) * cfg.attackPerStrength) *
+          attackFactor *
           10,
       ) / 10,
     ct: Math.max(cfg.ctMin, cfg.ctBase - agility * cfg.ctPerAgility),
@@ -153,8 +158,10 @@ export function startCombat(
   enemy: EnemyDef,
   cfg: CombatConfig,
   player: { stats: Record<string, number>; skills: Record<string, { value: number }> },
+  /** 称号などの与ダメージ倍率（effects の damageFactor(enemyId)。既定1） */
+  attackFactor = 1,
 ): CombatState {
-  const p = playerCombatStats(player, cfg);
+  const p = playerCombatStats(player, cfg, attackFactor);
   return {
     tick: 0,
     playerHp: p.hp,

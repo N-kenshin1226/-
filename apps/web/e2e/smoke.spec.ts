@@ -8,7 +8,7 @@ test("トップ画面に TRACE と表示される", async ({ page }) => {
 
 test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ page }) => {
   await page.goto("/?seed=e2e");
-  await page.getByTestId("btn-new").click();
+  await page.getByTestId("origin-wanderer").click();
 
   // 1日目：メニュー→鍛錬→仕事→寝る
   await expect(page.getByTestId("status")).toContainText("所持金");

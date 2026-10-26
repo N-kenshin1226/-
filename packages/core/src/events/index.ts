@@ -48,7 +48,7 @@ export type ActionEvent =
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
 
-/** カウンタを数える購読者（`action.<kind>`、`action.total`、`days.slept`） */
+/** カウンタを数える購読者（`action.<kind>`、`action.total`、`days.slept`、`title.total`、`society.offer.<id>`） */
 export const counterSubscriber: Subscriber = (state, event) => {
   switch (event.type) {
     case "actionPerformed": {
@@ -72,6 +72,14 @@ export const counterSubscriber: Subscriber = (state, event) => {
       return {
         ...state,
         counters: { ...state.counters, "title.total": (state.counters["title.total"] ?? 0) + 1 },
+      };
+    }
+    case "offerAccepted": {
+      // 認定の受諾を数える（立場・職業への到達を条件DSLから読めるようにする。T-34）
+      const key = `society.offer.${event.id}`;
+      return {
+        ...state,
+        counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
       };
     }
     default:

@@ -28,6 +28,7 @@ describe("playCli", () => {
   it("3日分を通して遊べる（起床ログが3回出る）", async () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
+      "1", // 出自：流れてきた孤児
       ...threeDays([
         ["2", "y"],
         ["1", "n"],
@@ -50,7 +51,7 @@ describe("playCli", () => {
   it("セーブとロードで続きから遊べる", async () => {
     const savePath = tmpSave();
     // 1日目を遊んで寝る（自動セーブ）
-    const first = scriptedIo(["1", "1", "", "5", "1", "y", "q"]);
+    const first = scriptedIo(["1", "1", "1", "", "5", "1", "y", "q"]);
     const s1 = await playCli({ io: first.io, savePath, seed: SEED });
     expect(s1!.time.day).toBe(1);
 
@@ -68,6 +69,7 @@ describe("playCli", () => {
   it("仕事（簡易判定）で作品が台帳に残る", async () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
+      "1", // 出自
       "2", // 仕事
       "1", // 《釘の束》
       "n", // 簡易判定
@@ -88,6 +90,7 @@ describe("playCli", () => {
   it("起床ログの表示（スナップショット）", async () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
+      "1", // 出自
       "1",
       "1",
       "", // 《剣術》を推奨難度で
@@ -113,7 +116,7 @@ describe("T-23 狩りメニュー（エリア別）", () => {
   it("エリア見出しつきで敵が列挙され、通し番号で選べる", async () => {
     const savePath = tmpSave();
     // 「3) 狩り」→ 一覧 → 「4) 追い剥ぎ」（旧街道側）で戦闘開始 → EOFで中断
-    const { io, output } = scriptedIo(["3", "4"]);
+    const { io, output } = scriptedIo(["1", "3", "4"]); // 出自→狩り;
     const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
     const text = output.join("\n");
 
@@ -138,7 +141,7 @@ describe("T-20 街のプレイループ", () => {
       if (day === 3) lines.push("6", ""); // 目標と認定（目標の宣言を見る）
       lines.push("5", "1", "y"); // 寝る（安い宿・夕食あり）
     }
-    const { io, output } = scriptedIo([...lines, "q"]);
+    const { io, output } = scriptedIo(["1", ...lines, "q"]); // 出自→1週間;
     const state = await playCli({ io, savePath, seed: "town-week", delay: async () => {} });
     const text = output.join("\n");
 
@@ -160,6 +163,7 @@ describe("M2 新しい皮の仕事フロー", () => {
     expect(idx).toBeGreaterThan(0);
     const beats = balance.minigame.fishing.beats;
     const { io, output } = scriptedIo([
+      "1", // 出自
       "2", // 仕事
       String(idx), // 《荒れ川の大物》
       "y", // 手動で挑む
@@ -184,7 +188,7 @@ describe("M2 新しい皮の仕事フロー", () => {
     const cells = appraisalGame(balance.minigame.appraisal)
       .autoplay({ skill: 0, seed: SEED })
       .map((i) => `${i.x + 1},${i.y + 1}`);
-    const { io, output } = scriptedIo(["2", String(idx), "y", ...cells, "q"]);
+    const { io, output } = scriptedIo(["1", "2", String(idx), "y", ...cells, "q"]);
     const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
     const text = output.join("\n");
 

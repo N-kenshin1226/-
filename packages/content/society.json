@@ -31,12 +31,20 @@
       "id": "smith",
       "name": "鍛冶師",
       "condition": { "work": { "kind": "smithing", "tierGte": 2 } },
+      "effect": {
+        "gainVs": { "smithing": 1.1 },
+        "priceVs": { "smithing": 1.1 }
+      },
       "note": "武器・道具を作る職人"
     },
     {
       "id": "miner",
       "name": "採掘師",
       "condition": { "work": { "kind": "mining", "tierGte": 2 } },
+      "effect": {
+        "gainVs": { "mining": 1.1 },
+        "priceVs": { "mining": 1.1 }
+      },
       "note": "鉱石を掘る者"
     }
   ],
@@ -46,6 +54,7 @@
       "name": "最初の作品を作る",
       "condition": { "counter": "action.work", "gte": 1 },
       "reward": { "pendingBySkill": { "smithing": 2 } },
+      "simReachable": false,
       "note": "仕事を1回こなす"
     },
     {
@@ -55,16 +64,115 @@
       "reward": { "pendingBySkill": { "swordplay": 4 } }
     },
     {
+      "id": "goal.smith_30",
+      "name": "鍛冶を30にする",
+      "condition": { "skill": "smithing", "gte": 30 },
+      "reward": { "pendingBySkill": { "smithing": 6 } },
+      "simReachable": false,
+      "note": "槌の冴えが認められる域へ"
+    },
+    {
+      "id": "goal.forge_best3",
+      "name": "鍛冶の作品でティア3に届く",
+      "condition": { "work": { "kind": "smithing", "tierGte": 3 } },
+      "reward": { "pendingBySkill": { "smithing": 8 } },
+      "simReachable": false,
+      "note": "同じ技の自己ベストを三度更新する"
+    },
+    {
+      "id": "goal.body_endurance",
+      "name": "持久を20にする",
+      "condition": { "stat": "endurance", "gte": 20 },
+      "reward": { "pendingBySkill": { "evasion": 5 } },
+      "note": "倒れにくい身体を作る"
+    },
+    {
       "id": "goal.month",
       "name": "この街で1ヶ月生きる",
       "condition": { "counter": "days.slept", "gte": 30 },
       "reward": { "pendingBySkill": { "observation": 5 } }
     },
     {
+      "id": "goal.citizen",
+      "name": "この街の市民になる",
+      "condition": { "counter": "society.offer.citizen", "gte": 1 },
+      "reward": { "pendingBySkill": { "eloquence": 6 } },
+      "simReachable": false,
+      "note": "打診を受けて街に籍を置く"
+    },
+    {
+      "id": "goal.smith_cert",
+      "name": "鍛冶師の認定を受ける",
+      "condition": { "counter": "society.offer.smith", "gte": 1 },
+      "reward": { "pendingBySkill": { "smithing": 8 } },
+      "simReachable": false,
+      "note": "職業の打診を受けて名乗る"
+    },
+    {
+      "id": "goal.adventurer",
+      "name": "冒険者になる",
+      "condition": { "counter": "society.offer.adventurer", "gte": 1 },
+      "reward": { "pendingBySkill": { "swordplay": 6, "evasion": 6 } },
+      "simReachable": false,
+      "note": "危険な仕事を引き受ける立場へ"
+    },
+    {
       "id": "goal.first_hunt",
       "name": "狼を1頭狩る",
       "condition": { "counter": "kill.species.wolf", "gte": 1 },
-      "reward": { "pendingBySkill": { "swordplay": 3, "evasion": 2 } }
+      "reward": { "pendingBySkill": { "swordplay": 3, "evasion": 2 } },
+      "simReachable": false
+    },
+    {
+      "id": "goal.forest_clear",
+      "name": "森の獣をすべて狩る",
+      "condition": {
+        "and": [
+          { "counter": "kill.species.stray_dog", "gte": 1 },
+          { "counter": "kill.species.wolf", "gte": 1 },
+          { "counter": "kill.species.boar", "gte": 1 }
+        ]
+      },
+      "reward": { "pendingBySkill": { "swordplay": 8, "observation": 4 } },
+      "simReachable": false,
+      "note": "野犬・狼・猪。森の三種を制する"
+    },
+    {
+      "id": "goal.highway_threat",
+      "name": "街道の脅威を断つ",
+      "condition": {
+        "or": [
+          { "counter": "kill.species.bandit", "gte": 1 },
+          { "counter": "kill.species.deserter", "gte": 1 }
+        ]
+      },
+      "reward": { "pendingBySkill": { "swordplay": 8, "evasion": 6 } },
+      "simReachable": false,
+      "note": "追い剥ぎか脱走兵か。人の敵を一つ退ける"
+    },
+    {
+      "id": "goal.ledger_10",
+      "name": "台帳に10件の記録を残す",
+      "condition": { "work": { "count": { "atLeast": 10 } } },
+      "reward": { "pendingBySkill": { "observation": 8 } },
+      "simReachable": false,
+      "note": "仕事の記録が積み上がる"
+    },
+    {
+      "id": "goal.read_3",
+      "name": "見聞のアトムを3篇読む",
+      "condition": { "counter": "action.read", "gte": 3 },
+      "reward": { "pendingBySkill": { "observation": 4, "eloquence": 3 } },
+      "simReachable": false,
+      "note": "この街のことを記録で知る"
+    },
+    {
+      "id": "goal.old_forge",
+      "name": "旧鍛冶場の記録にたどり着く",
+      "condition": { "flag": "found.old_forge" },
+      "reward": { "pendingBySkill": { "observation": 5, "smithing": 3 } },
+      "simReachable": false,
+      "note": "大火を生き延びた場所の記録を読む"
     }
   ]
 }

@@ -15,6 +15,7 @@ import { enemiesFileSchema } from "./enemies.schema.js";
 import { societyFileSchema } from "./society.schema.js";
 import { narrationSchema } from "./narration.schema.js";
 import { voicesFileSchema } from "./voices.schema.js";
+import { originsFileSchema } from "./origins.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -52,6 +53,7 @@ check("society.json", societyFileSchema);
 check("text/cli.json", cliTextSchema);
 check("text/narration.json", narrationSchema);
 check("voices.json", voicesFileSchema);
+check("origins.json", originsFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ
@@ -83,6 +85,32 @@ try {
   }
 } catch (e) {
   console.error(`✗ 立場キーの突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// スキルキーの突き合わせ：origins.json の affinity は skills.json の id に存在するものだけ
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const originsRaw = JSON.parse(readFileSync(join(root, "origins.json"), "utf8")) as {
+    origins?: { id?: string; affinity?: Record<string, unknown> }[];
+  };
+  const bad: string[] = [];
+  for (const o of originsRaw.origins ?? []) {
+    for (const key of Object.keys(o.affinity ?? {})) {
+      if (!skillIds.has(key)) bad.push(`origins.json ${o.id ?? "?"}: スキル ${key}`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ affinity キーが skills.json に無い: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ affinity キー（origins ↔ skills）");
+  }
+} catch (e) {
+  console.error(`✗ affinity キーの突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

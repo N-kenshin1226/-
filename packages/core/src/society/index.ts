@@ -1,4 +1,5 @@
 import { evaluate, type Cond } from "../conditions/index.js";
+import type { Effect } from "../effects/index.js";
 import type { GameState } from "../state/types.js";
 import type { TimeConfig } from "../time/index.js";
 
@@ -25,6 +26,8 @@ export interface ProfessionDef {
   id: string;
   name: string;
   condition: Cond;
+  /** 認定の効果（T-35：対応スキルの経験係数・報酬の値段変化。03 §1） */
+  effect?: Effect;
   note?: string;
 }
 
@@ -34,6 +37,8 @@ export interface LifeGoalDef {
   condition: Cond;
   /** 達成報酬：指定スキルの pending に加える */
   reward: { pendingBySkill?: Record<string, number> };
+  /** 成長シミュレーションの到達性検査の対象か。訓練系ボットでは満たせない条件（戦闘・仕事・打診・読了など）なら false */
+  simReachable?: boolean;
   note?: string;
 }
 
@@ -110,6 +115,10 @@ export function suggestGoals(state: GameState, defs: SocietyDefs, n: number): Li
   return scored.slice(0, n).map((s) => s.g);
 }
 
+/**
+ * 目標への「近さ」を 0〜1+ で採点する（数値条件は現在値/目標値の割合）。
+ * 近さを測れない条件（not や省略比較）は 0 にし、提案の下位に置く
+ */
 function closeness(cond: Cond, state: GameState): number {
   if ("counter" in cond) {
     const t = cond.gte ?? cond.eq;
@@ -118,6 +127,40 @@ function closeness(cond: Cond, state: GameState): number {
   if ("skill" in cond) {
     const t = cond.gte ?? cond.eq;
     return t ? (state.player.skills[cond.skill]?.value ?? 0) / t : 0;
+  }
+  if ("stat" in cond) {
+    const t = cond.gte ?? cond.eq;
+    return t ? state.player.stats[cond.stat] / t : 0;
+  }
+  if ("flag" in cond) {
+    return (state.flags[cond.flag] ?? false) === (cond.eq ?? true) ? 1 : 0;
+  }
+  if ("work" in cond) {
+    const w = cond.work;
+    const ws = state.ledger.filter((x) => w.kind === undefined || x.kind === w.kind);
+    let best = 0;
+    if (w.count) best = Math.max(best, ws.length / w.count.atLeast);
+    if (w.tierGte !== undefined) {
+      const tier = ws.reduce((m, x) => Math.max(m, x.tier), 0);
+      best = Math.max(best, tier / w.tierGte);
+    }
+    if (w.kind === undefined && w.tierGte === undefined && !w.count) {
+      best = ws.length > 0 ? 1 : 0;
+    }
+    return best;
+  }
+  if ("within" in cond) {
+    const w = cond.within;
+    const cutoff = state.time.day - w.days + 1;
+    const n = state.actionLog.filter(
+      (e) =>
+        e.day >= cutoff && e.kind === w.kind && (w.target === undefined || e.target === w.target),
+    ).length;
+    return n / w.atLeast;
+  }
+  if ("time" in cond) {
+    const t = cond.time.day?.gte ?? cond.time.day?.eq;
+    return t ? state.time.day / t : 0;
   }
   if ("and" in cond) return cond.and.reduce((m, c) => Math.min(m, closeness(c, state)), 1);
   if ("or" in cond) return cond.or.reduce((m, c) => Math.max(m, closeness(c, state)), 0);

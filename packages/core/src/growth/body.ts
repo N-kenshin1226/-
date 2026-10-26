@@ -117,7 +117,15 @@ export function consolidateBody(
     skills = Object.fromEntries(
       Object.entries(skills).map(([id, s]) => [
         id,
-        { ...s, potential: Math.min(cfg.potentialMax, s.potential + cfg.restPotentialRecover) },
+        {
+          ...s,
+          // 回復上限はそのスキルの初期値（potentialCap）。念のためグローバル上限でも止める
+          potential: Math.min(
+            s.potentialCap,
+            cfg.potentialMax,
+            s.potential + cfg.restPotentialRecover,
+          ),
+        },
       ]),
     );
   }

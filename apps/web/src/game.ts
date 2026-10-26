@@ -3,9 +3,11 @@
  * ルールはすべて core、数値は content、ここでは画面遷移と表示用の整形だけを行う
  */
 import {
+  activeEffects,
   appraisalGame,
   canAct,
   createRng,
+  damageFactor,
   deserialize,
   fishingGame,
   miningGame,
@@ -47,6 +49,7 @@ import {
   enemiesByArea,
   narration,
   orders,
+  origins,
   skills,
   society,
   tailwinds,
@@ -87,7 +90,12 @@ export const cfg: StepConfig = {
       .filter((e) => e.reward !== null)
       .map((e) => ({ eventId: e.id, facts: e.reward!.facts, flag: e.reward!.flag })),
   },
-  titles: titles.titles.map((x) => ({ id: x.id, rank: x.rank, condition: x.condition })),
+  titles: titles.titles.map((x) => ({
+    id: x.id,
+    rank: x.rank,
+    condition: x.condition,
+    effect: x.effect,
+  })),
   skillNames: Object.fromEntries(skills.skills.map((s) => [s.id, s.name])),
 };
 
@@ -118,16 +126,22 @@ export function resetSave(): void {
 }
 
 /** 新規開始のシード。?seed= で固定できる（e2e・リプレイ用）。それ以外は一意に */
-export function newSession(): GameState {
+export function newSession(originId?: string): GameState {
   const param = new URLSearchParams(window.location.search).get("seed");
   const seed = param ?? `web-${Math.random().toString(36).slice(2, 10)}`;
+  const origin = origins.origins.find((o) => o.id === originId) ?? origins.origins[0]!;
   return newGame(seed, t.text.playerName, {
     skillIds: skills.skills.map((s) => s.id),
     initialPotential: balance.player.initialPotential,
+    origin,
+    potentialInitMin: balance.player.potentialInitMin,
+    potentialInitMax: balance.player.potentialInitMax,
     initialStatValue: balance.player.initialStatValue,
     initialMoney: balance.player.initialMoney,
   });
 }
+
+export const originList = origins.origins;
 
 export { canAct, step };
 
@@ -431,7 +445,9 @@ function combatCtx(state: GameState): MiniGameCtx {
 }
 
 export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
-  return startCombat(toEnemyDef(enemy), cfg.combat, state.player);
+  // 称号・認定職の与ダメージ効果（T-35。例《百狼斬り》の damageVs.wolf）
+  const fx = damageFactor(activeEffects(state, cfg.titles, cfg.society.professions), enemy.id);
+  return startCombat(toEnemyDef(enemy), cfg.combat, state.player, fx);
 }
 
 export function playCombatTurn(

@@ -27,7 +27,12 @@ export function stepConfig(): StepConfig {
       lifeGoals: society.lifeGoals,
       goalRewardFactor: balance.society.goalRewardFactor,
     },
-    titles: titles.titles.map((t) => ({ id: t.id, rank: t.rank, condition: t.condition })),
+    titles: titles.titles.map((t) => ({
+      id: t.id,
+      rank: t.rank,
+      condition: t.condition,
+      effect: t.effect,
+    })),
     skillNames: Object.fromEntries(skills.skills.map((s) => [s.id, s.name])),
     lore: {
       atoms: atoms.map((a) => ({ id: a.id, reveals: a.reveals, unlock: a.unlock })),
