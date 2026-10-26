@@ -35,6 +35,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@trace/content':
+        specifier: workspace:*
+        version: link:../../packages/content
+      '@trace/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -97,6 +103,9 @@ importers:
       '@trace/core':
         specifier: workspace:*
         version: link:../core
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: ^26.6.5

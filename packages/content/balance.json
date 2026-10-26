@@ -15,10 +15,17 @@
   },
   "player": {
     "initialPotential": 100,
-    "initialStatValue": 10
+    "initialStatValue": 10,
+    "initialMoney": 40,
+    "potentialInitMin": 80,
+    "potentialInitMax": 130
   },
   "gain": {
-    "base": { "train": 1.0 },
+    "base": {
+      "train": 3.6,
+      "work": 2.5,
+      "combat": 4.0
+    },
     "challengePoints": [
       [-20, 0.05],
       [0, 1.0],
@@ -30,31 +37,98 @@
     "noveltyWindow": 10,
     "failMultiplier": 0.6,
     "modifierCap": 2.5,
-    "diminishBase": 110,
+    "diminishBase": 170,
     "diminishExponent": 1.5,
     "fatigueScale": 0.8
   },
   "sleep": {
-    "nightlyCapPerSkill": 8.0,
+    "nightlyCapPerSkill": 3.0,
+    "nightlyCapTotal": 1.7,
     "carryoverRatio": 0.5,
-    "innFactors": { "cheap": 0.8, "normal": 1.0, "good": 1.15 },
-    "dinnerFactors": { "withDinner": 1.1, "noDinner": 0.85 },
+    "innFactors": {
+      "cheap": 0.8,
+      "normal": 1.0,
+      "good": 1.5
+    },
+    "dinnerFactors": {
+      "withDinner": 1.1,
+      "noDinner": 0.85
+    },
     "qualityMin": 0.6,
-    "qualityMax": 1.2,
-    "potentialDecayPerPoint": 0.01
+    "qualityMax": 1.8,
+    "potentialDecayPerPoint": 0.005,
+    "innCost": {
+      "cheap": 8,
+      "normal": 15,
+      "good": 30
+    }
   },
   "body": {
-    "fatiguePerAction": { "wait": 1, "train": 6 },
+    "fatiguePerAction": {
+      "wait": 1,
+      "train": 12,
+      "work": 10,
+      "combat": 20,
+      "abyss": 24
+    },
     "fatigueDefaultPerAction": 2,
     "fatigueRecover": 60,
-    "statLoadPerAction": { "train": { "strength": 2, "endurance": 2, "dexterity": 1 } },
+    "statLoadPerAction": {
+      "train": {
+        "strength": 2,
+        "endurance": 2,
+        "dexterity": 2
+      },
+      "work": {
+        "dexterity": 2,
+        "spirit": 1
+      },
+      "combat": {
+        "strength": 2,
+        "endurance": 3,
+        "agility": 2
+      },
+      "abyss": {
+        "strength": 2,
+        "endurance": 3,
+        "agility": 2
+      }
+    },
     "statGainPerLoad": 0.05,
-    "overloadThreshold": 15,
+    "overloadThreshold": 25,
     "overworkStreakDays": 3,
     "overworkConsolidateFactor": 0.5,
     "restQuality": 0.9,
     "restPotentialRecover": 3,
     "potentialMax": 100
+  },
+  "aging": {
+    "lifespanYears": 40,
+    "signWarnAt": 0.7,
+    "signSevereAt": 0.9,
+    "signEveryDays": 28,
+    "bands": [
+      {
+        "upToAge": 24,
+        "statFactor": 1.25,
+        "skillFactor": 1.0
+      },
+      {
+        "upToAge": 39,
+        "statFactor": 1.0,
+        "skillFactor": 1.0
+      },
+      {
+        "upToAge": 54,
+        "statFactor": 0.7,
+        "skillFactor": 1.15
+      },
+      {
+        "upToAge": 999,
+        "statFactor": 0.45,
+        "skillFactor": 1.25
+      }
+    ]
   },
   "tailwind": {
     "tailwindFactor": 1.3,
@@ -64,5 +138,197 @@
     "tailwindBoostK": 0.5,
     "drawMin": 1,
     "drawMax": 2
+  },
+  "sim": {
+    "minutesPerAction": 3,
+    "minutesPerSleep": 1
+  },
+  "ledger": {
+    "basePricePerQuality": 2,
+    "marketWindowDays": 7,
+    "marketDecayPerWork": 0.9,
+    "tierUpBonusPending": 8
+  },
+  "minigame": {
+    "simpleQualityFactor": 0.8,
+    "simpleExpFactor": 0.5,
+    "simpleHistorySize": 5,
+    "smithing": {
+      "beats": 5,
+      "beatIntervalMs": 900,
+      "windowBaseMs": 70,
+      "windowPerSkillMs": 2.0,
+      "qualityBase": 20,
+      "qualityScale": 80,
+      "criticalFlag": "会心",
+      "failBelowScore": 0.4,
+      "failFlag": "失敗作",
+      "unlocks": {
+        "seeTemperatureAt": 20,
+        "seeOrderHintsAt": 40
+      }
+    },
+    "performance": {
+      "beats": 8,
+      "beatIntervalMs": 550,
+      "windowBaseMs": 75,
+      "windowPerSkillMs": 1.6,
+      "qualityBase": 20,
+      "qualityScale": 80,
+      "criticalFlag": "名演",
+      "failBelowScore": 0.5,
+      "failFlag": "演奏失敗",
+      "unlocks": {
+        "seeMeterAt": 20,
+        "seePhraseAt": 40
+      }
+    },
+    "fishing": {
+      "beats": 3,
+      "beatIntervalMs": 1400,
+      "windowBaseMs": 90,
+      "windowPerSkillMs": 2.5,
+      "qualityBase": 10,
+      "qualityScale": 90,
+      "catchMinHits": 1,
+      "criticalFlag": "大物",
+      "escapeFlag": "逃がした"
+    },
+    "mining": {
+      "width": 5,
+      "height": 4,
+      "oreCount": 5,
+      "rockCount": 2,
+      "oreQuality": 20,
+      "hintRadiusBase": 1,
+      "hintRadiusPerSkill": 0.04,
+      "criticalFlag": "会心",
+      "failFlag": "大崩れ"
+    },
+    "appraisal": {
+      "width": 6,
+      "height": 5,
+      "oreCount": 6,
+      "rockCount": 3,
+      "oreQuality": 18,
+      "hintRadiusBase": 1,
+      "hintRadiusPerSkill": 0.05,
+      "missPenaltyFactor": 0.5,
+      "criticalFlag": "真贋看破",
+      "failFlag": "見誤り"
+    },
+    "negotiation": {
+      "topics": [
+        {
+          "id": "price",
+          "name": "値段",
+          "beats": "quality"
+        },
+        {
+          "id": "deadline",
+          "name": "納期",
+          "beats": "price"
+        },
+        {
+          "id": "quality",
+          "name": "品質",
+          "beats": "deadline"
+        }
+      ],
+      "handSizeBase": 3,
+      "handSizePerSkill": 0.05,
+      "previewBase": 1,
+      "previewPerSkill": 0.03,
+      "counterFactor": 2,
+      "hp": 10,
+      "deckSize": 8,
+      "criticalFlag": "会心の口論",
+      "failFlag": "敗北",
+      "counterBlockFactor": 0.4
+    }
+  },
+  "combat": {
+    "baseHp": 30,
+    "hpPerEndurance": 2,
+    "attackBase": 5,
+    "attackPerSwordplay": 0.15,
+    "attackPerStrength": 0.2,
+    "ctBase": 12,
+    "ctPerAgility": 0.15,
+    "ctMin": 6,
+    "defendFactor": 0.5,
+    "fleeBase": 0.7,
+    "fleePerAgility": 0.02,
+    "observeBonus": 20,
+    "preciseObserve": 40,
+    "deathPendingFactor": 0.5,
+    "unique": {
+      "afterKills": 3,
+      "hpFactor": 1.6,
+      "powerFactor": 1.5,
+      "challengeBonus": 10,
+      "agilityBonus": 2
+    }
+  },
+  "society": {
+    "goalRewardFactor": 1.5
+  },
+  "town": {
+    "specialOrderChance": 0.4,
+    "specialOrderExpFactor": 1.5,
+    "specialOrderRewardFactor": 2,
+    "specialOrderQualityFactor": 1.2
+  },
+  "rust": {
+    "graceDays": 14,
+    "ratePerDay": 0.1,
+    "floorFactor": 0.7,
+    "relearnFactor": 3,
+    "capacityThreshold": 300,
+    "capacityGraceMinFactor": 0.25
+  },
+  "legacy": {
+    "potentialFactor": 0.1,
+    "potentialMax": 15,
+    "rememberedMax": 3,
+    "artifactGainFactor": 1.05
+  },
+  "heir": {
+    "potentialFactor": 0.05,
+    "potentialMax": 10
+  },
+  "tendency": {
+    "calm": {},
+    "war": {
+      "enemyHpFactor": 1.15,
+      "enemyPowerFactor": 1.1,
+      "combatGainFactor": 1.25,
+      "innCostFactor": 0.9
+    },
+    "famine": {
+      "enemyPowerFactor": 0.9,
+      "combatGainFactor": 0.9,
+      "rewardFactor": 0.75,
+      "innCostFactor": 1.3,
+      "restPotentialFactor": 0.5
+    }
+  },
+  "abyss": {
+    "baseFactor": 1.0,
+    "growthPerFloor": 0.4,
+    "agilityPerFloor": 0.5,
+    "maxTurns": 20,
+    "poolBase": 16,
+    "poolGrowthPerFloor": 14
+  },
+  "rivals": {
+    "size": 5,
+    "scoreMin": 30,
+    "scoreMax": 220,
+    "growthPerDay": 0.4,
+    "playerQualityWeight": 1.0,
+    "playerTitleWeight": 12,
+    "playerKillWeight": 1.5,
+    "playerAbyssWeight": 6
   }
 }

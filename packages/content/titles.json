@@ -5,8 +5,16 @@
       "name": "鍛冶見習い",
       "rank": "B",
       "hidden": false,
-      "condition": { "skill": "smithing", "gte": 25 },
-      "effect": { "note": "鍛冶の仕事の信頼が少し上がる（M1 で接続）" },
+      "condition": {
+        "skill": "smithing",
+        "gte": 25
+      },
+      "effect": {
+        "priceVs": {
+          "smithing": 1.05
+        },
+        "note": "鍛冶の仕事の信頼が少し上がる"
+      },
       "message": "――称号《鍛冶見習い》を獲得しました。"
     },
     {
@@ -14,8 +22,13 @@
       "name": "続ける者",
       "rank": "B",
       "hidden": false,
-      "condition": { "counter": "days.slept", "gte": 14 },
-      "effect": { "note": "継続の記録（M1 で接続）" },
+      "condition": {
+        "counter": "days.slept",
+        "gte": 14
+      },
+      "effect": {
+        "note": "継続の記録（M1 で接続）"
+      },
       "message": "――称号《続ける者》を獲得しました。"
     },
     {
@@ -25,12 +38,23 @@
       "hidden": false,
       "condition": {
         "and": [
-          { "skill": "swordplay", "gte": 10 },
-          { "skill": "smithing", "gte": 10 },
-          { "skill": "eloquence", "gte": 10 }
+          {
+            "skill": "swordplay",
+            "gte": 10
+          },
+          {
+            "skill": "smithing",
+            "gte": 10
+          },
+          {
+            "skill": "eloquence",
+            "gte": 10
+          }
         ]
       },
-      "effect": { "note": "多角の記録（M1 で接続）" },
+      "effect": {
+        "note": "多角の記録（M1 で接続）"
+      },
       "message": "――称号《三足のわらじ》を獲得しました。"
     },
     {
@@ -38,8 +62,16 @@
       "name": "日課",
       "rank": "B",
       "hidden": false,
-      "condition": { "within": { "days": 3, "kind": "train", "atLeast": 9 } },
-      "effect": { "note": "日課の記録（M1 で接続）" },
+      "condition": {
+        "within": {
+          "days": 3,
+          "kind": "train",
+          "atLeast": 9
+        }
+      },
+      "effect": {
+        "note": "日課の記録（M1 で接続）"
+      },
       "message": "――称号《日課》を獲得しました。"
     },
     {
@@ -49,12 +81,483 @@
       "hidden": false,
       "condition": {
         "and": [
-          { "counter": "action.train", "gte": 200 },
-          { "skill": "swordplay", "gte": 40 }
+          {
+            "counter": "action.train",
+            "gte": 200
+          },
+          {
+            "skill": "swordplay",
+            "gte": 40
+          }
         ]
       },
-      "effect": { "gainVs": { "train": 1.05 } },
+      "effect": {
+        "gainVs": {
+          "train": 1.05
+        }
+      },
       "message": "――称号《鍛錬の徒》を獲得しました。"
+    },
+    {
+      "id": "title.hundred_wolves",
+      "name": "百狼斬り",
+      "rank": "A",
+      "hidden": false,
+      "condition": {
+        "counter": "kill.species.wolf",
+        "gte": 100
+      },
+      "effect": {
+        "damageVs": {
+          "wolf": 1.05
+        },
+        "note": "狼へのダメージ"
+      },
+      "message": "――称号《百狼斬り》を獲得しました。",
+      "simReachable": false
+    },
+    {
+      "id": "title.saw_the_way",
+      "name": "剣の理を見た者",
+      "rank": "S",
+      "hidden": false,
+      "condition": {
+        "skill": "swordplay",
+        "gte": 50
+      },
+      "effect": {
+        "note": "剣の高みの記録"
+      },
+      "message": "――称号《剣の理を見た者》を獲得しました。"
+    },
+    {
+      "id": "title.master_smith",
+      "name": "名工",
+      "rank": "S",
+      "hidden": false,
+      "condition": {
+        "work": {
+          "kind": "smithing",
+          "tierGte": 5
+        }
+      },
+      "effect": {
+        "note": "鍛冶の頂の記録"
+      },
+      "message": "――称号《名工》を獲得しました。",
+      "simReachable": false
+    },
+    {
+      "id": "title.miner_apprentice",
+      "name": "採掘見習い",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "skill": "mining",
+        "gte": 25
+      },
+      "effect": {
+        "priceVs": {
+          "mining": 1.05
+        },
+        "note": "採掘の目利きが少し上がる"
+      },
+      "message": "――称号《採掘見習い》を獲得しました。"
+    },
+    {
+      "id": "title.smooth_talker",
+      "name": "口が回る",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "skill": "eloquence",
+        "gte": 20
+      },
+      "effect": {
+        "note": "交渉で少し有利になる（M2で接続）"
+      },
+      "message": "――称号《口が回る》を獲得しました。"
+    },
+    {
+      "id": "title.moon_cycle",
+      "name": "ひと月を越えた",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "counter": "days.slept",
+        "gte": 28
+      },
+      "effect": {
+        "note": "街に居着いた印（M2で接続）"
+      },
+      "message": "――称号《ひと月を越えた》を獲得しました。"
+    },
+    {
+      "id": "title.unresting",
+      "name": "休み知らず",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "within": {
+          "days": 7,
+          "kind": "train",
+          "atLeast": 20
+        }
+      },
+      "effect": {
+        "note": "詰め込みの記録（M2で接続）"
+      },
+      "message": "――称号《休み知らず》を獲得しました。"
+    },
+    {
+      "id": "title.first_work",
+      "name": "初仕事",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "work": {
+          "count": {
+            "atLeast": 1
+          }
+        }
+      },
+      "effect": {
+        "note": "台帳の最初の1件（M2で接続）"
+      },
+      "message": "――称号《初仕事》を獲得しました。"
+    },
+    {
+      "id": "title.handyman",
+      "name": "手堅い働き手",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "work": {
+          "count": {
+            "atLeast": 10
+          }
+        }
+      },
+      "effect": {
+        "note": "台帳10件の信頼（M2で接続）"
+      },
+      "message": "――称号《手堅い働き手》を獲得しました。"
+    },
+    {
+      "id": "title.bookworm",
+      "name": "読書家",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "action.read",
+        "gte": 5
+      },
+      "effect": {
+        "note": "見聞を広げた印（M2で接続）"
+      },
+      "message": "――称号《読書家》を獲得しました。"
+    },
+    {
+      "id": "title.first_blood",
+      "name": "狼退治",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "kill.species.wolf",
+        "gte": 1
+      },
+      "effect": {
+        "note": "初めての戦果（M2で接続）"
+      },
+      "message": "――称号《狼退治》を獲得しました。"
+    },
+    {
+      "id": "title.wolf_hunter",
+      "name": "狼狩り",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "kill.species.wolf",
+        "gte": 20
+      },
+      "effect": {
+        "note": "周辺の脅威を減らした評価（M2で接続）"
+      },
+      "message": "――称号《狼狩り》を獲得しました。"
+    },
+    {
+      "id": "title.pan_jack",
+      "name": "なんでも屋",
+      "rank": "A",
+      "hidden": false,
+      "condition": {
+        "and": [
+          {
+            "skill": "swordplay",
+            "gte": 15
+          },
+          {
+            "skill": "evasion",
+            "gte": 15
+          },
+          {
+            "skill": "observation",
+            "gte": 15
+          },
+          {
+            "skill": "smithing",
+            "gte": 15
+          },
+          {
+            "skill": "mining",
+            "gte": 15
+          },
+          {
+            "skill": "eloquence",
+            "gte": 15
+          }
+        ]
+      },
+      "effect": {
+        "note": "幅広さの評価（M2で接続）"
+      },
+      "message": "――称号《なんでも屋》を獲得しました。"
+    },
+    {
+      "id": "title.town_face",
+      "name": "街の顔",
+      "rank": "A",
+      "hidden": false,
+      "condition": {
+        "counter": "days.slept",
+        "gte": 60
+      },
+      "effect": {
+        "note": "定住の評価（M2で接続）"
+      },
+      "message": "――称号《街の顔》を獲得しました。"
+    },
+    {
+      "id": "title.vein_reader",
+      "name": "鉱脈を読む者",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "work": {
+          "kind": "mining",
+          "tierGte": 5
+        }
+      },
+      "effect": {
+        "note": "採掘の頂（M2で接続）"
+      },
+      "message": "――称号《鉱脈を読む者》を獲得しました。世界がこの名を記録します。"
+    },
+    {
+      "id": "title.sword_saint",
+      "name": "剣聖",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "flag": "pinnacle.sword_saint.apex"
+      },
+      "effect": {
+        "gainVs": {
+          "combat": 1.05
+        },
+        "note": "剣の頂点（頂点ルート T-41、pinnacles.json sword_saint の最終段）"
+      },
+      "message": "――称号《剣聖》を獲得しました。剣の頂点として、この名は年代記に刻まれます。"
+    },
+    {
+      "id": "title.legendary_artisan",
+      "name": "伝説の職人",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "flag": "pinnacle.legendary_artisan.apex"
+      },
+      "effect": {
+        "priceVs": {
+          "smithing": 1.1
+        },
+        "note": "職人の頂点（頂点ルート T-41、pinnacles.json legendary_artisan の最終段）"
+      },
+      "message": "――称号《伝説の職人》を獲得しました。神器を遺した者の名です。"
+    },
+    {
+      "id": "title.unique_hunter",
+      "name": "強個体狩り",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "kill.unique.total",
+        "gte": 1
+      },
+      "effect": {
+        "gainVs": {
+          "combat": 1.05
+        },
+        "note": "際立つ個体と渡り合った経験が、以後の戦闘経験に乗る（T-44）"
+      },
+      "message": "――称号《強個体狩り》を獲得しました。際立つ個体を狩った者に。"
+    },
+    {
+      "id": "title.compendium",
+      "name": "百獣の記録者",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "counter": "kill.species.stray_dog",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.wolf",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.boar",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.bandit",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.deserter",
+            "gte": 1
+          }
+        ]
+      },
+      "effect": {
+        "gainVs": {
+          "combat": 1.1
+        },
+        "note": "全種を討伐した記録者の見識が、以後の戦闘経験に乗る（T-44）"
+      },
+      "message": "――称号《百獣の記録者》を獲得しました。この地方のすべての獣と賊が、あなたの記録に残った。"
+    },
+    {
+      "id": "title.vow_iron_hide",
+      "name": "剛鱗を破りし者",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.iron_hide"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "硬鱗の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《剛鱗を破りし者》を獲得しました。分厚い鱗の向こうに、勝利を見た者に。"
+    },
+    {
+      "id": "title.vow_bare_purse",
+      "name": "空っぽの財布とともに",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.bare_purse"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "空っぽの財布の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《空っぽの財布とともに》を獲得しました。薄い財布で生き抜いた者に。"
+    },
+    {
+      "id": "title.vow_dear_bed",
+      "name": "高い床に眠る者",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.dear_bed"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "高い床の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《高い床に眠る者》を獲得しました。高い寝床に甘んじた者に。"
+    },
+    {
+      "id": "title.vow_slow_mend",
+      "name": "癒えぬ身体の行者",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.slow_mend"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "癒えにくい身体の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《癒えぬ身体の行者》を獲得しました。癒えにくい身体で歩き続けた者に。"
+    },
+    {
+      "id": "title.vow_windless",
+      "name": "無風の旅人",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.windless"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "無風の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《無風の旅人》を獲得しました。追い風なき道を歩き通した者に。"
     }
   ]
 }

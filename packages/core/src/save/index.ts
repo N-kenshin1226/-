@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 15;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -48,6 +48,59 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
     },
     /** 3 → 4: 獲得済み称号の一覧を追加 */
     3: (old) => ({ ...old, version: 4, titles: [] }),
+    /** 4 → 5: 作品台帳を追加 */
+    4: (old) => ({ ...old, version: 5, ledger: [] }),
+    /** 5 → 6: 通知予算（03 §6）を追加 */
+    5: (old) => ({ ...old, version: 6, notify: { day: 0, sToday: false, kehai: [] } }),
+    /** 6 → 7: 立場×職業と人生目標（03 §1）を追加 */
+    6: (old) => ({
+      ...old,
+      version: 7,
+      society: {
+        standing: "drifter",
+        profession: null,
+        pendingOffers: [],
+        goal: null,
+        achievedGoals: [],
+      },
+    }),
+    /** 7 → 8: 見聞録（07 §3）を追加 */
+    7: (old) => ({ ...old, version: 8, lore: { read: [], facts: [], connections: [] } }),
+    /** 8 → 9: 所持金を追加（仕事の報酬・宿代） */
+    8: (old) => {
+      const p = (old.player ?? {}) as Record<string, unknown>;
+      return { ...old, version: 9, player: { ...p, money: 0 } };
+    },
+    /**
+     * 9 → 10: 出自（origin）と素質上限（potentialCap）を追加（T-25）。
+     * 旧セーブの出自は流浪人相当の "origin.wanderer"（content のIDと一致させる）、
+     * 素質上限は当時一律100の初期値を踏襲する
+     */
+    9: (old) => {
+      const p = (old.player ?? {}) as Record<string, unknown>;
+      const skills = (p.skills ?? {}) as Record<string, Record<string, unknown>>;
+      return {
+        ...old,
+        version: 10,
+        player: {
+          ...p,
+          origin: "origin.wanderer",
+          skills: Object.fromEntries(
+            Object.entries(skills).map(([id, s]) => [id, { ...s, potentialCap: 100 }]),
+          ),
+        },
+      };
+    },
+    /** 10 → 11: 書物（T-26）の所持・読了状態を追加 */
+    10: (old) => ({ ...old, version: 11, books: { owned: [], read: [] } }),
+    /** 11 → 12: 師匠（T-27）。弟子入り中の師匠を追加（旧セーブは師匠なし） */
+    11: (old) => ({ ...old, version: 12, mentor: null }),
+    /** 12 → 13: 前世からの継承（T-39）。転生していない周は null */
+    12: (old) => ({ ...old, version: 13, legacy: null }),
+    /** 13 → 14: 運命の傾向（T-45）。旧セーブは中立の "calm" */
+    13: (old) => ({ ...old, version: 14, tendency: "calm" }),
+    /** 14 → 15: 誓約（T-46）。旧セーブは誓約なし */
+    14: (old) => ({ ...old, version: 15, vows: [] }),
   };
 
 export function serialize(state: GameState): string {
@@ -90,6 +143,15 @@ function assertShape(data: Record<string, unknown>): void {
     "actionLog",
     "today",
     "titles",
+    "ledger",
+    "notify",
+    "society",
+    "lore",
+    "books",
+    "mentor",
+    "legacy",
+    "tendency",
+    "vows",
   ];
   for (const key of required) {
     if (!(key in data)) throw new Error(`deserialize: ${key} がありません`);

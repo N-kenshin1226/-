@@ -1,0 +1,76 @@
+{
+  "orders": [
+    {
+      "id": "order.nail",
+      "kind": "smithing",
+      "name": "釘の束",
+      "targetQuality": 20,
+      "rewardMoney": 15,
+      "note": "まずは形になればよい日常の注文"
+    },
+    {
+      "id": "order.horseshoe",
+      "kind": "smithing",
+      "name": "蹄鉄",
+      "targetQuality": 40,
+      "rewardMoney": 40,
+      "note": "均一な厚みが求められる"
+    },
+    {
+      "id": "order.dagger",
+      "kind": "smithing",
+      "name": "短剣の注文",
+      "targetQuality": 60,
+      "rewardMoney": 120,
+      "note": "刃こぼれのない刀身が条件。勝負所"
+    },
+    {
+      "id": "order.ore_survey",
+      "kind": "mining",
+      "name": "鉱脈の試掘",
+      "targetQuality": 30,
+      "rewardMoney": 30,
+      "note": "露頭の品を確かめる依頼"
+    },
+    {
+      "id": "order.price_talk",
+      "kind": "eloquence",
+      "name": "値段交渉",
+      "targetQuality": 30,
+      "rewardMoney": 25,
+      "note": "仕入れ値を下げる口論"
+    },
+    {
+      "id": "order.street_song",
+      "kind": "performance",
+      "name": "酒場の余興",
+      "targetQuality": 25,
+      "rewardMoney": 20,
+      "note": "客が沸けばよい気楽な一席"
+    },
+    {
+      "id": "order.hall_recital",
+      "kind": "performance",
+      "name": "公会堂の独奏",
+      "targetQuality": 60,
+      "rewardMoney": 110,
+      "note": "品評会の舞台に立つ。勝負所"
+    },
+    {
+      "id": "order.big_catch",
+      "kind": "fishing",
+      "name": "荒れ川の大物",
+      "targetQuality": 45,
+      "rewardMoney": 55,
+      "note": "川の主を釣り上げる勝負"
+    },
+    {
+      "id": "order.relic_check",
+      "kind": "appraisal",
+      "name": "出土品の真贋",
+      "targetQuality": 55,
+      "rewardMoney": 90,
+      "note": "大金が動く鑑定。贋作を掴むな"
+    }
+  ]
+}

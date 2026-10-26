@@ -1,0 +1,216 @@
+/* ══ TRACE UI（デザイン原本：パワプロ風ポップを年代記の紙に写し替え）══
+   - 背景: 羊皮紙→白のグラデ（世界の記録＝紙のイメージ）
+   - 色の意味を固定: 黄=主行動（1画面1つ）/ 白=サブ / 緑=良い変化 / 赤=危険 / 金=特別・称号・ユニーク
+   - 形: 大きめ角丸・濃紺の太枠・沈む立体ボタン・丸ゴシック・本文最小14px */
+:root {
+  /* 色 */
+  --bg0: #f4e3c0; /* 羊皮紙（ページ上部） */
+  --bg1: #faf3e0; /* 羊皮紙→白のグラデ下端 */
+  --panel: #fffdf4; /* 通常カード（紙） */
+  --panel2: #f7f0dc; /* カード内の薄い面 */
+  --ink: #2b2620;
+  --ink2: #6b5f4c;
+  --navy: #2c3a5e; /* 枠線・見出しの濃い色（墨に近い濃紺） */
+  --line: #e2d5b8;
+  --accent: #c9a227; /* TRACE の金（称号・強調） */
+  --accent-dk: #8a6d14;
+  --accent2: #ffc21c; /* 主行動の黄 */
+  --yellow-dk: #e8a400;
+  --good: #1f9d55;
+  --bad: #d23b3b;
+  --gold: #c9930a;
+  --muted: #6b5f4c;
+  /* 通知・能力ランク色（原本の S〜G 表） */
+  --rank-S: #f56ea5;
+  --rank-A: #f50fd7;
+  --rank-B: #ff1441;
+  --rank-C: #ffa500;
+  --rank-D: #c3d21e;
+  --rank-E: #9acd32;
+  --rank-F: #50a5d2;
+  --rank-G: #666666;
+  /* 影（立体ボタン） */
+  --btn-shadow: 0 3px 0 var(--navy), 0 5px 10px rgba(44, 58, 94, 0.22);
+  --btn-shadow-active: 0 1px 0 var(--navy), 0 2px 4px rgba(44, 58, 94, 0.2);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+    "Yu Gothic", "Meiryo", "Helvetica Neue", Arial, sans-serif;
+  background:
+    radial-gradient(900px 260px at 50% -60px, #fff6dd 0%, transparent 70%),
+    linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 45%, #fffdf4 100%);
+  background-attachment: fixed;
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+}
+
+/* ── ボタン（沈む立体。メイン＝黄・サブ＝白。選択中＝琥珀）── */
+.tbtn {
+  display: inline-block;
+  padding: 0.55rem 1.2rem;
+  margin: 4px 8px 4px 0;
+  border-radius: 999px;
+  border: 2.5px solid var(--navy);
+  background: linear-gradient(180deg, #ffffff, #f4eee0);
+  color: var(--navy);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    filter 0.12s,
+    box-shadow 0.12s;
+  box-shadow: var(--btn-shadow);
+}
+.tbtn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.tbtn:active {
+  transform: translateY(2px);
+  box-shadow: var(--btn-shadow-active);
+}
+.tbtn.primary {
+  background: linear-gradient(180deg, var(--accent2), var(--yellow-dk));
+  color: var(--navy);
+}
+.tbtn.sel {
+  border-color: var(--accent-dk);
+  background: #fff3cf;
+}
+.tbtn.gold {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, #fff8e0, #ffe9b0);
+  color: var(--accent-dk);
+}
+.tbtn.danger {
+  background: linear-gradient(180deg, #ff8a9a, var(--bad));
+  color: #fff;
+  border-color: #8c1f1f;
+  box-shadow:
+    0 3px 0 #8c1f1f,
+    0 5px 10px rgba(140, 31, 31, 0.25);
+}
+.tbtn.danger:active {
+  box-shadow: 0 1px 0 #8c1f1f;
+}
+.tbtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+.tbtn.big {
+  padding: 0.8rem 2rem;
+  font-size: 1.05rem;
+}
+
+/* ── カードの3段階: hero（主役・1画面1つ）/ 通常 / inset（補助の薄い面）── */
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--navy);
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: 0.02em;
+}
+.card-title::before {
+  content: "";
+  width: 0.55rem;
+  height: 1.05rem;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--accent2), var(--yellow-dk));
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+.card-title.gold::before {
+  background: linear-gradient(180deg, #ffe082, var(--gold));
+}
+.card-title.red::before {
+  background: linear-gradient(180deg, #ff8a9a, var(--bad));
+}
+.card-title.green::before {
+  background: linear-gradient(180deg, #4ade96, var(--good));
+}
+
+/* ── 採掘・鑑定の盤面セル ── */
+.board-cell {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 2px solid var(--navy);
+  background: linear-gradient(180deg, #ffffff, #eee6cf);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    filter 0.1s;
+}
+.board-cell:not(:disabled):hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+.board-cell.revealed {
+  background: var(--panel2);
+  border-color: var(--line);
+  box-shadow: inset 0 2px 4px rgba(44, 58, 94, 0.12);
+  cursor: default;
+}
+
+/* ── 画面切り替え・ポップの動き ── */
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.screen-fade {
+  animation: fadeSlide 0.18s ease-out;
+}
+@keyframes popIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop-in {
+  animation: popIn 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-fade,
+  .pop-in {
+    animation: none;
+  }
+  .tbtn,
+  .board-cell {
+    transition: none;
+  }
+}

@@ -133,6 +133,12 @@ type Work = { id; kind; maker; quality; tier; order; flags; day; worldSeed }
 ```
 
 - 演算は `counter / flag / skill / stat / work(台帳) / time / and / or / not / within`
+- `effect` の語彙（zod: `effects.schema.ts`。T-35 で接続済み）：
+  - `gainVs`：gain の M 項への係数。キーは行動種別（train/work/combat）か対象ID（スキルID・敵ID）。積で重なり、上限は `balance.gain.modifierCap`
+  - `damageVs`：戦闘の与ダメージ倍率。キーは敵ID
+  - `priceVs`：仕事の報酬倍率（認定による値段変化）。キーは仕事の kind
+  - `note`：機械的効果なしの注記（フレーバー）
+  - 認定職（professions）も同じ `effect` を持てる（03 §1）
 - 称号を量産すると似たものばかりになるので、**先に「条件の型」を10種ほど設計し**、型ごとに数を増やす。人間が1割だけ磨く
 
 ## 8. 年代記

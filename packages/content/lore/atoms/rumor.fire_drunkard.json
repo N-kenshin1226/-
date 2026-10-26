@@ -1,0 +1,10 @@
+{
+  "id": "rumor.fire_drunkard",
+  "kind": "event",
+  "title": "井戸端の噂",
+  "text": "あの火は酔った職人が寝落ちしたせいだ、と誰もがそう言う。本当にそうなのかは誰も見ていない。",
+  "refs": ["event.great_fire", "npc.berna"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": null
+}

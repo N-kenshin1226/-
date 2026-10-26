@@ -1,25 +1,81 @@
 import { createRng } from "../rng/index.js";
-import { STAT_IDS, type GameState, type PlayerState, type SkillState } from "./types.js";
+import {
+  STAT_IDS,
+  type GameState,
+  type PlayerState,
+  type SkillState,
+  type TendencyId,
+} from "./types.js";
 import { SAVE_VERSION } from "../save/index.js";
+import type { Legacy } from "../legacy/index.js";
 
 /** balance.json から必要な初期値だけを受け取る */
 export interface NewGameConfig {
   /** content/skills.json のスキルID一覧 */
   skillIds: readonly string[];
-  /** スキルの初期素質（M2 で出自による幅 80〜130 を実装するまでは一律） */
+  /** スキルの初期素質（出自を省略した場合の一律値） */
   initialPotential: number;
+  /** 出自（origins.json）。指定するとスキルごとに potentialBase±ばらつき+affinity で 80〜130 に散らす */
+  origin?: {
+    id: string;
+    potentialBase: number;
+    affinity: Record<string, number>;
+  };
+  /** 出自のばらつき範囲（balance.player.potentialInitMin/Max。origin 指定時に必要） */
+  potentialInitMin?: number;
+  potentialInitMax?: number;
   /** 基礎能力の初期値 */
   initialStatValue: number;
+  /** 初期の立場（省略時は流れ者） */
+  initialStanding?: string;
+  /** 初期所持金 */
+  initialMoney?: number;
+  /**
+   * 前世からの継承（T-39、06 §2）。転生した周にだけ渡す。
+   * potentialBonus は各スキルの素質と上限を底上げし、
+   * rememberedTitles は「前世の記憶」として称号を保持、
+   * artifact はこの世界に名品として現れる
+   */
+  legacy?: Legacy;
+  /**
+   * 運命の傾向（T-45、06 §3C）。周の開始時に3択で選ぶ世界の修飾。
+   * 省略時は "calm"（従来どおり）
+   */
+  tendency?: TendencyId;
+  /**
+   * 誓約（T-46、06 §3C）。開始時に自分で積む難度修飾子（vows.json の id）。
+   * 選んだ誓約は state.vows に記録され、flags["vow.taken.<id>"] にも刻まれる
+   * （誓約称号の条件が flags/counters から読めるようにするため）
+   */
+  vows?: readonly string[];
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
   const skills: PlayerState["skills"] = {};
+  const oRng = cfg.origin ? createRng(seed).fork(`origin:${cfg.origin.id}`) : null;
   for (const id of cfg.skillIds) {
+    let potential = cfg.initialPotential;
+    if (cfg.origin && oRng) {
+      const lo = cfg.potentialInitMin ?? 80;
+      const hi = cfg.potentialInitMax ?? 130;
+      // 出自の基準値に -15〜+15 の個人差を足し、得意分野の affinity を上乗せする
+      const scatter = oRng.int(-15, 15);
+      potential = Math.min(
+        hi,
+        Math.max(
+          lo,
+          Math.round(cfg.origin.potentialBase + scatter + (cfg.origin.affinity[id] ?? 0)),
+        ),
+      );
+    }
+    // 前世の頂きが素質を少し底上げする（上限は legacyOf 側で適用済み）
+    potential += cfg.legacy?.potentialBonus[id] ?? 0;
     const s: SkillState = {
       value: 0,
       peak: 0,
       pending: 0,
-      potential: cfg.initialPotential,
+      potential,
+      potentialCap: potential,
       lastUsedDay: 0,
     };
     skills[id] = s;
@@ -36,16 +92,54 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     time: { day: 0, action: 0 },
     player: {
       name,
+      origin: cfg.origin?.id ?? "",
       skills,
       stats,
       load,
       fatigue: 0,
       overwork: { streakDays: 0, active: false },
+      money: cfg.initialMoney ?? 0,
     },
     counters: {},
-    flags: {},
+    flags: Object.fromEntries([
+      // 「前世の記憶」の称号フラグ（T-39）
+      ...(cfg.legacy?.rememberedTitles ?? []).map((id) => [`memory.title.${id}`, true] as const),
+      // 積んだ誓約のフラグ（T-46。誓約称号の条件DSLが読む）
+      ...(cfg.vows ?? []).map((id) => [`vow.taken.${id}`, true] as const),
+    ]),
     actionLog: [],
     today: { winds: [], loads: 0 },
-    titles: [],
+    titles: [...(cfg.legacy?.rememberedTitles ?? [])],
+    ledger: [],
+    notify: { day: 0, sToday: false, kehai: [] },
+    society: {
+      standing: cfg.initialStanding ?? "drifter",
+      profession: null,
+      pendingOffers: [],
+      goal: null,
+      achievedGoals: [],
+    },
+    lore: { read: [], facts: [], connections: [] },
+    books: { owned: [], read: [] },
+    mentor: null,
+    legacy: cfg.legacy
+      ? {
+          rememberedTitles: [...cfg.legacy.rememberedTitles],
+          artifact: cfg.legacy.artifact ? { ...cfg.legacy.artifact } : null,
+        }
+      : null,
+    // 運命の傾向（T-45。未選択は中立の "calm"）と誓約（T-46）
+    tendency: cfg.tendency ?? "calm",
+    vows: [...new Set(cfg.vows ?? [])],
   };
+}
+
+/**
+ * 転生先の世界シード（06 §1「新しいシードの世界へ」。T-40）。
+ * 環境変数や実時間乱数ではなく、終わった人生の状態から決定論的に導く：
+ * 同じ終わり方（同じ state）からは同じ次の世界が生まれ、生きた日数を混ぜるので
+ * 同じ親シードでも別の日に終われば別の世界に分かれる
+ */
+export function nextWorldSeed(state: GameState): string {
+  return `${state.seed}:next:${state.time.day}`;
 }

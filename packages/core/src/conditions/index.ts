@@ -1,3 +1,4 @@
+import { matchesWork } from "../ledger/index.js";
 import type { GameState, StatId } from "../state/types.js";
 import {
   describe as describeTime,
@@ -28,7 +29,7 @@ export type Cond =
   | ({ skill: string } & Compare)
   /** 基礎能力の比較 */
   | ({ stat: StatId } & Compare)
-  /** 作品台帳の条件。TODO: 台帳が未実装のため常に false */
+  /** 作品台帳の条件（03 §3/§7）：kind 限定・最高ティア・件数 */
   | { work: { kind?: string; tierGte?: number; count?: { atLeast: number } } }
   /** 時刻・暦（describe の項目） */
   | {
@@ -74,8 +75,7 @@ export function evaluate(cond: Cond, state: GameState, time: TimeConfig): boolea
   if ("skill" in cond) return compareNum(state.player.skills[cond.skill]?.value ?? 0, cond);
   if ("stat" in cond) return compareNum(state.player.stats[cond.stat], cond);
   if ("work" in cond) {
-    // TODO: 作品台帳（03 §3）が未実装。台帳を作ったら count/tierGte/kind を評価する
-    return false;
+    return matchesWork(state.ledger, cond.work);
   }
   if ("time" in cond) {
     const t = cond.time;

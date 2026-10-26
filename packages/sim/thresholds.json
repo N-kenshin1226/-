@@ -1,0 +1,31 @@
+{
+  "growth": {
+    "days": 60,
+    "mainSkillAt3h": { "minutes": 180, "min": 25, "max": 40, "bots": ["single"] },
+    "mainSkillByMid": { "marksMinutes": [600, 900], "min": 40, "bots": ["single"] },
+    "policyGapMax": 1.3,
+    "simpleRevenueShare": {
+      "enabled": false,
+      "reason": "M0 には収益システムがない。M1 の作品台帳・報酬で測れるようになったら有効化する"
+    },
+    "simpleExpShare": {
+      "enabled": false,
+      "reason": "M0 には手動ミニゲームがなく、簡易判定のみ型は『訓練のみ』で代用している。手動プレイとの差分が定義できないため実測値は報告のみ"
+    },
+    "titleReachabilityDays": 365
+  },
+  "retention": {
+    "days": 40,
+    "bands": [
+      { "upToMinutes": 15, "minFirstEvents": 3, "bots": ["single", "diverse", "random"] },
+      { "upToMinutes": 60, "minFirstEvents": 6, "bots": ["single", "diverse", "random"] },
+      { "upToMinutes": 180, "minFirstEvents": 9, "bots": ["single", "diverse"] },
+      { "upToMinutes": 480, "minFirstEvents": 12, "bots": ["single", "diverse"] }
+    ],
+    "maxConsecutiveSameAction": { "max": 8, "bots": ["diverse", "random"] },
+    "notes": {
+      "noveltyBandsExcludeSimple": "簡易判定のみ型は『同じ行動を延々と繰り返す』縮退方針であり、初体験が出ないのは新規性の設計どおりの応答。新規性の供給は行動を変えるプレイ方針で測る",
+      "noveltyBandsExcludeSingleAt180plus": "単一集中型は中盤以降の新規性を追わない方針（主スキル一点）のため 180分以降の帯は多様型のみで判定"
+    }
+  }
+}

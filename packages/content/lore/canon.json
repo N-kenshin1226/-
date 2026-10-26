@@ -1,0 +1,81 @@
+{
+  "era": {
+    "name": "蒼暦",
+    "year": 812,
+    "note": "王国の辺境、街道の終わる街。時代区分の細部は hidden/"
+  },
+  "setting": {
+    "town": "アルディ",
+    "note": "鉱山と鍛冶で栄えた街。今は静かに暮らす人が多い"
+  },
+  "events": [
+    {
+      "id": "event.great_fire",
+      "name": "東の大火",
+      "summary": "十二年前、鍛冶場の並ぶ東区が一夜で焼けた。死者の数は記録に残っていない",
+      "reward": {
+        "facts": ["fact.berna_survived_fire", "fact.fire_started_old_forge"],
+        "flag": "quest.fire_truth"
+      }
+    },
+    {
+      "id": "event.smith_vanishing",
+      "name": "職人の失踪",
+      "summary": "大火のあと、名うての職人が一人、街から姿を消した",
+      "reward": null
+    },
+    {
+      "id": "event.pilgrim_road",
+      "name": "巡礼路の開通",
+      "summary": "三十年前、北の丘へ通じる道が拓かれ、街に外の物が流れ込むようになった",
+      "reward": null
+    }
+  ],
+  "places": [
+    { "id": "place.old_forge", "name": "旧鍛冶場", "summary": "大火で焼けたまま、誰も近づかない" },
+    { "id": "place.east_bridge", "name": "東橋", "summary": "大火の夜を生き延びた石橋" },
+    {
+      "id": "place.hill_chapel",
+      "name": "丘の礼拝堂",
+      "summary": "巡礼路の終点。死者はここから見送られる"
+    }
+  ],
+  "figures": [
+    { "id": "npc.berna", "name": "ベルナ", "role": "鍛冶職人。失踪した" },
+    { "id": "npc.marta", "name": "マルタ", "role": "宿屋の主" },
+    { "id": "npc.edel", "name": "エデル", "role": "礼拝堂の番人" },
+    { "id": "npc.garo", "name": "ガロ", "role": "猟師" },
+    { "id": "npc.nola", "name": "ノラ", "role": "行商人" },
+    { "id": "npc.fenn", "name": "フェン", "role": "採掘場のまとめ役" },
+    { "id": "npc.ile", "name": "イル", "role": "鍛冶場の見習い" },
+    { "id": "npc.sado", "name": "サド", "role": "街の門番" },
+    { "id": "npc.reve", "name": "レーヴ", "role": "織り手" },
+    { "id": "npc.cum", "name": "クム", "role": "炭焼き" }
+  ],
+  "facts": [
+    { "id": "fact.berna_survived_fire", "text": "ベルナは大火を生き延びた" },
+    { "id": "fact.fire_started_old_forge", "text": "火は旧鍛冶場から出た" },
+    { "id": "fact.hammer_made_by_berna", "text": "錆びた槌はベルナの作った道具である" },
+    { "id": "fact.marta_took_in_orphans", "text": "マルタは大火の孤児を宿に引き取った" }
+  ],
+  "styleLint": {
+    "maxTextLength": 120,
+    "minTextLength": 10,
+    "forbidden": [
+      "プレイヤー",
+      "ゲーム",
+      "クエスト",
+      "レベル",
+      "スキル",
+      "アイテム",
+      "シナリオ",
+      "フラグ",
+      "データ",
+      "※",
+      "！",
+      "？"
+    ],
+    "factForbidden": ["らしい", "そうだ", "とか", "かもしれない", "だという"],
+    "similarityThreshold": 0.75
+  }
+}

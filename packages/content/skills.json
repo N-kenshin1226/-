@@ -5,6 +5,49 @@
     { "id": "observation", "name": "観察" },
     { "id": "smithing", "name": "鍛冶" },
     { "id": "mining", "name": "採掘" },
-    { "id": "eloquence", "name": "弁舌" }
+    { "id": "eloquence", "name": "弁舌" },
+    { "id": "performance", "name": "演奏" },
+    { "id": "fishing", "name": "釣り" },
+    { "id": "appraisal", "name": "鑑定" },
+    {
+      "id": "iaijutsu",
+      "name": "居合",
+      "unlock": {
+        "and": [
+          { "skill": "swordplay", "gte": 25 },
+          { "skill": "observation", "gte": 15 }
+        ]
+      }
+    },
+    {
+      "id": "parry",
+      "name": "受け流し",
+      "unlock": {
+        "and": [
+          { "skill": "evasion", "gte": 20 },
+          { "skill": "observation", "gte": 15 }
+        ]
+      }
+    },
+    {
+      "id": "prospecting",
+      "name": "鉱脈勘",
+      "unlock": {
+        "and": [
+          { "skill": "mining", "gte": 20 },
+          { "stat": "perception", "gte": 15 }
+        ]
+      }
+    },
+    {
+      "id": "flourish",
+      "name": "妙技",
+      "unlock": {
+        "and": [
+          { "skill": "performance", "gte": 15 },
+          { "stat": "dexterity", "gte": 15 }
+        ]
+      }
+    }
   ]
 }

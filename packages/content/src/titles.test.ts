@@ -1,14 +1,16 @@
 import { findContradictions, type Cond } from "@trace/core";
 import { describe, expect, it } from "vitest";
+import { effectSchema } from "./effects.schema.js";
 import { titles } from "./titles.js";
 import { titlesFileSchema } from "./titles.schema.js";
 
 describe("titles.json", () => {
-  it("スキーマを通り、サンプル5件", () => {
-    expect(titles.titles).toHaveLength(5);
+  it("スキーマを通り、S/A/B が揃っている", () => {
+    expect(titles.titles.length).toBeGreaterThanOrEqual(5);
     const ranks = titles.titles.map((t) => t.rank);
-    expect(ranks.filter((r) => r === "B")).toHaveLength(4);
-    expect(ranks.filter((r) => r === "A")).toHaveLength(1);
+    expect(ranks.filter((r) => r === "B").length).toBeGreaterThanOrEqual(4);
+    expect(ranks.filter((r) => r === "A").length).toBeGreaterThanOrEqual(1);
+    expect(ranks.filter((r) => r === "S").length).toBeGreaterThanOrEqual(1);
     expect(titles.titles.every((t) => !t.hidden)).toBe(true);
   });
 
@@ -34,6 +36,19 @@ describe("titles.json", () => {
       } satisfies Cond,
     };
     expect(findContradictions([bad])).toEqual(["title.impossible"]);
+  });
+
+  it("effect の語彙は zod で検証される（T-35）", () => {
+    // 既知の語彙は通る
+    expect(effectSchema.safeParse({ gainVs: { train: 1.05 } }).success).toBe(true);
+    expect(effectSchema.safeParse({ damageVs: { wolf: 1.05 } }).success).toBe(true);
+    expect(effectSchema.safeParse({ priceVs: { smithing: 1.1 } }).success).toBe(true);
+    expect(effectSchema.safeParse({ note: "記録のみ" }).success).toBe(true);
+    // 未知キー・非正の係数・空オブジェクトは弾く
+    expect(effectSchema.safeParse({ unknownKey: 1 }).success).toBe(false);
+    expect(effectSchema.safeParse({ gainVs: { train: -1 } }).success).toBe(false);
+    expect(effectSchema.safeParse({ gainVs: { train: 0 } }).success).toBe(false);
+    expect(effectSchema.safeParse({}).success).toBe(false);
   });
 
   it("書式違反の message はスキーマで弾かれる", () => {

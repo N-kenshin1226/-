@@ -1,0 +1,10 @@
+{
+  "id": "place.old_forge",
+  "kind": "place",
+  "title": "旧鍛冶場",
+  "text": "壁は煤けたままだ。炉の前にだけ、新しい足跡がある。",
+  "refs": ["event.great_fire", "place.east_bridge"],
+  "reveals": ["fact.fire_started_old_forge"],
+  "reliability": "fact",
+  "unlock": { "flag": "found.old_forge" }
+}

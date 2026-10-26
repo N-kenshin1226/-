@@ -1,0 +1,166 @@
+{
+  "enemies": [
+    {
+      "id": "stray_dog",
+      "name": "野犬",
+      "area": "forest",
+      "hp": 10,
+      "intervalTicks": 14,
+      "challenge": 8,
+      "agility": 3,
+      "attack": {
+        "id": "snap",
+        "name": "噛みつき",
+        "power": 2
+      },
+      "moves": {},
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        }
+      ]
+    },
+    {
+      "id": "wolf",
+      "name": "狼",
+      "area": "forest",
+      "hp": 30,
+      "intervalTicks": 10,
+      "challenge": 15,
+      "agility": 5,
+      "attack": {
+        "id": "bite",
+        "name": "咬みつき",
+        "power": 4
+      },
+      "moves": {
+        "pounce": {
+          "id": "pounce",
+          "name": "飛びかかり",
+          "power": 9
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "pounce",
+          "ticks": 8
+        }
+      ]
+    },
+    {
+      "id": "boar",
+      "name": "猪",
+      "area": "forest",
+      "hp": 45,
+      "intervalTicks": 12,
+      "challenge": 22,
+      "agility": 4,
+      "attack": {
+        "id": "tackle",
+        "name": "体当たり",
+        "power": 5
+      },
+      "moves": {
+        "charge": {
+          "id": "charge",
+          "name": "猛突進",
+          "power": 13
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "charge",
+          "ticks": 8
+        }
+      ]
+    },
+    {
+      "id": "bandit",
+      "name": "追い剥ぎ",
+      "area": "highway",
+      "hp": 60,
+      "intervalTicks": 9,
+      "challenge": 30,
+      "agility": 7,
+      "attack": {
+        "id": "shank",
+        "name": "短刀の一突き",
+        "power": 7
+      },
+      "moves": {
+        "ambush": {
+          "id": "ambush",
+          "name": "不意の連撃",
+          "power": 16
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "ambush",
+          "ticks": 8
+        }
+      ]
+    },
+    {
+      "id": "deserter",
+      "name": "脱走兵",
+      "area": "highway",
+      "hp": 90,
+      "intervalTicks": 11,
+      "challenge": 40,
+      "agility": 6,
+      "attack": {
+        "id": "slash",
+        "name": "軍刀の斬撃",
+        "power": 9
+      },
+      "moves": {
+        "onslaught": {
+          "id": "onslaught",
+          "name": "渾身の薙ぎ払い",
+          "power": 22
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "onslaught",
+          "ticks": 10
+        }
+      ]
+    }
+  ]
+}

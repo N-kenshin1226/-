@@ -39,6 +39,7 @@ const cfg: StepConfig = {
   },
   sleep: {
     nightlyCapPerSkill: 8.0,
+    nightlyCapTotal: 999,
     carryoverRatio: 0.5,
     innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
     dinnerFactors: { withDinner: 1.1, noDinner: 0.85 },
@@ -56,6 +57,28 @@ const cfg: StepConfig = {
     drawMin: 1,
     drawMax: 2,
   },
+  ledger: {
+    basePricePerQuality: 2,
+    marketWindowDays: 7,
+    marketDecayPerWork: 0.9,
+    tierUpBonusPending: 8,
+  },
+  combat: {
+    baseHp: 30,
+    hpPerEndurance: 2,
+    attackBase: 5,
+    attackPerSwordplay: 0.15,
+    attackPerStrength: 0.2,
+    ctBase: 12,
+    ctPerAgility: 0.15,
+    ctMin: 6,
+    defendFactor: 0.5,
+    fleeBase: 0.7,
+    fleePerAgility: 0.02,
+    observeBonus: 20,
+    preciseObserve: 40,
+    deathPendingFactor: 0.5,
+  },
   body: {
     fatiguePerAction: { wait: 1, train: 6 },
     fatigueDefaultPerAction: 2,
@@ -69,6 +92,13 @@ const cfg: StepConfig = {
     restPotentialRecover: 3,
     potentialMax: 100,
   },
+  society: {
+    standings: [],
+    professions: [],
+    lifeGoals: [],
+    goalRewardFactor: 1,
+  },
+  lore: { atoms: [], connections: [] },
   titles: [],
 };
 
@@ -89,11 +119,75 @@ describe("newGame", () => {
       peak: 0,
       pending: 0,
       potential: 100,
+      potentialCap: 100,
       lastUsedDay: 0,
     });
     expect(g.player.stats.strength).toBe(10);
     expect(g.player.fatigue).toBe(0);
     expect(g.version).toBe(SAVE_VERSION);
+  });
+
+  it("出自を渡すと素質が 80〜130 に散り、potentialCap が初期値になる", () => {
+    const mk = () =>
+      newGame("seed-origin", "出自", {
+        ...newGameCfg,
+        origin: {
+          id: "origin.smith_child",
+          potentialBase: 90,
+          affinity: { swordplay: 30 },
+        },
+        potentialInitMin: 80,
+        potentialInitMax: 130,
+      });
+    const g = mk();
+    expect(g.player.origin).toBe("origin.smith_child");
+    for (const s of Object.values(g.player.skills)) {
+      expect(s.potential).toBeGreaterThanOrEqual(80);
+      expect(s.potential).toBeLessThanOrEqual(130);
+      expect(s.potentialCap).toBe(s.potential);
+    }
+    // 同じシードでは同じ素質分布（決定論）
+    expect(JSON.stringify(mk().player.skills)).toBe(JSON.stringify(g.player.skills));
+    // 出自が違えば分布も変わりうる（少なくとも affinity で差が出る）
+    const h = newGame("seed-origin", "出自", {
+      ...newGameCfg,
+      origin: { id: "origin.hunter_child", potentialBase: 95, affinity: {} },
+      potentialInitMin: 80,
+      potentialInitMax: 130,
+    });
+    expect(h.player.origin).toBe("origin.hunter_child");
+  });
+
+  it("運命の傾向と誓約（T-45/T-46）：既定は calm＋誓約なし", () => {
+    const g = newGame("seed-fate", "運命", newGameCfg);
+    expect(g.tendency).toBe("calm");
+    expect(g.vows).toEqual([]);
+    expect(Object.keys(g.flags).some((f) => f.startsWith("vow.taken."))).toBe(false);
+  });
+
+  it("運命の傾向と誓約を選んで開始できる。誓約は重複を除き、旗にも刻む", () => {
+    const g = newGame("seed-fate2", "運命", {
+      ...newGameCfg,
+      tendency: "war",
+      vows: ["vow.iron_hide", "vow.windless", "vow.iron_hide"],
+    });
+    expect(g.tendency).toBe("war");
+    expect(g.vows).toEqual(["vow.iron_hide", "vow.windless"]);
+    // 誓約称号の条件DSLが読めるよう flags に刻む（T-46）
+    expect(g.flags["vow.taken.vow.iron_hide"]).toBe(true);
+    expect(g.flags["vow.taken.vow.windless"]).toBe(true);
+    expect(g.flags["vow.taken.vow.dear_bed"]).toBeUndefined();
+  });
+
+  it("serialize → deserialize で傾向と誓約も往復する（T-45/T-46）", () => {
+    const g = newGame("seed-fate3", "運命", {
+      ...newGameCfg,
+      tendency: "famine",
+      vows: ["vow.bare_purse"],
+    });
+    const restored = deserialize(serialize(g));
+    expect(restored.tendency).toBe("famine");
+    expect(restored.vows).toEqual(["vow.bare_purse"]);
   });
 });
 
@@ -144,6 +238,24 @@ describe("step", () => {
     expect(g.actionLog.at(-1)?.kind).toBe("wait");
     expect(g.actionLog[0]?.day).toBeGreaterThan(0);
   });
+
+  it("引退は行動を消費せず retired イベントだけを返す（T-40。06 §1）", () => {
+    const g = newGame("seed-retire", "引退", newGameCfg);
+    const r = step(g, { type: "retire" }, cfg);
+    // 生涯の終わりを告げる出来事だけ。時も状態も進めない
+    // （伝記・年代記・継承・転生は呼び出し側が行い、新しい周は newGame で作る）
+    expect(r.events).toEqual([{ type: "retired" }]);
+    expect(r.state).toEqual(g);
+  });
+
+  it("行動残が0でも引退できる（いつでも選べる）", () => {
+    let g = newGame("seed-retire2", "引退", newGameCfg);
+    for (let i = 0; i < 5; i++) g = step(g, { type: "wait" }, cfg).state;
+    expect(g.time.action).toBe(5);
+    const r = step(g, { type: "retire" }, cfg);
+    expect(r.events).toEqual([{ type: "retired" }]);
+    expect(r.state).toEqual(g);
+  });
 });
 
 describe("save", () => {
@@ -181,7 +293,112 @@ describe("save", () => {
     expect(restored.player.overwork).toEqual({ streakDays: 0, active: false });
   });
 
+  it("version 9 のセーブは出自・potentialCap を補って version 10 へ移行される", () => {
+    const g = newGame("seed-10", "移行3", newGameCfg);
+    const v9 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v9["version"] = 9;
+    const p = v9["player"] as Record<string, unknown>;
+    delete p["origin"];
+    for (const s of Object.values(p["skills"] as Record<string, Record<string, unknown>>)) {
+      delete s["potentialCap"];
+    }
+    const restored = deserialize(JSON.stringify(v9));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.player.origin).toBe("origin.wanderer");
+    for (const s of Object.values(restored.player.skills)) {
+      expect(s.potentialCap).toBe(100);
+    }
+  });
+
+  it("version 10 のセーブは books を補って version 11 へ移行される", () => {
+    const g = newGame("seed-11", "移行4", newGameCfg);
+    const v10 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v10["version"] = 10;
+    delete v10["books"];
+    const restored = deserialize(JSON.stringify(v10));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.books).toEqual({ owned: [], read: [] });
+  });
+
+  it("version 11 のセーブは mentor を補って version 12 へ移行される", () => {
+    const g = newGame("seed-12", "移行5", newGameCfg);
+    const v11 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v11["version"] = 11;
+    delete v11["mentor"];
+    const restored = deserialize(JSON.stringify(v11));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.mentor).toBeNull();
+  });
+
+  it("version 12 のセーブは legacy を補って version 13 へ移行される", () => {
+    const g = newGame("seed-13", "移行6", newGameCfg);
+    const v12 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v12["version"] = 12;
+    delete v12["legacy"];
+    const restored = deserialize(JSON.stringify(v12));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.legacy).toBeNull();
+  });
+
+  it("version 13 のセーブは運命の傾向を中立（calm）で補って version 14 へ移行される（T-45）", () => {
+    const g = newGame("seed-14", "移行7", newGameCfg);
+    const v13 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v13["version"] = 13;
+    delete v13["tendency"];
+    delete v13["vows"];
+    const restored = deserialize(JSON.stringify(v13));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.tendency).toBe("calm");
+    // 誓約も続けて移行されて空になる
+    expect(restored.vows).toEqual([]);
+  });
+
+  it("version 14 のセーブ（傾向あり・誓約なし）は vows を補って version 15 へ移行される（T-46）", () => {
+    const g = newGame("seed-15", "移行8", { ...newGameCfg, tendency: "war" });
+    const v14 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v14["version"] = 14;
+    delete v14["vows"];
+    const restored = deserialize(JSON.stringify(v14));
+    expect(restored.version).toBe(SAVE_VERSION);
+    // 既に選ばれていた傾向は上書きせず保持する
+    expect(restored.tendency).toBe("war");
+    expect(restored.vows).toEqual([]);
+  });
+
   it("未知のバージョンは拒否する", () => {
     expect(() => deserialize(JSON.stringify({ version: 99 }))).toThrow();
+  });
+});
+
+describe("所持金（T-20：仕事の報酬と宿代）", () => {
+  it("仕事をすると報酬が入る（rewardMoney 指定なし→市場価値）", () => {
+    const g = newGame("m1", "t", { ...newGameCfg, initialMoney: 10 });
+    const r = step(g, { type: "work", kind: "smithing", quality: 50 }, cfg);
+    expect(r.state.player.money).toBeGreaterThan(10);
+    expect(
+      r.events.some((e) => e.type === "moneyPaid" && e.amount === r.state.player.money - 10),
+    ).toBe(true);
+  });
+
+  it("注文の rewardMoney があればそれが入る", () => {
+    const g = newGame("m2", "t", { ...newGameCfg, initialMoney: 0 });
+    const r = step(g, { type: "work", kind: "smithing", quality: 50, rewardMoney: 40 }, cfg);
+    expect(r.state.player.money).toBe(40);
+  });
+
+  it("宿は innCost を払う（rest・自宅は無料）", () => {
+    const g = newGame("m3", "t", { ...newGameCfg, initialMoney: 20 });
+    const costCfg: StepConfig = {
+      ...cfg,
+      sleep: { ...cfg.sleep, innCost: { cheap: 8, normal: 15, good: 30 } },
+    };
+    const r = step(g, { type: "sleep", inn: "normal", dinner: false }, costCfg);
+    expect(r.state.player.money).toBe(5);
+    // 所持金を超える宿代は 0 で止まる（CLI 側で選べないようにする）
+    const r2 = step(r.state, { type: "sleep", inn: "good", dinner: false }, costCfg);
+    expect(r2.state.player.money).toBe(0);
+    // rest は無料
+    const r3 = step(r2.state, { type: "rest" }, costCfg);
+    expect(r3.state.player.money).toBe(0);
   });
 });

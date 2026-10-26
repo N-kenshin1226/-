@@ -1,0 +1,10 @@
+{
+  "id": "item.rusted_hammer",
+  "kind": "item",
+  "title": "錆びた槌",
+  "text": "柄に〈ベルナ〉と刻まれている。打面だけが妙に磨かれている。",
+  "refs": ["npc.berna", "place.old_forge"],
+  "reveals": ["fact.hammer_made_by_berna"],
+  "reliability": "fact",
+  "unlock": null
+}

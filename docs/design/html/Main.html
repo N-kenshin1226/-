@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>街（拠点画面）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&amp;family=Shippori+Mincho+B1:wght@500;700;800&amp;family=Zen+Kaku+Gothic+New:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07070b}
+button{font:inherit;cursor:pointer}
+.frame{position:relative;background:linear-gradient(180deg,rgba(24,24,38,.95),rgba(11,11,19,.96));border:1px solid #5a4620;box-shadow:inset 0 0 0 1px #0a0a10,inset 0 0 0 3px #b8924a,inset 0 0 0 4px #3a2e16,0 10px 30px rgba(0,0,0,.65)}
+.c{position:absolute;width:28px;height:28px;color:#e8c77f;pointer-events:none}
+.tl{top:-7px;left:-7px}.tr{top:-7px;right:-7px;transform:scaleX(-1)}.bl{bottom:-7px;left:-7px;transform:scaleY(-1)}.br{bottom:-7px;right:-7px;transform:scale(-1,-1)}
+.plate{display:inline-flex;align-items:center;gap:10px;padding:5px 18px;background:linear-gradient(180deg,#3a2c14,#22190b);border:1px solid #b8924a;box-shadow:inset 0 0 0 1px #120d05;color:#f3dfa8;font-family:'Shippori Mincho B1',serif;letter-spacing:.18em}
+.cmd{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 14px 0 30px;background:transparent;border:0;color:#e9e1cc;font-family:'Shippori Mincho B1',serif;font-size:19px;text-align:left;position:relative}
+.cmd.on{background:linear-gradient(90deg,rgba(201,164,92,.28),rgba(201,164,92,0));color:#fff3cf}
+.cmd.on::before{content:"";position:absolute;left:10px;top:50%;margin-top:-6px;border-left:9px solid #e8c77f;border-top:6px solid transparent;border-bottom:6px solid transparent}
+.cell{width:14px;height:8px;background:#2b2a36;border:1px solid #4a4658}
+.cell.f{background:#d9b26a;border-color:#f0d08e}
+.key{display:inline-block;min-width:22px;padding:1px 6px;border:1px solid #8c7a55;border-radius:3px;background:#1a1712;color:#f3dfa8;font-family:'Cinzel',serif;font-size:12px;text-align:center}
+</style>
+</head><body><div id="root">
+
+<div style="position: relative; width: 1280px; height: 720px; overflow: hidden; font-family: 'Zen Kaku Gothic New', sans-serif; color: #e9e1cc; background: #07070b;">
+
+  <svg width="1280" height="720" viewBox="0 0 1280 720" aria-hidden="true" style="position: absolute; inset: 0;">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#131a35"></stop><stop offset="0.5" stop-color="#3a3354"></stop><stop offset="0.78" stop-color="#a5634a"></stop><stop offset="1" stop-color="#e3a466"></stop></linearGradient>
+      <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3a466" stop-opacity="0"></stop><stop offset="1" stop-color="#e3a466" stop-opacity="0.35"></stop></linearGradient>
+    </defs>
+    <rect width="1280" height="720" fill="url(#sky)"></rect>
+    <circle cx="210" cy="70" r="1.4" fill="#f5ead0"></circle><circle cx="420" cy="40" r="1" fill="#f5ead0"></circle><circle cx="640" cy="95" r="1.2" fill="#f5ead0"></circle><circle cx="1010" cy="55" r="1.4" fill="#f5ead0"></circle><circle cx="1180" cy="120" r="1" fill="#f5ead0"></circle>
+    <path d="M0 455 L110 410 L230 440 L350 380 L470 430 L600 392 L720 436 L860 384 L990 430 L1120 398 L1280 440 V720 H0 Z" fill="#2b2742"></path>
+    <path d="M0 500 H60 V470 L90 445 L120 470 V500 H170 V455 H230 V500 H300 V440 L340 410 L380 440 V500 H460 V465 H520 V500 H600 V450 L640 425 L680 450 V500 H760 V470 H830 V500 H880 V300 L895 280 V230 L930 170 L965 230 V280 L980 300 V500 H1040 V460 L1080 430 L1120 460 V500 H1200 V470 H1280 V720 H0 Z" fill="#1b1829"></path>
+    <rect x="918" y="250" width="24" height="30" fill="#f1c27d" opacity="0.85"></rect>
+    <rect x="0" y="470" width="1280" height="110" fill="url(#mist)"></rect>
+    <path d="M0 560 H40 V520 L95 478 L150 520 V560 H210 V530 H250 V505 L300 470 L350 505 V560 H420 V540 H470 V512 L520 480 L570 512 V560 H1280 V720 H0 Z" fill="#100e18"></path>
+    <path d="M700 720 V540 L760 500 L820 540 V560 H900 V520 L960 478 L1020 520 V560 H1100 V530 L1160 492 L1220 530 V560 H1280 V720 Z" fill="#100e18"></path>
+    <rect x="72" y="530" width="10" height="14" fill="#f1c27d"></rect><rect x="118" y="530" width="10" height="14" fill="#f1c27d" opacity="0.7"></rect>
+    <rect x="286" y="512" width="10" height="14" fill="#f1c27d"></rect><rect x="510" y="520" width="10" height="14" fill="#f1c27d" opacity="0.8"></rect>
+    <rect x="950" y="528" width="10" height="14" fill="#f1c27d"></rect><rect x="1150" y="540" width="10" height="14" fill="#f1c27d" opacity="0.6"></rect>
+    <rect x="0" y="640" width="1280" height="80" fill="#08070d"></rect>
+  </svg>
+
+  <div style="position: absolute; top: 22px; left: 28px; display: flex; flex-direction: column; gap: 8px;">
+    <div class="plate" style="font-size: 22px; font-weight: 700;">
+      <span>職人街</span>
+      <span style="font-size: 13px; letter-spacing: 0.12em; color: #c9b27c;">王都リーヴェ</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding-left: 4px; font-family: 'Shippori Mincho B1', serif; font-size: 16px; color: #f3e6c4; text-shadow: 0 1px 2px #000;">
+      <span>一年目　春　十二日（土）</span>
+      <span style="color: #e8c77f;">朝</span>
+    </div>
+  </div>
+
+  <div class="frame" style="position: absolute; top: 22px; right: 28px; padding: 12px 18px; display: flex; align-items: center; gap: 22px;">
+    <svg class="c tl" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c br" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <div style="display: flex; flex-direction: column; gap: 5px;" aria-label="残り行動 5のうち3">
+      <span style="font-size: 11px; letter-spacing: 0.2em; color: #b9a77c;">行動</span>
+      <div style="display: flex; gap: 6px;">
+        <svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true"><path d="M7 1C9 5 11 7 11 10a4 4 0 01-8 0c0-3 2-5 4-9z" fill="#f0c26a"></path><rect x="4" y="13" width="6" height="7" fill="#e9e1cc"></rect></svg>
+        <svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true"><path d="M7 1C9 5 11 7 11 10a4 4 0 01-8 0c0-3 2-5 4-9z" fill="#f0c26a"></path><rect x="4" y="13" width="6" height="7" fill="#e9e1cc"></rect></svg>
+        <svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true"><path d="M7 1C9 5 11 7 11 10a4 4 0 01-8 0c0-3 2-5 4-9z" fill="#f0c26a"></path><rect x="4" y="13" width="6" height="7" fill="#e9e1cc"></rect></svg>
+        <svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true"><rect x="4" y="13" width="6" height="7" fill="#6d6658"></rect></svg>
+        <svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true"><rect x="4" y="13" width="6" height="7" fill="#6d6658"></rect></svg>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 11px; letter-spacing: 0.2em; color: #b9a77c;">疲労</span>
+      <div style="display: flex; gap: 2px;"><span class="cell f"></span><span class="cell f"></span><span class="cell f"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#d9b26a" stroke="#7a5a1c" stroke-width="1.5"></circle><circle cx="10" cy="10" r="5" fill="none" stroke="#7a5a1c" stroke-width="1"></circle></svg>
+      <span style="font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: #f3dfa8;">128</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; top: 112px; right: 28px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+    <span style="padding: 4px 12px; background: rgba(40,30,10,.85); border: 1px solid #b8924a; font-family: 'Shippori Mincho B1', serif; font-size: 14px; color: #f3dfa8;">▲ 追い風 ― 《鍛冶》の伸び</span>
+    <span style="padding: 4px 12px; background: rgba(40,16,12,.85); border: 1px solid #9a5a44; font-family: 'Shippori Mincho B1', serif; font-size: 14px; color: #f2b39a;">▼ 逆風 ― 格上との戦い</span>
+  </div>
+
+  <nav class="frame" aria-label="コマンド" style="position: absolute; left: 28px; top: 132px; width: 300px; padding: 16px 8px 14px;">
+    <svg class="c tl" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c tr" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c bl" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c br" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <p style="margin: 0 0 6px 16px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.3em; color: #b9a77c;">ACTION</p>
+    <button type="button" class="cmd on">仕事<span style="margin-left: auto; font-size: 13px; color: #e8c77f;">鍛冶場《黒鉄》</span></button>
+    <button type="button" class="cmd">鍛錬<span style="margin-left: auto; font-size: 13px; color: #a99c80;">木人打ち</span></button>
+    <button type="button" class="cmd">狩りに出る<span style="margin-left: auto; font-size: 13px; color: #a99c80;">東の森</span></button>
+    <button type="button" class="cmd">深層に潜る<span style="margin-left: auto; font-size: 13px; color: #a99c80;">最深 七層</span></button>
+    <div style="height: 1px; margin: 8px 14px; background: linear-gradient(90deg, transparent, #8c7034, transparent);"></div>
+    <p style="margin: 0 0 6px 16px; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.3em; color: #b9a77c;">TOWN</p>
+    <button type="button" class="cmd">師匠を訪ねる</button>
+    <button type="button" class="cmd">書店</button>
+    <button type="button" class="cmd">見聞録<span style="margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #e8c77f;"></span></button>
+    <div style="height: 1px; margin: 8px 14px; background: linear-gradient(90deg, transparent, #8c7034, transparent);"></div>
+    <button type="button" class="cmd">宿で眠る</button>
+  </nav>
+
+  <aside class="frame" aria-label="ステータス" style="position: absolute; right: 28px; top: 196px; width: 270px; padding: 16px 18px;">
+    <svg class="c tl" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c br" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <div style="display: flex; gap: 14px; align-items: center;">
+      <div style="width: 56px; height: 56px; border: 2px solid #b8924a; box-shadow: inset 0 0 0 2px #120d05; background: #2a2433; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;">
+        <svg width="46" height="48" viewBox="0 0 46 48" aria-hidden="true"><circle cx="23" cy="17" r="10" fill="#4a4258"></circle><path d="M3 48c2-12 10-18 20-18s18 6 20 18z" fill="#4a4258"></path></svg>
+      </div>
+      <div>
+        <p style="margin: 0; font-family: 'Shippori Mincho B1', serif; font-size: 22px; font-weight: 700; color: #fff3cf;">リオ</p>
+        <p style="margin: 2px 0 0; font-size: 12px; color: #b9a77c;">十五歳 ・ 流れ者</p>
+      </div>
+    </div>
+    <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+      
+        <div>
+          <div style="display: flex; align-items: baseline; gap: 6px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 15px;">鍛冶</span>
+            <span style="font-size: 11px; color: #b9a77c;">初心者</span>
+            <span style="margin-left: auto; font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: #f3dfa8;">31.7</span>
+          </div>
+          <div style="margin-top: 4px; height: 6px; background: #1d1b26; border: 1px solid #4a4658; position: relative;">
+            <div style="position: absolute; inset: 0; width: 45%; background: linear-gradient(180deg, #f3d48e, #b8873a);"></div>
+            <div style="position: absolute; top: 0; bottom: 0; left: 45%; width: 9%; background: rgba(243,212,142,.35);"></div>
+          </div>
+        </div>
+      
+        <div>
+          <div style="display: flex; align-items: baseline; gap: 6px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 15px;">剣術</span>
+            <span style="font-size: 11px; color: #b9a77c;">初心者</span>
+            <span style="margin-left: auto; font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: #f3dfa8;">25.1</span>
+          </div>
+          <div style="margin-top: 4px; height: 6px; background: #1d1b26; border: 1px solid #4a4658; position: relative;">
+            <div style="position: absolute; inset: 0; width: 7%; background: linear-gradient(180deg, #f3d48e, #b8873a);"></div>
+            <div style="position: absolute; top: 0; bottom: 0; left: 7%; width: 2%; background: rgba(243,212,142,.35);"></div>
+          </div>
+        </div>
+      
+        <div>
+          <div style="display: flex; align-items: baseline; gap: 6px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 15px;">観察</span>
+            <span style="font-size: 11px; color: #b9a77c;">見習い</span>
+            <span style="margin-left: auto; font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: #f3dfa8;">18.4</span>
+          </div>
+          <div style="margin-top: 4px; height: 6px; background: #1d1b26; border: 1px solid #4a4658; position: relative;">
+            <div style="position: absolute; inset: 0; width: 56%; background: linear-gradient(180deg, #f3d48e, #b8873a);"></div>
+            <div style="position: absolute; top: 0; bottom: 0; left: 56%; width: 4%; background: rgba(243,212,142,.35);"></div>
+          </div>
+        </div>
+      
+    </div>
+  </aside>
+
+  <section class="frame" aria-label="会話" style="position: absolute; left: 360px; right: 28px; bottom: 58px; height: 132px; padding: 30px 32px 18px;">
+    <svg class="c tl" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c tr" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c bl" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <svg class="c br" viewBox="0 0 28 28" aria-hidden="true"><path d="M3 26V10c0-3.9 3.1-7 7-7h16" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 26V13c0-2.8 2.2-5 5-5h13" fill="none" stroke="currentColor" stroke-width="1"></path><rect x="1.5" y="1.5" width="5" height="5" transform="rotate(45 4 4)" fill="currentColor"></rect></svg>
+    <div class="plate" style="position: absolute; top: -16px; left: 28px; font-size: 16px; font-weight: 700;">老鍛冶ベルナ</div>
+    <p style="margin: 0; font-family: 'Shippori Mincho B1', serif; font-size: 20px; line-height: 1.8; color: #f4ecd8;">「昨日の刃、焼きが甘い。……だが、粘りは悪くねえ。<br>今日は朝のうちに来い。炉が一番正直な時間だ」</p>
+    <span style="position: absolute; right: 26px; bottom: 14px; color: #e8c77f; font-size: 14px;">▼</span>
+  </section>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 40px; padding: 0 28px; display: flex; align-items: center; gap: 22px; background: linear-gradient(0deg, rgba(0,0,0,.85), rgba(0,0,0,0)); font-size: 13px; color: #cfc2a2;">
+    <span style="font-family: 'Shippori Mincho B1', serif; color: #a99c80;">噂 ―「北の古い鍛冶場、新月の晩だけ灯りがつくらしい」</span>
+    <span style="margin-left: auto;"><span class="key">Enter</span> 決定</span>
+    <span><span class="key">Esc</span> 戻る</span>
+    <span><span class="key">S</span> ステータス</span>
+    <span><span class="key">N</span> 新聞</span>
+  </div>
+</div>
+</div></body></html>

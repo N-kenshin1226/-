@@ -1,0 +1,36 @@
+import canonJson from "../lore/canon.json";
+// アトムは lore/atoms/*.json に1ファイルずつ置く（07 §5 の生成パイプライン）。
+// ここに静的importを1行足すのが登録方法（ブラウザでも動くよう fs は使わない）
+import atom1 from "../lore/atoms/item.rusted_hammer.json";
+import atom2 from "../lore/atoms/npc.marta_board.json";
+import atom3 from "../lore/atoms/place.old_forge.json";
+import atom4 from "../lore/atoms/rumor.fire_drunkard.json";
+import { atomSchema, type Atom } from "./atom.schema.js";
+import { canonSchema, type Canon } from "./canon.schema.js";
+
+/** 正史（骨格。細部・結末は hidden/ に隔離する） */
+export const canon: Canon = (() => {
+  const parsed = canonSchema.safeParse(canonJson);
+  if (!parsed.success) throw new Error(`canon.json がスキーマ違反: ${parsed.error.message}`);
+  return parsed.data;
+})();
+
+const atomRaws = [atom1, atom2, atom3, atom4];
+
+/** アトム全件。id の重複などは lore:check が別途検査する */
+export const atoms: Atom[] = atomRaws.map((raw, i) => {
+  const parsed = atomSchema.safeParse(raw);
+  if (!parsed.success)
+    throw new Error(`atoms[${i}] がアトムのスキーマ違反: ${parsed.error.message}`);
+  return parsed.data;
+});
+
+/** 正史が持つ参照可能なID全体（アトムの refs が指せるのはこれだけ） */
+export function canonIds(c: Canon): Set<string> {
+  return new Set([
+    ...c.events.map((e) => e.id),
+    ...c.places.map((p) => p.id),
+    ...c.figures.map((f) => f.id),
+    ...c.facts.map((f) => f.id),
+  ]);
+}

@@ -148,13 +148,21 @@ export function computeGain(input: GainTerms, cfg: GainConfig): GainResult {
   };
 }
 
-/** 直近 noveltyWindow 件の行動ログから、同じ kind×target の反復回数を数える */
+/**
+ * 直近 noveltyWindow 件の行動ログから、同じ反復の回数を数える。
+ * variant を渡したときは kind×target×variant の一致だけを数える
+ * （train では variant に難度が入る：上達して難度を上げれば反復にならない）
+ */
 export function recentRepeats(
-  log: readonly { kind: string; target?: string }[],
+  log: readonly { kind: string; target?: string; variant?: string }[],
   kind: string,
   target: string | undefined,
   window: number,
+  variant?: string,
 ): number {
   const slice = window > 0 ? log.slice(-window) : log;
-  return slice.filter((e) => e.kind === kind && e.target === target).length;
+  return slice.filter(
+    (e) =>
+      e.kind === kind && e.target === target && (variant === undefined || e.variant === variant),
+  ).length;
 }

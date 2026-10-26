@@ -95,14 +95,15 @@ export function consolidateBody(
   state: GameState,
   quality: number,
   cfg: BodyConfig,
-  opts: { restDay: boolean; capFactor: number },
+  opts: { restDay: boolean; capFactor: number; statFactor?: number; potentialFactor?: number },
 ): BodyNightResult {
   const stats = { ...state.player.stats };
   const lines: WakeLine[] = [];
   for (const [id, load] of Object.entries(state.player.load)) {
     if (load <= 0) continue;
     const stat = id as StatId;
-    const delta = load * cfg.statGainPerLoad * quality * opts.capFactor;
+    // statFactor: 年齢帯（T-36）による基礎能力の伸びやすさ（省略時 1）
+    const delta = load * cfg.statGainPerLoad * quality * opts.capFactor * (opts.statFactor ?? 1);
     const from = stats[stat];
     stats[stat] = from + delta;
     lines.push({ kind: "stat", id, from, to: stats[stat], delta });
@@ -117,7 +118,16 @@ export function consolidateBody(
     skills = Object.fromEntries(
       Object.entries(skills).map(([id, s]) => [
         id,
-        { ...s, potential: Math.min(cfg.potentialMax, s.potential + cfg.restPotentialRecover) },
+        {
+          ...s,
+          // 回復上限はそのスキルの初期値（potentialCap）。念のためグローバル上限でも止める。
+          // potentialFactor は傾向・誓約（T-45/T-46）による回復量の修飾（省略時 1）
+          potential: Math.min(
+            s.potentialCap,
+            cfg.potentialMax,
+            s.potential + cfg.restPotentialRecover * (opts.potentialFactor ?? 1),
+          ),
+        },
       ]),
     );
   }

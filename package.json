@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @trace/web dev",
-    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run check:content && pnpm run build && pnpm run test:e2e",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run check:content && pnpm run lore:check && pnpm run sim:growth && pnpm run sim:retention && pnpm run build && pnpm run test:e2e",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

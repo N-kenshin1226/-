@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>ステータス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&amp;family=Shippori+Mincho+B1:wght@500;700;800&amp;family=Zen+Kaku+Gothic+New:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05080d}
+button{font:inherit;cursor:pointer}
+.win{position:relative;background:linear-gradient(180deg,rgba(12,28,40,.97),rgba(6,14,22,.98));border:1px solid #2c5866;box-shadow:inset 0 0 0 1px #050a10,inset 0 0 0 3px #8fc7d4,inset 0 0 0 4px #17323d,0 12px 40px rgba(0,0,0,.7)}
+.c{position:absolute;width:30px;height:30px;color:#bfe9f2;pointer-events:none}
+.tl{top:-8px;left:-8px}.tr{top:-8px;right:-8px;transform:scaleX(-1)}.bl{bottom:-8px;left:-8px;transform:scaleY(-1)}.br{bottom:-8px;right:-8px;transform:scale(-1,-1)}
+.tab{min-height:40px;padding:0 22px;border:1px solid #2c5866;border-bottom:0;background:#0a1820;color:#8fb5bf;font-family:'Shippori Mincho B1',serif;font-size:16px;letter-spacing:.15em}
+.tab.on{background:linear-gradient(180deg,#1b4452,#0c2230);color:#f2fcfe;border-color:#8fc7d4}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr) 92px 130px;align-items:center;gap:14px;height:54px;padding:0 16px;border-bottom:1px solid #132a33}
+.row.on{background:linear-gradient(90deg,rgba(143,224,239,.18),rgba(143,224,239,0));box-shadow:inset 3px 0 0 #8fe0ef}
+.key{display:inline-block;min-width:22px;padding:1px 6px;border:1px solid #4f8796;border-radius:3px;background:#0b1820;color:#cdeff6;font-family:'Cinzel',serif;font-size:12px;text-align:center}
+</style>
+</head><body><div id="root">
+
+<div style="position: relative; width: 1280px; height: 720px; overflow: hidden; font-family: 'Zen Kaku Gothic New', sans-serif; color: #d7eef3; background: radial-gradient(ellipse at 30% 20%, #10222e 0%, #05080d 70%);">
+
+  <header style="position: absolute; top: 22px; left: 40px; right: 40px; display: flex; align-items: flex-end; gap: 6px; border-bottom: 1px solid #8fc7d4;">
+    <span style="margin-right: 24px; padding-bottom: 8px; font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; letter-spacing: 0.3em; color: #eaf8fb;">STATUS</span>
+    <button type="button" class="tab on">技能</button>
+    <button type="button" class="tab">称号</button>
+    <button type="button" class="tab">経歴</button>
+    <button type="button" class="tab">年代記</button>
+    <span style="margin-left: auto; padding-bottom: 8px; font-size: 13px; color: #8fb5bf;"><span class="key">Q</span> <span class="key">E</span> 切り替え</span>
+  </header>
+
+  <section class="win" aria-label="人物" style="position: absolute; left: 40px; top: 92px; width: 360px; height: 560px; box-sizing: border-box; padding: 22px;">
+    <svg class="c tl" viewBox="0 0 30 30" aria-hidden="true"><path d="M3 28V11c0-4.4 3.6-8 8-8h17" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 28V14c0-3.3 2.7-6 6-6h14" fill="none" stroke="currentColor" stroke-width="1"></path><circle cx="4" cy="4" r="3" fill="currentColor"></circle></svg>
+    <svg class="c br" viewBox="0 0 30 30" aria-hidden="true"><path d="M3 28V11c0-4.4 3.6-8 8-8h17" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 28V14c0-3.3 2.7-6 6-6h14" fill="none" stroke="currentColor" stroke-width="1"></path><circle cx="4" cy="4" r="3" fill="currentColor"></circle></svg>
+    <div style="display: flex; gap: 16px; align-items: flex-end;">
+      <div style="width: 96px; height: 116px; border: 2px solid #8fc7d4; box-shadow: inset 0 0 0 2px #050a10; background: linear-gradient(180deg, #1d3a48, #0c1a22); display: flex; align-items: flex-end; justify-content: center; overflow: hidden;">
+        <svg width="84" height="100" viewBox="0 0 84 100" aria-hidden="true"><circle cx="42" cy="36" r="18" fill="#365a68"></circle><path d="M6 100c3-22 18-34 36-34s33 12 36 34z" fill="#365a68"></path></svg>
+      </div>
+      <div style="flex: 1;">
+        <p style="margin: 0; font-family: 'Shippori Mincho B1', serif; font-size: 30px; font-weight: 800; color: #f2fcfe;">リオ</p>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #8fb5bf;">十五歳 ・ 鍛冶屋の子</p>
+        <p style="margin: 10px 0 0; font-size: 14px;">流れ者 <span style="color: #8fb5bf;">／</span> 職業なし</p>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #f0c26a;">◆ 職業の打診が 1件 あります</p>
+      </div>
+    </div>
+
+    <svg width="316" height="270" viewBox="0 0 300 300" role="img" aria-label="基礎能力：筋力14.2、持久12.8、敏捷9.6、器用17.1、知覚11.4、精神8.9" style="display: block; margin: 12px auto 0;">
+      <polygon points="150,50 236.6,100 236.6,200 150,250 63.4,200 63.4,100" fill="none" stroke="#2c5866" stroke-width="1"></polygon>
+      <polygon points="150,100 193.3,125 193.3,175 150,200 106.7,175 106.7,125" fill="none" stroke="#1e3f4a" stroke-width="1"></polygon>
+      <path d="M150 150 L150 50 M150 150 L236.6 100 M150 150 L236.6 200 M150 150 L150 250 M150 150 L63.4 200 M150 150 L63.4 100" stroke="#1e3f4a" stroke-width="1"></path>
+      <polygon points="150,79 205.4,118 191.6,174 150,236 100.6,178.5 111,127.5" fill="rgba(143,224,239,.25)" stroke="#8fe0ef" stroke-width="1.5"></polygon>
+      <g font-family="Shippori Mincho B1, serif" font-size="14" fill="#cdeff6" text-anchor="middle">
+        <text x="150" y="38">筋力 14.2</text>
+        <text x="262" y="92">持久 12.8</text>
+        <text x="262" y="218">敏捷 9.6</text>
+        <text x="150" y="274">器用 17.1</text>
+        <text x="38" y="218">知覚 11.4</text>
+        <text x="38" y="92">精神 8.9</text>
+      </g>
+    </svg>
+
+    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+        <span style="width: 40px; color: #8fb5bf;">疲労</span>
+        <div style="flex: 1; height: 8px; background: #12303b; border: 1px solid #23505e; position: relative;"><div style="position: absolute; inset: 0; width: 32%; background: linear-gradient(180deg, #f3d48e, #b8873a);"></div></div>
+        <span style="font-family: 'Cinzel', serif; width: 52px; text-align: right;">32/100</span>
+      </div>
+      <p style="margin: 8px 0 0; font-family: 'Shippori Mincho B1', serif; font-size: 14px; color: #8fb5bf; text-align: center;">――何かが、噛み合いかけている。</p>
+    </div>
+  </section>
+
+  <section class="win" aria-label="技能" style="position: absolute; left: 424px; top: 92px; right: 40px; height: 420px; box-sizing: border-box; padding: 14px 10px;">
+    <svg class="c tr" viewBox="0 0 30 30" aria-hidden="true"><path d="M3 28V11c0-4.4 3.6-8 8-8h17" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 28V14c0-3.3 2.7-6 6-6h14" fill="none" stroke="currentColor" stroke-width="1"></path><circle cx="4" cy="4" r="3" fill="currentColor"></circle></svg>
+    <svg class="c bl" viewBox="0 0 30 30" aria-hidden="true"><path d="M3 28V11c0-4.4 3.6-8 8-8h17" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 28V14c0-3.3 2.7-6 6-6h14" fill="none" stroke="currentColor" stroke-width="1"></path><circle cx="4" cy="4" r="3" fill="currentColor"></circle></svg>
+    
+      <div class="row">
+        <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 33 29 40 20 42 C11 40 3 33 3 22 V8 Z" fill="#123543" stroke="#8fc7d4" stroke-width="1.5"></path><text x="20" y="28" text-anchor="middle" font-family="Shippori Mincho B1, serif" font-size="16" font-weight="700" fill="#eaf8fb">初</text></svg>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 19px; color: #eaf8fb;">鍛冶</span>
+            <span style="font-size: 12px; color: #8fb5bf;">初心者</span>
+          </div>
+          <div style="margin-top: 5px; height: 5px; max-width: 320px; background: #12303b; position: relative;"><div style="position: absolute; inset: 0; width: 45%; background: #8fe0ef;"></div></div>
+        </div>
+        <span style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: right; color: #eaf8fb;">31.7</span>
+        <span style="justify-self: end; padding: 3px 10px; font-size: 12px; border: 1px solid #b8924a; color: #f0c26a;">▲ 追い風</span>
+      </div>
+    
+      <div class="row on">
+        <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 33 29 40 20 42 C11 40 3 33 3 22 V8 Z" fill="#123543" stroke="#8fc7d4" stroke-width="1.5"></path><text x="20" y="28" text-anchor="middle" font-family="Shippori Mincho B1, serif" font-size="16" font-weight="700" fill="#eaf8fb">初</text></svg>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 19px; color: #eaf8fb;">剣術</span>
+            <span style="font-size: 12px; color: #8fb5bf;">初心者</span>
+          </div>
+          <div style="margin-top: 5px; height: 5px; max-width: 320px; background: #12303b; position: relative;"><div style="position: absolute; inset: 0; width: 7%; background: #8fe0ef;"></div></div>
+        </div>
+        <span style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: right; color: #eaf8fb;">25.1</span>
+        <span style="justify-self: end; padding: 3px 10px; font-size: 12px; border: 1px solid #9a5a44; color: #f2b39a;">伸び悩み</span>
+      </div>
+    
+      <div class="row">
+        <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 33 29 40 20 42 C11 40 3 33 3 22 V8 Z" fill="#123543" stroke="#8fc7d4" stroke-width="1.5"></path><text x="20" y="28" text-anchor="middle" font-family="Shippori Mincho B1, serif" font-size="16" font-weight="700" fill="#eaf8fb">見</text></svg>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 19px; color: #eaf8fb;">観察</span>
+            <span style="font-size: 12px; color: #8fb5bf;">見習い</span>
+          </div>
+          <div style="margin-top: 5px; height: 5px; max-width: 320px; background: #12303b; position: relative;"><div style="position: absolute; inset: 0; width: 56%; background: #8fe0ef;"></div></div>
+        </div>
+        <span style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: right; color: #eaf8fb;">18.4</span>
+        <span style="justify-self: end; padding: 3px 10px; font-size: 12px; border: 1px solid #2c5866; color: #8fb5bf;">良好</span>
+      </div>
+    
+      <div class="row">
+        <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 33 29 40 20 42 C11 40 3 33 3 22 V8 Z" fill="#123543" stroke="#8fc7d4" stroke-width="1.5"></path><text x="20" y="28" text-anchor="middle" font-family="Shippori Mincho B1, serif" font-size="16" font-weight="700" fill="#eaf8fb">見</text></svg>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 19px; color: #eaf8fb;">回避</span>
+            <span style="font-size: 12px; color: #8fb5bf;">見習い</span>
+          </div>
+          <div style="margin-top: 5px; height: 5px; max-width: 320px; background: #12303b; position: relative;"><div style="position: absolute; inset: 0; width: 15%; background: #8fe0ef;"></div></div>
+        </div>
+        <span style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: right; color: #eaf8fb;">12.3</span>
+        <span style="justify-self: end; padding: 3px 10px; font-size: 12px; border: 1px solid #2c5866; color: #8fb5bf;">錆まで 9日</span>
+      </div>
+    
+      <div class="row">
+        <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 33 29 40 20 42 C11 40 3 33 3 22 V8 Z" fill="#123543" stroke="#8fc7d4" stroke-width="1.5"></path><text x="20" y="28" text-anchor="middle" font-family="Shippori Mincho B1, serif" font-size="16" font-weight="700" fill="#eaf8fb">見</text></svg>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 19px; color: #eaf8fb;">弓術</span>
+            <span style="font-size: 12px; color: #8fb5bf;">見習い</span>
+          </div>
+          <div style="margin-top: 5px; height: 5px; max-width: 320px; background: #12303b; position: relative;"><div style="position: absolute; inset: 0; width: 3%; background: #8fe0ef;"></div></div>
+        </div>
+        <span style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: right; color: #eaf8fb;">10.4</span>
+        <span style="justify-self: end; padding: 3px 10px; font-size: 12px; border: 1px solid #9a5a44; color: #f2b39a;">錆びている</span>
+      </div>
+    
+      <div class="row">
+        <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 33 29 40 20 42 C11 40 3 33 3 22 V8 Z" fill="#0b1820" stroke="#2c5866" stroke-width="1.5"></path><text x="20" y="28" text-anchor="middle" font-family="Shippori Mincho B1, serif" font-size="16" font-weight="700" fill="#4f7f8c">？</text></svg>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 19px; color: #5f8590;">？？？</span>
+            <span style="font-size: 12px; color: #8fb5bf;"></span>
+          </div>
+          <div style="margin-top: 5px; height: 5px; max-width: 320px; background: #12303b; position: relative;"><div style="position: absolute; inset: 0; width: 0%; background: #8fe0ef;"></div></div>
+        </div>
+        <span style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: right; color: #5f8590;">―</span>
+        <span style="justify-self: end; padding: 3px 10px; font-size: 12px; border: 1px solid #2c5866; color: #8fb5bf;">未発見</span>
+      </div>
+    
+      <div class="row">
+        <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 V22 C37 33 29 40 20 42 C11 40 3 33 3 22 V8 Z" fill="#0b1820" stroke="#2c5866" stroke-width="1.5"></path><text x="20" y="28" text-anchor="middle" font-family="Shippori Mincho B1, serif" font-size="16" font-weight="700" fill="#4f7f8c">？</text></svg>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Shippori Mincho B1', serif; font-size: 19px; color: #5f8590;">？？？</span>
+            <span style="font-size: 12px; color: #8fb5bf;"></span>
+          </div>
+          <div style="margin-top: 5px; height: 5px; max-width: 320px; background: #12303b; position: relative;"><div style="position: absolute; inset: 0; width: 0%; background: #8fe0ef;"></div></div>
+        </div>
+        <span style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; text-align: right; color: #5f8590;">―</span>
+        <span style="justify-self: end; padding: 3px 10px; font-size: 12px; border: 1px solid #2c5866; color: #8fb5bf;">未発見</span>
+      </div>
+    
+  </section>
+
+  <section class="win" aria-label="説明" style="position: absolute; left: 424px; top: 532px; right: 40px; height: 120px; box-sizing: border-box; padding: 18px 24px;">
+    <svg class="c br" viewBox="0 0 30 30" aria-hidden="true"><path d="M3 28V11c0-4.4 3.6-8 8-8h17" fill="none" stroke="currentColor" stroke-width="1.6"></path><path d="M8 28V14c0-3.3 2.7-6 6-6h14" fill="none" stroke="currentColor" stroke-width="1"></path><circle cx="4" cy="4" r="3" fill="currentColor"></circle></svg>
+    <div style="display: flex; gap: 28px;">
+      <div style="flex: 1;">
+        <p style="margin: 0; font-family: 'Shippori Mincho B1', serif; font-size: 18px; font-weight: 700; color: #f2fcfe;">《剣術》 ― 伸び悩み</p>
+        <p style="margin: 8px 0 0; font-size: 15px; line-height: 1.7; color: #cdeff6;">相手が弱すぎて、学びが少ない。少し格上の相手と刃を交えるほど、深く身体に刻まれる。</p>
+      </div>
+      <dl style="margin: 0; display: grid; grid-template-columns: auto auto; gap: 6px 16px; font-size: 13px; align-content: start;">
+        <dt style="color: #8fb5bf;">素質</dt><dd style="margin: 0; font-family: 'Cinzel', serif;">97%</dd>
+        <dt style="color: #8fb5bf;">未定着</dt><dd style="margin: 0; font-family: 'Cinzel', serif;">+0.2</dd>
+        <dt style="color: #8fb5bf;">最終使用</dt><dd style="margin: 0;">昨日</dd>
+      </dl>
+    </div>
+  </section>
+
+  <div style="position: absolute; right: 40px; bottom: 18px; display: flex; gap: 20px; font-size: 13px; color: #b8cfd6;">
+    <span><span class="key">↑↓</span> 選択</span>
+    <span><span class="key">Esc</span> 閉じる</span>
+  </div>
+</div>
+</div></body></html>

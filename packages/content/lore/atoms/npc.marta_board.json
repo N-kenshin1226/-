@@ -1,0 +1,10 @@
+{
+  "id": "npc.marta_board",
+  "kind": "npc",
+  "title": "宿屋の張り紙",
+  "text": "泊まる者は朝を待て。食えない者はまず食え。十二年前の張り紙が今も扉の裏に貼られている。",
+  "refs": ["npc.marta", "event.great_fire"],
+  "reveals": ["fact.marta_took_in_orphans"],
+  "reliability": "fact",
+  "unlock": null
+}

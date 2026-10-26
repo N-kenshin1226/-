@@ -86,6 +86,7 @@ const cfg: StepConfig = {
   },
   sleep: {
     nightlyCapPerSkill: 8.0,
+    nightlyCapTotal: 999,
     carryoverRatio: 0.5,
     innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
     dinnerFactors: { withDinner: 1.1, noDinner: 0.85 },
@@ -94,6 +95,28 @@ const cfg: StepConfig = {
     potentialDecayPerPoint: 0.01,
   },
   tailwind,
+  ledger: {
+    basePricePerQuality: 2,
+    marketWindowDays: 7,
+    marketDecayPerWork: 0.9,
+    tierUpBonusPending: 8,
+  },
+  combat: {
+    baseHp: 30,
+    hpPerEndurance: 2,
+    attackBase: 5,
+    attackPerSwordplay: 0.15,
+    attackPerStrength: 0.2,
+    ctBase: 12,
+    ctPerAgility: 0.15,
+    ctMin: 6,
+    defendFactor: 0.5,
+    fleeBase: 0.7,
+    fleePerAgility: 0.02,
+    observeBonus: 20,
+    preciseObserve: 40,
+    deathPendingFactor: 0.5,
+  },
   body: {
     fatiguePerAction: { wait: 1, train: 6 },
     fatigueDefaultPerAction: 2,
@@ -107,6 +130,13 @@ const cfg: StepConfig = {
     restPotentialRecover: 3,
     potentialMax: 100,
   },
+  society: {
+    standings: [],
+    professions: [],
+    lifeGoals: [],
+    goalRewardFactor: 1,
+  },
+  lore: { atoms: [], connections: [] },
   titles: [],
 };
 
