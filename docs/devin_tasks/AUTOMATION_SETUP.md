@@ -6,14 +6,14 @@
 毎晩 1:00（日本時間）  Devin Automations のスケジュール起動
    ↓ Skill「nightly-run」（.agents/skills/nightly-run/SKILL.md）
 QUEUE.md から次のタスク → 実装 → PR → CI（pnpm check ＋ バランスCIゲート）
-   ├ 緑：auto-merge → QUEUE を done に → 次のタスク（1晩最大4本）
+   ├ 緑：auto-merge → QUEUE を done に → 次のタスク（本数の上限なし）
    └ 赤：最大3回修正 → ダメなら blocked にして依存しないタスクへ
    ↓
 朝：docs/reports/YYYY-MM-DD.md に報告
 ```
 
 - 守りは「CIが緑でなければマージされない」こと。だから **T-09（バランスCIゲート）までは成長の数値の質を機械で守れない** 点に注意（T-01〜T-08 はユニットテストだけが守り）
-- 自走は H-01（あなたがCLIで遊ぶ）で止まる
+- 自走は H-01（あなたがCLIで遊ぶ）では止まらない。キューが尽きたらロードマップから次のタスクを自分で切り出す
 
 ## 手順
 
