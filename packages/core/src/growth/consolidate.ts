@@ -1,4 +1,8 @@
 import type { GameState, StatId } from "../state/types.js";
+import { rustedValue, type RustConfig } from "./rust.js";
+
+const tplRust = (s: string, vars: Record<string, string | number>): string =>
+  s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`));
 
 /**
  * 睡眠による定着と起床ログ（docs/02_growth_system.md §3、§6）。
@@ -32,6 +36,8 @@ export interface SleepConfig {
   potentialDecayPerPoint: number;
   /** 宿代（G）。省略時は無料 */
   innCost?: Record<InnRank, number>;
+  /** 錆の設定（02 §7）。省略時は錆びない */
+  rust?: RustConfig;
 }
 
 /** 睡眠の質 = 宿ランク係数 × 夕食係数（0.6〜1.2 にクランプ） */
@@ -81,13 +87,14 @@ export interface ConsolidateResult {
  * 全スキルの pending を定着させる。pending は「1スキルごと」に上限を適用する。
  * opts.capFactor: オーバーワーク等で上限ごと下げる倍率（省略時 1）
  * opts.qualityOverride: rest コマンドなど宿・夕食を通さない場合の質の直接指定
+ * opts.names: 起床ログに出すスキル表示名（省略時はID）
  */
 export function consolidateSleep(
   state: GameState,
   inn: InnRank,
   dinner: boolean,
   cfg: SleepConfig,
-  opts?: { capFactor?: number; qualityOverride?: number },
+  opts?: { capFactor?: number; qualityOverride?: number; names?: Record<string, string> },
 ): ConsolidateResult {
   const quality =
     opts?.qualityOverride !== undefined
@@ -109,21 +116,55 @@ export function consolidateSleep(
   // 第2段階：合計上限を超えたら比例配分で縮める
   const scale = appliedSum > totalCap && appliedSum > 0 ? totalCap / appliedSum : 1;
 
+  const surprises: string[] = [];
   const skills = { ...state.player.skills };
-  for (const [id, prev] of Object.entries(skills)) {
+
+  // 錆（02 §7）：猶予を超えて使っていないスキルは睡眠時に下がる
+  if (cfg.rust) {
+    const total = Object.values(skills).reduce((s, sk) => s + sk.value, 0);
+    for (const [id, prev] of Object.entries(skills)) {
+      const idle = state.time.day - prev.lastUsedDay;
+      const decayed = rustedValue(prev.value, prev.peak, idle, total, cfg.rust);
+      if (decayed < prev.value) {
+        skills[id] = { ...prev, value: decayed };
+        surprises.push(
+          tplRust(cfg.rust.texts.rusted, {
+            name: opts?.names?.[id] ?? id,
+            loss: (prev.value - decayed).toFixed(1),
+          }),
+        );
+      }
+    }
+  }
+
+  for (const [id, prev0] of Object.entries(skills)) {
     const applied = (appliedMap.get(id) ?? 0) * scale;
-    if (prev.pending <= 0) continue;
-    const carryover = (prev.pending - applied) * cfg.carryoverRatio;
-    const from = prev.value;
-    const to = from + applied;
+    if (prev0.pending <= 0) continue;
+    const carryover = (prev0.pending - applied) * cfg.carryoverRatio;
+    const from = prev0.value;
+    // peak 未満の再習得は relearnFactor 倍速い（身体が覚えている）。
+    // peak に達した分で倍率を打ち切り、残りは1倍で継続する
+    let to = from + applied;
+    if (cfg.rust && applied > 0 && from < prev0.peak) {
+      const room = prev0.peak - from;
+      const gainInRoom = Math.min(applied * cfg.rust.relearnFactor, room);
+      const remaining = applied - gainInRoom / cfg.rust.relearnFactor;
+      to = from + gainInRoom + remaining;
+      surprises.push(
+        tplRust(cfg.rust.texts.relearning, {
+          name: opts?.names?.[id] ?? id,
+          loss: "",
+        }),
+      );
+    }
     skills[id] = {
-      ...prev,
+      ...prev0,
       value: to,
-      peak: Math.max(prev.peak, to),
+      peak: Math.max(prev0.peak, to),
       pending: carryover,
-      potential: prev.potential * Math.pow(1 - cfg.potentialDecayPerPoint, applied),
+      potential: prev0.potential * Math.pow(1 - cfg.potentialDecayPerPoint, applied),
     };
-    if (applied > 0) lines.push({ kind: "skill", id, from, to, delta: applied });
+    if (to > from) lines.push({ kind: "skill", id, from, to, delta: to - from });
   }
 
   // 伸びの小さい順（02 §3：最後に予想外の1行が来る並び）
@@ -136,7 +177,7 @@ export function consolidateSleep(
       inn,
       dinner,
       lines,
-      surprises: [],
+      surprises,
       tailwinds: [],
       fatigue: { from: state.player.fatigue, to: state.player.fatigue },
       overwork: { active: false, became: false },

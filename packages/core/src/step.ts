@@ -42,6 +42,8 @@ export interface StepConfig {
   lore: LoreConfig;
   /** 称号の定義（content/titles.json。core が必要とする最小形） */
   titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond }[];
+  /** 起床ログなどに出すスキル表示名（省略時はID） */
+  skillNames?: Record<string, string>;
 }
 
 export type Command =
@@ -140,7 +142,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         isRest ? "normal" : (command.inn ?? "normal"),
         isRest ? false : (command.dinner ?? false),
         cfg.sleep,
-        { capFactor, ...(isRest ? { qualityOverride: cfg.body.restQuality } : {}) },
+        {
+          capFactor,
+          ...(isRest ? { qualityOverride: cfg.body.restQuality } : {}),
+          names: cfg.skillNames,
+        },
       );
       next = rested;
 

@@ -2,25 +2,31 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
+  appraisalGame,
   canAct,
   combatResult,
   combatTurn,
   deserialize,
+  fishingGame,
   miningGame,
   negotiationGame,
   newGame,
+  performanceGame,
   serialize,
   simpleJudgmentQuality,
   sleepQuality,
   smithingGame,
   step,
   type ActionEvent,
+  type BoardInput,
   type BoardState,
   type DealCard,
   type GameState,
   type CombatAction,
+  type MiniGame,
   type StepConfig,
   type TimingInput,
+  type TimingState,
 } from "@trace/core";
 import {
   createRng,
@@ -172,6 +178,18 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     );
     const day = slept?.from.day ?? 0;
     const deeds = state!.actionLog.filter((a) => a.day === day).map((a) => a.kind);
+    // 台帳由来の記事：その日に記録された作品を新聞の材料にする（03 §5）。
+    // 表示名は注文名（特別注文は元の注文名）＞スキル名の順で解決する
+    const works = state!.ledger
+      .filter((w) => w.day === day)
+      .map((w) => {
+        const orderId = w.order?.split("#")[0];
+        const name = orderId
+          ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
+          : (skillNames.get(w.kind) ?? w.kind);
+        return { name, quality: w.quality, tier: w.tier };
+      });
+    const deaths = state!.counters["death.count"] ?? 0;
     const title = events.find(
       (e): e is Extract<ActionEvent, { type: "titleGained" }> =>
         e.type === "titleGained" && !e.suppressed,
@@ -183,6 +201,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       {
         scene: "newspaper",
         deeds,
+        works,
+        deaths,
         ...(title
           ? { newTitle: titles.titles.find((x) => x.id === title.id)?.name ?? title.id }
           : {}),
@@ -201,25 +221,56 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
 
   const delay = opts.delay ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
 
-  /** 鍛冶（タイミング）を手動で遊ぶ。結果は品質とフラグ */
-  const playSmithing = async (
+  /** タイミング系の皮（鍛冶・演奏・釣り）を手動で遊ぶ。結果は品質とフラグ */
+  const playTiming = async (
     order: Order,
     st: GameState,
+    skin: {
+      game: MiniGame<TimingInput, TimingState, { quality: number; flags: string[] }>;
+      intervalMs: number;
+      start: string;
+      beat: string;
+    },
   ): Promise<{ quality: number; flags: string[] } | null> => {
-    const mg = smithingGame(balance.minigame.smithing);
-    let s = mg.init({ skill: st.player.skills[order.kind]?.value ?? 0, seed: st.seed });
-    out(tpl(t.text.workStart, { name: order.name, beats: balance.minigame.smithing.beats }));
+    let s = skin.game.init({ skill: st.player.skills[order.kind]?.value ?? 0, seed: st.seed });
+    out(tpl(skin.start, { name: order.name, beats: s.beats.length }));
     for (let i = 0; i < s.beats.length; i++) {
-      await delay(balance.minigame.smithing.beatIntervalMs);
-      out(tpl(t.text.workBeat, { n: i + 1 }));
+      await delay(skin.intervalMs);
+      out(tpl(skin.beat, { n: i + 1 }));
       const pressedAt = Date.now();
       const line = await io.read();
       if (line === null) return null;
-      const at = (i + 1) * balance.minigame.smithing.beatIntervalMs + (Date.now() - pressedAt);
-      s = mg.tick(s, { at } satisfies TimingInput);
+      const at = (i + 1) * skin.intervalMs + (Date.now() - pressedAt);
+      s = skin.game.tick(s, { at } satisfies TimingInput);
     }
-    const r = mg.result(s);
+    const r = skin.game.result(s);
     return { quality: r.quality, flags: r.flags };
+  };
+
+  /** 注文の kind → タイミング系の皮（ゲーム本体と拍の間隔・演出文） */
+  const timingSkin = (kind: string) => {
+    if (kind === "smithing")
+      return {
+        game: smithingGame(balance.minigame.smithing),
+        intervalMs: balance.minigame.smithing.beatIntervalMs,
+        start: t.text.workStart,
+        beat: t.text.workBeat,
+      };
+    if (kind === "performance")
+      return {
+        game: performanceGame(balance.minigame.performance),
+        intervalMs: balance.minigame.performance.beatIntervalMs,
+        start: t.text.performanceStart,
+        beat: t.text.performanceBeat,
+      };
+    if (kind === "fishing")
+      return {
+        game: fishingGame(balance.minigame.fishing),
+        intervalMs: balance.minigame.fishing.beatIntervalMs,
+        start: t.text.fishingStart,
+        beat: t.text.fishingBeat,
+      };
+    return null;
   };
 
   /** 盤面の表示（未開=・ 空地=ヒント残り 鉱=◆ 岩=×） */
@@ -236,17 +287,27 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     return [head, ...rows];
   };
 
-  /** 採掘（盤面推理）を手動で遊ぶ */
-  const playMining = async (
+  /** 盤面推理系の皮（採掘・鑑定）を手動で遊ぶ */
+  const playBoard = async (
     order: Order,
     st: GameState,
+    skin: {
+      game: MiniGame<BoardInput, BoardState, { quality: number; flags: string[] }>;
+      text: {
+        start: string;
+        prompt: string;
+        found: string;
+        hint: string;
+        miss: string;
+        done: string;
+      };
+    },
   ): Promise<{ quality: number; flags: string[] } | null> => {
-    const mg = miningGame(balance.minigame.mining);
-    let s = mg.init({ skill: st.player.skills[order.kind]?.value ?? 0, seed: st.seed });
-    out(tpl(t.text.miningStart, { name: order.name }));
+    let s = skin.game.init({ skill: st.player.skills[order.kind]?.value ?? 0, seed: st.seed });
+    out(tpl(skin.text.start, { name: order.name }));
     while (!s.done) {
       outAll(boardLines(s));
-      const line = await ask(t.text.miningPrompt);
+      const line = await ask(skin.text.prompt);
       if (line === null || line.trim().toLowerCase() === "q") return null;
       const [xs, ys] = line.trim().split(",");
       const x = Number.parseInt(xs ?? "", 10);
@@ -263,19 +324,48 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         continue;
       }
       const before = s;
-      s = mg.tick(s, { x: x - 1, y: y - 1 });
+      s = skin.game.tick(s, { x: x - 1, y: y - 1 } satisfies BoardInput);
       const cell = s.cells[(y - 1) * s.width + (x - 1)]!;
       if (cell.kind === "ore" && s.ores > before.ores) {
-        out(tpl(t.text.miningOre, { ores: s.ores, total: s.oresTotal }));
+        out(tpl(skin.text.found, { ores: s.ores, found: s.ores, total: s.oresTotal }));
       } else if (cell.kind === "rock") {
-        out(t.text.miningRock);
+        out(skin.text.miss);
       } else if (s.lastHint !== null) {
-        out(tpl(t.text.miningHint, { radius: s.hintRadius, n: s.lastHint }));
+        out(tpl(skin.text.hint, { radius: s.hintRadius, n: s.lastHint }));
       }
     }
-    if (s.ores >= s.oresTotal && s.rocksHit === 0) out(t.text.miningDone);
-    const r = mg.result(s);
+    if (s.ores >= s.oresTotal && s.rocksHit === 0) out(skin.text.done);
+    const r = skin.game.result(s);
     return { quality: r.quality, flags: r.flags };
+  };
+
+  /** 注文の kind → 盤面推理系の皮（ゲーム本体と演出文の組） */
+  const boardSkin = (kind: string) => {
+    if (kind === "mining")
+      return {
+        game: miningGame(balance.minigame.mining),
+        text: {
+          start: t.text.miningStart,
+          prompt: t.text.miningPrompt,
+          found: t.text.miningOre,
+          hint: t.text.miningHint,
+          miss: t.text.miningRock,
+          done: t.text.miningDone,
+        },
+      };
+    if (kind === "appraisal")
+      return {
+        game: appraisalGame(balance.minigame.appraisal),
+        text: {
+          start: t.text.appraisalStart,
+          prompt: t.text.appraisalPrompt,
+          found: t.text.appraisalFound,
+          hint: t.text.appraisalHint,
+          miss: t.text.appraisalMiss,
+          done: t.text.appraisalDone,
+        },
+      };
+    return null;
   };
 
   /** 交渉（駆け引き）を手動で遊ぶ */
@@ -419,13 +509,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       let quality: number;
       let flags: string[] | undefined;
       let expFactor: number | undefined;
-      if (playManual && order.kind === "smithing") {
-        const r = await playSmithing(order, state);
+      const tSkin = playManual ? timingSkin(order.kind) : null;
+      const bSkin = playManual ? boardSkin(order.kind) : null;
+      if (tSkin) {
+        const r = await playTiming(order, state, tSkin);
         if (r === null) return state;
         quality = r.quality;
         flags = r.flags;
-      } else if (playManual && order.kind === "mining") {
-        const r = await playMining(order, state);
+      } else if (bSkin) {
+        const r = await playBoard(order, state, bSkin);
         if (r === null) return state;
         quality = r.quality;
         flags = r.flags;

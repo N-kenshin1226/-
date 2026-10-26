@@ -15,6 +15,12 @@ export const narrationSchema = z
             read: z.array(z.string()).min(1),
             title: z.array(z.string()).min(1),
             offer: z.array(z.string()).min(1),
+            /** 作品言及（{name}/{quality}/{tier} を差し込む） */
+            work: z.array(z.string()).min(1),
+            /** 物騒な見出し（{deaths} を差し込む） */
+            death: z.array(z.string()).min(1),
+            /** 勘違い系の見出し（03 §5。事実と少しズレた噂） */
+            rumor: z.array(z.string()).min(1),
           })
           .strict(),
       })
@@ -23,6 +29,18 @@ export const narrationSchema = z
       .object({
         greet: z.array(z.string()).min(1),
         respect: z.array(z.string()).min(1),
+        /** 立場ID（society.json standings）ごとの口調差分 */
+        byStanding: z
+          .record(
+            z.string(),
+            z
+              .object({
+                greet: z.array(z.string()).min(1).optional(),
+                respect: z.array(z.string()).min(1).optional(),
+              })
+              .strict(),
+          )
+          .optional(),
       })
       .strict(),
     loreDigest: z.object({ header: z.string(), line: z.string() }).strict(),

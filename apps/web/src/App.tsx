@@ -22,6 +22,8 @@ import {
   innCost,
   innQuality,
   inns,
+  isBoardKind,
+  isTimingKind,
   loadGame,
   minigameResult,
   narrator,
@@ -511,8 +513,17 @@ function SleepScreen({ state, act, back }: { state: GameState; act: Act; back: (
 }
 
 // ---- 仕事 ----
+/** 注文の kind（スキルID）→ ミニゲームの皮。未対応の kind は交渉に倒す */
+const KIND_TO_MINIGAME: Record<string, MinigameKind> = {
+  smithing: "smithing",
+  performance: "performance",
+  fishing: "fishing",
+  mining: "mining",
+  appraisal: "appraisal",
+  eloquence: "negotiation",
+};
 function kindToMinigame(kind: string): MinigameKind {
-  return kind === "smithing" ? "smithing" : kind === "mining" ? "mining" : "negotiation";
+  return KIND_TO_MINIGAME[kind] ?? "negotiation";
 }
 
 function WorkScreen({ state, setScreen }: { state: GameState; setScreen: (s: Screen) => void }) {
@@ -618,6 +629,20 @@ function MinigameScreen({
     startMinigame(kind, state),
   );
   const res = minigameResult(kind, gs);
+  const startLine = isTimingKind(kind)
+    ? tpl(
+        kind === "performance"
+          ? t.text.performanceStart
+          : kind === "fishing"
+            ? t.text.fishingStart
+            : t.text.workStart,
+        { name: order.name, beats: (gs as TimingState).beats.length },
+      )
+    : isBoardKind(kind)
+      ? tpl(kind === "appraisal" ? t.text.appraisalStart : t.text.miningStart, {
+          name: order.name,
+        })
+      : `《${order.name}》`;
 
   const commit = () => {
     let expFactor: number | undefined;
@@ -642,13 +667,9 @@ function MinigameScreen({
 
   return (
     <section style={css.panel} data-testid="minigame">
-      <div>
-        {kind === "smithing"
-          ? tpl(t.text.workStart, { name: order.name, beats: (gs as TimingState).beats.length })
-          : `《${order.name}》`}
-      </div>
-      {kind === "smithing" && <SmithingView gs={gs as TimingState} onTick={setGs} />}
-      {kind === "mining" && <MiningView gs={gs as BoardState} onTick={setGs} />}
+      <div>{startLine}</div>
+      {isTimingKind(kind) && <TimingView kind={kind} gs={gs as TimingState} onTick={setGs} />}
+      {isBoardKind(kind) && <BoardView kind={kind} gs={gs as BoardState} onTick={setGs} />}
       {kind === "negotiation" && <NegotiationView gs={gs as DealState} onTick={setGs} />}
       {res.done && (
         <div data-testid="minigame-done" style={{ marginTop: 8 }}>
@@ -666,7 +687,16 @@ function MinigameScreen({
   );
 }
 
-function SmithingView({ gs, onTick }: { gs: TimingState; onTick: (s: TimingState) => void }) {
+/** タイミング系の皮の共通画面（鍛冶・演奏・釣り）。拍に合わせて押すだけ */
+function TimingView({
+  kind,
+  gs,
+  onTick,
+}: {
+  kind: MinigameKind;
+  gs: TimingState;
+  onTick: (s: TimingState) => void;
+}) {
   const startRef = useRef<number | null>(null);
   const [, force] = useState(0);
   useEffect(() => {
@@ -677,11 +707,23 @@ function SmithingView({ gs, onTick }: { gs: TimingState; onTick: (s: TimingState
   const elapsed = startRef.current === null ? 0 : performance.now() - startRef.current;
   const next = gs.beats[gs.cursor];
   const near = next !== undefined && Math.abs(elapsed - next) <= gs.halfWidth;
+  const beatText =
+    kind === "performance"
+      ? t.text.performanceBeat
+      : kind === "fishing"
+        ? t.text.fishingBeat
+        : t.text.workBeat;
+  const pressLabel =
+    kind === "performance"
+      ? t.text.performancePress
+      : kind === "fishing"
+        ? t.text.fishingPress
+        : "打つ";
   return (
     <div style={{ marginTop: 8 }}>
       <div style={css.dim}>
-        {tpl(t.text.workBeat, { n: gs.cursor + 1 })}（{gs.hits} 命中 / 判定窓 ±
-        {Math.round(gs.halfWidth)}ms）
+        {tpl(beatText, { n: gs.cursor + 1 })}（{gs.hits} 命中 / 判定窓 ±{Math.round(gs.halfWidth)}
+        ms）
       </div>
       <div style={{ letterSpacing: 6, fontSize: 20, margin: "8px 0" }}>
         {gs.beats.map((b, i) => (
@@ -702,27 +744,39 @@ function SmithingView({ gs, onTick }: { gs: TimingState; onTick: (s: TimingState
       </div>
       <Btn
         primary
-        testId="smith-hit"
+        testId={`${kind}-hit`}
         disabled={gs.done}
-        onClick={() => onTick(tickMinigame("smithing", gs, { at: elapsed }) as TimingState)}
+        onClick={() => onTick(tickMinigame(kind, gs, { at: elapsed }) as TimingState)}
       >
-        打つ
+        {pressLabel}
       </Btn>
     </div>
   );
 }
 
-function MiningView({ gs, onTick }: { gs: BoardState; onTick: (s: BoardState) => void }) {
+/** 盤面推理系の皮の共通画面（採掘・鑑定）。マスを1つずつ開く */
+function BoardView({
+  kind,
+  gs,
+  onTick,
+}: {
+  kind: MinigameKind;
+  gs: BoardState;
+  onTick: (s: BoardState) => void;
+}) {
+  const startText = kind === "appraisal" ? t.text.appraisalStart : t.text.miningStart;
+  const hintText = kind === "appraisal" ? t.text.appraisalHint : t.text.miningHint;
+  const foundNoun = kind === "appraisal" ? "真品" : "鉱石";
   return (
     <div style={{ marginTop: 8 }}>
       <div style={css.dim}>
         {gs.lastHint === null
-          ? t.text.miningStart
-          : tpl(t.text.miningHint, { radius: gs.hintRadius, n: gs.lastHint })}
-        （鉱石 {gs.ores}/{gs.oresTotal}）
+          ? startText
+          : tpl(hintText, { radius: gs.hintRadius, n: gs.lastHint })}
+        （{foundNoun} {gs.ores}/{gs.oresTotal}）
       </div>
       <div
-        data-testid="mining-board"
+        data-testid={`${kind}-board`}
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${gs.width}, 34px)`,
@@ -745,7 +799,7 @@ function MiningView({ gs, onTick }: { gs: BoardState; onTick: (s: BoardState) =>
               key={i}
               data-testid={`cell-${x}-${y}`}
               disabled={c.revealed || gs.done}
-              onClick={() => onTick(tickMinigame("mining", gs, { x, y }) as BoardState)}
+              onClick={() => onTick(tickMinigame(kind, gs, { x, y }) as BoardState)}
               style={{
                 width: 34,
                 height: 34,

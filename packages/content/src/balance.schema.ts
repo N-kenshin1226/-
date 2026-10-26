@@ -174,6 +174,40 @@ export const balanceSchema = z
               .strict(),
           })
           .strict(),
+        /** 演奏（タイミングの皮）：拍子が速く拍数が多い */
+        performance: z
+          .object({
+            beats: z.number().int().positive(),
+            beatIntervalMs: z.number().positive(),
+            windowBaseMs: z.number().positive(),
+            windowPerSkillMs: z.number().nonnegative(),
+            qualityBase: z.number().min(0).max(100),
+            qualityScale: z.number().positive(),
+            criticalFlag: z.string().min(1),
+            failBelowScore: z.number().min(0).max(1),
+            failFlag: z.string().min(1),
+            unlocks: z
+              .object({
+                seeMeterAt: z.number().nonnegative(),
+                seePhraseAt: z.number().nonnegative(),
+              })
+              .strict(),
+          })
+          .strict(),
+        /** 釣り（タイミングの皮）：命中数が catchMinHits 未満なら逃す */
+        fishing: z
+          .object({
+            beats: z.number().int().positive(),
+            beatIntervalMs: z.number().positive(),
+            windowBaseMs: z.number().positive(),
+            windowPerSkillMs: z.number().nonnegative(),
+            qualityBase: z.number().min(0).max(100),
+            qualityScale: z.number().positive(),
+            catchMinHits: z.number().int().nonnegative(),
+            criticalFlag: z.string().min(1),
+            escapeFlag: z.string().min(1),
+          })
+          .strict(),
         negotiation: z
           .object({
             topics: z
@@ -212,6 +246,21 @@ export const balanceSchema = z
             failFlag: z.string().min(1),
           })
           .strict(),
+        /** 鑑定（盤面推理の皮）：贋作を掴むと品質が missPenaltyFactor 倍 */
+        appraisal: z
+          .object({
+            width: z.number().int().positive(),
+            height: z.number().int().positive(),
+            oreCount: z.number().int().positive(),
+            rockCount: z.number().int().nonnegative(),
+            oreQuality: z.number().positive(),
+            hintRadiusBase: z.number().nonnegative(),
+            hintRadiusPerSkill: z.number().nonnegative(),
+            missPenaltyFactor: z.number().min(0).max(1),
+            criticalFlag: z.string().min(1),
+            failFlag: z.string().min(1),
+          })
+          .strict(),
       })
       .strict(),
     /** docs/02_growth_system.md §4。core/growth/tailwind.ts の TailwindConfig に対応 */
@@ -244,6 +293,23 @@ export const balanceSchema = z
         specialOrderRewardFactor: z.number().positive(),
         /** 特別注文の目標品質倍率 */
         specialOrderQualityFactor: z.number().positive(),
+      })
+      .strict(),
+    /** 錆（02 §7）：未使用スキルの低下・床・再習得倍率・脳の容量 */
+    rust: z
+      .object({
+        /** 未使用から錆が始まるまでの猶予日数 */
+        graceDays: z.number().nonnegative(),
+        /** 猶予超過後の1日あたり低下量 */
+        ratePerDay: z.number().positive(),
+        /** 下限（peak 比） */
+        floorFactor: z.number().min(0).max(1),
+        /** peak 未満の再習得倍率 */
+        relearnFactor: z.number().min(1),
+        /** 脳の容量（合計スキル値の閾値） */
+        capacityThreshold: z.number().positive(),
+        /** 容量超過時の猶予の下限係数 */
+        capacityGraceMinFactor: z.number().min(0).max(1),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

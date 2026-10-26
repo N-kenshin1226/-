@@ -39,6 +39,38 @@
       "targetQuality": 30,
       "rewardMoney": 25,
       "note": "仕入れ値を下げる口論"
+    },
+    {
+      "id": "order.street_song",
+      "kind": "performance",
+      "name": "酒場の余興",
+      "targetQuality": 25,
+      "rewardMoney": 20,
+      "note": "客が沸けばよい気楽な一席"
+    },
+    {
+      "id": "order.hall_recital",
+      "kind": "performance",
+      "name": "公会堂の独奏",
+      "targetQuality": 60,
+      "rewardMoney": 110,
+      "note": "品評会の舞台に立つ。勝負所"
+    },
+    {
+      "id": "order.big_catch",
+      "kind": "fishing",
+      "name": "荒れ川の大物",
+      "targetQuality": 45,
+      "rewardMoney": 55,
+      "note": "川の主を釣り上げる勝負"
+    },
+    {
+      "id": "order.relic_check",
+      "kind": "appraisal",
+      "name": "出土品の真贋",
+      "targetQuality": 55,
+      "rewardMoney": 90,
+      "note": "大金が動く鑑定。贋作を掴むな"
     }
   ]
 }

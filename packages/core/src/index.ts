@@ -54,6 +54,12 @@ export { miningGame } from "./minigame/index.js";
 export type { MiningConfig, MiningResult } from "./minigame/index.js";
 export { negotiationGame } from "./minigame/index.js";
 export type { NegotiationConfig, NegotiationResult, NegotiationTopic } from "./minigame/index.js";
+export { performanceGame } from "./minigame/index.js";
+export type { PerformanceConfig, PerformanceResult } from "./minigame/index.js";
+export { fishingGame } from "./minigame/index.js";
+export type { FishingConfig, FishingResult } from "./minigame/index.js";
+export { appraisalGame } from "./minigame/index.js";
+export type { AppraisalConfig, AppraisalResult } from "./minigame/index.js";
 export {
   combatResult,
   playerCombatStats,

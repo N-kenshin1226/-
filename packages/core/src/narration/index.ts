@@ -18,9 +18,20 @@ export interface NarrationTemplates {
       read: string[];
       title: string[];
       offer: string[];
+      /** 作品言及（works 入力がある日。{name}/{quality}/{tier} を差し込む） */
+      work: string[];
+      /** 物騒な見出し（deaths > 0 の日に混ざる。{deaths} を差し込む） */
+      death: string[];
+      /** 勘違い系の見出し（docs/03 §5。事実と少しズレた噂。行動・平穏の日に混ざる） */
+      rumor: string[];
     };
   };
-  npcWord: { greet: string[]; respect: string[] };
+  npcWord: {
+    greet: string[];
+    respect: string[];
+    /** 立場ID（society.json standings）ごとの口調差分。未定義の立場は greet/respect に戻る */
+    byStanding?: Record<string, { greet?: string[]; respect?: string[] }>;
+  };
   loreDigest: { header: string; line: string };
   biography: { header: string; line: string };
 }
@@ -34,9 +45,13 @@ export type NarrationRequest =
       newTitle?: string;
       /** 昨日届いた打診名があれば */
       newOffer?: string;
+      /** 台帳由来の記事：昨日記録された作品（あれば見出しが作品に言及する） */
+      works?: readonly { name: string; quality: number; tier: number }[];
+      /** 死亡の通算回数。>0 なら物騒な見出しが候補に混ざる */
+      deaths?: number;
     }
-  /** NPCの一言。deed は直近の話題（例: 狩り・仕事） */
-  | { scene: "npcWord"; name: string; deed?: string }
+  /** NPCの一言。deed は直近の話題（例: 狩り・仕事）、standing は立場ID（口調が変わる） */
+  | { scene: "npcWord"; name: string; deed?: string; standing?: string }
   /** 見聞録のまとめ */
   | { scene: "loreDigest"; facts: number; connected: number }
   /** 伝記（引退・死亡時） */
@@ -63,25 +78,47 @@ export class TemplateProvider implements NarrationProvider {
     switch (req.scene) {
       case "newspaper": {
         const L = t.newspaper.lines;
-        const line = req.newTitle
-          ? tpl(this.pick(L.title, rng), { name: req.newTitle })
-          : req.newOffer
-            ? tpl(this.pick(L.offer, rng), { name: req.newOffer })
-            : req.deeds.includes("combat")
-              ? this.pick(L.hunted, rng)
-              : req.deeds.includes("work")
-                ? this.pick(L.worked, rng)
-                : req.deeds.includes("read")
-                  ? this.pick(L.read, rng)
-                  : req.deeds.includes("train")
-                    ? this.pick(L.trained, rng)
-                    : this.pick(L.quiet, rng);
-        return [t.newspaper.header, line];
+        // 記事の分類（優先度: 称号 > 打診 > 作品 > 行動 > 平穏）。
+        // 称号・打診・作品言及は台帳・通知由来の「確報」なので事実のまま出す。
+        let pool: string[];
+        let vars: Record<string, string | number> = {};
+        if (req.newTitle) {
+          pool = L.title;
+          vars = { name: req.newTitle };
+        } else if (req.newOffer) {
+          pool = L.offer;
+          vars = { name: req.newOffer };
+        } else if (req.works !== undefined && req.works.length > 0) {
+          const w = rng.pick(req.works);
+          pool = L.work;
+          vars = { name: w.name, quality: w.quality, tier: w.tier };
+        } else {
+          const factual = req.deeds.includes("combat")
+            ? L.hunted
+            : req.deeds.includes("work")
+              ? L.worked
+              : req.deeds.includes("read")
+                ? L.read
+                : req.deeds.includes("train")
+                  ? L.trained
+                  : L.quiet;
+          // 勘違い系の見出しが一定確率で混ざる（03 §5）：rumor から1件だけ候補に立てて
+          // 事実分類と競合させる（混ざる確率は各分類の配列量で自然に決まる）。
+          // 死亡歴がある日は物騒な見出しも候補に混ざる
+          if ((req.deaths ?? 0) > 0) vars = { deaths: req.deaths ?? 0 };
+          pool = [...factual, this.pick(L.rumor, rng), ...((req.deaths ?? 0) > 0 ? L.death : [])];
+        }
+        return [t.newspaper.header, tpl(this.pick(pool, rng), vars)];
       }
       case "npcWord": {
+        // 立場が分かっていれば口調を差し替える（voices.json／narration.json の byStanding）
+        const s = req.standing ? t.npcWord.byStanding?.[req.standing] : undefined;
         const w = req.deed
-          ? tpl(this.pick(t.npcWord.respect, rng), { name: req.name, deed: req.deed })
-          : tpl(this.pick(t.npcWord.greet, rng), { name: req.name });
+          ? tpl(this.pick(s?.respect ?? t.npcWord.respect, rng), {
+              name: req.name,
+              deed: req.deed,
+            })
+          : tpl(this.pick(s?.greet ?? t.npcWord.greet, rng), { name: req.name });
         return [w];
       }
       case "loreDigest":

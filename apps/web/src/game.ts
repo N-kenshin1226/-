@@ -3,12 +3,15 @@
  * ルールはすべて core、数値は content、ここでは画面遷移と表示用の整形だけを行う
  */
 import {
+  appraisalGame,
   canAct,
   createRng,
   deserialize,
+  fishingGame,
   miningGame,
   negotiationGame,
   newGame,
+  performanceGame,
   serialize,
   simpleJudgmentQuality,
   sleepQuality,
@@ -58,7 +61,16 @@ export const cfg: StepConfig = {
   time: balance.time,
   actionLogMax: balance.state.actionLogMax,
   gain: balance.gain,
-  sleep: balance.sleep,
+  sleep: {
+    ...balance.sleep,
+    rust: {
+      ...balance.rust,
+      texts: {
+        rusted: cliText.text.wake.rusted,
+        relearning: cliText.text.wake.relearning,
+      },
+    },
+  },
   tailwind: { defs: tailwinds.tailwinds, ...balance.tailwind },
   body: balance.body,
   ledger: balance.ledger,
@@ -76,6 +88,7 @@ export const cfg: StepConfig = {
       .map((e) => ({ eventId: e.id, facts: e.reward!.facts, flag: e.reward!.flag })),
   },
   titles: titles.titles.map((x) => ({ id: x.id, rank: x.rank, condition: x.condition })),
+  skillNames: Object.fromEntries(skills.skills.map((s) => [s.id, s.name])),
 };
 
 export const skillList = skills.skills;
@@ -233,6 +246,18 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   );
   const day = slept?.from.day ?? 0;
   const deeds = state.actionLog.filter((a) => a.day === day).map((a) => a.kind);
+  // 台帳由来の記事：その日に記録された作品を新聞の材料にする（03 §5）。
+  // 表示名は注文名（特別注文は元の注文名）＞スキル名の順で解決する
+  const works = state.ledger
+    .filter((w) => w.day === day)
+    .map((w) => {
+      const orderId = w.order?.split("#")[0];
+      const name = orderId
+        ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
+        : (skills.skills.find((s) => s.id === w.kind)?.name ?? w.kind);
+      return { name, quality: w.quality, tier: w.tier };
+    });
+  const deaths = state.counters["death.count"] ?? 0;
   const title = events.find(
     (e): e is Extract<ActionEvent, { type: "titleGained" }> =>
       e.type === "titleGained" && !e.suppressed,
@@ -245,6 +270,8 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
       {
         scene: "newspaper",
         deeds,
+        works,
+        deaths,
         ...(title
           ? { newTitle: titles.titles.find((x) => x.id === title.id)?.name ?? title.id }
           : {}),
@@ -282,11 +309,31 @@ export function specialOrderOf(seed: string, day: number): SpecialOrder | null {
 // ---- ミニゲーム（手動プレイ） ----
 export const engines = {
   smithing: smithingGame(balance.minigame.smithing),
+  performance: performanceGame(balance.minigame.performance),
+  fishing: fishingGame(balance.minigame.fishing),
   mining: miningGame(balance.minigame.mining),
+  appraisal: appraisalGame(balance.minigame.appraisal),
   negotiation: negotiationGame(balance.minigame.negotiation),
 };
 
-export type MinigameKind = "smithing" | "mining" | "negotiation";
+export type MinigameKind =
+  "smithing" | "performance" | "fishing" | "mining" | "appraisal" | "negotiation";
+
+/** タイミングエンジンの皮（鍛冶・演奏・釣り） */
+const TIMING_KINDS = new Set<MinigameKind>(["smithing", "performance", "fishing"]);
+/** 盤面推理エンジンの皮（採掘・鑑定） */
+const BOARD_KINDS = new Set<MinigameKind>(["mining", "appraisal"]);
+export const isTimingKind = (k: MinigameKind): boolean => TIMING_KINDS.has(k);
+export const isBoardKind = (k: MinigameKind): boolean => BOARD_KINDS.has(k);
+
+function timingEngineOf(kind: MinigameKind) {
+  if (kind === "performance") return engines.performance;
+  if (kind === "fishing") return engines.fishing;
+  return engines.smithing;
+}
+function boardEngineOf(kind: MinigameKind) {
+  return kind === "appraisal" ? engines.appraisal : engines.mining;
+}
 
 function minigameCtx(state: GameState, kind: MinigameKind): MiniGameCtx {
   const skillId = kind === "negotiation" ? "eloquence" : kind;
@@ -302,9 +349,9 @@ export function startMinigame(
   state: GameState,
 ): TimingState | BoardState | DealState {
   const ctx = minigameCtx(state, kind);
-  if (kind === "smithing") return engines.smithing.init(ctx);
-  if (kind === "mining") return engines.mining.init(ctx);
-  return engines.negotiation.init(ctx);
+  if (BOARD_KINDS.has(kind)) return boardEngineOf(kind).init(ctx);
+  if (kind === "negotiation") return engines.negotiation.init(ctx);
+  return timingEngineOf(kind).init(ctx);
 }
 
 export function tickMinigame(
@@ -312,34 +359,34 @@ export function tickMinigame(
   gs: TimingState | BoardState | DealState,
   input: TimingInput | BoardInput | DealInput,
 ): TimingState | BoardState | DealState {
-  if (kind === "smithing") return engines.smithing.tick(gs as TimingState, input as TimingInput);
-  if (kind === "mining") return engines.mining.tick(gs as BoardState, input as BoardInput);
-  return engines.negotiation.tick(gs as DealState, input as DealInput);
+  if (BOARD_KINDS.has(kind)) return boardEngineOf(kind).tick(gs as BoardState, input as BoardInput);
+  if (kind === "negotiation") return engines.negotiation.tick(gs as DealState, input as DealInput);
+  return timingEngineOf(kind).tick(gs as TimingState, input as TimingInput);
 }
 
 export function minigameResult(
   kind: MinigameKind,
   gs: TimingState | BoardState | DealState,
 ): { quality: number; flags: string[]; done: boolean; detail: string } {
-  if (kind === "smithing") {
+  if (TIMING_KINDS.has(kind)) {
     const s = gs as TimingState;
-    const r = engines.smithing.result(s);
-    return {
-      quality: r.quality,
-      flags: r.flags,
-      done: s.done,
-      detail: `${r.hits}/${r.total} 命中`,
-    };
+    const r = timingEngineOf(kind).result(s);
+    const detail =
+      kind === "performance"
+        ? tpl(t.text.performanceDetail, { hits: r.hits, total: r.total })
+        : kind === "fishing"
+          ? tpl(t.text.fishingDetail, { hits: r.hits, total: r.total })
+          : `${r.hits}/${r.total} 命中`;
+    return { quality: r.quality, flags: r.flags, done: s.done, detail };
   }
-  if (kind === "mining") {
+  if (BOARD_KINDS.has(kind)) {
     const s = gs as BoardState;
-    const r = engines.mining.result(s);
-    return {
-      quality: r.quality,
-      flags: r.flags,
-      done: s.done,
-      detail: `鉱石 ${r.ores}/${r.oresTotal}`,
-    };
+    const r = boardEngineOf(kind).result(s);
+    const detail =
+      kind === "appraisal"
+        ? tpl(t.text.appraisalDetail, { found: s.ores, total: s.oresTotal })
+        : `鉱石 ${s.ores}/${s.oresTotal}`;
+    return { quality: r.quality, flags: r.flags, done: s.done, detail };
   }
   const s = gs as DealState;
   const r = engines.negotiation.result(s);

@@ -2,6 +2,8 @@ import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { appraisalGame } from "@trace/core";
+import { balance, orders } from "@trace/content";
 import { playCli } from "./game.js";
 import { scriptedIo } from "./io.js";
 
@@ -148,5 +150,48 @@ describe("T-20 街のプレイループ", () => {
     expect(text).toContain("街の記録");
     expect(text).toContain("街の新聞");
     expect(text).toContain("報酬");
+  });
+});
+
+describe("M2 新しい皮の仕事フロー", () => {
+  it("釣り注文を手動でこなす（タイミングの皮。即応答＝全アタリ命中で大物）", async () => {
+    const savePath = tmpSave();
+    const idx = orders.orders.findIndex((o) => o.kind === "fishing") + 1;
+    expect(idx).toBeGreaterThan(0);
+    const beats = balance.minigame.fishing.beats;
+    const { io, output } = scriptedIo([
+      "2", // 仕事
+      String(idx), // 《荒れ川の大物》
+      "y", // 手動で挑む
+      ...Array.from({ length: beats }, () => ""), // 各アタリに即座にEnter（delayなし＝命中）
+      "q",
+    ]);
+    const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
+    const text = output.join("\n");
+
+    expect(text).toContain("アタリ");
+    expect(text).toContain("大物");
+    expect(state!.ledger).toHaveLength(1);
+    expect(state!.ledger[0]!.kind).toBe("fishing");
+    expect(state!.ledger[0]!.flags).toContain("大物");
+  });
+
+  it("鑑定注文を手動でこなす（盤面の皮。全真品を見極めて真贋看破）", async () => {
+    const savePath = tmpSave();
+    const idx = orders.orders.findIndex((o) => o.kind === "appraisal") + 1;
+    expect(idx).toBeGreaterThan(0);
+    // 盤面は seed で決定的：autoplay が返す真品の座標をそのまま流す
+    const cells = appraisalGame(balance.minigame.appraisal)
+      .autoplay({ skill: 0, seed: SEED })
+      .map((i) => `${i.x + 1},${i.y + 1}`);
+    const { io, output } = scriptedIo(["2", String(idx), "y", ...cells, "q"]);
+    const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
+    const text = output.join("\n");
+
+    expect(text).toContain("すべての真品を見極めた");
+    expect(text).toContain("真贋看破");
+    expect(state!.ledger).toHaveLength(1);
+    expect(state!.ledger[0]!.kind).toBe("appraisal");
+    expect(state!.ledger[0]!.flags).toContain("真贋看破");
   });
 });

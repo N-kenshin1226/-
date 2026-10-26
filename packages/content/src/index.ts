@@ -31,3 +31,6 @@ export type { Canon } from "./canon.schema.js";
 export { narration } from "./narration.js";
 export { narrationSchema } from "./narration.schema.js";
 export type { NarrationText } from "./narration.schema.js";
+export { voices } from "./voices.js";
+export { voicesFileSchema, voiceLinesSchema, voiceNpcSchema } from "./voices.schema.js";
+export type { VoiceLines, VoiceNpc, VoicesFile } from "./voices.schema.js";

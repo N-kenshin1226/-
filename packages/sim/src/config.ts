@@ -1,4 +1,4 @@
-import { atoms, balance, canon, society, tailwinds, titles } from "@trace/content";
+import { atoms, balance, canon, cliText, skills, society, tailwinds, titles } from "@trace/content";
 import type { StepConfig } from "@trace/core";
 
 /** balance.json とコンテンツJSONから実行時の StepConfig を組み立てる */
@@ -7,7 +7,16 @@ export function stepConfig(): StepConfig {
     time: balance.time,
     actionLogMax: balance.state.actionLogMax,
     gain: balance.gain,
-    sleep: balance.sleep,
+    sleep: {
+      ...balance.sleep,
+      rust: {
+        ...balance.rust,
+        texts: {
+          rusted: cliText.text.wake.rusted,
+          relearning: cliText.text.wake.relearning,
+        },
+      },
+    },
     tailwind: { defs: tailwinds.tailwinds, ...balance.tailwind },
     body: balance.body,
     ledger: balance.ledger,
@@ -19,6 +28,7 @@ export function stepConfig(): StepConfig {
       goalRewardFactor: balance.society.goalRewardFactor,
     },
     titles: titles.titles.map((t) => ({ id: t.id, rank: t.rank, condition: t.condition })),
+    skillNames: Object.fromEntries(skills.skills.map((s) => [s.id, s.name])),
     lore: {
       atoms: atoms.map((a) => ({ id: a.id, reveals: a.reveals, unlock: a.unlock })),
       connections: canon.events

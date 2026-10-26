@@ -57,6 +57,24 @@ export const cliTextSchema = z
         negoPrompt: z.string(),
         negoWon: z.string(),
         negoLost: z.string(),
+        /** 演奏（タイミングの皮）の開始・拍・決定ボタン・結果の一行 */
+        performanceStart: z.string(),
+        performanceBeat: z.string(),
+        performancePress: z.string(),
+        performanceDetail: z.string(),
+        /** 釣り（タイミングの皮）同 */
+        fishingStart: z.string(),
+        fishingBeat: z.string(),
+        fishingPress: z.string(),
+        fishingDetail: z.string(),
+        /** 鑑定（盤面推理の皮）の開始・入力・各行・結果の一行 */
+        appraisalStart: z.string(),
+        appraisalPrompt: z.string(),
+        appraisalFound: z.string(),
+        appraisalHint: z.string(),
+        appraisalMiss: z.string(),
+        appraisalDone: z.string(),
+        appraisalDetail: z.string(),
         huntPick: z.string(),
         /** エリア別の見出し行（{name} に表示名） */
         huntArea: z.string(),
@@ -118,6 +136,10 @@ export const cliTextSchema = z
             windsNone: z.string(),
             noChange: z.string(),
             restDayLine: z.string(),
+            /** 錆びたスキルがあった朝の行（{name}/{loss}） */
+            rusted: z.string(),
+            /** peak未満の再習得が速い行（{name}） */
+            relearning: z.string(),
             saved: z.string(),
           })
           .strict(),
