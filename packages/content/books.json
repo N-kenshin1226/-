@@ -52,7 +52,8 @@
       "desc": "奥の棚で厳重に綴じられた写本。店主は「開く覚悟のある者にしか売らない」と言う（世界の真理の知識を得る）",
       "readText": "頁を追うごとに、見知った街の輪郭が滲んでいく。写本は言う。世界は何度もめくられ、同じ名の人が何度も生きる。最後の頁に、あなたは自分の名を見つけた。",
       "price": 150,
-      "flag": "knows.world_truth"
+      "flag": "knows.world_truth",
+      "condition": { "flag": "found.taboo_codex" }
     },
     {
       "id": "book.lost_swordplay",
