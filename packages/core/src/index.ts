@@ -99,3 +99,5 @@ export { readAtom } from "./lore/index.js";
 export type { AtomDef, ConnectionDef, LoreConfig, ReadAtomResult } from "./lore/index.js";
 export { TemplateProvider } from "./narration/index.js";
 export type { NarrationProvider, NarrationRequest, NarrationTemplates } from "./narration/index.js";
+export { specialOrderOf } from "./town/index.js";
+export type { OrderLike, SpecialOrderOf, SpecialOrderSpec } from "./town/index.js";

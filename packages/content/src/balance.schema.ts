@@ -242,6 +242,8 @@ export const balanceSchema = z
         specialOrderExpFactor: z.number().positive(),
         /** 特別注文の報酬倍率 */
         specialOrderRewardFactor: z.number().positive(),
+        /** 特別注文の目標品質倍率 */
+        specialOrderQualityFactor: z.number().positive(),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

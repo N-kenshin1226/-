@@ -34,4 +34,4 @@
 | T-19b | [T-19b_lore.md](T-19b_lore.md) | T-10 | done | アトム型・canon骨格・lore:check・見聞録（セーブv8） |
 | T-19c | [T-19c_narration.md](T-19c_narration.md) | T-16 | todo | NarrationProvider+Template |
 | T-20 | [T-20_cli_town.md](T-20_cli_town.md) | T-13〜T-19 | done | 所持金・宿代・特別注文・街の記録（セーブv9） |
-| T-21 | [T-21_web_ui.md](T-21_web_ui.md) | T-20 | todo | Web UI（M1） |
+| T-21 | [T-21_web_ui.md](T-21_web_ui.md) | T-20 | done | Web UI（M1。ブラウザで3日分プレイ可・e2e拡張） |

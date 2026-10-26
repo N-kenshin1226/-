@@ -195,6 +195,7 @@
   "town": {
     "specialOrderChance": 0.4,
     "specialOrderExpFactor": 1.5,
-    "specialOrderRewardFactor": 2
+    "specialOrderRewardFactor": 2,
+    "specialOrderQualityFactor": 1.2
   }
 }

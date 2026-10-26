@@ -1,10 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import raw from "../society.json";
 import { societyFileSchema, type SocietyJson } from "./society.schema.js";
 
-const path = join(dirname(fileURLToPath(import.meta.url)), "../society.json");
-const parsed = societyFileSchema.safeParse(JSON.parse(readFileSync(path, "utf8")));
+const parsed = societyFileSchema.safeParse(raw);
 if (!parsed.success) {
   throw new Error(`society.json がスキーマ違反: ${parsed.error.message}`);
 }

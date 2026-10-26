@@ -1,10 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import raw from "../enemies.json";
 import { enemiesFileSchema, type EnemiesFile } from "./enemies.schema.js";
 
-const path = join(dirname(fileURLToPath(import.meta.url)), "../enemies.json");
-const parsed = enemiesFileSchema.safeParse(JSON.parse(readFileSync(path, "utf8")));
+const parsed = enemiesFileSchema.safeParse(raw);
 if (!parsed.success) {
   throw new Error(`enemies.json がスキーマ違反: ${parsed.error.message}`);
 }
