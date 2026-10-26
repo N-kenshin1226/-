@@ -49,6 +49,8 @@ import {
   createRng,
   crisisAreaClosed,
   crisisEnemyChallengeBonus,
+  crisisFinaleOffers,
+  crisisRivalName,
   crisisTouchpointOf,
   crisisTouchpointOffers,
   crisisTypeOf,
@@ -58,6 +60,7 @@ import {
   TemplateProvider,
   worldFactor,
   worldMods,
+  type CrisisFieldId,
   type NarrationProvider,
   type TendencyId,
   type Work,
@@ -370,6 +373,32 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
             field: t.display.crisisFieldNames[e.field] ?? e.field,
           }),
         ];
+      }
+      // 決着の場面への打診・参加・勝負所・起こし（W-03、docs/08 §6）
+      if (e.type === "crisisFinaleOffered") {
+        return [tpl(t.text.crisisFinaleOffered, { name: crisisRefName(e.id, "finales") })];
+      }
+      if (e.type === "crisisFinaleJoined") {
+        return [tpl(t.text.crisisFinaleJoined, { name: crisisRefName(e.id, "finales") })];
+      }
+      if (e.type === "crisisFinaleAttempt") {
+        return [tpl(t.text.crisisFinaleAttempt, { name: crisisRefName(e.id, "finales") })];
+      }
+      if (e.type === "crisisFinaleLed") {
+        const line = crisisLogLine(
+          e.success ? "finale.hero" : "finale.heroFail",
+          crisisRefName(e.id, "finales"),
+        );
+        return line === null ? [] : [line];
+      }
+      // ライバルが英雄として記録された（W-03）：名はライバルの抽選から解決する
+      if (e.type === "crisisRivalHero") {
+        const name =
+          cfg.crisis !== undefined
+            ? crisisRivalName(state!, cfg.crisis, `rival.${e.index}`)
+            : `rival.${e.index}`;
+        const line = crisisLogLine("rival.hero", name);
+        return line === null ? [] : [line];
       }
       return [];
     });
@@ -927,6 +956,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     const canAction = canAct(state.time, cfg.time);
     if (!canAction) out(t.text.mustSleep);
     out(canAction ? t.text.menuActions : t.text.menuSleepOnly);
+    // 決着の場面（W-03、docs/08 §6）：打診が届いている・請けている・率いられる
+    // ときだけ項目を足す。届いていなければ世界の危機は日常の裏で進むだけ
+    const crisisOpen =
+      canAction &&
+      cfg.crisis !== undefined &&
+      crisisFinaleOffers(state, cfg.crisis).some(
+        (o) => o.joinable || (o.joined && !o.attempted) || o.leadable,
+      );
+    if (crisisOpen) out(t.text.crisisMenuItem);
     const choice = await ask(t.text.promptChoice);
     if (choice === null) return state;
     const c = choice.trim().toLowerCase();
@@ -1309,6 +1347,173 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       const next = await runAbyss(combatIo, state);
       if (next === null) return state;
       state = next;
+    } else if (pick === "13" && canAction && cfg.crisis !== undefined) {
+      // ---- 決着の場面（W-03、docs/08 §6）：打診への応え・勝負所・自分で起こす ----
+      // 項目自体は「届いている・請けている・率いられる」ときだけ出ている。
+      // 見るだけなら何も起きないし、何もしなくても世界は進む
+      const offers = crisisFinaleOffers(state, cfg.crisis);
+      // 非同期の選択肢内では state の非null絞り込みが効かないので現在地を固定する
+      const cur = state;
+      out(t.text.crisisSceneHeader);
+      for (const o of offers) {
+        const status = o.attempted
+          ? t.text.crisisStatusDone
+          : o.joined
+            ? t.text.crisisStatusJoined
+            : o.offered
+              ? t.text.crisisStatusOffered
+              : t.text.crisisStatusWaiting;
+        out(
+          tpl(t.text.crisisSceneLine, {
+            name: o.def.name,
+            status,
+            seasons: o.remainingBoundaries,
+          }),
+        );
+      }
+      const role = offers.find((o) => o.joinable || o.joined)?.role ?? offers[0]?.role;
+      if (role !== undefined) {
+        out(tpl(t.text.crisisSceneRole, { role: t.display.crisisRoleNames[role] ?? role }));
+      }
+      const acts: { label: string; run: () => Promise<boolean> }[] = [];
+      const pending = offers.find((o) => o.joinable || (o.joined && !o.attempted));
+      // 打診に応える（受けなくても世界は進む —— 応えない選択肢は「戻る」だけ）
+      if (pending?.joinable === true) {
+        const o = pending;
+        acts.push({
+          label: tpl(t.text.crisisJoinOption, { name: o.def.name }),
+          run: async () => {
+            const res = step(cur, { type: "crisisFinaleJoin", id: o.def.id }, cfg);
+            state = res.state;
+            outAll(applyTitles(res.events));
+            return true;
+          },
+        });
+      }
+      // 勝負所に臨む（請けた場面。役目に応じた実際の遊びで出来を決める）
+      if (pending !== undefined && pending.joined && !pending.attempted) {
+        const o = pending;
+        acts.push({
+          label: tpl(t.text.crisisAttemptOption, { name: o.def.name }),
+          run: async () => {
+            let score: number;
+            let died = false;
+            if (o.role === "vanguard") {
+              // 前線の要：場面の前線（ref の敵。なければ最強格）を退く実力勝負
+              const foe =
+                enemies.enemies.find((e) => e.id === o.def.ref) ??
+                [...enemies.enemies].sort((a, b) => b.challenge - a.challenge)[0]!;
+              const cs = await fightEnemy(
+                combatIo,
+                foe,
+                `${cur.seed}-crisis-finale-${o.def.id}`,
+                cur,
+              );
+              if (cs === null) return false;
+              const r = combatResult(cs);
+              score = r.won ? 1 : r.fled ? 0.35 : 0;
+              died = r.died;
+            } else {
+              // 会議の場・装備と支度・まとめ役：役目に応じた腕の見せどころ。
+              // 工芸なら自分の得意な技能で、それ以外は駆け引きの場として遊ぶ
+              const roleSkills = cfg.crisis!.involvement!.roleSkills;
+              const kind =
+                o.role === "artisan"
+                  ? ([...roleSkills.artisan].sort(
+                      (a, b) =>
+                        (cur.player.skills[b]?.value ?? 0) - (cur.player.skills[a]?.value ?? 0),
+                    )[0] ?? "eloquence")
+                  : "eloquence";
+              const order: Order = {
+                id: `crisis.${o.def.id}`,
+                kind,
+                name: o.def.name,
+                targetQuality: 50,
+                rewardMoney: 0,
+              };
+              const tSkin = timingSkin(kind);
+              const bSkin = boardSkin(kind);
+              if (tSkin !== null) {
+                const r = await playTiming(order, cur, tSkin);
+                if (r === null) return false;
+                score = r.quality / 100;
+              } else if (bSkin !== null) {
+                const r = await playBoard(order, cur, bSkin);
+                if (r === null) return false;
+                score = r.quality / 100;
+              } else {
+                const r = await playNegotiation(order, cur);
+                if (r === null) return false;
+                score = r.quality / 100;
+              }
+            }
+            const res = step(
+              cur,
+              {
+                type: "crisisFinaleAttempt",
+                id: o.def.id,
+                score,
+                ...(died ? { died: true } : {}),
+              },
+              cfg,
+            );
+            state = res.state;
+            outAll(applyTitles(res.events));
+            if (died) {
+              outAll(bioLines(res.state, "death"));
+              if (noteDeath(res)) out(t.text.chronicleRecorded);
+            }
+            return true;
+          },
+        });
+      }
+      // 自分で起こす（関与が段階4＝率いた。未決着の場面それぞれに）
+      for (const o of offers.filter((x) => x.leadable)) {
+        acts.push({
+          label: tpl(t.text.crisisLeadOption, { name: o.def.name }),
+          run: async () => {
+            // やり方を選ぶ：全面的に挑むか、分野を一つに絞って挑むか
+            let field: CrisisFieldId | undefined;
+            if (o.def.fields.length > 1) {
+              out(t.text.crisisLeadFieldPrompt);
+              out(`  1) ${t.text.crisisLeadFieldAll}`);
+              o.def.fields.forEach((f, i) =>
+                out(`  ${i + 2}) ${t.display.crisisFieldNames[f] ?? f}`),
+              );
+              const fi = await ask(t.text.promptChoice);
+              if (fi === null) return false;
+              const idx = Number.parseInt(fi.trim(), 10);
+              if (idx >= 2 && idx - 2 < o.def.fields.length) field = o.def.fields[idx - 2];
+              else if (idx !== 1) {
+                out(t.text.invalidInput);
+                return true;
+              }
+            }
+            const conf = await ask(tpl(t.text.crisisLeadConfirm, { name: o.def.name }));
+            if (conf === null) return false;
+            if (conf.trim().toLowerCase() !== "y") return true;
+            const res = step(
+              cur,
+              {
+                type: "crisisLead",
+                id: o.def.id,
+                ...(field !== undefined ? { field } : {}),
+              },
+              cfg,
+            );
+            state = res.state;
+            outAll(applyTitles(res.events));
+            return true;
+          },
+        });
+      }
+      acts.push({ label: t.text.crisisBack, run: async () => true });
+      acts.forEach((a, i) => out(`  ${i + 1}) ${a.label}`));
+      const ci = await ask(t.text.promptChoice);
+      if (ci === null) return state;
+      const cPick = acts[Number.parseInt(ci.trim(), 10) - 1];
+      if (cPick === undefined) out(t.text.invalidInput);
+      else if (!(await cPick.run())) return state;
     } else {
       out(t.text.invalidInput);
     }

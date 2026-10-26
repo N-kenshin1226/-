@@ -280,7 +280,10 @@ export function LoreScreen({
                   {
                     format: (ev) => [
                       tpl(t.text.loreRead, { title: atom.title, text: atom.text }),
-                      ...eventLines(ev.filter((e) => e.type !== "atomRead")),
+                      ...eventLines(
+                        ev.filter((e) => e.type !== "atomRead"),
+                        state,
+                      ),
                     ],
                   },
                 );

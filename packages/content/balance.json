@@ -343,6 +343,35 @@
       "weightBase": 0.5,
       "offersPerStage": [1, 2, 3],
       "contribution": { "work": 0.3, "combat": 0.5 }
+    },
+    "involvement": {
+      "stageThresholds": [40, 140, 300],
+      "weights": {
+        "tpDone": 1.0,
+        "heroPrep": 2.0,
+        "renown": 0.15,
+        "standing": 8,
+        "skill": 0.6,
+        "pinnacleStage": 10,
+        "pinnacleTop": 30
+      },
+      "supporterExtraOffers": 1,
+      "attemptBonus": 4.0,
+      "leadSkillWeight": 0.06,
+      "leadRenownWeight": 0.01,
+      "leadFocusFactor": 0.75,
+      "coordinatorSpread": 5,
+      "roleSkills": {
+        "vanguard": ["swordplay", "evasion", "iaijutsu", "parry", "observation"],
+        "negotiator": ["eloquence", "performance", "flourish"],
+        "artisan": ["smithing", "mining", "appraisal", "prospecting", "fishing"]
+      },
+      "rivals": {
+        "growthPerBoundary": { "min": 4, "max": 10 },
+        "heroGrowthPerBoundary": { "min": 40, "max": 80 },
+        "contribution": 3.0,
+        "hastenWindow": 1
+      }
     }
   }
 }

@@ -500,6 +500,84 @@ export const balanceSchema = z
               .strict(),
           })
           .strict(),
+        /**
+         * 関与（docs/08 §6、W-03）：段階の閾値・重み・打診/起こし/ライバルの係数。
+         * 名・二つ名・立場の順・頂点ルート定義・ライバル数は content から注入するので
+         * ここには係数だけを置く
+         */
+        involvement: z
+          .object({
+            /** 段階2・3・4 の閾値（昇順3つ） */
+            stageThresholds: z.array(z.number().nonnegative()).length(3),
+            /** 関与スコアの各項の重み */
+            weights: z
+              .object({
+                /** 危機の接点の達成1件あたり */
+                tpDone: z.number().nonnegative(),
+                /** 世界の備えへの寄与1あたり */
+                heroPrep: z.number().nonnegative(),
+                /** 名声（自実績点）1あたり */
+                renown: z.number().nonnegative(),
+                /** 立場の段1あたり */
+                standing: z.number().nonnegative(),
+                /** 最高スキル値1あたり */
+                skill: z.number().nonnegative(),
+                /** 頂点ルートの達成段数1あたり（近道。必須ではない） */
+                pinnacleStage: z.number().nonnegative(),
+                /** 完走した頂点ルート1本あたり */
+                pinnacleTop: z.number().nonnegative(),
+              })
+              .strict(),
+            /** 段階2から接点の日ごとの提示に足す件数（「注文や依頼が増える」） */
+            supporterExtraOffers: z.number().int().min(0),
+            /** 打診の勝負所で最高の働き（score=1）をしたとき備えに足す量 */
+            attemptBonus: z.number().nonnegative(),
+            /** 自分で起こす決着：最高スキル値が備えに乗る重み */
+            leadSkillWeight: z.number().nonnegative(),
+            /** 自分で起こす決着：名声が備えに乗る重み */
+            leadRenownWeight: z.number().nonnegative(),
+            /** 一点に絞った起こし方の required への係数（1未満＝やり方を選ぶと届きやすい） */
+            leadFocusFactor: z.number().positive().max(1),
+            /** 上位3技能の差がこの値以内なら「まとめ役」 */
+            coordinatorSpread: z.number().nonnegative(),
+            /** 役割 → 属するスキルID の表 */
+            roleSkills: z
+              .object({
+                vanguard: z.array(z.string().min(1)),
+                negotiator: z.array(z.string().min(1)),
+                artisan: z.array(z.string().min(1)),
+              })
+              .strict(),
+            /** ライバルの関与の係数（顔ぶれは rivals.json と balance.rivals.size から注入） */
+            rivals: z
+              .object({
+                growthPerBoundary: z
+                  .object({ min: z.number().nonnegative(), max: z.number().nonnegative() })
+                  .strict()
+                  .refine((g) => g.min <= g.max, {
+                    message: "growthPerBoundary.min <= max が必要",
+                  }),
+                heroGrowthPerBoundary: z
+                  .object({ min: z.number().nonnegative(), max: z.number().nonnegative() })
+                  .strict()
+                  .refine((g) => g.min <= g.max, {
+                    message: "heroGrowthPerBoundary.min <= max が必要",
+                  }),
+                /** 段階4のライバルが決着の判定に足す備え（1人あたり） */
+                contribution: z.number().nonnegative(),
+                /** 段階4のライバルが最も早い未決着を早められる幅（季節の変わり目数） */
+                hastenWindow: z.number().int().min(0),
+              })
+              .strict(),
+          })
+          .strict()
+          .optional()
+          .refine((i) => i === undefined || i.stageThresholds[0]! <= i.stageThresholds[1]!, {
+            message: "stageThresholds は昇順に並べる",
+          })
+          .refine((i) => i === undefined || i.stageThresholds[1]! <= i.stageThresholds[2]!, {
+            message: "stageThresholds は昇順に並べる",
+          }),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

@@ -294,7 +294,7 @@ export function BookScreen({ state, act, back }: { state: GameState; act: Act; b
               {
                 format: (ev) => [
                   tpl(t.text.bookRead, { name: b.name, text: b.readText }),
-                  ...eventLines(ev),
+                  ...eventLines(ev, state),
                 ],
               },
             );

@@ -38,7 +38,7 @@ export function WakeScreen({
   atHome: boolean;
   setScreen: (s: Screen) => void;
 }) {
-  const p = wakePack(report, events, atHome);
+  const p = wakePack(report, events, atHome, state);
   const wake = () => setScreen({ name: "menu" });
   const news = () => setScreen({ name: "news", events });
   const status = () => setScreen({ name: "status" });

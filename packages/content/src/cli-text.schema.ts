@@ -30,6 +30,10 @@ export const cliTextSchema = z
         qualityBands: z.array(z.object({ upTo: z.number(), label: z.string() }).strict()).min(1),
         /** 世界の備えの分野（crisisFieldSchema の5分野）→ 表示名（W-02。接点の寄与の行に出す） */
         crisisFieldNames: z.record(z.string(), z.string()),
+        /** 決着の場面での役割（W-03。vanguard/negotiator/artisan/coordinator）→ 表示名 */
+        crisisRoleNames: z.record(z.string(), z.string()),
+        /** 危機への関与の段階（W-03。1見届けた/2支えた/3担った/4率いた）→ 表示名 */
+        crisisStageNames: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -179,6 +183,32 @@ export const cliTextSchema = z
         touchpointTag: z.string(),
         /** 接点を果たした行（W-02。{field} に備えの分野の表示名） */
         crisisTouchpointDone: z.string(),
+        /**
+         * 決着の場面（W-03、docs/08 §6）：メニューの追加項目・画面の見出しと各行・
+         * 状態語・選択肢・起こし方の問い・戻る。{name}/{status}/{seasons}/{role} を差し込む
+         */
+        crisisMenuItem: z.string(),
+        crisisSceneHeader: z.string(),
+        crisisSceneLine: z.string(),
+        crisisStatusOffered: z.string(),
+        crisisStatusJoined: z.string(),
+        crisisStatusDone: z.string(),
+        crisisStatusWaiting: z.string(),
+        crisisSceneRole: z.string(),
+        crisisSceneStage: z.string(),
+        crisisJoinOption: z.string(),
+        crisisAttemptOption: z.string(),
+        crisisLeadOption: z.string(),
+        crisisLeadFieldPrompt: z.string(),
+        crisisLeadFieldAll: z.string(),
+        crisisLeadConfirm: z.string(),
+        crisisBack: z.string(),
+        /** 打診が届いた行（W-03。通知Aランク相当。{name} に場面名） */
+        crisisFinaleOffered: z.string(),
+        /** 打診に応えた行（W-03。{name} に場面名） */
+        crisisFinaleJoined: z.string(),
+        /** 勝負所を果たした行（W-03。{name} に場面名） */
+        crisisFinaleAttempt: z.string(),
         /** 年代記（T-38）：周回をまたぐ人生の一覧。開始時の件数・見出し・各頁の行・追記の告知 */
         chronicleLives: z.string(),
         chronicleHeader: z.string(),

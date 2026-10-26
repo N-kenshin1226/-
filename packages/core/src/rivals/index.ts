@@ -85,26 +85,57 @@ function rivalScoreAt(base: number, growth: number, day: number): number {
   return Math.round(base + growth * day);
 }
 
+/** ライバルの素性（名・二つ名・基礎名声・日ごとの伸び。世界シードから引いたままの形） */
+export interface RivalCast {
+  name: string;
+  epithet: string;
+  /** 基礎名声（scoreMin〜scoreMax） */
+  base: number;
+  /** 日ごとの名声の伸び（0〜growthPerDay） */
+  growth: number;
+}
+
 /**
- * 順位表を組み立てる。同じ世界シード・同じ state なら同じ表になる（決定論）。
- * ライバルは日々少しずつ伸びるので、放っておくと順位を落とし、実績を積むと追い越せる
+ * ライバルの素性の抽選（W-03：危機のライバル関与でも同じ顔ぶれを使うため共有）。
+ * 世界シード由来の独立した乱数列（`createRng(seed).fork("rivals")`）で、
+ * 名・二つ名・基礎名声・日ごとの伸びを重複なしで引く。
+ * state.rng（世界を進める乱数列）は消費しない
  */
-export function rivalsOf(state: GameState, pool: RivalNamePool, cfg: RivalsConfig): Rivalry {
-  // 世界シード由来の独立した列。state.rng（世界を進める乱数）は消費しない
-  const rng = createRng(state.seed).fork("rivals");
+export function drawRivalCast(
+  seed: string,
+  pool: RivalNamePool,
+  cfg: Pick<RivalsConfig, "size" | "scoreMin" | "scoreMax" | "growthPerDay">,
+): RivalCast[] {
+  const rng = createRng(seed).fork("rivals");
   const size = Math.min(cfg.size, pool.names.length);
   const names = [...pool.names];
   const epithets = [...pool.epithets];
-  const rivals: { name: string; epithet: string; score: number }[] = [];
+  const out: RivalCast[] = [];
   for (let i = 0; i < size; i++) {
     // 名と二つ名は残りの母集団から重複なしで引く（母集団が尽きたら二つ名は空）
     const [name] = names.splice(rng.int(0, names.length - 1), 1);
     const epithet =
       epithets.length > 0 ? epithets.splice(rng.int(0, epithets.length - 1), 1)[0]! : "";
-    const base = rng.int(cfg.scoreMin, cfg.scoreMax);
-    const growth = rng.next() * cfg.growthPerDay;
-    rivals.push({ name: name!, epithet, score: rivalScoreAt(base, growth, state.time.day) });
+    out.push({
+      name: name!,
+      epithet,
+      base: rng.int(cfg.scoreMin, cfg.scoreMax),
+      growth: rng.next() * cfg.growthPerDay,
+    });
   }
+  return out;
+}
+
+/**
+ * 順位表を組み立てる。同じ世界シード・同じ state なら同じ表になる（決定論）。
+ * ライバルは日々少しずつ伸びるので、放っておくと順位を落とし、実績を積むと追い越せる
+ */
+export function rivalsOf(state: GameState, pool: RivalNamePool, cfg: RivalsConfig): Rivalry {
+  const rivals = drawRivalCast(state.seed, pool, cfg).map((c) => ({
+    name: c.name,
+    epithet: c.epithet,
+    score: rivalScoreAt(c.base, c.growth, state.time.day),
+  }));
 
   const me = playerScore(state, cfg);
   // 同点は自分を上に（自慢帳は読み手のためにある）。ライバル同士の同点は名順で安定させる

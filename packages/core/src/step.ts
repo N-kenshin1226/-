@@ -2,6 +2,10 @@ import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/
 import { evaluate, type Cond } from "./conditions/index.js";
 import {
   addHeroContribution,
+  crisisFinaleAttempt,
+  crisisFinaleLead,
+  crisisFinaleOffers,
+  crisisInvolvement,
   crisisPriceFactor,
   crisisSeasonTurn,
   crisisTouchpointForCombat,
@@ -36,7 +40,7 @@ import {
 } from "./mentors/index.js";
 import { unlockSkills } from "./skills/index.js";
 import { restoreRng } from "./rng/index.js";
-import type { GameState, SkillId } from "./state/types.js";
+import type { CrisisFieldId, GameState, SkillId } from "./state/types.js";
 import {
   advance as advanceTime,
   canAct,
@@ -176,6 +180,26 @@ export type Command =
    * 初回は秘伝フラグが立つ
    */
   | { type: "trainWithMentor"; difficulty: number }
+  /**
+   * 決着の場面への参加の打診に応える（W-03、docs/08 §6。行動は消費しない —
+   * 打診は世界から届き、応えるのは会話の一瞬）。
+   * 届いた打診（crisis.offer.<id>）があって最も早い未決着の場面だけ請けられる
+   */
+  | { type: "crisisFinaleJoin"; id: string }
+  /**
+   * 請けた場面の勝負所に臨む（W-03。1行動を消費）。score は実際に遊んだ結果の
+   * 出来 0〜1（戦闘の勝敗・ミニゲームの品質・交渉の結果を呼び出し側が換算）。
+   * 出来に応じて世界の備えに足す量が決まり、場面の成否に効く。1場面につき1回。
+   * died=true なら武の勝負所で倒れた扱い（教会蘇生：未定着経験の半分を失う。03 §4 と同じ）
+   */
+  | { type: "crisisFinaleAttempt"; id: string; score: number; died?: boolean }
+  /**
+   * 決着の場面を自分で起こす（W-03、段階4「率いた」＝英雄。1行動を消費）。
+   * 予定の時期を早めて今ここで判定する。field を指定するとやり方をその分野に
+   * 絞れる（required に leadFocusFactor が掛かるが、主人公側の備えもその分野
+   * だけで判定する）。成否は主に主人公側の備え（自分の寄与＋実力＋名声）で決まる
+   */
+  | { type: "crisisLead"; id: string; field?: CrisisFieldId }
   /**
    * 引退する（06 §1、T-40）。いつでも選べて行動は消費しない。
    * state は変えず `retired` イベントだけを返す —— 伝記・年代記・継承・転生は
@@ -837,6 +861,78 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       });
       break;
     }
+    case "crisisFinaleJoin": {
+      // 打診に応える：行動は消費しない（会話の一瞬。認定の受諾と同じ扱い）。
+      // 届いた打診のある最も早い未決着だけ請けられる —— 応えなくても世界は進む
+      if (cfg.crisis === undefined) break;
+      const offer = crisisFinaleOffers(next, cfg.crisis).find((o) => o.def.id === command.id);
+      if (offer === undefined || !offer.joinable) break;
+      events.push({ type: "crisisFinaleJoined", id: command.id });
+      break;
+    }
+    case "crisisFinaleAttempt": {
+      // 勝負所に臨む（1行動）。請けた場面に限り、score に応じて世界の備えに足す。
+      // 武の勝負所で倒れても世界は進む —— 死の扱いは戦闘と同じ（03 §4）
+      if (cfg.crisis === undefined || !canAct(next.time, cfg.time)) break;
+      const attempt = crisisFinaleAttempt(next, cfg.crisis, command.id, command.score);
+      if (!attempt.ok) break;
+      next = attempt.state;
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "crisis", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "crisis",
+        day: next.time.day,
+        target: command.id,
+        variant: "attempt",
+      });
+      events.push({
+        type: "crisisFinaleAttempt",
+        id: command.id,
+        score: attempt.score,
+        amount: attempt.amount,
+      });
+      if (command.died === true) {
+        const counters = { ...next.counters };
+        counters["death.count"] = (counters["death.count"] ?? 0) + 1;
+        next = { ...next, counters };
+        const skills = { ...next.player.skills };
+        for (const id of Object.keys(skills)) {
+          const s = skills[id]!;
+          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+        }
+        next = { ...next, player: { ...next.player, skills } };
+        events.push({ type: "died" });
+      }
+      break;
+    }
+    case "crisisLead": {
+      // 自分で起こす決着（1行動。段階4だけ）。主人公側の備えで場面を今ここで判定し、
+      // 決着がつけば終幕まで進む。時期を早められる・やり方を選べる（docs/08 §6）
+      if (cfg.crisis === undefined || !canAct(next.time, cfg.time)) break;
+      const led = crisisFinaleLead(next, cfg.crisis, command.id, command.field);
+      if (!led.ok) break;
+      next = led.state;
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "crisis", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "crisis",
+        day: next.time.day,
+        target: command.id,
+        variant: "lead",
+      });
+      events.push({
+        type: "crisisFinaleLed",
+        id: command.id,
+        success: led.success === true,
+        total: led.total ?? 0,
+      });
+      if (next.crisis !== null && next.crisis.outcome !== "ongoing") {
+        events.push({ type: "crisisEnded", outcome: next.crisis.outcome });
+      }
+      break;
+    }
     case "retire": {
       // 引退：行動を消費せず状態も変えない。生涯の終わりを告げる出来事だけを発行し、
       // 伝記・年代記への記録・継承・転生は呼び出し側の仕事（T-40。06 §1）
@@ -946,6 +1042,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       skill.pending += base * cfg.society.goalRewardFactor;
     }
     events.push({ type: "goalAchieved", id: achieved.id });
+  }
+
+  // 危機の打診（W-03、docs/08 §6）：関与が段階3（担った）に届くと、世界から
+  // 最も早い未決着の場面への参加を打診される（通知Aランク相当 —— 立場・職業の
+  // 打診と同じ格）。届いた打診は flags["crisis.offer.<id>"] に記録され、
+  // 応えるも応えないも自由 —— 世界は主人公を待たず、予定の時期に決着が来る
+  if (cfg.crisis?.involvement !== undefined && crisisInvolvement(next, cfg.crisis).stage >= 3) {
+    for (const offer of crisisFinaleOffers(next, cfg.crisis)) {
+      if (!offer.pending || offer.offered) continue;
+      const event: ActionEvent = { type: "crisisFinaleOffered", id: offer.def.id };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
   }
 
   return { state: next, events };

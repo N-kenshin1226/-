@@ -1,6 +1,8 @@
 import { evaluate, type Cond } from "../conditions/index.js";
 import type { ActionEvent } from "../events/index.js";
+import { reachedPinnacles, routeProgress, type PinnacleRouteDef } from "../pinnacle/index.js";
 import { createRng } from "../rng/index.js";
+import { drawRivalCast, playerScore, type RivalsConfig } from "../rivals/index.js";
 import {
   CRISIS_FIELD_IDS,
   type CrisisFieldId,
@@ -71,6 +73,11 @@ export interface CrisisFinaleDef {
   margin?: number;
   /** 時期のずれ幅（季節。シードで ±jitter ずれる。省略時 0） */
   jitter?: number;
+  /**
+   * この場面の前線の相手（enemies.json の id。W-03：関与が「担った」に届いた者が
+   * 打診に応えたとき、武の役目の勝負所として戦う敵。省略時は表示側が適当な相手を選ぶ）
+   */
+  ref?: string;
 }
 
 export interface CrisisFactionDef {
@@ -163,6 +170,100 @@ export interface CrisisTouchpointsConfig {
   contribution: { work: number; combat: number };
 }
 
+/**
+ * 関与（docs/08 §6、W-03）：危機に関わる行動の積み重ね＋名声・立場・関連スキル・
+ * 頂点ルートから読む派生値。GameState には持たない（行動・実績はすべて
+ * counters・flags・crisis.hero・台帳・称号に既に刻まれている。セーブの形は変えない）
+ */
+
+/** 関与の段階：1 見届けた / 2 支えた / 3 担った / 4 率いた（英雄） */
+export type CrisisInvolvementStage = 1 | 2 | 3 | 4;
+
+/** 決着の場面での役割（実際のスキルから決まる）：前線の要／会議の場／装備と支度／まとめ役 */
+export type CrisisFinaleRole = "vanguard" | "negotiator" | "artisan" | "coordinator";
+
+/** 関与スコアの各項の重み（balance.json crisis.involvement.weights） */
+export interface CrisisInvolvementWeights {
+  /** 危機の接点の達成数（counters["crisis.tp.done"]）1件あたり */
+  tpDone: number;
+  /** 世界の備えへの寄与の合計（crisis.hero の各分野の和）1あたり */
+  heroPrep: number;
+  /** 名声（ライバル・ランキングと同じ自実績点）1あたり */
+  renown: number;
+  /** 立場の段（standings 配列の順。最下位=0）1あたり */
+  standing: number;
+  /** 最高スキル値1あたり（関連スキル：その人の実際の得意） */
+  skill: number;
+  /** 頂点ルートの達成段数（全ルート合計）1あたり（近道。必須ではない） */
+  pinnacleStage: number;
+  /** 完走した頂点ルート1本あたり */
+  pinnacleTop: number;
+}
+
+/**
+ * ライバルの関与（W-03、docs/08 §6「ライバルも関与を持ち、英雄になりうる」）。
+ * 名・二つ名・適性は rivals.json、数値は balance.json。顔ぶれはランキングと同じ
+ * （drawRivalCast で同じ抽選列を引く。個人の関与の伸びだけ別の世界シード由来の列）
+ */
+export interface CrisisRivalConfig {
+  /** 生成名の母集団（rivals.json names） */
+  names: readonly string[];
+  /** 二つ名の母集団（rivals.json epithets。ランキングと同じ引き順で揃う） */
+  epithets: readonly string[];
+  /** 英雄の適性がある二つ名（rivals.json crisis.heroEpithets。適性者は関与が速く伸びる） */
+  heroEpithets: readonly string[];
+  /** 世界に存在するライバルの数（balance.rivals.size と同じ顔ぶれにする） */
+  size: number;
+  /** ライバルの1季節あたりの関与の伸び（シードで min〜max） */
+  growthPerBoundary: { min: number; max: number };
+  /** 英雄適性のあるライバルの伸び（min〜max） */
+  heroGrowthPerBoundary: { min: number; max: number };
+  /** 段階4のライバルが決着の判定に足す備え（1人あたり） */
+  contribution: number;
+  /** 段階4のライバルが最も早い未決着を早めて「起こせる」幅（季節の変わり目数） */
+  hastenWindow: number;
+}
+
+/**
+ * 関与まわりの係数＋注入コンテンツ（balance.json crisis.involvement。
+ * pinnacles・standings・rivals の顔ぶれは content 由来、係数は balance 由来）
+ */
+export interface CrisisInvolvementConfig {
+  /** 段階2・3・4 の閾値（昇順3つ。段階1は最小の閾値未満） */
+  stageThresholds: readonly number[];
+  /** 各項の重み */
+  weights: CrisisInvolvementWeights;
+  /**
+   * 段階2（支えた）から接点の日ごとの提示に足す件数（「注文や依頼が増える」。
+   * 増えた提示を受けるかは自由 —— 受けなくても不利益はない）
+   */
+  supporterExtraOffers: number;
+  /** 打診の勝負所で最高の働き（score=1）をしたとき備えに足す量（場面の分野に按分） */
+  attemptBonus: number;
+  /** 自分で起こす決着：最高スキル値が主人公側の備えに乗る重み */
+  leadSkillWeight: number;
+  /** 自分で起こす決着：名声が主人公側の備えに乗る重み */
+  leadRenownWeight: number;
+  /** 一点に絞った起こし方のとき required に乗る係数（1未満＝やり方を選ぶと届きやすい） */
+  leadFocusFactor: number;
+  /** 上位3技能の差がこの値以内なら「まとめ役」（何でも少しずつな生き方の役割） */
+  coordinatorSpread: number;
+  /** 役割 → 属するスキルID の表。最高スキルの所属で役割を決める */
+  roleSkills: {
+    vanguard: readonly string[];
+    negotiator: readonly string[];
+    artisan: readonly string[];
+  };
+  /** 名声（自実績点）の算出に使う係数（balance.rivals。省略時は名声項を 0 とする） */
+  renown?: RivalsConfig;
+  /** 頂点ルートの定義（条件鎖の進行を読む用。省略時は頂点項を 0 とする） */
+  pinnacles?: readonly PinnacleRouteDef[];
+  /** 立場の順序（society.standings の id の並び。省略時は立場項を 0 とする） */
+  standings?: readonly string[];
+  /** ライバルの関与（省略時はライバルは関与を持たない） */
+  rivals?: CrisisRivalConfig;
+}
+
 /** balance.json の crisis 節＋危機の型の一覧（content/crises 経由で組み立てる） */
 export interface CrisisConfig {
   /** この世界に現れうる危機の型（hidden があればそれ、なければ公開サンプル） */
@@ -173,6 +274,11 @@ export interface CrisisConfig {
   weakFieldFactor: number;
   /** 接点の提示・寄与の係数（W-02。省略時は接点を出さない） */
   touchpoints?: CrisisTouchpointsConfig;
+  /**
+   * 関与（W-03、docs/08 §6）：段階の閾値・役割・打診・起こし・ライバルの係数。
+   * 省略時は関与の仕組み自体を出さない（打診もライバルの活躍も起きない）
+   */
+  involvement?: CrisisInvolvementConfig;
 }
 
 /** 分野ごとの備えの初期値（全部 0） */
@@ -322,20 +428,42 @@ export function crisisSeasonTurn(
   }
 
   // 決着の場面：この変わり目に予定されたものを順に判定する。
-  // 備え（世界の勢力＋主人公の寄与）が required ×(1±margin) に届けば成功（乱数は控えめ）
-  const finales = next.finales.map((f) => ({ ...f }));
-  for (const f of finales) {
-    if (f.resolved || f.atBoundary !== next.boundaries) continue;
+  // 備え（世界の勢力＋主人公の寄与＋名乗りを上げたライバル）が
+  // required ×(1±margin) に届けば成功（乱数は控えめ）
+  const finales0 = next.finales.map((f) => ({ ...f }));
+
+  // ライバルの関与（W-03、docs/08 §6「世界は主人公を待たない」）：
+  // 段階4に届いたライバルは英雄の器 —— 決着の場面に名乗りを上げて備えを足し、
+  // 最も早い未決着を hastenWindow 季節ぶん早めて「起こす」こともある。
+  // 成否はあくまで世界の備えの判定 —— 主人公がどれだけ関わっていてもいなくても同じ
+  const rc = cfg.involvement?.rivals;
+  const champions =
+    rc !== undefined
+      ? crisisRivals({ ...state, crisis: next }, cfg).filter((r) => r.stage === 4)
+      : [];
+  const firstUnresolved = finales0.find((f) => !f.resolved);
+  for (const f of finales0) {
+    if (f.resolved) continue;
+    const due = f.atBoundary <= next.boundaries;
+    const early =
+      !due &&
+      champions.length > 0 &&
+      f === firstUnresolved &&
+      f.atBoundary - next.boundaries <= (rc?.hastenWindow ?? 0);
+    if (!due && !early) continue;
     const def = type.finales.find((x) => x.id === f.id);
     f.resolved = true;
     if (def === undefined) {
       f.success = true;
       continue;
     }
-    const total = def.fields.reduce(
-      (a, field) => a + next.hero[field] + next.factions.reduce((s, fa) => s + fa.prep[field], 0),
-      0,
-    );
+    // 世界の備え（勢力＋主人公の寄与）に、名乗りを上げたライバルの備えが加わる
+    const total =
+      def.fields.reduce(
+        (a, field) => a + next.hero[field] + next.factions.reduce((s, fa) => s + fa.prep[field], 0),
+        0,
+      ) +
+      champions.length * (rc?.contribution ?? 0);
     f.total = total;
     const margin = def.margin ?? 0;
     const j =
@@ -349,14 +477,23 @@ export function crisisSeasonTurn(
       log: [...next.log, { day, kind: f.success ? "finale.win" : "finale.loss", ref: f.id }],
     };
     events.push({ type: "crisisFinale", id: f.id, success: f.success, total });
+    // 勝ち取った場面では、先陣を切ったライバルが英雄として世界の記録に残る
+    const champion = f.success ? champions[0] : undefined;
+    if (champion !== undefined) {
+      next = {
+        ...next,
+        log: [...next.log, { day, kind: "rival.hero", ref: crisisRivalRef(champion.index) }],
+      };
+      events.push({ type: "crisisRivalHero", index: champion.index, finale: f.id });
+    }
     if (f.success) break; // 決着がついた（残りの場面は起きない）
   }
-  next = { ...next, finales };
+  next = { ...next, finales: finales0 };
 
   // 終幕：いずれかの場面が決着すれば解決。すべて落とした場合は、
   // 重い危機だけ滅び、通常の危機は苦戦の末に決着する（docs/08 §4）
-  const anyWin = finales.some((f) => f.success === true);
-  const allDone = finales.every((f) => f.resolved);
+  const anyWin = finales0.some((f) => f.success === true);
+  const allDone = finales0.every((f) => f.resolved);
   if (anyWin || allDone) {
     const outcome = anyWin ? "resolved" : type.heavy === true ? "ruin" : "resolved";
     next = { ...next, outcome, log: [...next.log, { day, kind: `end.${outcome}` }] };
@@ -607,7 +744,15 @@ export function crisisTouchpointOffers(
     .map((def) => ({ def, weight: crisisTouchpointWeight(state, def, cfg, time) }))
     .filter((x) => x.weight > 0);
   if (pool.length === 0) return [];
-  const cap = tp.offersPerStage[Math.min(crisis.stageIndex, tp.offersPerStage.length - 1)] ?? 0;
+  // 関与が段階2（支えた）に届くと注文や依頼が増える（W-03、docs/08 §6。
+  // 提示が増えるだけ —— 受けるかは自由、受けなくても不利益はない）
+  const supporterBonus =
+    cfg.involvement !== undefined && crisisInvolvement(state, cfg).stage >= 2
+      ? cfg.involvement.supporterExtraOffers
+      : 0;
+  const cap =
+    (tp.offersPerStage[Math.min(crisis.stageIndex, tp.offersPerStage.length - 1)] ?? 0) +
+    supporterBonus;
   // 引きは世界シード×日付から（state.rng は消費しない。生の乱数も使わない）
   const rng = createRng(`${state.seed}:crisis:tp:${state.time.day}`);
   const picked: CrisisTouchpointDef[] = [];
@@ -676,4 +821,365 @@ export function crisisTouchpointForCombat(
   );
   if (hit === undefined) return null;
   return hit.def.ref === enemyId ? hit.def : null;
+}
+
+// ---- 関与と英雄への道（docs/08 §6、W-03） ----
+//
+// 関与は派生値：行動・実績はすべて既存の state（接点の達成数カウンタ、
+// 世界の備えへの寄与、名声＝自実績点、立場、スキル、頂点フラグ）に刻まれているので、
+// GameState の形は変えず、その都度読んで段階を決める。
+// 関与は分野をまたいで合算する —— hero の各分野の和を読むので、
+// 一つの道を極めた人も、いろいろな道で少しずつ関わった人も同じ式で届く。
+// 打診・参加・起こしの記録は flags/counters に刻む（crisis.offer.<id> 等）
+
+/** 打診が届いたことの記録フラグ（同じ場面への打診は一度だけ） */
+export const crisisOfferFlag = (finaleId: string): string => `crisis.offer.${finaleId}`;
+/** 打診に応えて参加を請けたことの記録フラグ */
+export const crisisJoinFlag = (finaleId: string): string => `crisis.join.${finaleId}`;
+/** 勝負所を果たしたことの記録フラグ（1場面につき1回だけ挑める） */
+export const crisisAttemptFlag = (finaleId: string): string => `crisis.attempt.${finaleId}`;
+/** 決着を自分で率いて勝ち取ったことの記録フラグ（英雄） */
+export const CRISIS_HERO_FLAG = "crisis.hero";
+/** 世界の記録（crisis.log）に残るライバルの参照（index はライバルの抽選順） */
+export const crisisRivalRef = (index: number): string => `rival.${index}`;
+
+/**
+ * 関与スコアの内訳と段階。
+ * 各項：危機の接点の達成・世界の備えへの寄与・名声・立場・最高スキル・頂点ルート
+ */
+export interface CrisisInvolvement {
+  score: number;
+  stage: CrisisInvolvementStage;
+  /** 内訳（各項×重みの値。どの生き方で積んだかが読める。テスト・記録用） */
+  parts: {
+    tpDone: number;
+    heroPrep: number;
+    renown: number;
+    standing: number;
+    skill: number;
+    pinnacle: number;
+  };
+}
+
+/** スコア → 段階（stageThresholds は段階2・3・4 の閾値の昇順） */
+export function crisisInvolvementStage(
+  score: number,
+  inv: CrisisInvolvementConfig,
+): CrisisInvolvementStage {
+  const t2 = inv.stageThresholds[0] ?? Infinity;
+  const t3 = inv.stageThresholds[1] ?? Infinity;
+  const t4 = inv.stageThresholds[2] ?? Infinity;
+  if (score >= t4) return 4;
+  if (score >= t3) return 3;
+  if (score >= t2) return 2;
+  return 1;
+}
+
+/**
+ * 関与を計算する（docs/08 §6）。
+ * 頂点ルートは近道であって条件ではない：頂点項は大きな足しになるが、
+ * 接点・寄与・名声・立場・実力の積み重ねだけでも同じ閾値に届く。
+ * 関与の対象は「進行中・終わった危機を問わないこの世界での積み重ね」
+ * （危機が無い・終わった世界でも数値は読めるが、打診・起こしは進行中だけ）
+ */
+export function crisisInvolvement(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+): CrisisInvolvement {
+  const inv = cfg?.involvement;
+  const zero: CrisisInvolvement = {
+    score: 0,
+    stage: 1,
+    parts: { tpDone: 0, heroPrep: 0, renown: 0, standing: 0, skill: 0, pinnacle: 0 },
+  };
+  if (cfg === undefined || inv === undefined) return zero;
+  const w = inv.weights;
+
+  // 危機に関わる行動の積み重ね：接点の達成数＋世界の備えへの寄与（分野をまたいだ合算）
+  const tpDone = state.counters["crisis.tp.done"] ?? 0;
+  const heroPrep = CRISIS_FIELD_IDS.reduce((s, f) => s + (state.crisis?.hero[f] ?? 0), 0);
+  // 名声：ライバル・ランキングと同じ自実績点（台帳の最高品質・称号・討伐・深層）
+  const renown = inv.renown !== undefined ? playerScore(state, inv.renown) : 0;
+  // 立場：社会の中での位置（society.standings の並び順。最下位=0）
+  const standing =
+    inv.standings !== undefined ? Math.max(0, inv.standings.indexOf(state.society.standing)) : 0;
+  // 関連スキル：その人の実際の得意（最高スキル値）
+  const bestSkill = Math.max(0, ...Object.values(state.player.skills).map((s) => s.value));
+  // 頂点ルート：達成した段の合計＋完走ボーナス（近道）
+  const pinnacleStages = (inv.pinnacles ?? []).reduce(
+    (s, r) => s + routeProgress(state, r).done,
+    0,
+  );
+  const pinnacleTops = inv.pinnacles !== undefined ? reachedPinnacles(state, inv.pinnacles) : [];
+
+  const parts = {
+    tpDone: tpDone * w.tpDone,
+    heroPrep: heroPrep * w.heroPrep,
+    renown: renown * w.renown,
+    standing: standing * w.standing,
+    skill: bestSkill * w.skill,
+    pinnacle: pinnacleStages * w.pinnacleStage + pinnacleTops.length * w.pinnacleTop,
+  };
+  const score =
+    parts.tpDone + parts.heroPrep + parts.renown + parts.standing + parts.skill + parts.pinnacle;
+  return { score, stage: crisisInvolvementStage(score, inv), parts };
+}
+
+/**
+ * 決着の場面での役割（docs/08 §6「役割は実際の得意から決まる」）。
+ * 最高スキルの所属で決める：武が立てば前線、弁が立てば会議、工が立てば装備、
+ * 何でも少しずつなら（上位3技能が拮抗していれば）全体のまとめ役
+ */
+export function crisisFinaleRole(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+): CrisisFinaleRole {
+  const inv = cfg?.involvement;
+  const ranked = Object.entries(state.player.skills)
+    .filter(([, s]) => s.value > 0)
+    .sort((a, b) => b[1].value - a[1].value);
+  if (inv === undefined || ranked.length === 0) return "coordinator";
+  if (ranked.length >= 3 && ranked[0]![1].value - ranked[2]![1].value <= inv.coordinatorSpread) {
+    return "coordinator";
+  }
+  const top = ranked[0]![0];
+  if (inv.roleSkills.vanguard.includes(top)) return "vanguard";
+  if (inv.roleSkills.negotiator.includes(top)) return "negotiator";
+  if (inv.roleSkills.artisan.includes(top)) return "artisan";
+  return "coordinator";
+}
+
+/** 未決着の場面ごとの、あなたへの打診・参加・起こしの状態（表示・判定の共通語彙） */
+export interface CrisisFinaleOffer {
+  def: CrisisFinaleDef;
+  /** 打診の対象（最も早い未決着の場面で、判定の境界にまだ達していない） */
+  pending: boolean;
+  /** 打診がすでに届いている（flags["crisis.offer.<id>"]） */
+  offered: boolean;
+  /** 打診に応えられる（届いていて、まだ請けていない） */
+  joinable: boolean;
+  /** 参加を請けている（勝負所に臨める） */
+  joined: boolean;
+  /** 勝負所をすでに果たした（1場面につき1回） */
+  attempted: boolean;
+  /** 自分で起こせる（関与が段階4＝率いた） */
+  leadable: boolean;
+  /** あなたの役割（実際のスキルから） */
+  role: CrisisFinaleRole;
+  /** 判定の境界までの残り季節数（0以下になることはない） */
+  remainingBoundaries: number;
+}
+
+/**
+ * 未決着の場面と、それぞれへの関わり方の一覧（docs/08 §6）。
+ * 打診は世界から届く：関与が段階3（担った）に達すると、step が最も早い
+ * 未決着への打診を発行し、flags["crisis.offer.<id>"] に記録される。
+ * ここではその記録と段階から「いま何ができるか」を返すだけ —— 世界を
+ * 主人公向けのクエスト一覧としては見せない（受けなくても世界は進む）
+ */
+export function crisisFinaleOffers(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+): CrisisFinaleOffer[] {
+  const crisis = state.crisis;
+  if (
+    cfg === undefined ||
+    cfg.involvement === undefined ||
+    crisis === null ||
+    crisis.outcome !== "ongoing"
+  ) {
+    return [];
+  }
+  const type = crisisTypeOf(state, cfg);
+  if (type === undefined) return [];
+  const { stage } = crisisInvolvement(state, cfg);
+  const role = crisisFinaleRole(state, cfg);
+  const unresolved = crisis.finales.filter((f) => !f.resolved);
+  const earliest = unresolved.reduce<CrisisState["finales"][number] | null>(
+    (m, f) => (m === null || f.atBoundary < m.atBoundary ? f : m),
+    null,
+  );
+  const offers: CrisisFinaleOffer[] = [];
+  for (const f of unresolved) {
+    const def = type.finales.find((d) => d.id === f.id);
+    if (def === undefined) continue;
+    const pending = f === earliest && crisis.boundaries < f.atBoundary;
+    const offered = state.flags[crisisOfferFlag(f.id)] === true;
+    const joined = state.flags[crisisJoinFlag(f.id)] === true;
+    const attempted = state.flags[crisisAttemptFlag(f.id)] === true;
+    offers.push({
+      def,
+      pending,
+      offered,
+      joinable: pending && offered && !joined,
+      joined,
+      attempted,
+      leadable: stage === 4,
+      role,
+      remainingBoundaries: Math.max(0, f.atBoundary - crisis.boundaries),
+    });
+  }
+  return offers;
+}
+
+/**
+ * 打診に応えたあとの勝負所（docs/08 §6「その場面が勝負所として遊べ、結果が成否に
+ * 大きく効く」）。score は実際に遊んだ結果の出来（0〜1。戦闘の勝敗・ミニゲームの
+ * 品質・交渉の結果を呼び出し側が換算する）で、attemptBonus 掛けを場面の分野に
+ * 按分して世界の備え（crisis.hero）に加算する —— W-01 の判定を変えずに、
+ * 主人公の結果が世界の備えへ「加算」される形で効く。1場面につき1回だけ
+ */
+export function crisisFinaleAttempt(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  finaleId: string,
+  score: number,
+): { state: GameState; ok: boolean; score: number; amount: number } {
+  const inv = cfg?.involvement;
+  const offer = crisisFinaleOffers(state, cfg).find((o) => o.def.id === finaleId);
+  if (inv === undefined || offer === undefined || !offer.joined || offer.attempted) {
+    return { state, ok: false, score: 0, amount: 0 };
+  }
+  const s = Math.max(0, Math.min(1, score));
+  const amount = s * inv.attemptBonus;
+  let next = state;
+  for (const field of offer.def.fields) {
+    next = addHeroContribution(next, field, amount / offer.def.fields.length);
+  }
+  return { state: next, ok: true, score: s, amount };
+}
+
+/**
+ * 自分で起こす決着（docs/08 §6、段階4＝率いた＝英雄）。
+ * 未決着の場面を今ここで判定する —— 予定の時期を早められるし、field を指定して
+ * 「やり方を一点に絞る」こともできる（絞ると required に leadFocusFactor が掛かるが、
+ * 主人公側の備えもその分野だけで判定する）。
+ * 成否は主に主人公側の備えで決まる：自分が積んだ寄与（crisis.hero の対象分野）に
+ * 実力（最高スキル値）と名声を重み付きで足したものが required ×(1±margin) に届くか。
+ * 世界の勢力の備えはまだ届いていない —— 率いたのはあなただ
+ */
+export function crisisFinaleLead(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  finaleId: string,
+  field?: CrisisFieldId,
+): { state: GameState; ok: boolean; success?: boolean; total?: number } {
+  const inv = cfg?.involvement;
+  const crisis = state.crisis;
+  if (cfg === undefined || inv === undefined || crisis === null || crisis.outcome !== "ongoing") {
+    return { state, ok: false };
+  }
+  const type = crisisTypeOf(state, cfg);
+  if (type === undefined) return { state, ok: false };
+  if (crisisInvolvement(state, cfg).stage !== 4) return { state, ok: false };
+  const f = crisis.finales.find((x) => x.id === finaleId);
+  const def = type.finales.find((x) => x.id === finaleId);
+  if (f === undefined || def === undefined || f.resolved) return { state, ok: false };
+  if (field !== undefined && !def.fields.includes(field)) return { state, ok: false };
+
+  // 主人公側の備え：対象分野に自分が積んだ寄与＋実力＋名声
+  const fields = field !== undefined ? [field] : def.fields;
+  const heroPrep = fields.reduce((s, x) => s + crisis.hero[x], 0);
+  const bestSkill = Math.max(0, ...Object.values(state.player.skills).map((s) => s.value));
+  const renown = inv.renown !== undefined ? playerScore(state, inv.renown) : 0;
+  const total = heroPrep + bestSkill * inv.leadSkillWeight + renown * inv.leadRenownWeight;
+  const required = def.required * (field !== undefined ? inv.leadFocusFactor : 1);
+  const margin = def.margin ?? 0;
+  const j =
+    margin > 0 ? (createRng(state.seed).fork(`crisis:lead:${f.id}`).next() * 2 - 1) * margin : 0;
+  const success = total >= required * (1 + j);
+
+  const day = state.time.day;
+  const finales = crisis.finales.map((x) =>
+    x.id === f.id ? { ...x, resolved: true, success, total } : { ...x },
+  );
+  // 率いた決着は世界の記録に hero / heroFail として残る（finale.win/loss と別の語彙）
+  let next: CrisisState = {
+    ...crisis,
+    finales,
+    log: [...crisis.log, { day, kind: success ? "finale.hero" : "finale.heroFail", ref: f.id }],
+  };
+  // 終幕判定は W-01 と同じ語彙：1つでも決着が立てば解決、すべて落ちたら重い危機は滅び
+  const anyWin = finales.some((x) => x.success === true);
+  const allDone = finales.every((x) => x.resolved);
+  if (anyWin || allDone) {
+    const outcome = anyWin ? "resolved" : type.heavy === true ? "ruin" : "resolved";
+    next = { ...next, outcome, log: [...next.log, { day, kind: `end.${outcome}` }] };
+  }
+  return { state: { ...state, crisis: next }, ok: true, success, total };
+}
+
+// ---- ライバルの関与（W-03、docs/08 §6「ライバルも関与を持ち、英雄になりうる」） ----
+
+/**
+ * ライバルの関与（1季節ごとに個人の伸びぶん積まれる。世界シードから決定的）。
+ * 顔ぶれはランキングと同じ（drawRivalCast の同じ抽選列）。英雄の適性がある
+ * 二つ名の者は関与が速く伸び、段階4に届くと決着に名乗りを上げる
+ */
+export interface CrisisRival {
+  /** ライバルの抽選順（log の ref "rival.<index>" と対応） */
+  index: number;
+  name: string;
+  epithet: string;
+  /** 英雄の適性がある二つ名を持つか */
+  heroCandidate: boolean;
+  /** 1季節あたりの関与の伸び（シード由来） */
+  growth: number;
+  /** 現在の関与スコア（伸び×境界の回数） */
+  score: number;
+  stage: CrisisInvolvementStage;
+}
+
+export function crisisRivals(state: GameState, cfg: CrisisConfig | undefined): CrisisRival[] {
+  const inv = cfg?.involvement;
+  const rc = inv?.rivals;
+  if (cfg === undefined || inv === undefined || rc === undefined) return [];
+  // ランキングと同じ顔ぶれを引く（名声の値は関与に使わないので係数は渡さない ——
+  // 引き順さえ同じなら名と二つ名は一致する）
+  const casts = drawRivalCast(
+    state.seed,
+    { names: rc.names, epithets: rc.epithets },
+    { size: rc.size, scoreMin: 0, scoreMax: 0, growthPerDay: 0 },
+  );
+  const rr = createRng(state.seed).fork("crisis:rivals");
+  const boundaries = state.crisis?.boundaries ?? 0;
+  return casts.map((c, index) => {
+    const heroCandidate = rc.heroEpithets.includes(c.epithet);
+    const g = heroCandidate ? rc.heroGrowthPerBoundary : rc.growthPerBoundary;
+    const growth = g.min + (g.max - g.min) * rr.next();
+    const score = growth * boundaries;
+    return {
+      index,
+      name: c.name,
+      epithet: c.epithet,
+      heroCandidate,
+      growth,
+      score,
+      stage: crisisInvolvementStage(score, inv),
+    };
+  });
+}
+
+/** ライバルの参照（"rival.<index>"）から素性を引く（記録・新聞の表示名解決用） */
+export function crisisRivalOf(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  index: number,
+): CrisisRival | null {
+  return crisisRivals(state, cfg).find((r) => r.index === index) ?? null;
+}
+
+/** 記録の ref（"rival.<index>"）→ ライバルの表示名（引けなければ生の ref） */
+export function crisisRivalName(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  ref: string,
+): string {
+  const index = Number.parseInt(ref.slice("rival.".length), 10);
+  const rival = Number.isFinite(index) ? crisisRivalOf(state, cfg, index) : null;
+  return rival === null
+    ? ref
+    : rival.epithet !== ""
+      ? `${rival.name}《${rival.epithet}》`
+      : rival.name;
 }

@@ -16,10 +16,13 @@ export type Screen =
   | { name: "sleep" }
   | { name: "work" }
   | { name: "workMode"; order: Order }
-  | { name: "minigame"; kind: MinigameKind; order: Order }
+  /** 決着の場面の勝負所なら finale に場面の id が入る（結果は危機の備えへ。W-03） */
+  | { name: "minigame"; kind: MinigameKind; order: Order; finale?: string }
   | { name: "hunt" }
   /** 危機の接点の相手なら touchpoint に接点の id が入る（勝ったときだけ寄与。W-02） */
-  | { name: "combat"; enemy: EnemyJson; touchpoint?: string }
+  | { name: "combat"; enemy: EnemyJson; touchpoint?: string; finale?: string }
+  /** 決着の場面（W-03、docs/08 §6）：打診への応え・勝負所・自分で起こす */
+  | { name: "crisis" }
   /** 深層ダンジョン（T-43）：層を下る連戦。進行は AbyssRun が持つ */
   | { name: "abyss" }
   | { name: "lore"; atomId?: string }

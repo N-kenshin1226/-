@@ -12,6 +12,17 @@ export const rivalsFileSchema = z
     names: z.array(z.string().min(1)).min(1),
     /** 二つ名の母集団（新聞の噂・記録画面の装飾に使う） */
     epithets: z.array(z.string().min(1)).min(1),
+    /**
+     * 危機のライバル関与（W-03、docs/08 §6）：英雄の適性がある二つ名の一覧。
+     * 適性のあるライバルは世界の危機への関与が速く伸び、段階4に届くと
+     * 決着の場面に名乗りを上げ、英雄として記録されうる
+     */
+    crisis: z
+      .object({
+        heroEpithets: z.array(z.string().min(1)),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((file, ctx) => {
@@ -19,6 +30,11 @@ export const rivalsFileSchema = z
     for (const n of file.names) {
       if (seen.has(n)) ctx.addIssue({ code: "custom", message: `ライバル名の重複: ${n}` });
       seen.add(n);
+    }
+    for (const e of file.crisis?.heroEpithets ?? []) {
+      if (!file.epithets.includes(e)) {
+        ctx.addIssue({ code: "custom", message: `crisis.heroEpithets が二つ名の表に無い: ${e}` });
+      }
     }
   });
 

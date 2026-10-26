@@ -1,3 +1,9 @@
+import {
+  crisisAttemptFlag,
+  crisisJoinFlag,
+  crisisOfferFlag,
+  CRISIS_HERO_FLAG,
+} from "../crisis/index.js";
 import type { CrisisFieldId, GameState, Work } from "../state/types.js";
 import type { GameTime } from "../time/index.js";
 import type { WakeReport } from "../growth/consolidate.js";
@@ -121,7 +127,31 @@ export type ActionEvent =
    * 危機の接点を果たした（W-02、docs/08 §5。日常の行動の延長として世界の備えに寄与）。
    * 接点の id、寄与した分野、備えに足した量を持つ
    */
-  | { type: "crisisTouchpoint"; id: string; field: CrisisFieldId; amount: number };
+  | { type: "crisisTouchpoint"; id: string; field: CrisisFieldId; amount: number }
+  // ---- 関与と英雄への道（docs/08 §6、W-03） ----
+  /**
+   * 決着の場面への参加の打診が届いた（関与が段階3「担った」の者に。
+   * 通知Aランク相当 —— 立場・職業の打診と同じ格。届いた打診は
+   * flags["crisis.offer.<id>"] に記録される）
+   */
+  | { type: "crisisFinaleOffered"; id: string }
+  /** 打診に応えて参加を請けた（行動は消費しない。flags["crisis.join.<id>"]） */
+  | { type: "crisisFinaleJoined"; id: string }
+  /**
+   * 決着の場面の勝負所を果たした（1行動。score は実際に遊んだ結果の出来 0〜1、
+   * amount は世界の備えに足した量。flags["crisis.attempt.<id>"]）
+   */
+  | { type: "crisisFinaleAttempt"; id: string; score: number; amount: number }
+  /**
+   * 決着の場面を自分で起こした（段階4「率いた」＝英雄。1行動）。
+   * success が立てば flags["crisis.hero"] が立つ
+   */
+  | { type: "crisisFinaleLed"; id: string; success: boolean; total: number }
+  /**
+   * ライバルが決着の場面を勝ち取り英雄として記録された（通知Aランク相当）。
+   * index はライバルの抽選順（log の ref "rival.<index>" と対応）
+   */
+  | { type: "crisisRivalHero"; index: number; finale: string };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -195,6 +225,60 @@ export const counterSubscriber: Subscriber = (state, event) => {
           ...state.counters,
           [done]: (state.counters[done] ?? 0) + 1,
           [key]: (state.counters[key] ?? 0) + 1,
+        },
+      };
+    }
+    // ---- 関与（W-03、docs/08 §6）：打診・参加・勝負所・起こし・ライバル英雄の記録 ----
+    case "crisisFinaleOffered": {
+      // 届いた打診を記録する（同じ場面への打診は一度だけ届く）
+      const flag = crisisOfferFlag(event.id);
+      if (state.flags[flag] === true) return state;
+      return {
+        ...state,
+        flags: { ...state.flags, [flag]: true },
+        counters: { ...state.counters, "crisis.offer": (state.counters["crisis.offer"] ?? 0) + 1 },
+      };
+    }
+    case "crisisFinaleJoined": {
+      // 参加を請けたことを記録する（受けても断っても世界は進む —— 請けた事実だけ刻む）
+      const flag = crisisJoinFlag(event.id);
+      if (state.flags[flag] === true) return state;
+      return {
+        ...state,
+        flags: { ...state.flags, [flag]: true },
+        counters: { ...state.counters, "crisis.join": (state.counters["crisis.join"] ?? 0) + 1 },
+      };
+    }
+    case "crisisFinaleAttempt": {
+      // 勝負所を果たしたことを記録する（1場面につき1回だけ挑める）
+      const flag = crisisAttemptFlag(event.id);
+      if (state.flags[flag] === true) return state;
+      return {
+        ...state,
+        flags: { ...state.flags, [flag]: true },
+        counters: {
+          ...state.counters,
+          "crisis.attempt": (state.counters["crisis.attempt"] ?? 0) + 1,
+        },
+      };
+    }
+    case "crisisFinaleLed": {
+      // 自分で起こした決着の成否を数える。勝ち取った者は flags["crisis.hero"] に
+      // 「率いた（英雄）」を刻む（条件DSL・伝記・称号から読める）
+      const key = event.success ? "crisis.lead.win" : "crisis.lead.loss";
+      return {
+        ...state,
+        counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
+        flags: event.success ? { ...state.flags, [CRISIS_HERO_FLAG]: true } : state.flags,
+      };
+    }
+    case "crisisRivalHero": {
+      // 英雄として記録されたライバルの数（世界が語り継ぐ根拠）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "crisis.rival.hero": (state.counters["crisis.rival.hero"] ?? 0) + 1,
         },
       };
     }

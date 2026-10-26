@@ -2,6 +2,7 @@ import {
   bookDaysLeft,
   canAct,
   canApprentice,
+  crisisRivalName,
   crisisTypeOf,
   rivalsOf,
   shelfBooks,
@@ -418,6 +419,11 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
           canon.figures.find((f) => f.id === entry.ref)?.name ??
           entry.ref
         );
+      }
+      // 英雄として記録されたライバル（W-03）：ref は "rival.<index>" ——
+      // ライバルの抽選から名と二つ名を解決する
+      if (entry.ref.startsWith("rival.") && ctx.cfg.crisis !== undefined) {
+        return crisisRivalName(state, ctx.cfg.crisis, entry.ref);
       }
       return entry.ref;
     };

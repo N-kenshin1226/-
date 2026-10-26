@@ -159,7 +159,9 @@ export interface CrisisLogEntry {
   day: number;
   /**
    * 種別：draw（抽選）/ stage（段階が進んだ）/ finale.win・finale.loss（決着の場面）/
-   * npc.leave・npc.die（NPCの離散・死亡）/ end.resolved・end.ruin（終幕）
+   * npc.leave・npc.die（NPCの離散・死亡）/ end.resolved・end.ruin（終幕）/
+   * finale.hero・finale.heroFail（主人公が率いた決着。W-03）/
+   * rival.hero（英雄として記録されたライバル。ref は "rival.<index>"）
    */
   kind: string;
   /** 参照ID（段階・決着の場面・NPCの id） */

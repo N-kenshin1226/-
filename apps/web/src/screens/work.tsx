@@ -38,12 +38,13 @@ import {
 
 const W = theme.colors.world;
 
-/** 仕事結果の表示行（品質・フラグ・経験・報酬） */
+/** 仕事結果の表示行（品質・フラグ・経験・報酬）。state を渡すとライバル名まで解ける（W-03） */
 export function workResultLines(
   events: ActionEvent[],
   order: Order,
   quality: number,
   flags: string[],
+  state?: GameState,
 ): string[] {
   const gain = events.find(
     (e): e is Extract<ActionEvent, { type: "gainApplied" }> => e.type === "gainApplied",
@@ -67,6 +68,7 @@ export function workResultLines(
       events.filter(
         (e) => e.type !== "gainApplied" && e.type !== "moneyPaid" && e.type !== "tierUp",
       ),
+      state,
     ),
   ];
 }
@@ -178,7 +180,7 @@ export function WorkModeScreen({
         expFactor,
         rewardMoney: order.rewardMoney,
       },
-      { format: (ev) => workResultLines(ev, order, quality, []) },
+      { format: (ev) => workResultLines(ev, order, quality, [], state) },
     );
     setScreen({ name: "menu" });
   };
@@ -237,12 +239,15 @@ export function MinigameScreen({
   state,
   kind,
   order,
+  finale,
   setScreen,
   act,
 }: {
   state: GameState;
   kind: MinigameKind;
   order: Order;
+  /** 決着の場面の勝負所なら場面の id（W-03。出来は危機の備えへ寄与する） */
+  finale?: string;
   setScreen: (s: Screen) => void;
   act: Act;
 }) {
@@ -266,6 +271,15 @@ export function MinigameScreen({
       : `《${order.name}》`;
 
   const commit = () => {
+    // 決着の場面の勝負所（W-03）：作品ではなく出来（品質→0〜1）として世界の備えへ
+    if (finale !== undefined) {
+      act(
+        { type: "crisisFinaleAttempt", id: finale, score: res.quality / 100 },
+        { format: (ev) => eventLines(ev, state) },
+      );
+      setScreen({ name: "menu" });
+      return;
+    }
     let expFactor: number | undefined;
     if ("special" in order && order.special === true) {
       expFactor = (order as SpecialOrder).expFactor;
@@ -281,7 +295,7 @@ export function MinigameScreen({
         expFactor,
         rewardMoney: order.rewardMoney,
       },
-      { format: (ev) => workResultLines(ev, order, res.quality, res.flags) },
+      { format: (ev) => workResultLines(ev, order, res.quality, res.flags, state) },
     );
     setScreen({ name: "menu" });
   };
@@ -297,7 +311,11 @@ export function MinigameScreen({
           } satisfies MenuEntry,
         ]
       : []),
-    { id: "minigame-quit", label: "やめる", onPick: () => setScreen({ name: "work" }) },
+    {
+      id: "minigame-quit",
+      label: "やめる",
+      onPick: () => setScreen(finale !== undefined ? { name: "crisis" } : { name: "work" }),
+    },
   ];
 
   return (
@@ -342,7 +360,10 @@ export function MinigameScreen({
             </span>
           </div>
         )}
-        <CommandMenu entries={entries} onBack={() => setScreen({ name: "work" })} />
+        <CommandMenu
+          entries={entries}
+          onBack={() => setScreen(finale !== undefined ? { name: "crisis" } : { name: "work" })}
+        />
       </WorldFrame>
       <HintBar
         items={[

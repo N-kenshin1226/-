@@ -97,6 +97,11 @@ export const crisisFinaleSchema = z
     margin: z.number().min(0).max(0.5).default(0),
     /** 時期のずれ幅（季節。シードで −jitter〜+jitter だけずれる。省略時 0＝ずれない） */
     jitter: z.number().int().min(0).max(4).default(0),
+    /**
+     * この場面の前線の相手（enemies.json の id。W-03：関与が「担った」に届いた者の
+     * 打診で、武の役目の勝負所として戦う敵。省略時は表示側が適当な相手を選ぶ）
+     */
+    ref: z.string().min(1).optional(),
   })
   .strict();
 export type CrisisFinaleJson = z.infer<typeof crisisFinaleSchema>;

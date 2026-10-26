@@ -53,6 +53,9 @@ import {
   crisisAreaClosed,
   crisisEnemyChallengeBonus,
   crisisEnemyMods,
+  crisisFinaleOffers,
+  crisisInvolvement,
+  crisisRivalName,
   crisisTouchpointOf,
   crisisTouchpointOffers,
   crisisTypeOf,
@@ -176,6 +179,26 @@ export const cfg: StepConfig = {
     weakFieldFactor: balance.crisis.weakFieldFactor,
     /** 接点（W-02）：日常へ混ざる量と寄与の係数 */
     touchpoints: balance.crisis.touchpoints,
+    /**
+     * 関与（W-03、docs/08 §6）：係数は balance.crisis.involvement、
+     * 名声・立場・頂点・ライバルの顔ぶれはコンテンツから注入する
+     */
+    involvement:
+      balance.crisis.involvement === undefined
+        ? undefined
+        : {
+            ...balance.crisis.involvement,
+            renown: balance.rivals,
+            pinnacles: pinnacles.pinnacles,
+            standings: society.standings.map((s) => s.id),
+            rivals: {
+              ...balance.crisis.involvement.rivals,
+              names: rivals.names,
+              epithets: rivals.epithets,
+              heroEpithets: rivals.crisis?.heroEpithets ?? [],
+              size: balance.rivals.size,
+            },
+          },
   },
 };
 
@@ -458,8 +481,8 @@ export function crisisLogLine(kind: string, name?: string): string | null {
   return text === undefined ? null : tpl(text, { name: name ?? "" });
 }
 
-/** イベント → 表示行（CLIの applyTitles 相当） */
-export function eventLines(events: ActionEvent[]): string[] {
+/** イベント → 表示行（CLIの applyTitles 相当）。state を渡すとライバル名まで解ける（W-03） */
+export function eventLines(events: ActionEvent[], state?: GameState): string[] {
   return events.flatMap((e) => {
     switch (e.type) {
       case "gainApplied": {
@@ -607,6 +630,29 @@ export function eventLines(events: ActionEvent[]): string[] {
             field: t.display.crisisFieldNames[e.field] ?? e.field,
           }),
         ];
+      // 決着の場面への打診・参加・勝負所・起こし（W-03、docs/08 §6）
+      case "crisisFinaleOffered":
+        return [tpl(t.text.crisisFinaleOffered, { name: crisisRefName(e.id, "finales") })];
+      case "crisisFinaleJoined":
+        return [tpl(t.text.crisisFinaleJoined, { name: crisisRefName(e.id, "finales") })];
+      case "crisisFinaleAttempt":
+        return [tpl(t.text.crisisFinaleAttempt, { name: crisisRefName(e.id, "finales") })];
+      case "crisisFinaleLed": {
+        const line = crisisLogLine(
+          e.success ? "finale.hero" : "finale.heroFail",
+          crisisRefName(e.id, "finales"),
+        );
+        return line === null ? [] : [line];
+      }
+      // ライバルが英雄として記録された（W-03）：名はライバルの抽選から解決する
+      case "crisisRivalHero": {
+        const name =
+          cfg.crisis !== undefined && state !== undefined
+            ? crisisRivalName(state, cfg.crisis, `rival.${e.index}`)
+            : `rival.${e.index}`;
+        const line = crisisLogLine("rival.hero", name);
+        return line === null ? [] : [line];
+      }
       default:
         return [];
     }
@@ -655,7 +701,7 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   const winds = report.tailwinds.map((x) => x.label).join(" ／ ");
   lines.push(winds ? tpl(w.windsLine, { winds }) : w.windsNone);
   for (const s of report.surprises) lines.push(s);
-  for (const m of eventLines(events)) lines.push(m);
+  for (const m of eventLines(events, state)) lines.push(m);
   lines.push(w.footer);
 
   const slept = events.find(
@@ -977,7 +1023,14 @@ export function playCombatTurn(
 }
 
 export { combatResult, telegraphLines, suggestGoals, sleepQuality };
-export { crisisAreaClosed, crisisEnemyChallengeBonus, crisisTypeOf };
+export {
+  crisisAreaClosed,
+  crisisEnemyChallengeBonus,
+  crisisFinaleOffers,
+  crisisInvolvement,
+  crisisRivalName,
+  crisisTypeOf,
+};
 
 /**
  * 街の記録の「世界の出来事」欄（W-01、docs/08）：危機の記録を
@@ -1006,6 +1059,10 @@ export function crisisRecordLines(state: GameState): string[] {
         canon.figures.find((f) => f.id === entry.ref)?.name ??
         entry.ref
       );
+    }
+    // 英雄として記録されたライバル（W-03）：ref は "rival.<index>"
+    if (entry.ref.startsWith("rival.") && cfg.crisis !== undefined) {
+      return crisisRivalName(state, cfg.crisis, entry.ref);
     }
     return entry.ref;
   };
@@ -1297,6 +1354,41 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         rewards: [{ label: "人生目標", name: `《${name}》` }],
       });
     }
+    // 決着の場面への打診（W-03、docs/08 §6）：関与が段階3に届いた証。通知Aランク相当
+    if (e.type === "crisisFinaleOffered") {
+      const name = crisisRefName(e.id, "finales");
+      out.push({
+        rank: "A",
+        title: `《${name}》への打診`,
+        sub: "世界の決着に、あなたの名が挙がりました",
+        rewards: [{ label: "決着の場面", name: `《${name}》` }],
+      });
+    }
+    // 自分で起こした決着（W-03）：英雄の記録は世界級の出来事。成がS、不成でもA
+    if (e.type === "crisisFinaleLed") {
+      const name = crisisRefName(e.id, "finales");
+      out.push({
+        rank: e.success ? "S" : "A",
+        title: e.success ? `《${name}》を率いた` : `《${name}》は届かなかった`,
+        sub: e.success
+          ? "あなたが率いた決着は、世界の記録に刻まれました"
+          : "備えは足りませんでした",
+        rewards: [{ label: "決着の場面", name: `《${name}》` }],
+      });
+    }
+    // ライバルの英雄（W-03）：自分でなくとも世界は進む ―― 記録として届くAランク
+    if (e.type === "crisisRivalHero") {
+      const name =
+        cfg.crisis !== undefined && state !== undefined
+          ? crisisRivalName(state, cfg.crisis, `rival.${e.index}`)
+          : `rival.${e.index}`;
+      out.push({
+        rank: "A",
+        title: `${name} が英雄となった`,
+        sub: "世界はあなたを待たずに、決着へ進みました",
+        rewards: [{ label: "英雄", name }],
+      });
+    }
   }
   return out;
 }
@@ -1316,7 +1408,12 @@ export interface WakePack {
   others: string[];
 }
 
-export function wakePack(report: WakeReport, events: ActionEvent[], atHome: boolean): WakePack {
+export function wakePack(
+  report: WakeReport,
+  events: ActionEvent[],
+  atHome: boolean,
+  state?: GameState,
+): WakePack {
   return {
     quality: qualityLabel(report.quality),
     inn: atHome ? t.display.homeName : t.display.innNames[report.inn],
@@ -1336,6 +1433,6 @@ export function wakePack(report: WakeReport, events: ActionEvent[], atHome: bool
     winds: report.tailwinds.map((x) => ({ direction: x.direction, label: x.label })),
     overwork: report.overwork.active,
     restDay: report.restDay,
-    others: eventLines(events),
+    others: eventLines(events, state),
   };
 }

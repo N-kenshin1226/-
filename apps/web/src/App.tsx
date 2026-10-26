@@ -55,6 +55,7 @@ import { MenuScreen } from "./screens/menu.js";
 import { BookScreen, SleepScreen, StatusScreen, TrainScreen } from "./screens/town.js";
 import { MinigameScreen, WorkModeScreen, WorkScreen } from "./screens/work.js";
 import { AbyssScreen, CombatScreen, HuntScreen } from "./screens/hunt.js";
+import { CrisisScreen } from "./screens/crisis.js";
 import { LoreScreen, RecordsScreen } from "./screens/records.js";
 import { MentorScreen, SocietyScreen } from "./screens/society.js";
 import { HeirScreen, RebirthScreen, RetireScreen, SuccessionScreen } from "./screens/end.js";
@@ -93,6 +94,7 @@ function sceneOf(s: Screen): SceneKind {
     case "abyss":
       return "abyss";
     case "combat":
+    case "crisis":
     case "sleep":
     case "retire":
     case "reset":
@@ -113,6 +115,7 @@ const HUD_SCREENS = new Set<Screen["name"]>([
   "workMode",
   "minigame",
   "hunt",
+  "crisis",
   "lore",
   "book",
   "records",
@@ -199,7 +202,7 @@ export function App() {
           atHome: opts?.atHome ?? false,
         });
       } else {
-        push(opts?.format?.(res.events) ?? eventLines(res.events));
+        push(opts?.format?.(res.events) ?? eventLines(res.events, res.state));
       }
       // S/Aの出来事は通知を重ねる（03 §6：S=画面全体の帯・A=光る窓）
       const ns = noticesOf(res.events, res.state);
@@ -570,6 +573,7 @@ function ScreenView(props: {
           state={state}
           kind={screen.kind}
           order={screen.order}
+          finale={screen.finale}
           setScreen={setScreen}
           act={act}
         />
@@ -584,11 +588,14 @@ function ScreenView(props: {
           state={state}
           enemy={screen.enemy}
           touchpoint={screen.touchpoint}
+          finale={screen.finale}
           setScreen={setScreen}
           act={act}
           push={push}
         />
       );
+    case "crisis":
+      return <CrisisScreen state={state} setScreen={setScreen} act={act} />;
     case "lore":
       return <LoreScreen state={state} atomId={screen.atomId} setScreen={setScreen} act={act} />;
     case "book":

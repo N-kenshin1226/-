@@ -74,6 +74,18 @@
       "bond": "縁",
       "wealth": "財",
       "knowledge": "知"
+    },
+    "crisisRoleNames": {
+      "vanguard": "前線の要",
+      "negotiator": "会議の場",
+      "artisan": "装備と支度",
+      "coordinator": "まとめ役"
+    },
+    "crisisStageNames": {
+      "1": "見届けた",
+      "2": "支えた",
+      "3": "担った",
+      "4": "率いた"
     }
   },
   "text": {
@@ -295,10 +307,32 @@
       "npc.leave": "――{name} が街を離れたという。",
       "npc.die": "――{name} の訃報が届いた。",
       "end.resolved": "――世界の出来事は幕を閉じた。",
-      "end.ruin": "――世界は滅びの影に沈んだ。"
+      "end.ruin": "――世界は滅びの影に沈んだ。",
+      "finale.hero": "――《{name}》。あなたが世界の先陣を切り、勝ち取った。",
+      "finale.heroFail": "――《{name}》で、あなたの采配は届かなかった。",
+      "rival.hero": "――{name} が英雄として名を上げたという。"
     },
     "touchpointTag": "異変：",
     "crisisTouchpointDone": "――世界の備え《{field}》に、あなたの力が加わった。",
+    "crisisMenuItem": "  13) 決着の場面",
+    "crisisSceneHeader": "── 決着の場面 ──",
+    "crisisSceneLine": "  《{name}》 ―― {status}（あと {seasons} 季節）",
+    "crisisStatusOffered": "打診が届いている",
+    "crisisStatusJoined": "参加を請けている",
+    "crisisStatusDone": "勝負所を果たした",
+    "crisisStatusWaiting": "まだ打診は届いていない",
+    "crisisSceneRole": "――あなたの役目は《{role}》。",
+    "crisisSceneStage": "――あなたの関与は《{stage}》。",
+    "crisisJoinOption": "《{name}》の打診に応える",
+    "crisisAttemptOption": "《{name}》の勝負所に臨む",
+    "crisisLeadOption": "《{name}》を自分で起こす",
+    "crisisLeadFieldPrompt": "――どうやって挑むか（全面的に／分野に絞る）",
+    "crisisLeadFieldAll": "全面的に",
+    "crisisLeadConfirm": "――《{name}》を、いま起こしますか（y/N）",
+    "crisisBack": "戻る",
+    "crisisFinaleOffered": "――《{name}》への参加の打診が届きました（決着の場面で応えられます）。",
+    "crisisFinaleJoined": "――《{name}》への参加を請けました。",
+    "crisisFinaleAttempt": "――《{name}》の勝負所で、あなたの力が世界の備えに加わった。",
     "resetConfirm": "――この街での全ての記録を消します。よろしいですか"
   }
 }

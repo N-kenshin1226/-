@@ -168,6 +168,7 @@ export function CombatScreen({
   state,
   enemy,
   touchpoint,
+  finale,
   setScreen,
   act,
   push,
@@ -176,6 +177,8 @@ export function CombatScreen({
   enemy: EnemyJson;
   /** 危機の接点の相手なら接点の id（W-02。勝ったときだけ世界の備えに寄与する） */
   touchpoint?: string;
+  /** 決着の場面の勝負所なら場面の id（W-03。結果は危機の備えへ寄与する） */
+  finale?: string;
   setScreen: (s: Screen) => void;
   act: Act;
   push: Push;
@@ -202,6 +205,27 @@ export function CombatScreen({
 
   const finish = () => {
     const r = combatResult(cs);
+    if (finale !== undefined) {
+      // 決着の場面の勝負所（W-03）：戦闘の結果を出来（0〜1）に換算して世界の備えへ。
+      // 勝=1・逃=0.35・敗=0。経験や討伐記録は付かない —— これは仕事ではなく勝負所
+      act(
+        {
+          type: "crisisFinaleAttempt",
+          id: finale,
+          score: r.won ? 1 : r.fled ? 0.35 : 0,
+          ...(r.died ? { died: true } : {}),
+        },
+        {
+          format: (ev) => [
+            ...eventLines(ev, state),
+            ...(r.died ? [...bioLines(state, "death"), t.text.chronicleRecorded] : []),
+          ],
+        },
+      );
+      push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
+      setScreen({ name: "menu" });
+      return;
+    }
     act({
       type: "combat",
       enemyId: enemy.id,
@@ -392,7 +416,7 @@ export function AbyssScreen({
       },
       {
         format: (ev) => [
-          ...eventLines(ev),
+          ...eventLines(ev, state),
           // 深層での死も教会蘇生の扱いは同じ（03 §4）。伝記を残す
           ...(end === "died" ? [...bioLines(state, "death"), t.text.chronicleRecorded] : []),
         ],

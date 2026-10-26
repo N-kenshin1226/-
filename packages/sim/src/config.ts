@@ -7,6 +7,7 @@ import {
   crisisTypes,
   mentors,
   pinnacles,
+  rivals,
   skills,
   society,
   tailwinds,
@@ -22,12 +23,34 @@ import type { CrisisConfig, StepConfig } from "@trace/core";
  * 係数は balance.crisis 由来
  */
 export function crisisConfig(): CrisisConfig {
+  const inv = balance.crisis.involvement;
   return {
     types: crisisTypes(loadHiddenCrises()),
     strongFields: balance.crisis.strongFields,
     weakFieldFactor: balance.crisis.weakFieldFactor,
     /** 接点（W-02）：日常へ混ざる量と寄与の係数 */
     touchpoints: balance.crisis.touchpoints,
+    /**
+     * 関与（W-03、docs/08 §6）：係数は balance.crisis.involvement、
+     * 名声の算出は balance.rivals、立場の順は society.standings、
+     * 頂点ルートは pinnacles.json、ライバルの顔ぶれは rivals.json から注入する
+     */
+    involvement:
+      inv === undefined
+        ? undefined
+        : {
+            ...inv,
+            renown: balance.rivals,
+            pinnacles: pinnacles.pinnacles,
+            standings: society.standings.map((s) => s.id),
+            rivals: {
+              ...inv.rivals,
+              names: rivals.names,
+              epithets: rivals.epithets,
+              heroEpithets: rivals.crisis?.heroEpithets ?? [],
+              size: balance.rivals.size,
+            },
+          },
   };
 }
 

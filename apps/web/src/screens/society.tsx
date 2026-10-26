@@ -139,7 +139,10 @@ export function MentorScreen({
           fee: current.fee,
           amount: (gain?.type === "gainApplied" ? gain.amount : 0).toFixed(1),
         }),
-        ...eventLines(ev.filter((e) => e.type !== "gainApplied")),
+        ...eventLines(
+          ev.filter((e) => e.type !== "gainApplied"),
+          state,
+        ),
       ];
     };
     const entries: MenuEntry[] = [

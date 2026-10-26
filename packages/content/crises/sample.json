@@ -67,7 +67,8 @@
           "atBoundary": 2,
           "fields": ["might"],
           "required": 8,
-          "margin": 0.1
+          "margin": 0.1,
+          "ref": "deserter"
         },
         {
           "id": "finale.rite",

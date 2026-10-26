@@ -4,7 +4,15 @@
  *   下帯：噂と操作ガイド。行動できるかは canAct（core）だけを見る
  */
 import { canAct, describe, isSkillUnlocked, type GameState } from "@trace/core";
-import { cfg, originList, skillList, townRumor, townVoice, windChips } from "../game.js";
+import {
+  cfg,
+  crisisFinaleOffers,
+  originList,
+  skillList,
+  townRumor,
+  townVoice,
+  windChips,
+} from "../game.js";
 import {
   CommandMenu,
   DialogueBox,
@@ -80,6 +88,22 @@ export function MenuScreen({
       disabled: !canActNow,
       onPick: () => setScreen({ name: "abyss" }),
     },
+    // 決着の場面（W-03、docs/08 §6）：打診が届いている・請けている・率いられる
+    // ときだけ項目が出る。届いていなければ世界の危機は日常の裏で進むだけ
+    ...(canActNow &&
+    crisisFinaleOffers(state, cfg.crisis).some(
+      (o) => o.joinable || (o.joined && !o.attempted) || o.leadable,
+    )
+      ? [
+          {
+            id: "menu-crisis",
+            label: "決着の場面",
+            sub: "世界からの打診",
+            gold: true,
+            onPick: () => setScreen({ name: "crisis" }),
+          } satisfies MenuEntry,
+        ]
+      : []),
     { kind: "divider" },
     { kind: "header", text: "TOWN" },
     {
