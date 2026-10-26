@@ -199,6 +199,21 @@ describe("evaluate: 各演算", () => {
     expect(ev({ work: {} })).toBe(false);
     expect(ev({ work: { count: { atLeast: 1 } } })).toBe(false);
   });
+
+  it("money: 所持金の比較（X-9。累計売上は counter の money.earned を使う）", () => {
+    const g = state();
+    g.player.money = 500;
+    expect(ev({ money: { gte: 500 } }, g)).toBe(true);
+    expect(ev({ money: { gte: 501 } }, g)).toBe(false);
+    expect(ev({ money: { lte: 500 } }, g)).toBe(true);
+    expect(ev({ money: { eq: 500 } }, g)).toBe(true);
+    // 矛盾検査でも counter と同じく範囲が拾える
+    expect(
+      findContradictions([
+        { id: "a", condition: { and: [{ money: { gte: 100 } }, { money: { lte: 50 } }] } },
+      ]),
+    ).toEqual(["a"]);
+  });
 });
 
 describe("isContradiction", () => {

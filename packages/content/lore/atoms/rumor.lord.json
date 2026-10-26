@@ -1,0 +1,10 @@
+{
+  "id": "rumor.lord",
+  "kind": "event",
+  "title": "領主の噂",
+  "text": "門番がぽつりと言った。この街が大火から立ち直れたのは、施しを惜しまなかった領主のおかげだ、と。街に奉仕し続けた者は、いまも街そのものに迎えられるそうだ。",
+  "refs": ["npc.sado", "event.great_fire"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "found.lord" }
+}

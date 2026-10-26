@@ -95,6 +95,8 @@ export type ActionEvent =
   | { type: "skillUnlocked"; id: string }
   /** 仕事の報酬が入った（G） */
   | { type: "moneyPaid"; amount: number }
+  /** 街に寄付した（X-9 領主ルート。amount は納めたG。counters["town.donated"] に累計される） */
+  | { type: "donated"; amount: number }
   /** 書物を買った（T-26。行動は消費しない） */
   | { type: "bookBought"; id: string }
   /**
@@ -176,7 +178,7 @@ export type ActionEvent =
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
 
-/** カウンタを数える購読者（`action.<kind>`、`action.total`、`days.slept`、`title.total`、`society.offer.<id>`、`mentor.session.<id>`） */
+/** カウンタを数える購読者（`action.<kind>`、`action.total`、`days.slept`、`title.total`、`society.offer.<id>`、`mentor.session.<id>`、`money.earned`、`town.donated`） */
 export const counterSubscriber: Subscriber = (state, event) => {
   switch (event.type) {
     case "actionPerformed": {
@@ -208,6 +210,26 @@ export const counterSubscriber: Subscriber = (state, event) => {
       return {
         ...state,
         counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
+      };
+    }
+    case "moneyPaid": {
+      // 稼いだ額の累計（売上の生涯合計。商王ルートなど条件DSLから読める。X-9）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "money.earned": (state.counters["money.earned"] ?? 0) + event.amount,
+        },
+      };
+    }
+    case "donated": {
+      // 街への寄付の累計（奉仕。領主ルートの社会的基盤。X-9）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "town.donated": (state.counters["town.donated"] ?? 0) + event.amount,
+        },
       };
     }
     case "mentorTrained": {

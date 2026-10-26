@@ -34,6 +34,13 @@ export interface PinnacleRouteDef {
   desc: string;
   /** 最終段の達成で獲得する頂点称号（titles.json の id） */
   title: string;
+  /**
+   * 隠しルート（X-9、06 §3A「2ルートは伏せて、噂で匂わせる」）。
+   * このフラグが立つまで目標一覧・社会画面のルート一覧に出ない。
+   * 段の評価自体は常に行われる —— 隠しルートの段に達した通知が
+   * そのまま「実績による発見」になる（段フラグが立てば一覧にも出る）
+   */
+  hidden?: { flag: string };
   /** 条件鎖。先頭から順に越えていく。末尾が頂点（Sランク） */
   stages: readonly PinnacleStageDef[];
 }
@@ -41,6 +48,25 @@ export interface PinnacleRouteDef {
 /** 段の達成フラグキー（flags["pinnacle.<route>.<stage>"]） */
 export function pinnacleFlag(routeId: string, stageId: string): string {
   return `pinnacle.${routeId}.${stageId}`;
+}
+
+/**
+ * ルートが一覧表示可能か（X-9 隠しルート）。
+ * 隠しルートは発見フラグが立つか、既にいずれかの段に達していれば見せる
+ * （噂の発見＝フラグ、実績先行＝段フラグのどちらでも開く）
+ */
+export function isRouteVisible(route: PinnacleRouteDef, flags: Record<string, boolean>): boolean {
+  if (!route.hidden) return true;
+  if (flags[route.hidden.flag]) return true;
+  return route.stages.some((s) => flags[pinnacleFlag(route.id, s.id)]);
+}
+
+/** 一覧表示用に、まだ見せないルートを落とした配列を返す */
+export function visiblePinnacles(
+  routes: readonly PinnacleRouteDef[],
+  flags: Record<string, boolean>,
+): PinnacleRouteDef[] {
+  return routes.filter((r) => isRouteVisible(r, flags));
 }
 
 /** 次に越えるべき段（全段達成済みなら null） */
@@ -100,6 +126,9 @@ export function checkPinnacles(
   const reached: PinnacleStageReached[] = [];
   const kehai: string[] = [];
   for (const route of routes) {
+    // 隠しルートは発見フラグが立つまで段を評価しない（X-9。
+    // 通知・気配が先走ってルートの存在を漏らさないための門）
+    if (!isRouteVisible(route, next.flags)) continue;
     const stage = nextStage(next, route);
     if (stage === null) continue;
     if (evaluate(stage.condition, next, time)) {

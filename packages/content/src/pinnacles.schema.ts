@@ -29,6 +29,15 @@ export const pinnacleRouteSchema = z
      * （validate.ts と pinnacles.test.ts で突き合わせる。条件鎖はこのファイルだけに書く）
      */
     title: z.string().regex(/^title\.[a-z0-9_.]+$/),
+    /**
+     * 隠しルート（X-9、06 §3A「2ルートは伏せて、噂で匂わせる」）。
+     * flag は lore アトムの unlock.flag に対応するものを書く。
+     * このフラグが立つまで一覧にも出ず、段の評価も行われない
+     */
+    hidden: z
+      .object({ flag: z.string().regex(/^[a-z0-9_.]+$/) })
+      .strict()
+      .optional(),
     /** 条件鎖（先頭から順に越える。末尾が頂点＝Sランク） */
     stages: z.array(pinnacleStageSchema).min(2),
   })

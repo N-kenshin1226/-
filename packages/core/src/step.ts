@@ -91,6 +91,8 @@ export interface StepConfig {
   aging?: AgingConfig;
   /** 継承（06 §2、T-39。balance.legacy）。遺物の gainVs 係数を渡す */
   legacy?: { artifactGainFactor: number };
+  /** 街への寄付（X-9 領主ルート。balance.town.donationAmount）。省略時は寄付できない */
+  donation?: { amount: number };
   /** 頂点ルート（06 §3A、T-41。content/pinnacles.json）。省略時は条件鎖を評価しない */
   pinnacles?: readonly PinnacleRouteDef[];
   /** 運命の傾向の定義（06 §3C、T-45。balance.tendency）。省略時はすべて中立 */
@@ -175,6 +177,11 @@ export type Command =
   | { type: "declareGoal"; id: string }
   /** 人生目標を取り下げる（差し替え用） */
   | { type: "abandonGoal" }
+  /**
+   * 街へ寄付する（X-9 領主ルート。1行動を消費し cfg.donation.amount を納める）。
+   * 累計は counters["town.donated"] に刻まれる。設定・行動残・所持金が無ければ何も起きない
+   */
+  | { type: "donate" }
   /** アトムを読む（見聞録。行動を1回消費する） */
   | { type: "readAtom"; id: string }
   /** 書物を買う（02 §8、T-26。行動は消費しない） */
@@ -746,6 +753,19 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (next.society.goal !== null) {
         next = { ...next, society: { ...next.society, goal: null } };
       }
+      break;
+    }
+    case "donate": {
+      // 寄付：1行動を消費して設定額を街に納める（X-9。認定の受諾ではなく日々の奉仕）
+      const amount = cfg.donation?.amount;
+      if (amount === undefined || amount <= 0) break;
+      if (!canAct(next.time, cfg.time)) break;
+      if (next.player.money < amount) break;
+      next = { ...next, player: { ...next.player, money: next.player.money - amount } };
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "donate", cfg.body);
+      events.push({ type: "actionPerformed", kind: "donate", day: next.time.day });
+      events.push({ type: "donated", amount });
       break;
     }
     case "readAtom": {

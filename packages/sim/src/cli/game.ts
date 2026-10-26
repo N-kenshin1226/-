@@ -342,6 +342,10 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         const name = society.lifeGoals.find((g) => g.id === e.id)?.name ?? e.id;
         return [tpl(t.text.goalAchieved, { name })];
       }
+      // 街への寄付（X-9 領主ルート）：納めた額を1行で返す
+      if (e.type === "donated") {
+        return [tpl(t.text.societyDonated, { amount: e.amount })];
+      }
       if (e.type === "factLearned") {
         const text = canon.facts.find((f) => f.id === e.id)?.text ?? e.id;
         return [tpl(t.text.factLearned, { text })];

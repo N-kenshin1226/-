@@ -405,6 +405,8 @@ export const balanceSchema = z
         specialOrderRewardFactor: z.number().positive(),
         /** 特別注文の目標品質倍率 */
         specialOrderQualityFactor: z.number().positive(),
+        /** 街への寄付の1口の額（X-9 領主ルート。1行動で納めるG） */
+        donationAmount: z.number().positive(),
       })
       .strict(),
     /** 錆（02 §7）：未使用スキルの低下・床・再習得倍率・脳の容量 */

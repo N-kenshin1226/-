@@ -282,7 +282,8 @@
     "specialOrderChance": 0.4,
     "specialOrderExpFactor": 1.5,
     "specialOrderRewardFactor": 2,
-    "specialOrderQualityFactor": 1.2
+    "specialOrderQualityFactor": 1.2,
+    "donationAmount": 50
   },
   "rust": {
     "graceDays": 14,

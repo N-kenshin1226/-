@@ -35,3 +35,44 @@ describe("頂点ルートの専用ボット（X-4 大賢者）", () => {
     expect(r.final.lore.read).toContain("rumor.taboo_codex");
   });
 });
+
+describe("頂点ルートの専用ボット（X-9 伏せられた頂点ルート）", () => {
+  // 隠しルートは発見フラグ（噂アトムの unlock.flag）が立つまで段が評価されない。
+  // ボットは planReading 経由で噂を読んでから段の条件をこなす
+  for (const routeId of ["merchant_king", "lord"] as const) {
+    it(`${routeId}ルート：噂を読んで開き、全段に至る`, () => {
+      const route = pinnacles.pinnacles.find((r) => r.id === routeId)!;
+      expect(route.hidden).toBeDefined();
+      const bot = makePinnacleBot(route, enemies.enemies);
+      const r = runBot(
+        bot,
+        thresholds.growth.titleReachabilityDays,
+        `test:${routeId}`,
+        stepConfig(),
+        simClock(),
+        skillIds,
+      );
+      // 発見の出所は見聞録の噂アトム
+      const atomId = `rumor.${routeId}`;
+      expect(r.final.lore.read).toContain(atomId);
+      expect(r.final.flags[route.hidden!.flag]).toBe(true);
+      for (const s of route.stages) {
+        expect(
+          r.firsts.some((f) => f.key === `pinnacle:${route.id}.${s.id}`),
+          `段 ${s.id}（${s.name}）`,
+        ).toBe(true);
+      }
+      expect(pinnacleReached(r.final, route)).toBe(true);
+      expect(r.final.titles).toContain(route.title);
+    });
+  }
+
+  it("領主ルート：寄付の累計（town.donated）と名士への打診を通る", () => {
+    const route = pinnacles.pinnacles.find((r) => r.id === "lord")!;
+    const bot = makePinnacleBot(route, enemies.enemies);
+    const r = runBot(bot, 120, "test:lord", stepConfig(), simClock(), skillIds);
+    expect(r.final.counters["town.donated"] ?? 0).toBeGreaterThanOrEqual(1500);
+    expect(r.final.counters["society.offer.patrician"] ?? 0).toBeGreaterThanOrEqual(1);
+    expect(r.final.society.standing).toBe("patrician");
+  });
+});

@@ -177,6 +177,8 @@ export const cfg: StepConfig = {
   legacy: { artifactGainFactor: balance.legacy.artifactGainFactor },
   /** 頂点ルート（T-41。content/pinnacles.json の条件鎖） */
   pinnacles: pinnacles.pinnacles,
+  /** 街への寄付（X-9 領主ルート。1口の額は balance.town.donationAmount） */
+  donation: { amount: balance.town.donationAmount },
   /** 運命の傾向・誓約（T-45/T-46。balance.tendency + vows.json の世界補正表） */
   tendency: balance.tendency,
   vows: vows.vows,
@@ -242,6 +244,8 @@ export const enemyList = enemies.enemies;
 export const enemyAreas = enemiesByArea(enemies);
 export const atomList = atoms;
 export const societyDefs = society;
+/** 頂点ルートの定義一覧（表示は画面側で visiblePinnacles に通す。X-9 隠しルート対応） */
+export const pinnacleList = pinnacles.pinnacles;
 export const bookList = books.books;
 export const mentorList = mentors.mentors;
 export const narrator = new TemplateProvider(narration);
@@ -612,6 +616,9 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       }
       case "moneyPaid":
         return [tpl(t.text.moneyPaid, { amount: e.amount })];
+      // 街への寄付（X-9 領主ルート）：納めた額を1行で返す
+      case "donated":
+        return [tpl(t.text.societyDonated, { amount: e.amount })];
       // 老衰死（T-36）：起床ログに続いて表示する。老いの兆候（oldAgeSign）は
       // report.surprises に既出なのでここでは行を出さない
       case "deathByAge":
@@ -1281,6 +1288,8 @@ function deedLabel(kind: string, target?: string): string {
       return `《${occasionName(target ?? "")}》に臨んだ`;
     case "read":
       return "読書";
+    case "donate":
+      return "街への奉仕";
     case "wait":
       return "休息";
     default:
@@ -1373,7 +1382,13 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
 
   // 街の声：住人を2〜3人選び、話題があれば respect、無ければ greet。
   // 危機の段階で街を離れた・亡くなった住人は紙面に出ない（W-04：人の不在で伝える）
-  const deed = deeds.includes("combat") ? "狩り" : deeds.includes("work") ? "仕事" : undefined;
+  const deed = deeds.includes("combat")
+    ? "狩り"
+    : deeds.includes("work")
+      ? "仕事"
+      : deeds.includes("donate")
+        ? "奉仕"
+        : undefined;
   const npcRng = rng("npc");
   const rest = voices.npcs.filter(
     (n) => cfg.crisis === undefined || crisisNpcAbsent(state, n.id) === null,
@@ -1435,7 +1450,9 @@ export function townVoice(state: GameState): { name: string; role: string; text:
       ? "仕事"
       : deeds.includes("train")
         ? "鍛錬"
-        : undefined;
+        : deeds.includes("donate")
+          ? "奉仕"
+          : undefined;
   // 危機の段階で街を離れた・亡くなった住人は窓に出ない（W-04：人の不在で伝える）
   const pool = voices.npcs.filter(
     (n) => cfg.crisis === undefined || crisisNpcAbsent(state, n.id) === null,

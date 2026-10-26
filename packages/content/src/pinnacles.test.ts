@@ -2,25 +2,30 @@ import {
   checkPinnacles,
   evaluate,
   findContradictions,
+  isRouteVisible,
   newGame,
   nextStage,
   pinnacleFlag,
   pinnacleReached,
+  visiblePinnacles,
   type GameState,
   type TimeConfig,
   type Work,
 } from "@trace/core";
 import { describe, expect, it } from "vitest";
+import { atoms } from "./lore.js";
 import { pinnacles } from "./pinnacles.js";
 import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 import { titles } from "./titles.js";
 
 describe("pinnacles.json（T-41 頂点ルート）", () => {
-  it("剣聖・伝説の職人・大賢者の3ルートがあり、各段は id/name/rank/notice/condition を持つ", () => {
+  it("剣聖・伝説の職人・大賢者・商王・領主の5ルートがあり、各段は id/name/rank/notice/condition を持つ", () => {
     expect(pinnacles.pinnacles.map((r) => r.id)).toEqual([
       "sword_saint",
       "legendary_artisan",
       "great_sage",
+      "merchant_king",
+      "lord",
     ]);
     for (const r of pinnacles.pinnacles) {
       expect(r.name.length).toBeGreaterThan(0);
@@ -67,6 +72,80 @@ describe("pinnacles.json（T-41 頂点ルート）", () => {
       for (const s of r.stages) {
         expect(findContradictions([{ id: `${r.id}.${s.id}`, condition: s.condition }])).toEqual([]);
       }
+    }
+  });
+
+  it("各ルートは4段で、通知ランクは B/A/A/S", () => {
+    for (const r of pinnacles.pinnacles) {
+      expect(r.stages.map((s) => s.rank)).toEqual(["B", "A", "A", "S"]);
+    }
+  });
+
+  it("隠しルート（X-9）：商王・領主は発見フラグまで一覧に出ず、段も評価されない", () => {
+    const time: TimeConfig = {
+      actionsPerDay: 5,
+      timeOfDay: ["morning", "morning", "noon", "evening", "night"],
+      daysPerWeek: 7,
+      daysPerSeason: 28,
+      seasonsPerYear: 4,
+      moonCycleDays: 28,
+      moonPhaseWindowDays: 1,
+      startAge: 15,
+    };
+    const hidden = pinnacles.pinnacles.filter((r) => r.hidden !== undefined);
+    // 隠すのは商王・領主の2本だけ（X-9：最初に見せるのは既存ルート＋英雄だけ）
+    expect(hidden.map((r) => r.id).sort()).toEqual(["lord", "merchant_king"]);
+    const mk = pinnacles.pinnacles.find((r) => r.id === "merchant_king")!;
+
+    let s = newGame("seed", "富商", {
+      skillIds: ["smithing"],
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    // 未発見：一覧にも評価にも出ない（条件を全部満たしても段は立たない）
+    expect(visiblePinnacles(pinnacles.pinnacles, s.flags).map((r) => r.id)).toEqual([
+      "sword_saint",
+      "legendary_artisan",
+      "great_sage",
+    ]);
+    expect(isRouteVisible(mk, s.flags)).toBe(false);
+    s = {
+      ...s,
+      counters: { "money.earned": 9999, "action.work": 99, "society.offer.citizen": 1 },
+      player: { ...s.player, money: 9999 },
+      ledger: [0, 1, 2, 3, 4].map((i) => ({
+        id: `w${i}`,
+        kind: "smithing",
+        maker: "富商",
+        quality: 50,
+        tier: 1,
+        flags: [],
+        day: 0,
+        worldSeed: "seed",
+        marketValue: 100,
+      })),
+    };
+    expect(evaluate(mk.stages[0]!.condition, s, time)).toBe(true);
+    expect(checkPinnacles(s, pinnacles.pinnacles, time).reached).toEqual([]);
+
+    // 発見（噂を読んでフラグが立つ）と一覧に出て、段の評価も始まる
+    // （領主はまだ未発見なので 4 件。両方読めば 5 件）
+    s = { ...s, flags: { ...s.flags, "found.merchant_king": true } };
+    expect(isRouteVisible(mk, s.flags)).toBe(true);
+    expect(visiblePinnacles(pinnacles.pinnacles, s.flags)).toHaveLength(4);
+    s = { ...s, flags: { ...s.flags, "found.lord": true } };
+    expect(visiblePinnacles(pinnacles.pinnacles, s.flags)).toHaveLength(5);
+    const r = checkPinnacles(s, pinnacles.pinnacles, time);
+    expect(r.reached.map((x) => `${x.route.id}.${x.stage.id}`)).toContain(
+      "merchant_king.first_gain",
+    );
+  });
+
+  it("隠しルートの発見フラグは、見聞録の噂アトムの unlock.flag と一致する", () => {
+    const atomFlags = new Set(atoms.map((a) => a.unlock?.flag).filter((f) => f !== undefined));
+    for (const r of pinnacles.pinnacles) {
+      if (r.hidden === undefined) continue;
+      expect(atomFlags, `${r.id} の発見フラグ ${r.hidden.flag}`).toContain(r.hidden.flag);
     }
   });
 

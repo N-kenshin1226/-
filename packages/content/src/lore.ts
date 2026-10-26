@@ -6,6 +6,8 @@ import atom2 from "../lore/atoms/npc.marta_board.json";
 import atom3 from "../lore/atoms/place.old_forge.json";
 import atom4 from "../lore/atoms/rumor.fire_drunkard.json";
 import atom5 from "../lore/atoms/rumor.taboo_codex.json";
+import atom6 from "../lore/atoms/rumor.merchant_king.json";
+import atom7 from "../lore/atoms/rumor.lord.json";
 import { atomSchema, type Atom } from "./atom.schema.js";
 import { canonSchema, type Canon } from "./canon.schema.js";
 
@@ -16,7 +18,7 @@ export const canon: Canon = (() => {
   return parsed.data;
 })();
 
-const atomRaws = [atom1, atom2, atom3, atom4, atom5];
+const atomRaws = [atom1, atom2, atom3, atom4, atom5, atom6, atom7];
 
 /** アトム全件。id の重複などは lore:check が別途検査する */
 export const atoms: Atom[] = atomRaws.map((raw, i) => {

@@ -132,6 +132,15 @@ export const cliTextSchema = z
         societyNoGoal: z.string(),
         societyAccepted: z.string(),
         societyDeclared: z.string(),
+        /** 頂点ルート一覧（X-9。見えているルートだけ出す。{done}/{total} は段の進行） */
+        societyPinnacleHeader: z.string(),
+        societyPinnacleLine: z.string(),
+        /** 未発見の隠しルートがあるときの匂わせ行（ルート名は出さない） */
+        societyPinnacleHidden: z.string(),
+        /** 街への寄付（X-9 領主ルート。{amount}G・1行動。Line は番号付き一覧用） */
+        societyDonateLine: z.string(),
+        societyDonateAction: z.string(),
+        societyDonated: z.string(),
         offerReceived: z.string(),
         goalAchieved: z.string(),
         loreListHeader: z.string(),

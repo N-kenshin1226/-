@@ -262,6 +262,43 @@ function requiredWithin(cond: Cond): Extract<Cond, { within: unknown }>["within"
   return [];
 }
 
+/** 条件木から town.donated カウンタの必要額を拾う（複数ある場合は最大値。X-9 領主ルート） */
+function requiredDonation(cond: Cond): number | null {
+  if ("counter" in cond && cond.counter === "town.donated") {
+    return cond.gte ?? cond.eq ?? null;
+  }
+  if ("and" in cond) {
+    const ns = cond.and.map(requiredDonation).filter((n): n is number => n !== null);
+    return ns.length > 0 ? Math.max(...ns) : null;
+  }
+  if ("or" in cond) return requiredDonation(cond.or[0]!);
+  return null;
+}
+
+/** 条件木から所持金条件（money）の必要額を拾う（複数ある場合は最大値。X-9 商王ルート） */
+function requiredMoney(cond: Cond): number | null {
+  if ("money" in cond) return cond.money.gte ?? cond.money.eq ?? null;
+  if ("and" in cond) {
+    const ns = cond.and.map(requiredMoney).filter((n): n is number => n !== null);
+    return ns.length > 0 ? Math.max(...ns) : null;
+  }
+  if ("or" in cond) return requiredMoney(cond.or[0]!);
+  return null;
+}
+
+/** 条件木から money.earned カウンタの必要額を拾う（生涯売上。X-9 商王ルート） */
+function requiredEarnings(cond: Cond): number | null {
+  if ("counter" in cond && cond.counter === "money.earned") {
+    return cond.gte ?? cond.eq ?? null;
+  }
+  if ("and" in cond) {
+    const ns = cond.and.map(requiredEarnings).filter((n): n is number => n !== null);
+    return ns.length > 0 ? Math.max(...ns) : null;
+  }
+  if ("or" in cond) return requiredEarnings(cond.or[0]!);
+  return null;
+}
+
 /** 条件木から stat 条件を拾う */
 function requiredStats(cond: Cond): { id: StatId; min: number }[] {
   if ("stat" in cond) return cond.gte !== undefined ? [{ id: cond.stat, min: cond.gte }] : [];
@@ -315,11 +352,27 @@ function workQualityEstimate(g: GameState, kind: string): number {
   return Math.min(100, Math.round((20 + skill * 0.9) * 10) / 10);
 }
 
-/** 書物代を稼ぐための仕事（いちばん値の高い品を作れるスキルで） */
+/**
+ * 稼ぐ仕事の種目（X-9）：市場の反復減衰が最も浅い＝見込み報酬が最も高い種目を選ぶ。
+ * 同じ種目を詰め込むと相場が逓減して稼げなくなるため、種目を回す
+ */
+function bestWorkKind(g: GameState, ctx: BotCtx): string {
+  const est = (kind: string): number => {
+    const recent = g.ledger.filter(
+      (w) => w.kind === kind && w.day >= g.time.day - ctx.cfg.ledger.marketWindowDays + 1,
+    ).length;
+    return (
+      workQualityEstimate(g, kind) *
+      ctx.cfg.ledger.basePricePerQuality *
+      Math.pow(ctx.cfg.ledger.marketDecayPerWork, recent)
+    );
+  };
+  return unlockedSkills(g, ctx).reduce((a, b) => (est(a) >= est(b) ? a : b));
+}
+
+/** 書物代・寄付金を稼ぐための仕事（相場のいい種目で） */
 function earnMoneyForBook(g: GameState, ctx: BotCtx): Command {
-  const kind = unlockedSkills(g, ctx).reduce((a, b) =>
-    g.player.skills[a]!.value >= g.player.skills[b]!.value ? a : b,
-  );
+  const kind = bestWorkKind(g, ctx);
   return {
     type: "work",
     kind,
@@ -410,6 +463,14 @@ export function makePinnacleBot(
       if (g.society.pendingOffers.length > 0) {
         return { type: "acceptOffer", id: g.society.pendingOffers[0]! };
       }
+
+      // 隠しルートの発見（X-9）：発見フラグが立つまで段は評価されない。
+      // 旗の出所（噂アトム→つながり→書物の順）の解決は読む系と同じ planReading に委ねる
+      if (route.hidden !== undefined && g.flags[route.hidden.flag] !== true) {
+        const readCmd = planReading(g, ctx, { flag: route.hidden.flag });
+        return readCmd ?? { type: "wait" };
+      }
+
       const stage = nextStage(g, route);
       if (stage === null) return { type: "rest" }; // 完走済み
       const cond = stage.condition;
@@ -434,16 +495,45 @@ export function makePinnacleBot(
         };
       }
 
-      // 台帳条件：未達の kind で仕事（品質は見込み値）
+      // 連日の仕事（within work）条件：未達なら相場のいい種目で働く（X-9 商王ルート）
+      const workStreak = requiredWithin(cond).find(
+        (w) => w.kind === "work" && !evaluate({ within: w }, g, ctx.cfg.time),
+      );
+      if (workStreak) {
+        return earnMoneyForBook(g, ctx);
+      }
+
+      // 台帳条件：未達の kind で仕事（品質は見込み値。kind 指定が無ければ相場のいい種目）
       const work = requiredWorks(cond).find((w) => !evaluate({ work: w }, g, ctx.cfg.time));
       if (work) {
-        const kind = work.kind ?? "smithing";
+        const kind = work.kind ?? bestWorkKind(g, ctx);
         return {
           type: "work",
           kind,
           quality: workQualityEstimate(g, kind),
           difficulty: workQualityEstimate(g, kind),
         };
+      }
+
+      // 生涯売上条件（X-9 商王ルート）：足りなければ相場のいい種目で稼ぐ
+      const earnings = requiredEarnings(cond);
+      if (earnings !== null && (g.counters["money.earned"] ?? 0) < earnings) {
+        return earnMoneyForBook(g, ctx);
+      }
+
+      // 寄付条件（X-9 領主ルート）：納められるなら寄付、金が足りなければ稼ぐ
+      const donation = requiredDonation(cond);
+      if (donation !== null && (g.counters["town.donated"] ?? 0) < donation) {
+        if (ctx.cfg.donation !== undefined && g.player.money >= ctx.cfg.donation.amount) {
+          return { type: "donate" };
+        }
+        return earnMoneyForBook(g, ctx);
+      }
+
+      // 所持金条件（X-9 商王ルート）：足りなければ仕事で稼ぐ
+      const money = requiredMoney(cond);
+      if (money !== null && g.player.money < money) {
+        return earnMoneyForBook(g, ctx);
       }
 
       // 認定（society.offer）条件：打診待ちでなければ、あとは条件を満たす方向へ進むだけ
@@ -480,8 +570,12 @@ export function makePinnacleBot(
         return { type: "train", skill, difficulty: bestDifficulty(g, skill) };
       }
 
-      // 条件が残るが手が出せない（time/flag 系）→ 待機
-      return { type: "wait" };
+      // 条件が残るが専用の手は無い（time・称号数など）→ 待つより鍛える方が前進になる
+      // （名声系カウンタや日数条件は、働き・鍛錬・睡眠の蓄積で勝手に進む）
+      const busy = unlockedSkills(g, ctx).reduce((a, b) =>
+        g.player.skills[a]!.value >= g.player.skills[b]!.value ? a : b,
+      );
+      return { type: "train", skill: busy, difficulty: bestDifficulty(g, busy) };
     },
     endDay: () => ({ type: "sleep", inn: "good", dinner: true }),
   };

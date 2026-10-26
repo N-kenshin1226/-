@@ -5,11 +5,13 @@ import { step, type StepConfig } from "../step.js";
 import type { TimeConfig } from "../time/index.js";
 import {
   checkPinnacles,
+  isRouteVisible,
   nextStage,
   pinnacleFlag,
   pinnacleReached,
   reachedPinnacles,
   routeProgress,
+  visiblePinnacles,
   type PinnacleRouteDef,
 } from "./index.js";
 
@@ -382,5 +384,112 @@ describe("step() の頂点ルート統合（T-41）", () => {
     const r = step(s, { type: "wait" }, noP);
     expect(r.events.find((e) => e.type === "pinnacleStageReached")).toBeUndefined();
     expect(r.state.flags["pinnacle.test_route.first"]).toBeUndefined();
+  });
+});
+
+// ---- 隠しルート（X-9）：発見フラグが立つまで段を評価しない ----
+
+const hiddenRoute: PinnacleRouteDef = {
+  id: "hidden_route",
+  name: "伏せの頂",
+  desc: "噂でだけ聞こえる条件鎖",
+  title: "title.test_apex",
+  hidden: { flag: "found.hidden_route" },
+  stages: [
+    {
+      id: "first",
+      name: "一段目",
+      rank: "B",
+      notice: "――頂点への段《一段目》に至りました。",
+      condition: { counter: "kill.species.wolf", gte: 1 },
+    },
+    {
+      id: "apex",
+      name: "頂点",
+      rank: "S",
+      notice: "――頂点《伏せの頂》に至りました。",
+      condition: { counter: "kill.species.wolf", gte: 3 },
+    },
+  ],
+};
+
+describe("隠しルート（X-9 伏せられた頂点）", () => {
+  it("発見フラグが立つまで一覧にも段評価にも出ない（通知・気配の漏えいなし）", () => {
+    let s = mk();
+    // 条件は全部満たしているが、未発見なら段は立たない
+    s = { ...s, counters: { "kill.species.wolf": 99 } };
+    expect(isRouteVisible(hiddenRoute, s.flags)).toBe(false);
+    expect(visiblePinnacles([route, hiddenRoute], s.flags).map((r) => r.id)).toEqual([
+      "test_route",
+    ]);
+    const r = checkPinnacles(s, [hiddenRoute], time);
+    expect(r.reached).toEqual([]);
+    expect(r.kehai).toEqual([]);
+    expect(r.state.flags["pinnacle.hidden_route.first"]).toBeUndefined();
+
+    // step() 経由でも同じ：未発見ならイベントは出ない
+    const st = step(s, { type: "wait" }, { ...cfg, pinnacles: [hiddenRoute] });
+    expect(st.events.find((e) => e.type === "pinnacleStageReached")).toBeUndefined();
+  });
+
+  it("発見フラグが立つと一覧に出て、段の評価が始まる", () => {
+    let s = mk();
+    s = {
+      ...s,
+      counters: { "kill.species.wolf": 1 },
+      flags: { "found.hidden_route": true },
+    };
+    expect(isRouteVisible(hiddenRoute, s.flags)).toBe(true);
+    expect(visiblePinnacles([route, hiddenRoute], s.flags).map((r) => r.id)).toEqual([
+      "test_route",
+      "hidden_route",
+    ]);
+    const r = checkPinnacles(s, [hiddenRoute], time);
+    expect(r.reached.map((x) => x.stage.id)).toEqual(["first"]);
+  });
+
+  it("段フラグが既に立っているルートは発見フラグが無くても見せる（セーブ互換）", () => {
+    const s = mk();
+    const progressed = {
+      ...s,
+      flags: { [pinnacleFlag("hidden_route", "first")]: true },
+    };
+    expect(isRouteVisible(hiddenRoute, progressed.flags)).toBe(true);
+  });
+
+  it("hidden の無いルートは常に見せる", () => {
+    const s = mk();
+    expect(isRouteVisible(route, s.flags)).toBe(true);
+  });
+});
+
+describe("街への寄付（X-9 領主ルートの基盤）", () => {
+  const cfgDonate: StepConfig = { ...cfg, donation: { amount: 50 } };
+
+  it("1行動で設定額を納め、town.donated に累計される", () => {
+    let s = mk();
+    s = { ...s, player: { ...s.player, money: 200 } };
+    const r = step(s, { type: "donate" }, cfgDonate);
+    expect(r.events).toContainEqual({ type: "donated", amount: 50 });
+    expect(r.state.player.money).toBe(150);
+    expect(r.state.counters["town.donated"]).toBe(50);
+    expect(r.state.counters["action.donate"]).toBe(1);
+    // 累計：2回目は100
+    const r2 = step(r.state, { type: "donate" }, cfgDonate);
+    expect(r2.state.counters["town.donated"]).toBe(100);
+  });
+
+  it("所持金が足りない・設定が無いときは何も起きない（行動も消費しない）", () => {
+    const s = mk(); // money 0
+    const r = step(s, { type: "donate" }, cfgDonate);
+    expect(r.events.find((e) => e.type === "donated")).toBeUndefined();
+    expect(r.state.player.money).toBe(0);
+    expect(r.state.counters["town.donated"]).toBeUndefined();
+    // 設定自体が無いときも同じ
+    let s2 = mk();
+    s2 = { ...s2, player: { ...s2.player, money: 999 } };
+    const r2 = step(s2, { type: "donate" }, cfg);
+    expect(r2.events.find((e) => e.type === "donated")).toBeUndefined();
+    expect(r2.state.player.money).toBe(999);
   });
 });

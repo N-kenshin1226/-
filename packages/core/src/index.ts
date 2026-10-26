@@ -148,11 +148,13 @@ export { heirGenerationOf, heirKindOf, heirLegacyOf, succeedLife } from "./heir/
 export type { HeirConfig, HeirKind } from "./heir/index.js";
 export {
   checkPinnacles,
+  isRouteVisible,
   nextStage,
   pinnacleFlag,
   pinnacleReached,
   reachedPinnacles,
   routeProgress,
+  visiblePinnacles,
 } from "./pinnacle/index.js";
 export type {
   PinnacleCheck,

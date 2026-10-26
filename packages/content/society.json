@@ -24,6 +24,19 @@
         ]
       },
       "note": "危険な仕事を引き受けられる"
+    },
+    {
+      "id": "patrician",
+      "name": "名士",
+      "order": 3,
+      "condition": {
+        "and": [
+          { "counter": "society.offer.citizen", "gte": 1 },
+          { "counter": "town.donated", "gte": 250 },
+          { "counter": "days.slept", "gte": 21 }
+        ]
+      },
+      "note": "街への奉仕で認められた者。領主への道の半ば（X-9）"
     }
   ],
   "professions": [

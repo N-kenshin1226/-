@@ -106,6 +106,8 @@ export function stepConfig(): StepConfig {
     mentors: { mentors: mentors.mentors, potentialMax: balance.body.potentialMax },
     /** 頂点ルート（T-41。content/pinnacles.json の条件鎖） */
     pinnacles: pinnacles.pinnacles,
+    /** 街への寄付（X-9 領主ルート。1口の額は balance.town.donationAmount） */
+    donation: { amount: balance.town.donationAmount },
     /** 運命の傾向・誓約（T-45/T-46。balance.tendency + vows.json の世界補正表） */
     tendency: balance.tendency,
     vows: vows.vows,

@@ -29,7 +29,8 @@ export type Cond =
   | ({ skill: string } & Compare)
   /** 基礎能力の比較 */
   | ({ stat: StatId } & Compare)
-  /** 所持金の比較（X-10。打診・行事の「身なり」条件に使う） */
+  /** 所持金の比較（X-9 商王ルートの「いま持っている富」／X-10 打診・行事の「身なり」条件。
+      売上の累計は counter の money.earned を使う） */
   | { money: Compare }
   /** 作品台帳の条件（03 §3/§7）：kind 限定・最高ティア・件数 */
   | { work: { kind?: string; tierGte?: number; count?: { atLeast: number } } }

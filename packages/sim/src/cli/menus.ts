@@ -6,9 +6,11 @@ import {
   crisisTypeOf,
   occasionDef,
   rivalsOf,
+  routeProgress,
   shelfBooks,
   step,
   suggestGoals,
+  visiblePinnacles,
   type ActionEvent,
   type Chronicle,
   type GameState,
@@ -63,9 +65,9 @@ export function offerName(id: string): string {
   );
 }
 
-/** 「6) 目標と認定」：立場×職業の表示、打診の受諾、人生目標の宣言 */
+/** 「6) 目標と認定」：立場×職業の表示、志せる頂、打診の受諾・街への寄付、人生目標の宣言 */
 export async function societyMenu(state: GameState, ctx: MenuCtx): Promise<GameState | null> {
-  const { out, ask, cfg, t, save } = ctx;
+  const { out, outAll, ask, cfg, t, save, applyTitles } = ctx;
   const soc = state.society;
   const standingName = society.standings.find((s) => s.id === soc.standing)?.name ?? soc.standing;
   const profName =
@@ -78,14 +80,40 @@ export async function societyMenu(state: GameState, ctx: MenuCtx): Promise<GameS
       : (society.lifeGoals.find((g) => g.id === soc.goal)?.name ?? soc.goal);
   out(tpl(t.text.societyHeader, { standing: standingName, profession: profName, goal: goalName }));
 
-  // 打診の受諾
-  if (soc.pendingOffers.length === 0) {
+  // 志せる頂（X-9）：発見済みのルートだけ進行つきで出す。隠しルートは噂を読むまで出ない
+  const shownPinnacles = visiblePinnacles(pinnacles.pinnacles, state.flags);
+  out(t.text.societyPinnacleHeader);
+  for (const r of shownPinnacles) {
+    const p = routeProgress(state, r);
+    out(
+      tpl(t.text.societyPinnacleLine, {
+        name: r.name,
+        done: p.done,
+        total: p.total,
+        desc: r.desc,
+      }),
+    );
+  }
+  if (shownPinnacles.length < pinnacles.pinnacles.length) out(t.text.societyPinnacleHidden);
+
+  // 打診の受諾と街への奉仕（寄付。X-9 領主ルート）を同じ番号列に並べる
+  const canDonate = cfg.donation !== undefined;
+  const choiceCount = soc.pendingOffers.length + (canDonate ? 1 : 0);
+  if (choiceCount === 0) {
     out(t.text.societyNoOffers);
   } else {
     for (let i = 0; i < soc.pendingOffers.length; i++) {
       const id = soc.pendingOffers[i]!;
       const kind = society.standings.some((s) => s.id === id) ? "立場" : "職業";
       out(tpl(t.text.societyOfferLine, { i: i + 1, name: offerName(id), kind }));
+    }
+    if (canDonate) {
+      out(
+        tpl(t.text.societyDonateLine, {
+          i: soc.pendingOffers.length + 1,
+          amount: cfg.donation!.amount,
+        }),
+      );
     }
     const oi = await ask(t.text.promptChoice);
     if (oi === null) return null;
@@ -94,6 +122,23 @@ export async function societyMenu(state: GameState, ctx: MenuCtx): Promise<GameS
       const id = soc.pendingOffers[oiN]!;
       const res = step(state, { type: "acceptOffer", id }, cfg);
       out(tpl(t.text.societyAccepted, { name: offerName(id) }));
+      // 認定の受諾で頂点の段に至ることもある（例：市民の打診は商王・領主の条件に数えられる）
+      outAll(applyTitles(res.events));
+      save(res.state);
+      return res.state;
+    }
+    if (canDonate && oiN === soc.pendingOffers.length) {
+      // 寄付：1行動を消費する。行動残・所持金が無ければ受け付けない
+      if (!canAct(state.time, cfg.time)) {
+        out(t.text.mustSleep);
+        return state;
+      }
+      if (state.player.money < cfg.donation!.amount) {
+        out(t.text.bookTooPoor);
+        return state;
+      }
+      const res = step(state, { type: "donate" }, cfg);
+      outAll(applyTitles(res.events));
       save(res.state);
       return res.state;
     }

@@ -172,6 +172,118 @@
           }
         }
       ]
+    },
+    {
+      "id": "merchant_king",
+      "name": "商王",
+      "desc": "富の頂点。商いに商いを重ね、街の金貨の流れを掌に収めるまでの道",
+      "title": "title.merchant_king",
+      "hidden": { "flag": "found.merchant_king" },
+      "stages": [
+        {
+          "id": "first_gain",
+          "name": "初めの利得",
+          "rank": "B",
+          "notice": "――頂点への段《初めの利得》に至りました。銀貨の音が、あなたを呼んでいます。",
+          "condition": {
+            "and": [
+              { "work": { "count": { "atLeast": 5 } } },
+              { "counter": "money.earned", "gte": 150 }
+            ]
+          }
+        },
+        {
+          "id": "market_face",
+          "name": "市場の顔",
+          "rank": "A",
+          "notice": "――頂点への段《市場の顔》に至りました。露店の主たちが、あなたの名を知っています。",
+          "condition": {
+            "and": [
+              { "counter": "society.offer.citizen", "gte": 1 },
+              { "counter": "money.earned", "gte": 800 }
+            ]
+          }
+        },
+        {
+          "id": "cashflow",
+          "name": "財の奔流",
+          "rank": "A",
+          "notice": "――頂点への段《財の奔流》に至りました。金貨が、あなたの周りで渦を巻いています。",
+          "condition": {
+            "and": [
+              { "within": { "days": 7, "kind": "work", "atLeast": 10 } },
+              { "counter": "money.earned", "gte": 1800 }
+            ]
+          }
+        },
+        {
+          "id": "apex",
+          "name": "商王の座",
+          "rank": "S",
+          "notice": "――頂点《商王》に至りました。この街の富は、あなたの掌の上にあります。",
+          "condition": {
+            "and": [{ "counter": "money.earned", "gte": 3000 }, { "money": { "gte": 1000 } }]
+          }
+        }
+      ]
+    },
+    {
+      "id": "lord",
+      "name": "領主",
+      "desc": "奉仕の頂点。施しと守りで街の信を集め、領主と呼ばれるまでの道",
+      "title": "title.lord",
+      "hidden": { "flag": "found.lord" },
+      "stages": [
+        {
+          "id": "open_hand",
+          "name": "差し伸べる手",
+          "rank": "B",
+          "notice": "――頂点への段《差し伸べる手》に至りました。施しは、まだ小さな灯です。",
+          "condition": {
+            "and": [
+              { "counter": "town.donated", "gte": 100 },
+              { "counter": "society.offer.citizen", "gte": 1 }
+            ]
+          }
+        },
+        {
+          "id": "patrician",
+          "name": "名士の位",
+          "rank": "A",
+          "notice": "――頂点への段《名士の位》に至りました。街があなたの名を、頭を下げて呼びます。",
+          "condition": {
+            "and": [
+              { "counter": "society.offer.patrician", "gte": 1 },
+              { "counter": "town.donated", "gte": 400 }
+            ]
+          }
+        },
+        {
+          "id": "town_shield",
+          "name": "街の盾",
+          "rank": "A",
+          "notice": "――頂点への段《街の盾》に至りました。この街の安寧は、あなたの肩にかかっています。",
+          "condition": {
+            "and": [
+              { "counter": "kill.species.bandit", "gte": 5 },
+              { "counter": "town.donated", "gte": 800 }
+            ]
+          }
+        },
+        {
+          "id": "apex",
+          "name": "領主の座",
+          "rank": "S",
+          "notice": "――頂点《領主》に至りました。この街は、あなたとともにあります。",
+          "condition": {
+            "and": [
+              { "counter": "town.donated", "gte": 1500 },
+              { "counter": "society.offer.patrician", "gte": 1 },
+              { "counter": "title.total", "gte": 3 }
+            ]
+          }
+        }
+      ]
     }
   ]
 }

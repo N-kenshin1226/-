@@ -1,6 +1,24 @@
 /** 立場・目標と師匠の画面（UI-01：世界の窓＋コマンド列） */
-import { canAct, canApprentice, suggestGoals, type ActionEvent, type GameState } from "@trace/core";
-import { cfg, eventLines, mentorList, offerName, skillList, societyDefs, t, tpl } from "../game.js";
+import {
+  canAct,
+  canApprentice,
+  routeProgress,
+  suggestGoals,
+  visiblePinnacles,
+  type ActionEvent,
+  type GameState,
+} from "@trace/core";
+import {
+  cfg,
+  eventLines,
+  mentorList,
+  offerName,
+  pinnacleList,
+  skillList,
+  societyDefs,
+  t,
+  tpl,
+} from "../game.js";
 import { CommandMenu, HintBar, Kicker, WorldFrame, pos, type Act, type MenuEntry } from "../ui.js";
 import { theme } from "../theme.js";
 
@@ -43,7 +61,50 @@ export function SocietyScreen({
   const offers = state.society.pendingOffers;
   const suggested = suggestGoals(state, cfg.society, 3);
 
+  // 志せる頂（X-9）：発見済みのルートだけ出す。隠しルートは噂を読むまで出ない
+  const shownPinnacles = visiblePinnacles(pinnacleList, state.flags);
+  const hasHidden = shownPinnacles.length < pinnacleList.length;
+  const donation = cfg.donation;
+  const canDonate =
+    donation !== undefined && canAct(state.time, cfg.time) && state.player.money >= donation.amount;
+
   const entries: MenuEntry[] = [
+    { kind: "header" as const, text: t.text.societyPinnacleHeader },
+    ...shownPinnacles.map((r): MenuEntry => {
+      const p = routeProgress(state, r);
+      return {
+        id: `pinnacle-${r.id}`,
+        label: tpl(t.text.societyPinnacleLine, {
+          name: r.name,
+          done: p.done,
+          total: p.total,
+          desc: r.desc,
+        }).trim(),
+        onPick: () => {},
+      };
+    }),
+    ...(hasHidden
+      ? [
+          {
+            id: "pinnacle-hidden-hint",
+            label: t.text.societyPinnacleHidden.trim(),
+            disabled: true,
+            onPick: () => {},
+          } satisfies MenuEntry,
+        ]
+      : []),
+    { kind: "divider" as const },
+    ...(donation !== undefined
+      ? [
+          {
+            id: "donate",
+            label: tpl(t.text.societyDonateAction, { amount: donation.amount }),
+            disabled: !canDonate,
+            onPick: () => act({ type: "donate" }),
+          } satisfies MenuEntry,
+          { kind: "divider" as const },
+        ]
+      : []),
     ...(offers.length > 0
       ? [
           { kind: "header" as const, text: "認定の打診" },

@@ -1,0 +1,10 @@
+{
+  "id": "rumor.merchant_king",
+  "kind": "event",
+  "title": "商王の噂",
+  "text": "行商人が酒場で囁いていた。この街にはかつて、金貨の流れを掌に収めた《商王》と呼ばれる者がいたという。巡礼路の富を独りで動かした、と。商いを極めた者の前にだけ、その道は開くらしい。",
+  "refs": ["npc.nola", "event.pilgrim_road"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "found.merchant_king" }
+}

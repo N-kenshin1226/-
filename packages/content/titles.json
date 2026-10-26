@@ -663,6 +663,42 @@
         "note": "勝負所を幾度も制した者の記録"
       },
       "message": "――称号《街の大勝負師》を獲得しました。ここ一番で負けない者に。"
+    },
+    {
+      "id": "title.merchant_king",
+      "name": "商王",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "flag": "pinnacle.merchant_king.apex"
+      },
+      "effect": {
+        "priceVs": {
+          "smithing": 1.1,
+          "mining": 1.1,
+          "appraisal": 1.1
+        },
+        "note": "富の頂点（頂点ルート X-9、pinnacles.json merchant_king の最終段）。商王の名が取引の値段を押し上げる"
+      },
+      "message": "――称号《商王》を獲得しました。金貨の流れを掌に収めた者の名です。"
+    },
+    {
+      "id": "title.lord",
+      "name": "領主",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "flag": "pinnacle.lord.apex"
+      },
+      "effect": {
+        "gainVs": {
+          "eloquence": 1.05
+        },
+        "note": "奉仕の頂点（頂点ルート X-9、pinnacles.json lord の最終段）。領主の名が人を動かす"
+      },
+      "message": "――称号《領主》を獲得しました。街に奉仕し、街に迎えられた者の名です。"
     }
   ]
 }
