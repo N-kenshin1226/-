@@ -24,6 +24,8 @@ export const cliTextSchema = z
         tendencyNames: z.record(z.string(), z.string()),
         /** 運命の傾向 → 選択肢の1行説明 */
         tendencyDescs: z.record(z.string(), z.string()),
+        /** 次代の立ち位置（heir の kind）→ 表示名 */
+        heirKindNames: z.record(z.string(), z.string()),
         /** 睡眠の質 → 表示語。q < upTo の最初の帯に入る */
         qualityBands: z.array(z.object({ upTo: z.number(), label: z.string() }).strict()).min(1),
       })
@@ -154,6 +156,12 @@ export const cliTextSchema = z
         /** 深層の自己ベスト（T-43。{best}/{runs} を差し込む） */
         recordsAbyss: z.string(),
         recordsAbyssNone: z.string(),
+        /** ライバル・ランキング（T-47。{rank}/{name}/{epithet}/{score}/{you} を差し込む） */
+        recordsRivals: z.string(),
+        recordsRivalLine: z.string(),
+        recordsRivalEpithet: z.string(),
+        recordsRivalYou: z.string(),
+        recordsRivalNote: z.string(),
         /** 年代記（T-38）：周回をまたぐ人生の一覧。開始時の件数・見出し・各頁の行・追記の告知 */
         chronicleLives: z.string(),
         chronicleHeader: z.string(),
@@ -181,6 +189,14 @@ export const cliTextSchema = z
         rebirthPotential: z.string(),
         rebirthOriginPrompt: z.string(),
         rebirthBorn: z.string(),
+        /** 継承延長（T-48）：生の継ぎ方の選択・次代の開始・刻まない告知・弱い素質補正 */
+        heirWayPick: z.string(),
+        heirWayRebirth: z.string(),
+        heirWayHeir: z.string(),
+        heirKindLine: z.string(),
+        heirStart: z.string(),
+        heirNoChronicle: z.string(),
+        heirPotential: z.string(),
         /** 運命の傾向・誓約の選択（T-45/T-46）：開始時の3択と難度修飾子の複数選択 */
         tendencyPick: z.string(),
         tendencyLine: z.string(),

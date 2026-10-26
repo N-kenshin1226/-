@@ -23,6 +23,8 @@ export const narrationSchema = z
             rumor: z.array(z.string()).min(1),
             /** 前世の伝説（06 §2、T-42。{name}/{epithet} を差し込む。年代記が非空の世界でだけ混ざる） */
             legend: z.array(z.string()).min(1),
+            /** ライバルの噂（T-47。{name}/{epithet}/{rank}/{score} を差し込む。ランキングがある日に混ざる） */
+            rival: z.array(z.string()).min(1),
           })
           .strict(),
       })

@@ -6,8 +6,11 @@ import {
   combatResult,
   createRng,
   describe,
+  heirGenerationOf,
+  heirKindOf,
   isSkillUnlocked,
   legacyOf,
+  rivalsOf,
   step,
   suggestGoals,
   telegraphLines,
@@ -17,7 +20,7 @@ import {
   type GameState,
   type InnRank,
 } from "@trace/core";
-import { balance, enemies, pinnacles, titles, type EnemyJson } from "@trace/content";
+import { balance, enemies, pinnacles, rivals, titles, type EnemyJson } from "@trace/content";
 import {
   abyssFloorEnemy,
   atomList,
@@ -28,6 +31,7 @@ import {
   endRun,
   enemyAreas,
   eventLines,
+  heirLife,
   killFloor,
   newAbyssRun,
   spendLight,
@@ -96,8 +100,12 @@ type Screen =
   | { name: "status" }
   /** 引退の確認（T-40） */
   | { name: "retire" }
+  /** 生の継ぎ方の選択（T-48）：転生（新しい世界）か次代（同じ世界）か */
+  | { name: "succession"; prev: GameState; cause: "retire" | "oldAge" }
   /** 一生の終わり画面（T-40）：伝記＋継承の選択＋新しい生の出自 */
-  | { name: "rebirth"; prev: GameState; cause: "retire" | "oldAge" };
+  | { name: "rebirth"; prev: GameState; cause: "retire" | "oldAge" }
+  /** 次代を継ぐ画面（T-48）：同じ世界 seed で新キャラ。弱い引継ぎ・年代記には刻まない */
+  | { name: "heir"; prev: GameState; cause: "retire" | "oldAge" };
 
 const css = {
   app: {
@@ -235,10 +243,9 @@ export function App() {
     // 老衰したまま残ったセーブは転生画面から再開する（T-40。戦闘死は蘇生済みなので
     // death.count ではなく老衰死の刻印 death.oldAge で判定する）
     if (g !== null && g.counters["death.oldAge"] !== undefined) {
-      // 頁がまだならここで刻む（T-40 以前に死んだセーブも救う。recordLifeEnd は冪等）
-      const bio = bioLines(g, "death");
-      recordLifeEnd(g, "oldAge", bio.join("\n"));
-      setScreen({ name: "rebirth", prev: g, cause: "oldAge" });
+      // 継ぎ方はここで選ぶ（T-48。転生を選んだ時点で年代記に刻まれる。
+      // T-40 以前に死んだセーブも転生を選べば救える。recordLifeEnd は冪等）
+      setScreen({ name: "succession", prev: g, cause: "oldAge" });
     }
     setState(g);
     setLoaded(true);
@@ -268,15 +275,15 @@ export function App() {
       const res = step(s, command, cfg);
       if (res.events.some((e) => e.type === "deathByAge")) {
         // 老衰死（T-40・D-31）：教会蘇生はしない。起床ログ＋伝記を表示し、
-        // 年代記に1頁刻んで（冪等）転生画面へ。このままでは遊び続けられない
+        // 生の継ぎ方を選ぶ画面へ（T-48。年代記への記録は転生を選んだ時点で行う）。
+        // このままでは遊び続けられない
         const bio = bioLines(res.state, "death");
-        recordLifeEnd(res.state, "oldAge", bio.join("\n"));
         const wake = wakeLines(res.state, res.events, opts?.atHome ?? false);
         push([...wake, ...bio]);
         saveGame(res.state);
         stateRef.current = res.state;
         setState(res.state);
-        setScreen({ name: "rebirth", prev: res.state, cause: "oldAge" });
+        setScreen({ name: "succession", prev: res.state, cause: "oldAge" });
         return;
       }
       // 年代記への追記（T-38。戦闘死＝教会で蘇生する死。老衰死は上で転生へ回す）
@@ -314,14 +321,14 @@ export function App() {
       const s = stateRef.current;
       if (!s) return;
       const res = step(s, { type: "retire" }, cfg);
-      // 伝記を開き、年代記に1頁刻む（冪等）。継承の選択は転生画面で
+      // 伝記を開き、生の継ぎ方（転生か次代か）を選ぶ画面へ（T-48）。
+      // 年代記への記録は転生を選んだ時点で行う
       const bio = bioLines(res.state, "retire");
-      recordLifeEnd(res.state, "retire", bio.join("\n"));
       push(bio);
       saveGame(res.state);
       stateRef.current = res.state;
       setState(res.state);
-      setScreen({ name: "rebirth", prev: res.state, cause: "retire" });
+      setScreen({ name: "succession", prev: res.state, cause: "retire" });
     },
     [push],
   );
@@ -367,6 +374,47 @@ export function App() {
     [push],
   );
 
+  /**
+   * 生の継ぎ方の選択（T-48、06 §1）：転生なら年代記に1頁刻んで（冪等）転生画面へ、
+   * 次代なら刻まず（同じ世界）次代画面へ
+   */
+  const chooseWay = useCallback(
+    (prev: GameState, cause: "retire" | "oldAge", way: "rebirth" | "heir") => {
+      if (way === "rebirth") {
+        const bio = bioLines(prev, cause === "retire" ? "retire" : "death");
+        recordLifeEnd(prev, cause, bio.join("\n"));
+        setScreen({ name: "rebirth", prev, cause });
+      } else {
+        setScreen({ name: "heir", prev, cause });
+      }
+    },
+    [],
+  );
+
+  /** 次代画面の確定（T-48）：同じ世界 seed で新しい生を始める。年代記には刻まない */
+  const heirBorn = useCallback(
+    (prev: GameState, originId: string, vows: readonly string[]) => {
+      const { state: next, kind, legacy } = heirLife(prev, originId, vows);
+      saveGame(next);
+      stateRef.current = next;
+      setState(next);
+      const lines = [
+        tpl(t.text.heirStart, {
+          kind: t.display.heirKindNames[kind] ?? kind,
+          gen: heirGenerationOf(next),
+        }),
+        t.text.heirNoChronicle,
+      ];
+      const bonus = Object.entries(legacy.potentialBonus)
+        .map(([id, v]) => `《${skillList.find((sk) => sk.id === id)?.name ?? id}》+${v}`)
+        .join("、");
+      if (bonus !== "") lines.push(tpl(t.text.heirPotential, { skills: bonus }));
+      push(lines);
+      setScreen({ name: "menu" });
+    },
+    [push],
+  );
+
   if (!loaded) return null;
   if (!state) {
     // 年代記はセーブとは別領域に残る（T-38。新しい周の始まりでも見える）
@@ -404,6 +452,8 @@ export function App() {
         reset={() => setState(null)}
         onRetire={retire}
         onBorn={born}
+        onChooseWay={chooseWay}
+        onHeirBorn={heirBorn}
       />
       <section
         style={{ ...css.panel, ...css.log }}
@@ -497,8 +547,11 @@ function ScreenView(props: {
     artifactId: string | undefined,
     fate: FateChoice,
   ) => void;
+  onChooseWay: (prev: GameState, cause: "retire" | "oldAge", way: "rebirth" | "heir") => void;
+  onHeirBorn: (prev: GameState, originId: string, vows: readonly string[]) => void;
 }) {
-  const { state, screen, setScreen, act, push, reset, onRetire, onBorn } = props;
+  const { state, screen, setScreen, act, push, reset, onRetire, onBorn, onChooseWay, onHeirBorn } =
+    props;
   switch (screen.name) {
     case "train":
       return <TrainScreen state={state} act={act} back={() => setScreen({ name: "menu" })} />;
@@ -556,8 +609,12 @@ function ScreenView(props: {
       return <StatusScreen state={state} back={() => setScreen({ name: "menu" })} />;
     case "retire":
       return <RetireScreen onRetire={onRetire} />;
+    case "succession":
+      return <SuccessionScreen prev={screen.prev} cause={screen.cause} onChoose={onChooseWay} />;
     case "rebirth":
       return <RebirthScreen prev={screen.prev} cause={screen.cause} onBorn={onBorn} />;
+    case "heir":
+      return <HeirScreen prev={screen.prev} cause={screen.cause} onBorn={onHeirBorn} />;
     default:
       return <MenuScreen state={state} setScreen={setScreen} act={act} reset={reset} />;
   }
@@ -1577,6 +1634,22 @@ function RecordsScreen({ state, back }: { state: GameState; back: () => void }) 
               runs: state.counters["abyss.runs"] ?? 0,
             })}
       </div>
+      {/* ライバル・ランキング（T-47。派生値：state.rng は消費しない） */}
+      <div style={{ marginTop: 12 }} data-testid="records-rivals">
+        <div>{t.text.recordsRivals}</div>
+        {rivalsOf(state, rivals, balance.rivals).entries.map((e) => (
+          <div key={e.rank} style={e.isPlayer ? undefined : css.dim}>
+            {tpl(t.text.recordsRivalLine, {
+              rank: e.rank,
+              name: e.name,
+              epithet: e.epithet ? tpl(t.text.recordsRivalEpithet, { epithet: e.epithet }) : "",
+              score: e.score,
+              you: e.isPlayer ? t.text.recordsRivalYou : "",
+            })}
+          </div>
+        ))}
+        <div style={css.dim}>{t.text.recordsRivalNote}</div>
+      </div>
       {/* 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る） */}
       <ChronicleView />
       <Btn onClick={back}>戻る</Btn>
@@ -1840,6 +1913,119 @@ function RetireScreen({ onRetire }: { onRetire: (confirmed: boolean) => void }) 
       <Btn testId="retire-no" onClick={() => onRetire(false)}>
         思いとどまる
       </Btn>
+    </section>
+  );
+}
+
+// ---- 生の継ぎ方（T-48。06 §1：転生＝新しい世界へ / 次代＝同じ世界で継ぐ） ----
+/**
+ * 終わった生をどう継ぐかの選択画面。伝記はログに開かれている。
+ * 転生を選ぶとその時点で年代記に1頁刻まれ（recordLifeEnd・冪等）転生画面へ、
+ * 次代を選ぶと刻まずに次代画面へ
+ */
+function SuccessionScreen({
+  prev,
+  cause,
+  onChoose,
+}: {
+  prev: GameState;
+  cause: "retire" | "oldAge";
+  onChoose: (prev: GameState, cause: "retire" | "oldAge", way: "rebirth" | "heir") => void;
+}) {
+  return (
+    <section style={css.panel} data-testid="screen-succession">
+      <div style={{ marginBottom: 8 }}>{t.text.heirWayPick}</div>
+      <Btn primary testId="succession-rebirth" onClick={() => onChoose(prev, cause, "rebirth")}>
+        新しい世界に転生する
+        <span style={css.dim}> ― 年代記に刻まれ、継承は大きい</span>
+      </Btn>
+      <Btn testId="succession-heir" onClick={() => onChoose(prev, cause, "heir")}>
+        この世界で次代を継ぐ
+        <span style={css.dim}> ― 年代記には刻まず、継承は小さい</span>
+      </Btn>
+    </section>
+  );
+}
+
+// ---- 次代を継ぐ（T-48。06 §1「子や弟子に継承して延長」） ----
+/**
+ * 同じ世界 seed で新キャラを始める画面。前代の記録はその場の伝記が担い、
+ * 年代記には刻まない。継承は legacy より弱い引継ぎ（素質補正の小さい版のみ）。
+ * 世界が同じなので運命の傾向は前世のものを継ぎ、誓約は生ごとの選択として選び直す（D-38）
+ */
+function HeirScreen({
+  prev,
+  cause,
+  onBorn,
+}: {
+  prev: GameState;
+  cause: "retire" | "oldAge";
+  onBorn: (prev: GameState, originId: string, vows: readonly string[]) => void;
+}) {
+  const bio = useMemo(() => bioLines(prev, cause === "retire" ? "retire" : "death"), [prev, cause]);
+  const kind = useMemo(() => heirKindOf(prev), [prev]);
+  const [originId, setOriginId] = useState<string | null>(null);
+  const [pickedVows, setPickedVows] = useState<string[]>([]);
+  const toggleVow = (id: string) =>
+    setPickedVows((vs) => (vs.includes(id) ? vs.filter((x) => x !== id) : [...vs, id]));
+  return (
+    <section style={css.panel} data-testid="screen-heir">
+      <div data-testid="heir-bio">
+        {bio.map((l, i) => (
+          <div key={i} style={l.startsWith("――") || l.startsWith("━") ? css.sys : {}}>
+            {l}
+          </div>
+        ))}
+      </div>
+      <div style={css.sys} data-testid="heir-kind">
+        {tpl(t.text.heirKindLine, {
+          kind: t.display.heirKindNames[kind] ?? kind,
+          gen: heirGenerationOf(prev) + 1,
+        })}
+      </div>
+      <div style={css.dim} data-testid="heir-nochronicle">
+        {t.text.heirNoChronicle}
+      </div>
+      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.rebirthOriginPrompt}</div>
+      <div>
+        {originList.map((o) => (
+          <Btn
+            key={o.id}
+            testId={`heir-origin-${o.id.replace("origin.", "")}`}
+            primary={originId === o.id}
+            onClick={() => setOriginId(o.id)}
+          >
+            {o.name}
+            <span style={css.dim}> ― {o.desc}</span>
+          </Btn>
+        ))}
+      </div>
+      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.vowPick}</div>
+      <div data-testid="heir-vows">
+        {vowList.map((v) => (
+          <Btn
+            key={v.id}
+            testId={`heir-vow-${v.id}`}
+            primary={pickedVows.includes(v.id)}
+            onClick={() => toggleVow(v.id)}
+          >
+            {v.name}
+            <span style={css.dim}> ― {v.desc}</span>
+          </Btn>
+        ))}
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Btn
+          primary
+          testId="heir-born"
+          disabled={originId === null}
+          onClick={() => {
+            if (originId !== null) onBorn(prev, originId, pickedVows);
+          }}
+        >
+          {t.text.rebirthBorn}
+        </Btn>
+      </div>
     </section>
   );
 }

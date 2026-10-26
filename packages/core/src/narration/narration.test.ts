@@ -17,6 +17,7 @@ const text: NarrationTemplates = {
       death: ["{deaths}度目の死の噂がある。"],
       rumor: ["風の噂：実は王族だという。", "風の噂：空を飛ぶ者を見た。"],
       legend: ["昔語り：{name}という者がいたという。{epithet}と呼ばれたらしい。"],
+      rival: ["風の噂：{epithet}の{name}（{rank}位・名声{score}）の話だ。"],
     },
   },
   npcWord: {
@@ -132,6 +133,28 @@ describe("TemplateProvider（07 §6）", () => {
         createRng(`l:${i}`),
       )[1]!;
       expect(line).not.toContain("昔語り");
+    }
+  });
+
+  it("新聞：ライバルがいれば噂が混ざる（T-47）。なければ出ない", () => {
+    const rival = { name: "アルロ", epithet: "流浪の剣士", rank: 2, score: 150 };
+    const expected = "風の噂：流浪の剣士のアルロ（2位・名声150）の話だ。";
+    let sawRival = false;
+    for (let i = 0; i < 40 && !sawRival; i++) {
+      const line = provider.narrate(
+        { scene: "newspaper", deeds: ["work"], rival },
+        createRng(`rv:${i}`),
+      )[1]!;
+      if (line === expected) sawRival = true;
+    }
+    expect(sawRival).toBe(true);
+    // ライバルが渡されなければライバルの噂は出ない
+    for (let i = 0; i < 10; i++) {
+      const line = provider.narrate(
+        { scene: "newspaper", deeds: ["work"] },
+        createRng(`rv:${i}`),
+      )[1]!;
+      expect(line).not.toContain("アルロ");
     }
   });
 

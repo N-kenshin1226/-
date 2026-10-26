@@ -54,4 +54,7 @@ export type { PinnacleRoute, PinnacleStage, PinnaclesFile } from "./pinnacles.sc
 export { vows } from "./vows.js";
 export { vowsFileSchema, vowSchema } from "./vows.schema.js";
 export type { Vow, VowsFile } from "./vows.schema.js";
+export { rivals } from "./rivals.js";
+export { rivalsFileSchema } from "./rivals.schema.js";
+export type { RivalsFile } from "./rivals.schema.js";
 export { worldModsSchema } from "./world-mods.schema.js";

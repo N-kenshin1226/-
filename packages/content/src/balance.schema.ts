@@ -175,6 +175,19 @@ export const balanceSchema = z
         artifactGainFactor: z.number().min(1),
       })
       .strict(),
+    /**
+     * docs/06_endgame.md §1、T-48：子・弟子への継承延長（同じ世界で次代を継ぐ）。
+     * core/heir の HeirConfig に対応。legacy より弱い引継ぎ：
+     * 素質補正の小さい版だけを渡し、記憶称号・遺物は渡さない
+     */
+    heir: z
+      .object({
+        /** 前代の peak → 次代素質% の変換係数（legacy.potentialFactor より小さい値） */
+        potentialFactor: z.number().min(0),
+        /** スキルごとの素質上乗せ上限（%） */
+        potentialMax: z.number().nonnegative(),
+      })
+      .strict(),
     /** docs/03 §3 作品台帳。core/ledger の LedgerConfig に対応 */
     ledger: z
       .object({
@@ -415,6 +428,33 @@ export const balanceSchema = z
         poolGrowthPerFloor: z.number().nonnegative(),
       })
       .strict(),
+    /**
+     * docs/05 M4、T-47：ライバル・ランキング（簡易版）。
+     * core/src/rivals の RivalsConfig に対応。ランキングは派生値なので
+     * GameState・セーブには触れない（ライバルの素性は世界シードから引く）
+     */
+    rivals: z
+      .object({
+        /** ランキングに並ぶライバルの人数 */
+        size: z.number().int().positive(),
+        /** ライバルの基礎名声の範囲（世界シード由来の乱数で決まる） */
+        scoreMin: z.number().nonnegative(),
+        scoreMax: z.number().nonnegative(),
+        /** ライバル1人あたりの日ごとの名声増分の上限（0〜この値がシードで決まる） */
+        growthPerDay: z.number().nonnegative(),
+        /** 自分の実績点：台帳の最高品質への重み */
+        playerQualityWeight: z.number().nonnegative(),
+        /** 自分の実績点：称号1つあたりの重み */
+        playerTitleWeight: z.number().nonnegative(),
+        /** 自分の実績点：討伐1体あたりの重み（kill.species.* の合計） */
+        playerKillWeight: z.number().nonnegative(),
+        /** 自分の実績点：深層の自己ベスト1層あたりの重み（abyss.best） */
+        playerAbyssWeight: z.number().nonnegative(),
+      })
+      .strict()
+      .refine((r) => r.scoreMin <= r.scoreMax, {
+        message: "rivals.scoreMin <= rivals.scoreMax が必要",
+      }),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */
     sim: z
       .object({

@@ -31,6 +31,7 @@ import {
   performanceGame,
   reachedPinnacles,
   recordLife,
+  rivalsOf,
   serialize,
   serializeChronicle,
   simpleJudgmentQuality,
@@ -38,6 +39,7 @@ import {
   smithingGame,
   startCombat,
   step,
+  succeedLife,
   suggestGoals,
   telegraphLines,
   combatResult,
@@ -59,6 +61,7 @@ import {
   type DealState,
   type EnemyDef,
   type GameState,
+  type HeirKind,
   type Legacy,
   type LifeCause,
   type MiniGameCtx,
@@ -82,6 +85,7 @@ import {
   orders,
   origins,
   pinnacles,
+  rivals,
   skills,
   society,
   tailwinds,
@@ -308,6 +312,29 @@ export function nextLife(
 ): GameState {
   const origin = origins.origins.find((o) => o.id === originId) ?? origins.origins[0]!;
   return newGame(nextWorldSeed(prev), t.text.playerName, gameInit(origin, legacy, fate));
+}
+
+/**
+ * 次代を継ぐ周の開始（T-48。06 §1）：同じシードの世界で新キャラを始める。
+ * 転生とは別系統で、legacy より弱い引継ぎ（balance.heir の素質補正のみ。
+ * 記憶称号・遺物は渡さない）。同じ世界なので傾向は前世のものを継ぎ、
+ * 誓約は生ごとの選択として選び直す（D-38）。年代記には刻まない
+ */
+export function heirLife(
+  prev: GameState,
+  originId: string | undefined,
+  vows?: readonly string[],
+): { state: GameState; kind: HeirKind; legacy: Legacy } {
+  const origin = origins.origins.find((o) => o.id === originId) ?? origins.origins[0]!;
+  return succeedLife(
+    prev,
+    t.text.playerName,
+    gameInit(origin, undefined, {
+      tendency: prev.tendency,
+      ...(vows !== undefined ? { vows } : {}),
+    }),
+    balance.heir,
+  );
 }
 
 /**
@@ -577,6 +604,8 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
               ? undefined
               : (titles.titles.find((x) => x.id === lastLife.epithet)?.name ?? lastLife.epithet),
         };
+  // ライバルの噂（T-47）：ランキングの筆頭ライバルが話題に混ざる
+  const topRival = rivalsOf(state, rivals, balance.rivals).entries.find((e) => !e.isPlayer);
   lines.push(
     ...narrator.narrate(
       {
@@ -585,6 +614,7 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
         works,
         deaths,
         ...(prevLife !== undefined ? { prevLife } : {}),
+        ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title
           ? { newTitle: titles.titles.find((x) => x.id === title.id)?.name ?? title.id }
           : {}),

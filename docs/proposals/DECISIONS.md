@@ -131,3 +131,19 @@
 - **誓約は flags にも刻む**：`state.vows` に加えて `flags["vow.taken.<id>"]=true` を立て、誓約称号（titles.json。Bランク・simReachable:false）は `{flag} ∧ days.slept≥28`（一季節守り抜いた証）の条件DSLで既存の称号判定に乗せる —— GameState.vows は条件DSLから直接読めないため（セーブ v14→v15）
 - **係数の掛けどころは既存経路**：宿代・報酬・素質回復（consolidateBody の potentialFactor）・狩り経験（gain の M項）・追い風（抽選後に tailwind 方向だけ落とす。RNG消費は従来どおり）は step 内の係数点に。敵HP・威力は `withWorldMods` で EnemyDef を丸めてから startCombat/各turn に渡す（CLI の fightEnemy・Web の beginCombat/playCombatTurn の2点に注入。深層の敵も同じ経路で強くなる）
 - **宿代表示も同じ係数で**：CLI の宿選択肢・Web の innCost は表示用にも worldFactor で丸め、実際の支払い（step 内）と一致させる
+
+### D-37: ランキングは「派生値＋世界シード由来のライバル」で、GameState・世界RNGに触れない（T-47）
+- 仕様は「ライバル冒険者のシミュレーション → ランキングの数値は乱数、噂はテンプレート」（05 M4）。シミュレーション本体は作らず、順位表は `rivalsOf(state, pool, cfg)` がその場で組み立てる**派生値**とした —— GameState に順位・ライバル・好感度などを持たせないため、セーブバージョン据置（変えない・カウンタ・フラグも増やさない）
+- **ライバルの素性は世界シード由来**：`createRng(state.seed).fork("rivals")` という独立した乱数列から、名・二つ名（rivals.json の母集団を重複なし抽選）・基礎名声（scoreMin〜scoreMax）・日ごとの伸び（0〜growthPerDay）を決める。`state.rng`（世界を進める乱数列）は一切消費しないので、ランキングを見ても世界の将来は変わらない
+- **自分の実績点は乱数を使わない**：台帳の最高品質・称号数・討伐数（kill.species.* 合算）・深層の自己ベスト（abyss.best）の重み付き合算（`playerScore`）。「実績に連動する」は既存 state の読み取りだけで満たせる
+- **ライバルは日々少しずつ伸びる**（base + growth × day）：放っておくと順位を落とし、実績を積むと追い越せる —— 「世界は生きている」感を乱数1本で出す簡易版。同点は自分を上に（自慢帳は読み手のためにある）、ライバル同士は名順で安定化して順位表を完全に決定論にする
+- **数値は balance.json の rivals 節、名前は rivals.json**：人数・名声範囲・日伸び・実績点の各重みはコードに直書きしない（validate.ts で names 数 ≥ size を突合）
+- **噂は新聞のテンプレートに混ぜる**：narration.json に `rival` 行を追加し、呼び出し側がランキングの筆頭ライバル（名・二つ名・順位・名声）を `newspaper` リクエストに渡すと rumor/legend と同じ枠で候補に混ざる。新聞・伝説と同じく「呼び出し側の構造化データ → テンプレ差し込み」の規約を踏襲
+
+### D-38: 子・弟子への継承は「同じシードの新しい GameState＋弱い引継ぎ＋年代記に刻まない」（T-48）
+- **転生とは別系統**：T-40 の転生（別世界・新シード・強い継承3項目・年代記に刻む）に対し、次代を継ぐ道は `succeedLife(prev, name, cfg, heirCfg)` が `nextWorldSeed` を通らず `prev.seed` のまま新しい GameState を作る。世界そのものが続くので、前代で進んだ世界修飾（傾向など worldMods の素）は選び直さず継ぐ
+- **弱い引継ぎは素質補正のみ**：`heirLegacyOf` は `potentialBonus` だけを持つ Legacy 型を返す（記憶称号・遺物は渡さない）。係数は `balance.heir`（factor 0.05・上限10）で legacy（0.1・15）より小さい。「継承3項目を薄める」のではなく「素質の名残だけを持つ別の継承物」としたのは、称号・遺物の「覚えているか選ぶ」UI が同じ世界では意味をなさないため（自分の師や親の記憶は選ぶものではない）
+- **子か弟子かは弟子入り歴で決める**：`heirKindOf` は現役の弟子（`state.mentor !== null`）か、過去に師事した記録（`mentor.session.*` カウンタ）があれば "disciple"、なければ "child"。僧籍・血統のような新しい状態は持たせず、既存の師弟関係の痕跡から導く決定論ルール（仕様の「師匠の逆（弟子ポジション）や血縁」を、世界に残る関係性として最も自然に読める形で）
+- **刻印は counters/flags のみ**：`heir.count`（この世界での継承回数。`heirGenerationOf` は +1 した代目、初代は1）と `flags["heir.child"|"heir.disciple"]`。GameState の形は変えないのでセーブバージョン据置（v15）。転生で別世界へ行くと刻印は残らない（新しい世界の初代として数える）
+- **年代記に刻まない**：同じ世界の継承は「世界の外から見た1周の終わり」ではないので recordLife を呼ばない（仕様「同じ世界なので年代記は追記しない」）。前代の記録はその場で伝記を生成して見せる（CLI・Web ともに）。年代記への記録は「転生する」を選んだ時点で行う —— 継ぎ方の選択後に recordLifeEnd を動かし、先に刻んでから分岐する従来順を変更した
+- **継ぎ方の選択は引退・老衰の共通フロー**：CLI は `reincarnate` 内で「転生／この世界で次代」の選択肢を出し、Web は `succession` 画面を retire/oldAge の後に挟む。老衰でも選べる（06 §1「延長」は終わり方を問わない延長）

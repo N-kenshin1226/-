@@ -46,6 +46,10 @@
       "war": "敵は強く、宿は安い。狩りの経験は多い",
       "famine": "宿代は高く、報酬は渋く、素質の回復も鈍い"
     },
+    "heirKindNames": {
+      "child": "子",
+      "disciple": "弟子"
+    },
     "qualityBands": [
       {
         "upTo": 0.8,
@@ -221,6 +225,13 @@
     "rebirthPotential": "――前世の頂きが素質を押し上げている：{skills}",
     "rebirthOriginPrompt": "── 新しい生の出自 ──",
     "rebirthBorn": "この生を始める",
+    "heirWayPick": "――この生のあとを、どう継ぎますか",
+    "heirWayRebirth": "  1) 新しい世界に転生する ― 年代記に刻まれ、継承は大きい",
+    "heirWayHeir": "  2) この世界で次代を継ぐ ― 年代記には刻まず、継承は小さい",
+    "heirKindLine": "――{kind}が跡を継ぐ。この世界の{gen} 代目となる。",
+    "heirStart": "――{kind}が跡を継いだ。同じ世界で、{gen} 代目の生が始まる。",
+    "heirNoChronicle": "――年代記には刻まない。前代の記録はこの世界が覚えている。",
+    "heirPotential": "――前代の頂きが、わずかに素質を押し上げている：{skills}",
     "tendencyPick": "この世界の運命の傾向を選んでください（空なら穏やかな世）",
     "tendencyLine": "  {index}) {name} ― {desc}",
     "tendencyChosen": "――この世界は《{name}》に傾いている。",
@@ -258,6 +269,11 @@
     "recordsHuntLine": "　{name}：{kills}体{unique}",
     "recordsHuntUnique": "（うち強個体{unique}体）",
     "recordsAbyss": "深層：自己ベスト 第{best}層（潜行 {runs}回）",
-    "recordsAbyssNone": "深層：まだ潜っていない"
+    "recordsAbyssNone": "深層：まだ潜っていない",
+    "recordsRivals": "── 街のランキング ──",
+    "recordsRivalLine": "　{rank}位　{name}{epithet}　名声{score}{you}",
+    "recordsRivalEpithet": "《{epithet}》",
+    "recordsRivalYou": "（あなた）",
+    "recordsRivalNote": "――名声は実績で伸びる。ライバルの噂は新聞にも載る。"
   }
 }

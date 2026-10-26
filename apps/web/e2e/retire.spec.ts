@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// T-40 引退と転生：引退 → 確認 → 伝記＋継承 → 新しい生（06 §1「一生＝1周」）
+// T-40 引退と転生：引退 → 確認 → 伝記 → 継ぎ方の選択（T-48）→ 伝記＋継承 → 新しい生（06 §1「一生＝1周」）
 test("引退から転生まで通せる（年代記に1頁残る）", async ({ page }) => {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
@@ -14,6 +14,12 @@ test("引退から転生まで通せる（年代記に1頁残る）", async ({ p
 
   await page.getByTestId("menu-retire").click();
   await page.getByTestId("retire-yes").click();
+
+  // 継ぎ方の選択（T-48）：転生か次代か。転生を選ぶとその時点で年代記に刻まれる
+  const succession = page.getByTestId("screen-succession");
+  await expect(succession).toBeVisible();
+  await expect(succession).toContainText("どう継ぎますか");
+  await page.getByTestId("succession-rebirth").click();
 
   // 転生画面：伝記が開き、継承の選択（記憶・遺物）と新しい生の出自を選ぶ
   const rebirth = page.getByTestId("screen-rebirth");
@@ -61,6 +67,7 @@ test("遺物を選んで継承できる", async ({ page }) => {
 
   await page.getByTestId("menu-retire").click();
   await page.getByTestId("retire-yes").click();
+  await page.getByTestId("succession-rebirth").click();
   const rebirth = page.getByTestId("screen-rebirth");
   await expect(rebirth).toBeVisible();
   // 遺物の候補に釘の束が出て、選べる（初期値＝最高品質の自動選択）
@@ -69,4 +76,44 @@ test("遺物を選んで継承できる", async ({ page }) => {
   await page.getByTestId("rebirth-born").click();
   await expect(page.getByTestId("log")).toContainText("前世の名品《釘の束》");
   await expect(page.getByTestId("log")).toContainText("新しい世界で");
+});
+
+// T-48：子・弟子への継承延長（同じ世界 seed・年代記には刻まない・弱い引継ぎ）
+test("引退から「この世界で次代を継ぐ」へ進める（年代記には刻まない）", async ({ page }) => {
+  await page.goto("/?seed=e2e-heir");
+  await page.getByTestId("origin-wanderer").click();
+
+  await page.getByTestId("menu-retire").click();
+  await page.getByTestId("retire-yes").click();
+  await page.getByTestId("succession-heir").click();
+
+  // 次代画面：前代の伝記が開き、子か弟子かと出自を選ぶ。刻まない旨も見える
+  const heir = page.getByTestId("screen-heir");
+  await expect(heir).toBeVisible();
+  await expect(page.getByTestId("heir-bio")).toContainText("旅人");
+  await expect(page.getByTestId("heir-kind")).toContainText("子が跡を継ぐ");
+  await expect(page.getByTestId("heir-nochronicle")).toContainText("年代記には刻まない");
+
+  // 出自を選ぶまでは生まれない
+  await expect(page.getByTestId("heir-born")).toBeDisabled();
+  await page.getByTestId("heir-origin-wanderer").click();
+  await page.getByTestId("heir-born").click();
+
+  // 新しい生は1日目から、同じ世界で
+  await expect(page.getByTestId("status")).toContainText("残り行動 5/5");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await expect(page.getByTestId("log")).toContainText("子が跡を継いだ");
+  await expect(page.getByTestId("log")).toContainText("2 代目の生が始まる");
+
+  // 年代記には追記しない（前代の記録はその場の伝記が担う）
+  const chronicle = await page.evaluate(() => localStorage.getItem("trace.chronicle.v1"));
+  expect(chronicle === null || JSON.parse(chronicle).lives.length === 0).toBe(true);
+
+  // セーブは同じシードの新しい生（転生の :next: 派生ではない）＋世代の刻印
+  const save = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("trace.save.v1") ?? "null"),
+  );
+  expect(save.seed).toBe("e2e-heir");
+  expect(save.counters["heir.count"]).toBe(1);
+  expect(save.flags["heir.child"]).toBe(true);
 });

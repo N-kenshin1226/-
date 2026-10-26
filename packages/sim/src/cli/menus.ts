@@ -2,6 +2,7 @@ import {
   bookDaysLeft,
   canAct,
   canApprentice,
+  rivalsOf,
   step,
   suggestGoals,
   type ActionEvent,
@@ -12,11 +13,13 @@ import {
 } from "@trace/core";
 import {
   atoms,
+  balance,
   books,
   enemies,
   mentors,
   orders,
   pinnacles,
+  rivals,
   skills,
   society,
   titles,
@@ -372,6 +375,21 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
       ? t.text.recordsAbyssNone
       : tpl(t.text.recordsAbyss, { best: state.counters["abyss.best"] ?? 0, runs: abyssRuns }),
   );
+  // ライバル・ランキング（T-47。派生値：state.rng は消費しない）
+  const rivalry = rivalsOf(state, rivals, balance.rivals);
+  out(t.text.recordsRivals);
+  for (const e of rivalry.entries) {
+    out(
+      tpl(t.text.recordsRivalLine, {
+        rank: e.rank,
+        name: e.name,
+        epithet: e.epithet ? tpl(t.text.recordsRivalEpithet, { epithet: e.epithet }) : "",
+        score: e.score,
+        you: e.isPlayer ? t.text.recordsRivalYou : "",
+      }),
+    );
+  }
+  out(t.text.recordsRivalNote);
   // 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る）
   chronicleLines(ctx.chronicle(), t).forEach(out);
   return state;

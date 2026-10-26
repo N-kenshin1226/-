@@ -293,6 +293,10 @@
     "rememberedMax": 3,
     "artifactGainFactor": 1.05
   },
+  "heir": {
+    "potentialFactor": 0.05,
+    "potentialMax": 10
+  },
   "tendency": {
     "calm": {},
     "war": {
@@ -316,5 +320,15 @@
     "maxTurns": 20,
     "poolBase": 16,
     "poolGrowthPerFloor": 14
+  },
+  "rivals": {
+    "size": 5,
+    "scoreMin": 30,
+    "scoreMax": 220,
+    "growthPerDay": 0.4,
+    "playerQualityWeight": 1.0,
+    "playerTitleWeight": 12,
+    "playerKillWeight": 1.5,
+    "playerAbyssWeight": 6
   }
 }

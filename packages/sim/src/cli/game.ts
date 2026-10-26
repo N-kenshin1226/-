@@ -19,6 +19,7 @@ import {
   emptyChronicle,
   fishingGame,
   hasLifeRecord,
+  heirGenerationOf,
   legacyOf,
   miningGame,
   negotiationGame,
@@ -26,6 +27,8 @@ import {
   nextWorldSeed,
   performanceGame,
   recordLife,
+  succeedLife,
+  rivalsOf,
   serialize,
   serializeChronicle,
   simpleJudgmentQuality,
@@ -77,6 +80,7 @@ import {
   orders,
   origins,
   pinnacles,
+  rivals,
   skills,
   society,
   titles,
@@ -440,6 +444,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     const offer = events.find(
       (e): e is Extract<ActionEvent, { type: "offerReceived" }> => e.type === "offerReceived",
     );
+    // ライバルの噂（T-47）：ランキングの筆頭ライバルが話題に混ざる
+    const topRival = rivalsOf(state!, rivals, balance.rivals).entries.find((e) => !e.isPlayer);
     return narrator.narrate(
       {
         scene: "newspaper",
@@ -447,6 +453,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         works,
         deaths,
         ...(prevLife !== undefined ? { prevLife } : {}),
+        ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title
           ? { newTitle: titles.titles.find((x) => x.id === title.id)?.name ?? title.id }
           : {}),
@@ -677,9 +684,59 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
    * 途中の入力が尽きても自動選択に倒し、必ず新しい周を返す
    */
   const reincarnate = async (st: GameState, cause: "retire" | "oldAge"): Promise<GameState> => {
-    // 伝記（語り層の cause 語彙は retire/death だけ。老衰は death に倒す）
+    // 伝記（語り層の cause 語彙は retire/death だけ。老衰は death に倒す）。
+    // 次代を継ぐ道でも前代の記録として同じ伝記がその場に残る（T-48）
     const bio = bioLines(st, cause === "retire" ? "retire" : "death");
     outAll(bio);
+
+    // 生の継ぎ方を選ぶ（T-48）：転生（新しい世界・強い継承）か次代（同じ世界・弱い継承）か。
+    // 空/EOF は転生に倒す
+    out(t.text.heirWayPick);
+    out(t.text.heirWayRebirth);
+    out(t.text.heirWayHeir);
+    const way = await ask(t.text.promptChoice);
+
+    if (way !== null && way.trim() === "2") {
+      // ---- 次代を継ぐ（T-48、06 §1）：同じ世界 seed で新キャラを始める ----
+      // 同じ世界なので年代記には追記しない（recordLife は呼ばない）。前代の記録は
+      // 上で表示した伝記が担う。世界が同じなので傾向は前世のものを継ぎ、
+      // 誓約だけは生ごとの選択として選び直す（D-38）
+      const heirOrigin = await pickOrigin();
+      const heirVows = await pickVows();
+      const {
+        state: next,
+        kind,
+        legacy: inherited,
+      } = succeedLife(
+        st,
+        t.text.playerName,
+        {
+          skillIds: skillList.map((s) => s.id),
+          initialPotential: balance.player.initialPotential,
+          origin: heirOrigin,
+          potentialInitMin: balance.player.potentialInitMin,
+          potentialInitMax: balance.player.potentialInitMax,
+          initialStatValue: balance.player.initialStatValue,
+          initialMoney: balance.player.initialMoney,
+          tendency: st.tendency,
+          vows: heirVows,
+        },
+        balance.heir,
+      );
+      save(next);
+      out(
+        tpl(t.text.heirStart, {
+          kind: t.display.heirKindNames[kind] ?? kind,
+          gen: heirGenerationOf(next),
+        }),
+      );
+      out(t.text.heirNoChronicle);
+      const heirBonus = Object.entries(inherited.potentialBonus)
+        .map(([id, v]) => `《${skillNames.get(id) ?? id}》+${v}`)
+        .join("、");
+      if (heirBonus !== "") out(tpl(t.text.heirPotential, { skills: heirBonus }));
+      return next;
+    }
 
     // 年代記に1頁。同じ一生の重複記録は書かない（中断→再生で同じ終わりが再び来ても安全）
     if (!hasLifeRecord(chronicle, st, cause)) {

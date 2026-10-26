@@ -20,6 +20,7 @@ import { booksFileSchema } from "./books.schema.js";
 import { mentorsFileSchema } from "./mentors.schema.js";
 import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 import { vowsFileSchema } from "./vows.schema.js";
+import { rivalsFileSchema } from "./rivals.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -62,6 +63,7 @@ check("books.json", booksFileSchema);
 check("mentors.json", mentorsFileSchema);
 check("pinnacles.json", pinnaclesFileSchema);
 check("vows.json", vowsFileSchema);
+check("rivals.json", rivalsFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ
@@ -319,6 +321,30 @@ try {
   }
 } catch (e) {
   console.error(`✗ 誓約の突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// ライバルの母集団の突き合わせ：ランキングに並ぶ人数（balance.rivals.size）を
+// rivals.json の名の表が賄えること（重複なし抽選なので size 以上必要。T-47）
+try {
+  const balanceRaw = JSON.parse(readFileSync(join(root, "balance.json"), "utf8")) as {
+    rivals?: { size?: number };
+  };
+  const rivalsRaw = JSON.parse(readFileSync(join(root, "rivals.json"), "utf8")) as {
+    names?: string[];
+  };
+  const size = balanceRaw.rivals?.size ?? 0;
+  const names = new Set(rivalsRaw.names ?? []);
+  if (names.size < size) {
+    console.error(
+      `✗ rivals.json の名の表（${names.size}件）が balance.rivals.size（${size}）に足りない`,
+    );
+    failed = true;
+  } else {
+    console.log("✓ ライバル名の母集団（rivals ↔ balance）");
+  }
+} catch (e) {
+  console.error(`✗ ライバルの突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

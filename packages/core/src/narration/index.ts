@@ -26,6 +26,8 @@ export interface NarrationTemplates {
       rumor: string[];
       /** 前世の伝説（06 §2、T-42。年代記が非空の世界でだけ混ざる。{name}/{epithet} を差し込む） */
       legend: string[];
+      /** ライバルの噂（T-47。ランキングのライバルが候補の日に混ざる。{name}/{epithet}/{rank}/{score} を差し込む） */
+      rival: string[];
     };
   };
   npcWord: {
@@ -74,6 +76,8 @@ export type NarrationRequest =
       deaths?: number;
       /** 前世（T-42）：年代記の最新の人生。あれば伝説行が候補に混ざる */
       prevLife?: { name: string; epithet?: string };
+      /** ライバル（T-47）：ランキングの話題にするライバル。あれば噂が候補に混ざる */
+      rival?: { name: string; epithet: string; rank: number; score: number };
     }
   /** NPCの一言。deed は直近の話題（例: 狩り・仕事）、standing は立場ID（口調が変わる） */
   | { scene: "npcWord"; name: string; deed?: string; standing?: string }
@@ -157,11 +161,21 @@ export class TemplateProvider implements NarrationProvider {
               epithet: req.prevLife?.epithet ?? "名もなき者",
             }),
           );
+          // ライバルの噂（T-47）：ランキングのライバルが候補に混ざる
+          const rivals = (req.rival !== undefined ? L.rival : []).map((l) =>
+            tpl(l, {
+              name: req.rival?.name ?? "",
+              epithet: req.rival?.epithet ?? "",
+              rank: req.rival?.rank ?? 0,
+              score: req.rival?.score ?? 0,
+            }),
+          );
           pool = [
             ...factual,
             this.pick(L.rumor, rng),
             ...((req.deaths ?? 0) > 0 ? L.death : []),
             ...legends,
+            ...rivals,
           ];
         }
         return [t.newspaper.header, tpl(this.pick(pool, rng), vars)];

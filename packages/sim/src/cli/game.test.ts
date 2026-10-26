@@ -319,6 +319,7 @@ describe("T-40 引退と転生", () => {
       "", // 誓約：なし
       "11", // 引退する
       "y", // 確認（1回だけ）
+      "1", // 継ぎ方：新しい世界に転生する（T-48）
       "1", // 転生先の出自（称号も作品も無いので継承の選択肢は出ない）
       "1", // 転生先の傾向：穏やか
       "", // 転生先の誓約：なし
@@ -407,6 +408,7 @@ describe("T-40 引退と転生", () => {
       "1", // つづきから
       "11", // 引退する
       "y", // 確認
+      "1", // 継ぎ方：新しい世界に転生する（T-48）
       "1", // 記憶に残す称号：1番（title.saw_the_way）
       "1", // 遺物：1番（釘の束）
       "1", // 転生先の出自
@@ -459,6 +461,7 @@ describe("T-40 引退と転生", () => {
     const { io, output } = scriptedIo([
       "1", // つづきから
       "4", // 休む（今日を終える。無料なので所持金不要）
+      "1", // 継ぎ方：新しい世界に転生する（T-48）
       "1", // 転生先の出自
       "1", // 転生先の傾向：穏やか
       "", // 転生先の誓約：なし
@@ -488,5 +491,137 @@ describe("T-40 引退と転生", () => {
     expect(state!.seed).toBe("oldage-seed:next:4480");
     expect(state!.time.day).toBe(0);
     expect(state!.counters["death.oldAge"]).toBeUndefined();
+  });
+});
+
+describe("T-48 子・弟子への継承延長（同じ世界）", () => {
+  /** 称号・作品・素質の頂きを持つ人生を仕込む */
+  const seedLife = (savePath: string, extra?: Record<string, unknown>) => {
+    const life = newGame("heir-seed", "旅人", {
+      skillIds: skills.skills.map((s) => s.id),
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    life.player.skills["smithing"]!.peak = 80;
+    life.player.skills["mining"]!.peak = 500;
+    const seeded = {
+      ...life,
+      titles: ["title.master_smith"],
+      ledger: [
+        {
+          id: "w1",
+          kind: "smithing",
+          maker: "旅人",
+          quality: 70,
+          tier: 2,
+          order: "order.nail",
+          flags: [],
+          day: 3,
+          worldSeed: "heir-seed",
+          marketValue: 140,
+        },
+      ],
+      time: { day: 5, action: 1 },
+      ...extra,
+    };
+    writeFileSync(savePath, serialize(seeded));
+  };
+
+  it("「この世界で次代を継ぐ」を選ぶと、同じシードで新しい生が始まり年代記には刻まない", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-heir-test-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    seedLife(savePath);
+
+    const { io, output } = scriptedIo([
+      "1", // つづきから
+      "11", // 引退する
+      "y", // 確認
+      "2", // 継ぎ方：この世界で次代を継ぐ
+      "1", // 次代の出自
+      "", // 次代の誓約：なし
+      "q",
+    ]);
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: "heir-seed",
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+
+    expect(text).toContain("どう継ぎますか");
+    expect(text).toContain("この世界で次代を継ぐ");
+    // 子が継ぐ（弟子入り歴なし）＋ この世界の2代目
+    expect(text).toContain("子が跡を継いだ");
+    expect(text).toContain("2 代目の生が始まる");
+    expect(text).toContain("年代記には刻まない");
+
+    // 世界シードは不変（転生の :next: 派生ではない）
+    expect(state!.seed).toBe("heir-seed");
+    expect(state!.time.day).toBe(0);
+    // 世代の刻印は counters/flags（GameState の形は変えない）
+    expect(state!.counters["heir.count"]).toBe(1);
+    expect(state!.flags["heir.child"]).toBe(true);
+    expect(state!.flags["heir.disciple"]).toBeUndefined();
+
+    // 弱い引継ぎ：peak に heir 係数（0.05・上限10）だけが乗る（記憶称号・遺物は渡さない）
+    expect(state!.titles).toEqual([]);
+    expect(state!.legacy?.artifact).toBeNull();
+    // 同じ seed・同じ出自の素質の素点と比べて heir 分だけ高い（出自の散らしは同じ）
+    const plain = newGame("heir-seed", "旅人", {
+      skillIds: skills.skills.map((s) => s.id),
+      initialPotential: 100,
+      initialStatValue: 10,
+      origin: { id: "origin.wanderer", potentialBase: 100, affinity: {} },
+      potentialInitMin: balance.player.potentialInitMin,
+      potentialInitMax: balance.player.potentialInitMax,
+    });
+    expect(state!.player.skills["smithing"]!.potentialCap).toBe(
+      plain.player.skills["smithing"]!.potentialCap + 4, // 80×0.05
+    );
+    expect(state!.player.skills["mining"]!.potentialCap).toBe(
+      plain.player.skills["mining"]!.potentialCap + 10, // 500×0.05 → 上限10
+    );
+
+    // 年代記には追記しない（前代の記録はその場の伝記が担う）
+    expect(text).toContain("旅人"); // 伝記は表示されている
+    expect(existsSync(chroniclePath)).toBe(false);
+    // セーブは新しい生に置き換わり、シードも同じ
+    const saved = JSON.parse(readFileSync(savePath, "utf8")) as { seed: string };
+    expect(saved.seed).toBe("heir-seed");
+  });
+
+  it("弟子入り歴のある生からは弟子が継ぐ（継ぎ方の選択は転生を選べば従来どおり）", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-heir-disciple-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    // 師匠の稽古歴がある生（門を出たあとでも弟子の系譜）
+    seedLife(savePath, { counters: { "mentor.session.mentor.garo": 4 }, tendency: "war" });
+
+    const { io, output } = scriptedIo([
+      "1", // つづきから
+      "11", // 引退する
+      "y", // 確認
+      "2", // 継ぎ方：この世界で次代を継ぐ
+      "1", // 次代の出自
+      "", // 次代の誓約：なし
+      "q",
+    ]);
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: "heir-seed",
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+
+    expect(text).toContain("弟子が跡を継いだ");
+    expect(state!.flags["heir.disciple"]).toBe(true);
+    // 同じ世界なので運命の傾向は前世のものを引き継ぐ（選び直さない）
+    expect(state!.tendency).toBe("war");
+    expect(existsSync(chroniclePath)).toBe(false);
   });
 });

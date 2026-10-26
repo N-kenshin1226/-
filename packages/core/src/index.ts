@@ -142,6 +142,8 @@ export { biographyMaterial } from "./biography/index.js";
 export type { BiographyMaterial } from "./biography/index.js";
 export { legacyOf } from "./legacy/index.js";
 export type { Legacy, LegacyArtifact, LegacyConfig, LegacyPick } from "./legacy/index.js";
+export { heirGenerationOf, heirKindOf, heirLegacyOf, succeedLife } from "./heir/index.js";
+export type { HeirConfig, HeirKind } from "./heir/index.js";
 export {
   checkPinnacles,
   nextStage,
@@ -182,3 +184,5 @@ export {
   startRun,
 } from "./abyss/index.js";
 export type { AbyssConfig, AbyssEnd, AbyssKill, AbyssRun } from "./abyss/index.js";
+export { playerScore, rivalsOf } from "./rivals/index.js";
+export type { RivalEntry, RivalNamePool, Rivalry, RivalsConfig } from "./rivals/index.js";
