@@ -14,6 +14,11 @@ export type InnRank = "cheap" | "normal" | "good";
 export interface SleepConfig {
   /** 1スキルあたり1晩の基礎定着上限 */
   nightlyCapPerSkill: number;
+  /**
+   * 1晩に定着できる全スキル合計の上限（×睡眠の質）。
+   * 単一集中と多角化の総成長差を抑えるための上限（02 §10 方針間の差）
+   */
+  nightlyCapTotal: number;
   /** 上限超過分の持ち越し割合 */
   carryoverRatio: number;
   /** 宿ランク係数 */
@@ -87,12 +92,25 @@ export function consolidateSleep(
       ? Math.min(cfg.qualityMax, Math.max(cfg.qualityMin, opts.qualityOverride))
       : sleepQuality(inn, dinner, cfg);
   const cap = cfg.nightlyCapPerSkill * quality * (opts?.capFactor ?? 1);
+  const totalCap = cfg.nightlyCapTotal * quality * (opts?.capFactor ?? 1);
   const lines: WakeLine[] = [];
+
+  // 第1段階：スキルごとの上限まで定着
+  const appliedMap = new Map<string, number>();
+  let appliedSum = 0;
+  for (const [id, prev] of Object.entries(state.player.skills)) {
+    if (prev.pending <= 0) continue;
+    const applied = Math.min(prev.pending, cap);
+    appliedMap.set(id, applied);
+    appliedSum += applied;
+  }
+  // 第2段階：合計上限を超えたら比例配分で縮める
+  const scale = appliedSum > totalCap && appliedSum > 0 ? totalCap / appliedSum : 1;
 
   const skills = { ...state.player.skills };
   for (const [id, prev] of Object.entries(skills)) {
+    const applied = (appliedMap.get(id) ?? 0) * scale;
     if (prev.pending <= 0) continue;
-    const applied = Math.min(prev.pending, cap);
     const carryover = (prev.pending - applied) * cfg.carryoverRatio;
     const from = prev.value;
     const to = from + applied;

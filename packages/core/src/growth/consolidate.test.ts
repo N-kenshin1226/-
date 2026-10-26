@@ -6,6 +6,7 @@ import type { GameState } from "../state/types.js";
 
 const sleep: SleepConfig = {
   nightlyCapPerSkill: 8.0,
+  nightlyCapTotal: 999,
   carryoverRatio: 0.5,
   innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
   dinnerFactors: { withDinner: 1.1, noDinner: 0.85 },
@@ -136,6 +137,20 @@ describe("定着", () => {
     expect(s.peak).toBeCloseTo(5);
     // 素質: 100 × (1−0.01)^5
     expect(s.potential).toBeCloseTo(100 * Math.pow(0.99, 5));
+  });
+
+  it("合計上限：全スキルの定着合計が nightlyCapTotal を超えると比例配分", () => {
+    const tight: SleepConfig = { ...sleep, nightlyCapPerSkill: 10, nightlyCapTotal: 6 };
+    const g = withPending({ swordplay: 10, smithing: 10, evasion: 10 });
+    // q=0.85 → スキル上限8.5、合計上限5.1。需要30に対し5.1を按分
+    const { state } = consolidateSleep(g, "normal", false, tight);
+    const applied =
+      state.player.skills.swordplay!.value +
+      state.player.skills.smithing!.value +
+      state.player.skills.evasion!.value;
+    expect(applied).toBeCloseTo(6 * 0.85, 5);
+    // 均等按分（各 1.7）
+    expect(state.player.skills.swordplay!.value).toBeCloseTo(1.7);
   });
 
   it("peak は下がらない（再定着で value < peak でも保持）", () => {

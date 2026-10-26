@@ -18,7 +18,9 @@
     "initialStatValue": 10
   },
   "gain": {
-    "base": { "train": 1.0 },
+    "base": {
+      "train": 3.6
+    },
     "challengePoints": [
       [-20, 0.05],
       [0, 1.0],
@@ -30,26 +32,43 @@
     "noveltyWindow": 10,
     "failMultiplier": 0.6,
     "modifierCap": 2.5,
-    "diminishBase": 110,
+    "diminishBase": 170,
     "diminishExponent": 1.5,
     "fatigueScale": 0.8
   },
   "sleep": {
-    "nightlyCapPerSkill": 8.0,
+    "nightlyCapPerSkill": 3.0,
+    "nightlyCapTotal": 1.7,
     "carryoverRatio": 0.5,
-    "innFactors": { "cheap": 0.8, "normal": 1.0, "good": 1.15 },
-    "dinnerFactors": { "withDinner": 1.1, "noDinner": 0.85 },
+    "innFactors": {
+      "cheap": 0.8,
+      "normal": 1.0,
+      "good": 1.5
+    },
+    "dinnerFactors": {
+      "withDinner": 1.1,
+      "noDinner": 0.85
+    },
     "qualityMin": 0.6,
-    "qualityMax": 1.2,
-    "potentialDecayPerPoint": 0.01
+    "qualityMax": 1.8,
+    "potentialDecayPerPoint": 0.005
   },
   "body": {
-    "fatiguePerAction": { "wait": 1, "train": 6 },
+    "fatiguePerAction": {
+      "wait": 1,
+      "train": 12
+    },
     "fatigueDefaultPerAction": 2,
     "fatigueRecover": 60,
-    "statLoadPerAction": { "train": { "strength": 2, "endurance": 2, "dexterity": 1 } },
+    "statLoadPerAction": {
+      "train": {
+        "strength": 2,
+        "endurance": 2,
+        "dexterity": 2
+      }
+    },
     "statGainPerLoad": 0.05,
-    "overloadThreshold": 15,
+    "overloadThreshold": 25,
     "overworkStreakDays": 3,
     "overworkConsolidateFactor": 0.5,
     "restQuality": 0.9,
@@ -64,5 +83,9 @@
     "tailwindBoostK": 0.5,
     "drawMin": 1,
     "drawMax": 2
+  },
+  "sim": {
+    "minutesPerAction": 3,
+    "minutesPerSleep": 1
   }
 }

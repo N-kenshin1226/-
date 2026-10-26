@@ -46,6 +46,7 @@ const cfg: StepConfig = {
   gain,
   sleep: {
     nightlyCapPerSkill: 8.0,
+    nightlyCapTotal: 999,
     carryoverRatio: 0.5,
     innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
     dinnerFactors: { withDinner: 1.1, noDinner: 0.85 },
@@ -238,7 +239,7 @@ describe("train コマンド（step 統合）", () => {
     expect(s!.pending).toBeGreaterThan(0);
     expect(s!.value).toBe(0); // 定着は睡眠（T-06）
     expect(g1.time.action).toBe(1);
-    expect(g1.actionLog).toEqual([{ day: 0, kind: "train", target: "swordplay" }]);
+    expect(g1.actionLog).toEqual([{ day: 0, kind: "train", target: "swordplay", variant: "15" }]);
     const gainEv = events.find((e) => e.type === "gainApplied");
     expect(gainEv).toBeDefined();
     expect((gainEv as { amount: number }).amount).toBeCloseTo(s!.pending);

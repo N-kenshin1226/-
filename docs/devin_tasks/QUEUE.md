@@ -15,6 +15,6 @@
 | T-07 | [T-07_tailwind.md](T-07_tailwind.md) | T-06 | done | |
 | T-08 | [T-08_body.md](T-08_body.md) | T-06 | done | |
 | T-10 | [T-10_conditions.md](T-10_conditions.md) | T-04 | done | |
-| T-09 | [T-09_balance_gate.md](T-09_balance_gate.md) | T-07, T-08, T-10 | todo | |
+| T-09 | [T-09_balance_gate.md](T-09_balance_gate.md) | T-07, T-08, T-10 | done | |
 | T-11 | [T-11_cli.md](T-11_cli.md) | T-09 | todo | |
-| H-01 | オーナーがCLIで3日分遊び、「起床ログが気持ちいいか」を判断する | T-11 | needs_human | M0の終わり。ここで自走は止まる |
+| H-01 | オーナーがCLIで3日分遊び、「起床ログが気持ちいいか」を判断する | T-11 | needs_human | M0の終わり。オーナーの指示でスキップして先へ進む |

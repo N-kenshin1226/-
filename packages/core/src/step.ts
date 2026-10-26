@@ -52,6 +52,7 @@ function recordAction(state: GameState, event: ActionEvent, max: number): GameSt
     day: event.day,
     kind: event.kind,
     ...(event.target ? { target: event.target } : {}),
+    ...(event.variant ? { variant: event.variant } : {}),
   };
   const actionLog = [...state.actionLog, entry].slice(-max);
   return { ...state, actionLog };
@@ -121,7 +122,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const skill = next.player.skills[command.skill];
       if (!skill) throw new Error(`train: 未知のスキル ${command.skill}`);
 
-      const repeats = recentRepeats(next.actionLog, "train", command.skill, cfg.gain.noveltyWindow);
+      const repeats = recentRepeats(
+        next.actionLog,
+        "train",
+        command.skill,
+        cfg.gain.noveltyWindow,
+        String(command.difficulty),
+      );
       const { amount } = computeGain(
         {
           kind: "train",
@@ -145,6 +152,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         kind: "train",
         day: next.time.day,
         target: command.skill,
+        variant: String(command.difficulty),
       });
       events.push({ type: "gainApplied", skill: command.skill, amount });
       break;

@@ -8,8 +8,8 @@ import type { WakeReport } from "../growth/consolidate.js";
  */
 
 export type ActionEvent =
-  /** 行動を消化した。kind はコマンド側の分類、target は行動の相手 */
-  | { type: "actionPerformed"; kind: string; day: number; target?: string }
+  /** 行動を消化した。kind はコマンド側の分類、target は行動の相手、variant は新規性の細粒度キー */
+  | { type: "actionPerformed"; kind: string; day: number; target?: string; variant?: string }
   /** 睡眠した。from/to は GameTime */
   | { type: "slept"; from: GameTime; to: GameTime }
   /** 未定着経験を得た。amount は今回の増分 */

@@ -59,6 +59,8 @@ export const balanceSchema = z
     sleep: z
       .object({
         nightlyCapPerSkill: z.number().positive(),
+        /** 1晩の全スキル合計の定着上限 */
+        nightlyCapTotal: z.number().positive(),
         carryoverRatio: z.number().min(0).max(1),
         innFactors: z
           .object({
@@ -119,6 +121,13 @@ export const balanceSchema = z
       })
       .strict()
       .refine((t) => t.drawMin <= t.drawMax, { message: "drawMin <= drawMax が必要" }),
+    /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */
+    sim: z
+      .object({
+        minutesPerAction: z.number().positive(),
+        minutesPerSleep: z.number().nonnegative(),
+      })
+      .strict(),
   })
   .strict();
 
