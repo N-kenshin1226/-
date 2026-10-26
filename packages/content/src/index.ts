@@ -14,7 +14,7 @@ export type { Title, TitlesFile } from "./titles.schema.js";
 export { society } from "./society.js";
 export { societyFileSchema } from "./society.schema.js";
 export type { SocietyJson } from "./society.schema.js";
-export { enemies } from "./enemies.js";
+export { enemies, enemiesByArea } from "./enemies.js";
 export { enemiesFileSchema } from "./enemies.schema.js";
 export type { EnemiesFile, EnemyJson } from "./enemies.schema.js";
 export { orders } from "./orders.js";

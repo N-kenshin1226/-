@@ -36,4 +36,4 @@
 | T-20 | [T-20_cli_town.md](T-20_cli_town.md) | T-13〜T-19 | done | 所持金・宿代・特別注文・街の記録（セーブv9） |
 | T-21 | [T-21_web_ui.md](T-21_web_ui.md) | T-20 | done | Web UI（M1。ブラウザで3日分プレイ可・e2e拡張） |
 | T-22 | [T-22_titles.md](T-22_titles.md) | T-18 | done | 称号20個（B習慣系〜S頂点） |
-| T-23 | [T-23_areas.md](T-23_areas.md) | T-17 | in_progress | 周辺2エリア＋敵追加（狩りの行き先） |
+| T-23 | [T-23_areas.md](T-23_areas.md) | T-17 | done | 周辺2エリア（近郊の森/旧街道）＋敵5体 |

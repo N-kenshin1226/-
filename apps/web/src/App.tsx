@@ -17,7 +17,7 @@ import {
   atomList,
   beginCombat,
   cfg,
-  enemyList,
+  enemyAreas,
   eventLines,
   innCost,
   innQuality,
@@ -161,21 +161,25 @@ export function App() {
     setLog((l) => [...l, ...(Array.isArray(lines) ? lines : [lines])].slice(-160));
   }, []);
 
+  const stateRef = useRef<GameState | null>(null);
+  stateRef.current = state;
+
   /** step を実行し、イベント行と（あれば）起床ログ＋新聞を表示して保存。
-      format を渡すと非睡眠時の表示行を上書きできる（例：仕事結果に経験量を添える） */
+      format を渡すと非睡眠時の表示行を上書きできる（例：仕事結果に経験量を添える）。
+      ref 経由で現在値を読むため、StrictMode の二重適用を起こさない */
   const act = useCallback(
     (
       command: Parameters<typeof step>[1],
       opts?: { atHome?: boolean; format?: (ev: ActionEvent[]) => string[] },
     ) => {
-      setState((s) => {
-        if (!s) return s;
-        const res = step(s, command, cfg);
-        const wake = wakeLines(res.state, res.events, opts?.atHome ?? false);
-        push(wake.length > 0 ? wake : (opts?.format?.(res.events) ?? eventLines(res.events)));
-        saveGame(res.state);
-        return res.state;
-      });
+      const s = stateRef.current;
+      if (!s) return;
+      const res = step(s, command, cfg);
+      const wake = wakeLines(res.state, res.events, opts?.atHome ?? false);
+      push(wake.length > 0 ? wake : (opts?.format?.(res.events) ?? eventLines(res.events)));
+      saveGame(res.state);
+      stateRef.current = res.state;
+      setState(res.state);
     },
     [push],
   );
@@ -796,12 +800,17 @@ function HuntScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
   return (
     <section style={css.panel} data-testid="screen-hunt">
       <div>{t.text.huntPick}</div>
-      {enemyList.map((e) => (
-        <div key={e.id}>
-          <Btn testId={`enemy-${e.id}`} onClick={() => setScreen({ name: "combat", enemy: e })}>
-            {e.name}
-            <span style={css.dim}>（挑戦差 {e.challenge}）</span>
-          </Btn>
+      {enemyAreas.map(([area, group]) => (
+        <div key={area}>
+          <div style={css.dim}>{t.display.huntAreas[area] ?? area}</div>
+          {group.map((e) => (
+            <div key={e.id}>
+              <Btn testId={`enemy-${e.id}`} onClick={() => setScreen({ name: "combat", enemy: e })}>
+                {e.name}
+                <span style={css.dim}>（挑戦差 {e.challenge}）</span>
+              </Btn>
+            </div>
+          ))}
         </div>
       ))}
       <Btn onClick={() => setScreen({ name: "menu" })}>戻る</Btn>

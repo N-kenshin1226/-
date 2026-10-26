@@ -27,6 +27,10 @@
       "perception": "知覚",
       "spirit": "精神"
     },
+    "huntAreas": {
+      "forest": "近郊の森",
+      "highway": "旧街道"
+    },
     "qualityBands": [
       {
         "upTo": 0.8,
@@ -109,6 +113,7 @@
     "negoWon": "――口論に勝った。",
     "negoLost": "――口論に負けた。",
     "huntPick": "どの獲物を追いますか",
+    "huntArea": "── {name} ──",
     "huntLine": "  {index}) {name}（強さ {challenge}）",
     "combatStart": "――{name} が立ちはだかった。",
     "combatStatus": "（こちら {playerHp}/{playerMax} ／ {enemy} {enemyHp}）",

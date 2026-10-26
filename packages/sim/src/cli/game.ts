@@ -35,10 +35,12 @@ import {
   cliText,
   narration,
   enemies,
+  enemiesByArea,
   orders,
   skills,
   society,
   titles,
+  type EnemyJson,
   type Order,
 } from "@trace/content";
 import { stepConfig } from "../config.js";
@@ -485,12 +487,20 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     } else if (pick === "3") {
       // ---- 狩りに出る（周辺エリアで敵と戦う。03 §4） ----
       out(t.text.huntPick);
-      enemies.enemies.forEach((e, i) =>
-        out(tpl(t.text.huntLine, { index: i + 1, name: e.name, challenge: e.challenge })),
-      );
+      // エリアごとに見出しを付けて列挙する。選択番号はエリアをまたいで通し（T-23）
+      const huntList: EnemyJson[] = [];
+      for (const [area, group] of enemiesByArea(enemies)) {
+        out(tpl(t.text.huntArea, { name: t.display.huntAreas[area] ?? area }));
+        for (const e of group) {
+          huntList.push(e);
+          out(
+            tpl(t.text.huntLine, { index: huntList.length, name: e.name, challenge: e.challenge }),
+          );
+        }
+      }
       const ei = await ask(t.text.promptChoice);
       if (ei === null) return state;
-      const enemy = enemies.enemies[Number.parseInt(ei.trim(), 10) - 1];
+      const enemy = huntList[Number.parseInt(ei.trim(), 10) - 1];
       if (!enemy) {
         out(t.text.invalidInput);
         continue;

@@ -107,6 +107,23 @@ describe("playCli", () => {
   });
 });
 
+describe("T-23 狩りメニュー（エリア別）", () => {
+  it("エリア見出しつきで敵が列挙され、通し番号で選べる", async () => {
+    const savePath = tmpSave();
+    // 「3) 狩り」→ 一覧 → 「4) 追い剥ぎ」（旧街道側）で戦闘開始 → EOFで中断
+    const { io, output } = scriptedIo(["3", "4"]);
+    const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
+    const text = output.join("\n");
+
+    expect(text).toContain("近郊の森");
+    expect(text).toContain("旧街道");
+    expect(text).toContain("1) 野犬");
+    expect(text).toContain("4) 追い剥ぎ");
+    expect(text).toContain("追い剥ぎ が立ちはだかった");
+    expect(state!.time.day).toBe(0);
+  });
+});
+
 describe("T-20 街のプレイループ", () => {
   it("1週間分を自動入力で通せる（仕事・見聞録・記録・認定が出る）", async () => {
     const savePath = tmpSave();

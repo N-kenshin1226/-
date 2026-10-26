@@ -16,6 +16,8 @@ export const cliTextSchema = z
           .object({ morning: z.string(), noon: z.string(), evening: z.string(), night: z.string() })
           .strict(),
         statNames: z.record(z.string(), z.string()),
+        /** 狩りの行き先（enemies.json の area）→ 表示名 */
+        huntAreas: z.record(z.string(), z.string()),
         /** 睡眠の質 → 表示語。q < upTo の最初の帯に入る */
         qualityBands: z.array(z.object({ upTo: z.number(), label: z.string() }).strict()).min(1),
       })
@@ -56,6 +58,8 @@ export const cliTextSchema = z
         negoWon: z.string(),
         negoLost: z.string(),
         huntPick: z.string(),
+        /** エリア別の見出し行（{name} に表示名） */
+        huntArea: z.string(),
         huntLine: z.string(),
         combatStart: z.string(),
         combatStatus: z.string(),

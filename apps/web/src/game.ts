@@ -41,6 +41,7 @@ import {
   canon,
   cliText,
   enemies,
+  enemiesByArea,
   narration,
   orders,
   skills,
@@ -80,6 +81,8 @@ export const cfg: StepConfig = {
 export const skillList = skills.skills;
 export const orderList = orders.orders;
 export const enemyList = enemies.enemies;
+/** 狩り画面用：エリア別の敵グループ（T-23。エリアの並びは出現順） */
+export const enemyAreas = enemiesByArea(enemies);
 export const atomList = atoms;
 export const societyDefs = society;
 export const narrator = new TemplateProvider(narration);

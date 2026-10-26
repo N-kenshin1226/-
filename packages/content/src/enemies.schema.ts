@@ -5,6 +5,8 @@ export const enemySchema = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1),
+    /** 狩りの行き先エリア（text/cli.json display.huntAreas に表示名を置く） */
+    area: z.string().min(1),
     hp: z.number().positive(),
     /** 敵の行動間隔（tick） */
     intervalTicks: z.number().positive(),
