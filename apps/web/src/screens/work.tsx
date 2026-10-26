@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ActionEvent, GameState } from "@trace/core";
 import { balance } from "@trace/content";
 import {
+  crisisOrders,
   eventLines,
   isBoardKind,
   isTimingKind,
@@ -92,7 +93,11 @@ export function WorkScreen({
   setScreen: (s: Screen) => void;
 }) {
   const special = specialOrderOf(state.seed, state.time.day);
-  const list: (Order | SpecialOrder)[] = special ? [...orderList, special] : orderList;
+  // 危機の接点（W-02）：「異変：」の印を付けた注文が日替わりで混ざる。受けても受けなくてもよい
+  const crisis = crisisOrders(state);
+  const list: (Order | SpecialOrder)[] = special
+    ? [...orderList, ...crisis, special]
+    : [...orderList, ...crisis];
   const entries: MenuEntry[] = [
     ...(special ? [{ kind: "header" as const, text: t.text.specialOrder }] : []),
     ...list.map((o) => {

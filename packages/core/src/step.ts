@@ -1,6 +1,13 @@
 import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/index.js";
 import { evaluate, type Cond } from "./conditions/index.js";
-import { crisisPriceFactor, crisisSeasonTurn, type CrisisConfig } from "./crisis/index.js";
+import {
+  addHeroContribution,
+  crisisPriceFactor,
+  crisisSeasonTurn,
+  crisisTouchpointForCombat,
+  crisisTouchpointForWork,
+  type CrisisConfig,
+} from "./crisis/index.js";
 import { activeEffects, gainModifier, priceFactor, type Effect } from "./effects/index.js";
 import { worldFactor, worldMods, type TendencyDefs, type VowDef } from "./fate/index.js";
 import { subscribers, type ActionEvent } from "./events/index.js";
@@ -126,6 +133,12 @@ export type Command =
       died?: boolean;
       /** 強化版ユニークとの戦闘（T-44）。討伐時に kill.unique.<id>/total を数える */
       unique?: boolean;
+      /**
+       * 危機の接点の相手としての戦闘（W-02、docs/08 §5。接点の id）。
+       * 今日の提示にある接点の相手と一致し、かつ勝ったときだけ世界の備えに寄与する。
+       * 負け・逃げ・提示外では何も起きない
+       */
+      touchpoint?: string;
     }
   /**
    * 深層ダンジョンのランの結果を世界に反映する（06 §3B、T-43）。
@@ -435,6 +448,24 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         player: { ...next.player, money: next.player.money + pay },
       };
       events.push({ type: "moneyPaid", amount: pay });
+      // 接点（W-02、docs/08 §5）：注文が今日の危機の接点なら、世界の備えに寄与する。
+      // 通常の注文と同じ流れで積むだけ —— 提示を受けない・無視する側には何も起きない。
+      // 確認は入力時点の state（＝画面に出ていた今日の提示）に対して行う：
+      // この行動で日をまたいでも、提示を受けた日の接点として達成になる
+      if (command.order !== undefined && cfg.crisis !== undefined) {
+        const tp = crisisTouchpointForWork(
+          state,
+          cfg.crisis,
+          cfg.time,
+          command.order,
+          command.kind,
+        );
+        if (tp !== null) {
+          const amount = cfg.crisis.touchpoints?.contribution.work ?? 0;
+          next = addHeroContribution(next, tp.field, amount);
+          events.push({ type: "crisisTouchpoint", id: tp.id, field: tp.field, amount });
+        }
+      }
       break;
     }
     case "combat": {
@@ -487,6 +518,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         kind: "combat",
         day: next.time.day,
         target: command.enemyId,
+        // 接点の相手なら variant に接点の id を刻む（同日達成済みの再接点を弾く根拠。W-02）
+        ...(command.touchpoint !== undefined ? { variant: command.touchpoint } : {}),
       });
       events.push({
         type: "combatEnded",
@@ -519,6 +552,23 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         events.push({ type: "died" });
       }
       next = { ...next, counters };
+      // 接点（W-02）：接点の相手に勝ったときだけ、世界の備えに寄与する。
+      // 負け・逃げ・提示外の相手では何も起きない。
+      // 確認は仕事と同じく入力時点の state（＝画面に出ていた今日の提示）に対して行う
+      if (command.won && command.touchpoint !== undefined && cfg.crisis !== undefined) {
+        const tp = crisisTouchpointForCombat(
+          state,
+          cfg.crisis,
+          cfg.time,
+          command.touchpoint,
+          command.enemyId,
+        );
+        if (tp !== null) {
+          const amount = cfg.crisis.touchpoints?.contribution.combat ?? 0;
+          next = addHeroContribution(next, tp.field, amount);
+          events.push({ type: "crisisTouchpoint", id: tp.id, field: tp.field, amount });
+        }
+      }
       break;
     }
     case "abyss": {

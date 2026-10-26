@@ -1,3 +1,4 @@
+import { evaluate, type Cond } from "../conditions/index.js";
 import type { ActionEvent } from "../events/index.js";
 import { createRng } from "../rng/index.js";
 import {
@@ -83,12 +84,47 @@ export interface CrisisFactionDef {
   aptitude?: Partial<Record<CrisisFieldId, number>>;
 }
 
+/** 「実際にしてきたこと」への親和（接点の加重。条件DSL を満たすほど出やすくなる） */
+export interface TouchpointAffinity {
+  /** 行動履歴・スキル値・カウンタ・人間関係・持ち物などを読む条件 */
+  cond: Cond;
+  /** 条件を満たすとき提示の重みに加わる値 */
+  weight: number;
+}
+
+/** 仕事の注文に乗る接点の品（crises/*.json の offer と対応） */
+export interface CrisisTouchpointOfferDef {
+  name: string;
+  /** 対応スキルID（注文の系統。work コマンドの kind） */
+  kind: string;
+  targetQuality: number;
+  rewardMoney: number;
+}
+
+/**
+ * 接点（docs/08 §5、W-02）：危機は日常に混ざる。
+ * 「生き方の種類」を選ぶのではなく、実際にしてきたこと（行動履歴・スキル・実績）への
+ * 親和で選ばれ、既存の遊びに乗せて出る。受けても受けなくてもよい。
+ * 乗せ先は実体で決まる：offer（仕事の注文）か ref（狩りに出る敵）のどちらかを持つ
+ */
 export interface CrisisTouchpointDef {
   id: string;
+  /** 接点の語り分類（08 §5 の表に対応するタグ：order/supply/defense/escort/arbitration/study） */
   kind: string;
+  /** 達成したとき寄与する備えの分野 */
   field: CrisisFieldId;
+  /** 出始める段階（0 始まり。省略時は最初から） */
   fromStage?: number;
+  /** 出なくなる段階（省略時は終幕まで出続ける） */
+  toStage?: number;
+  /** 戦いの接点の相手（enemies.json の id。defense/escort の接点が持つ） */
   ref?: string;
+  /** 提示条件（関係・持ち物・暦などの条件DSL。省略時は無条件） */
+  require?: Cond;
+  /** 「実際にしてきたこと」への親和（条件ごとの加重。合算して提示の重みになる） */
+  affinity?: readonly TouchpointAffinity[];
+  /** 仕事の注文に乗る品（order/supply/arbitration/study の接点が持つ） */
+  offer?: CrisisTouchpointOfferDef;
 }
 
 export interface CrisisTypeDef {
@@ -111,6 +147,22 @@ export interface CrisisTypeDef {
   };
 }
 
+/** 接点の提示まわりの係数（balance.json crisis.touchpoints。W-02） */
+export interface CrisisTouchpointsConfig {
+  /**
+   * 「実際にしてきたこと」への親和が全部外れても残る基底の重み。
+   * どの生き方にも接点があるための床
+   */
+  weightBase: number;
+  /**
+   * 1日に日常へ混ぜる接点の数（段階 index → 件数）。段階が進むほど多く出す。
+   * 段階が多い場合は末尾の値を使う。0 はその段階では出さない
+   */
+  offersPerStage: readonly number[];
+  /** 接点1回の達成で備えに足す量（乗せ先ごと。普通に暮らす範囲では世界全体の一部にとどまる量） */
+  contribution: { work: number; combat: number };
+}
+
 /** balance.json の crisis 節＋危機の型の一覧（content/crises 経由で組み立てる） */
 export interface CrisisConfig {
   /** この世界に現れうる危機の型（hidden があればそれ、なければ公開サンプル） */
@@ -119,6 +171,8 @@ export interface CrisisConfig {
   strongFields: number;
   /** 得意分野でない分野への備え係数（0〜1） */
   weakFieldFactor: number;
+  /** 接点の提示・寄与の係数（W-02。省略時は接点を出さない） */
+  touchpoints?: CrisisTouchpointsConfig;
 }
 
 /** 分野ごとの備えの初期値（全部 0） */
@@ -457,4 +511,169 @@ export function addHeroContribution(
     ...state,
     crisis: { ...crisis, hero: { ...crisis.hero, [field]: crisis.hero[field] + amount } },
   };
+}
+
+// ---- 接点（docs/08 §5、W-02）：危機は日常に混ざる ----
+// 提示は世界シード×日付から決定的に引く。接点は既存の遊び（仕事の注文・狩りの敵）に
+// 乗せて出るだけで、受けても受けなくてもよい（断る・無視する側には何も起きない）。
+// 「生き方の分類」は作らず、実際にしてきたことへの親和だけで重み付けする
+
+/** 接点の乗せ先（既存の遊び）。offer がある接点は仕事の注文、ref だけの接点は狩りに出る */
+export type CrisisTouchpointVessel = "work" | "combat";
+
+export function crisisTouchpointVessel(def: CrisisTouchpointDef): CrisisTouchpointVessel | null {
+  if (def.offer !== undefined) return "work";
+  if (def.ref !== undefined) return "combat";
+  return null;
+}
+
+/**
+ * その日すでに達成した接点か（同日には二度出さない「繰り返さないための予算」）。
+ * 達成は行動ログの variant（仕事なら注文ID、狩りなら接点ID）に刻まれるので、
+ * GameState の形は変えずに読み取れる
+ */
+function touchpointDoneToday(state: GameState, def: CrisisTouchpointDef): boolean {
+  const day = state.time.day;
+  return state.actionLog.some(
+    (e) => e.day === day && (e.kind === "work" || e.kind === "combat") && e.variant === def.id,
+  );
+}
+
+/**
+ * 接点が今日の提示候補になるかどうかの重み（0 なら出ない）。
+ * 進行中の危機の現在の段階で出るもののうち、require を満たし今日未達成のものに、
+ * 「実際にしてきたこと」への親和の合算＋基底の重みを与える
+ */
+export function crisisTouchpointWeight(
+  state: GameState,
+  def: CrisisTouchpointDef,
+  cfg: CrisisConfig,
+  time: TimeConfig,
+): number {
+  const tp = cfg.touchpoints;
+  const crisis = state.crisis;
+  if (tp === undefined || crisis === null || crisis.outcome !== "ongoing") return 0;
+  if (crisisTouchpointVessel(def) === null) return 0;
+  const stage = crisis.stageIndex;
+  if (def.fromStage !== undefined && stage < def.fromStage) return 0;
+  if (def.toStage !== undefined && stage > def.toStage) return 0;
+  if (def.require !== undefined && !evaluate(def.require, state, time)) return 0;
+  if (touchpointDoneToday(state, def)) return 0;
+  let w = tp.weightBase;
+  for (const a of def.affinity ?? []) {
+    if (evaluate(a.cond, state, time)) w += a.weight;
+  }
+  return w;
+}
+
+/** 今日、日常に混ざっている接点の提示（work：注文の品、combat：狩りの相手） */
+export interface CrisisTouchpointOffer {
+  def: CrisisTouchpointDef;
+  vessel: CrisisTouchpointVessel;
+  /**
+   * work：仕事の注文一覧に混ざる品。id は接点の id で、
+   * 達成は work コマンドの order にその id を渡す（注文と同じ流れで品質を積む）
+   */
+  order?: CrisisTouchpointOrder;
+  /**
+   * combat：狩りに混ざる相手（enemies.json の id = def.ref）。
+   * 達成は combat コマンドの touchpoint に接点の id を渡す（勝ったときだけ寄与）
+   */
+  enemyId?: string;
+}
+
+/** 注文の品（id＝接点の id。《異変》の印は表示側が付ける） */
+export interface CrisisTouchpointOrder extends CrisisTouchpointOfferDef {
+  id: string;
+}
+
+/**
+ * 今日の接点の一覧（世界シード×日付で決定的。受けなくても何も起きない）。
+ * 現在の段階で出る候補から、実際にしてきたことへの親和で重み付きに
+ * offersPerStage[段階] 件まで引く
+ */
+export function crisisTouchpointOffers(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  time: TimeConfig,
+): CrisisTouchpointOffer[] {
+  if (cfg === undefined) return [];
+  const tp = cfg.touchpoints;
+  const crisis = state.crisis;
+  if (tp === undefined || crisis === null || crisis.outcome !== "ongoing") return [];
+  const type = crisisTypeOf(state, cfg);
+  if (type === undefined) return [];
+  const pool = (type.touchpoints ?? [])
+    .map((def) => ({ def, weight: crisisTouchpointWeight(state, def, cfg, time) }))
+    .filter((x) => x.weight > 0);
+  if (pool.length === 0) return [];
+  const cap = tp.offersPerStage[Math.min(crisis.stageIndex, tp.offersPerStage.length - 1)] ?? 0;
+  // 引きは世界シード×日付から（state.rng は消費しない。生の乱数も使わない）
+  const rng = createRng(`${state.seed}:crisis:tp:${state.time.day}`);
+  const picked: CrisisTouchpointDef[] = [];
+  while (picked.length < cap && pool.length > 0) {
+    const hit = rng.weighted(pool.map((p) => ({ item: p.def, weight: p.weight })));
+    picked.push(hit);
+    pool.splice(
+      pool.findIndex((p) => p.def === hit),
+      1,
+    );
+  }
+  return picked.flatMap((def): CrisisTouchpointOffer[] => {
+    const vessel = crisisTouchpointVessel(def);
+    if (vessel === "work") {
+      const offer = def.offer!;
+      return [{ def, vessel, order: { ...offer, id: def.id } }];
+    }
+    if (vessel === "combat") return [{ def, vessel, enemyId: def.ref! }];
+    return [];
+  });
+}
+
+/**
+ * 現在の危機の型から接点を id で引く（表示名の解決用。
+ * 台帳や伝記に残った古い接点も引けるよう、今日の提示・段階は問わない）
+ */
+export function crisisTouchpointOf(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  id: string,
+): CrisisTouchpointDef | null {
+  if (cfg === undefined) return null;
+  const type = crisisTypeOf(state, cfg);
+  return type?.touchpoints?.find((x) => x.id === id) ?? null;
+}
+
+/**
+ * work コマンドの order が今日の接点の注文か（系統も一致していること）。
+ * 達成として有効なら接点の定義を返す（今日の提示外・別系統・同日達成済みは null）
+ */
+export function crisisTouchpointForWork(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  time: TimeConfig,
+  orderId: string,
+  kind: string,
+): CrisisTouchpointDef | null {
+  const hit = crisisTouchpointOffers(state, cfg, time).find((o) => o.order?.id === orderId);
+  if (hit === undefined || hit.def.offer === undefined) return null;
+  return hit.def.offer.kind === kind ? hit.def : null;
+}
+
+/**
+ * combat コマンドの touchpoint が今日の接点か（相手も接点のものと一致していること）。
+ * 達成として有効なら接点の定義を返す（今日の提示外・別の相手・同日達成済みは null）
+ */
+export function crisisTouchpointForCombat(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  time: TimeConfig,
+  tpId: string,
+  enemyId: string,
+): CrisisTouchpointDef | null {
+  const hit = crisisTouchpointOffers(state, cfg, time).find(
+    (o) => o.vessel === "combat" && o.def.id === tpId,
+  );
+  if (hit === undefined) return null;
+  return hit.def.ref === enemyId ? hit.def : null;
 }

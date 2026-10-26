@@ -26,6 +26,8 @@ export function crisisConfig(): CrisisConfig {
     types: crisisTypes(loadHiddenCrises()),
     strongFields: balance.crisis.strongFields,
     weakFieldFactor: balance.crisis.weakFieldFactor,
+    /** 接点（W-02）：日常へ混ざる量と寄与の係数 */
+    touchpoints: balance.crisis.touchpoints,
   };
 }
 

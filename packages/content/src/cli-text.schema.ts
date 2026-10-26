@@ -28,6 +28,8 @@ export const cliTextSchema = z
         heirKindNames: z.record(z.string(), z.string()),
         /** 睡眠の質 → 表示語。q < upTo の最初の帯に入る */
         qualityBands: z.array(z.object({ upTo: z.number(), label: z.string() }).strict()).min(1),
+        /** 世界の備えの分野（crisisFieldSchema の5分野）→ 表示名（W-02。接点の寄与の行に出す） */
+        crisisFieldNames: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -173,6 +175,10 @@ export const cliTextSchema = z
         recordsCrisisLine: z.string(),
         /** 出来事ログの種別ごとの文（キーは CrisisLogEntry.kind。{name} を差し込める） */
         crisisLog: z.record(z.string(), z.string()),
+        /** 危機の接点の印（W-02、docs/08 §5。接点の注文・相手の名前の前に付ける） */
+        touchpointTag: z.string(),
+        /** 接点を果たした行（W-02。{field} に備えの分野の表示名） */
+        crisisTouchpointDone: z.string(),
         /** 年代記（T-38）：周回をまたぐ人生の一覧。開始時の件数・見出し・各頁の行・追記の告知 */
         chronicleLives: z.string(),
         chronicleHeader: z.string(),

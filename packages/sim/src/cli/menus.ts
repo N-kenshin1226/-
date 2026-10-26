@@ -335,7 +335,7 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
       out(
         tpl(t.text.recordsLedgerLine, {
           i: state.ledger.length - recent.length + i + 1,
-          name: w.order ?? w.kind,
+          name: workDisplayName(w, ctx.cfg),
           quality: w.quality,
           tier: w.tier,
           value: w.marketValue,
@@ -434,20 +434,35 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
     }
   }
   // 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る）
-  chronicleLines(ctx.chronicle(), t).forEach(out);
+  chronicleLines(ctx.chronicle(), t, ctx.cfg).forEach(out);
   return state;
 }
 
-/** 作品の表示名：注文名（特別注文は元の注文名）＞スキル名の順（game.ts の workName と同じ解決） */
-function notableWorkName(w: NotableWork): string {
+/**
+ * 作品・台帳の表示名：注文名（特別注文は元の注文名、危機の接点の注文は接点の品名。W-02）
+ * ＞スキル名の順。接点は型をまたいでIDから引くので、年代記の過去の生でも名が解ける
+ */
+function workDisplayName(w: { kind: string; order?: string }, cfg: StepConfig): string {
   const orderId = w.order?.split("#")[0];
-  return orderId
-    ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
-    : (skills.skills.find((s) => s.id === w.kind)?.name ?? w.kind);
+  if (orderId === undefined) {
+    return skills.skills.find((s) => s.id === w.kind)?.name ?? w.kind;
+  }
+  return (
+    orders.orders.find((o) => o.id === orderId)?.name ??
+    cfg.crisis?.types.flatMap((c) => c.touchpoints ?? []).find((x) => x.id === orderId)?.offer
+      ?.name ??
+    w.order ??
+    w.kind
+  );
+}
+
+/** 作品の表示名（年代記の名品用） */
+function notableWorkName(w: NotableWork, cfg: StepConfig): string {
+  return workDisplayName(w, cfg);
 }
 
 /** 年代記の表示行（街の記録の末尾に出す） */
-function chronicleLines(chronicle: Chronicle, t: CliText): string[] {
+function chronicleLines(chronicle: Chronicle, t: CliText, cfg: StepConfig): string[] {
   const lines: string[] = [tpl(t.text.chronicleHeader, { count: chronicle.lives.length })];
   if (chronicle.lives.length === 0) {
     lines.push(t.text.chronicleEmpty);
@@ -476,7 +491,7 @@ function chronicleLines(chronicle: Chronicle, t: CliText): string[] {
       lines.push(
         tpl(t.text.chronicleWorks, {
           works: life.notableWorks
-            .map((w) => `《${notableWorkName(w)}》品質${w.quality}`)
+            .map((w) => `《${notableWorkName(w, cfg)}》品質${w.quality}`)
             .join("、"),
         }),
       );

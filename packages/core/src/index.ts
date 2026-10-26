@@ -208,6 +208,12 @@ export {
   crisisPreparedness,
   crisisPriceFactor,
   crisisSeasonTurn,
+  crisisTouchpointForCombat,
+  crisisTouchpointForWork,
+  crisisTouchpointOf,
+  crisisTouchpointOffers,
+  crisisTouchpointVessel,
+  crisisTouchpointWeight,
   crisisTypeOf,
   drawCrisis,
   emptyCrisisFields,
@@ -223,7 +229,13 @@ export type {
   CrisisStageDef,
   CrisisStageEffects,
   CrisisTouchpointDef,
+  CrisisTouchpointOffer,
+  CrisisTouchpointOfferDef,
+  CrisisTouchpointOrder,
+  CrisisTouchpointsConfig,
+  CrisisTouchpointVessel,
   CrisisTypeDef,
+  TouchpointAffinity,
 } from "./crisis/index.js";
 export { CRISIS_FIELD_IDS } from "./state/types.js";
 export type {

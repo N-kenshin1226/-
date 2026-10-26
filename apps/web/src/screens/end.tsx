@@ -358,7 +358,7 @@ export function RebirthScreen({
           { kind: "header" as const, text: t.text.legacyArtifactPrompt },
           ...topWorks.map((w): MenuEntry => ({
             id: `rebirth-artifact-${w.id}`,
-            label: `《${workName(w)}》`,
+            label: `《${workName(w, prev)}》`,
             sub: (
               <>
                 質{w.quality}・{w.day + 1}日目{artifactId === w.id ? " ◆" : ""}

@@ -16,6 +16,7 @@ import {
   cfg,
   crisisAreaClosed,
   crisisEnemyChallengeBonus,
+  crisisEnemyTouchpoints,
   endRun,
   enemyAreas,
   eventLines,
@@ -87,6 +88,8 @@ export function HuntScreen({
   state: GameState;
   setScreen: (s: Screen) => void;
 }) {
+  // 危機の接点（W-02）：今日の接点の相手には「異変：」の印を付ける。印は示すだけ、倒しても逃げてもよい
+  const tpEnemies = crisisEnemyTouchpoints(state);
   const entries: MenuEntry[] = enemyAreas.flatMap(([area, group]): MenuEntry[] => {
     const areaName = t.display.huntAreas[area] ?? area;
     // 危機の段階で閉じられたエリアは「立ち入れない」とだけ出す（W-01。段階が変われば解放）
@@ -97,12 +100,18 @@ export function HuntScreen({
       { kind: "header", text: areaName },
       ...group.flatMap((e): MenuEntry[] => {
         const ue = uniqueOf(state, e);
+        const tp = tpEnemies.get(e.id);
         return [
           {
             id: `enemy-${e.id}`,
-            label: e.name,
+            label: tp !== undefined ? `${t.text.touchpointTag}${e.name}` : e.name,
             sub: `挑戦差 ${e.challenge}`,
-            onPick: () => setScreen({ name: "combat", enemy: e }),
+            onPick: () =>
+              setScreen({
+                name: "combat",
+                enemy: e,
+                ...(tp !== undefined ? { touchpoint: tp } : {}),
+              }),
           },
           // 強個体は特別な相手（T-44）：金色の一行として別立て
           ...(ue !== null
@@ -158,12 +167,15 @@ export function HuntScreen({
 export function CombatScreen({
   state,
   enemy,
+  touchpoint,
   setScreen,
   act,
   push,
 }: {
   state: GameState;
   enemy: EnemyJson;
+  /** 危機の接点の相手なら接点の id（W-02。勝ったときだけ世界の備えに寄与する） */
+  touchpoint?: string;
   setScreen: (s: Screen) => void;
   act: Act;
   push: Push;
@@ -202,6 +214,8 @@ export function CombatScreen({
       died: r.died,
       // 強化版ユニークを倒したか（T-44）。enemy.id は素の種のまま
       ...("uniqueVariant" in enemy && enemy.uniqueVariant ? { unique: true } : {}),
+      // 接点の相手なら接点の id を渡す（W-02。勝利時に備えへ寄与。逃げ・敗北では何も起きない）
+      ...(touchpoint !== undefined ? { touchpoint } : {}),
     });
     push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
     // 死亡時は伝記が生成される（06 §1。蘇生するが記録は残る）

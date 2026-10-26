@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { condSchema } from "../src/conditions.schema.js";
 
 /**
  * 危機の型のスキーマ（docs/08_world_crisis.md §3〜4、W-01）。
@@ -125,23 +126,82 @@ export const crisisFactionSchema = z
 export type CrisisFactionJson = z.infer<typeof crisisFactionSchema>;
 
 /**
- * 接点（docs/08 §5）：危機は日常に混ざる。接点の実体（注文・依頼・戦闘・交渉・
- * 書物への接続）は W-02 で既存の遊びに乗せる。ここでは設計口（どんな接点があり、
- * どの分野に寄与するか）だけを宣言する
+ * 接点（docs/08 §5、W-02）：危機は日常に混ざる。
+ * 「生き方の種類」ではなく、実際にしてきたこと（行動履歴・スキル・実績）への親和
+ * （affinity）で選ばれ、既存の遊びに乗せて出る。乗せ先は kind で決まる：
+ * order/supply/arbitration/study は仕事の注文（offer 必須）、
+ * defense/escort は狩りの敵（ref に enemies.json の id が必須）。
+ * 達成はフィールドの備えへの寄与になる。受けても受けなくてもよい
  */
 export const crisisTouchpointSchema = z
   .object({
     id: z.string().regex(/^[a-z0-9_.]+$/),
-    /** 接点の乗せ先（08 §5 の表に対応する分類） */
+    /** 接点の語り分類（08 §5 の表に対応する分類） */
     kind: z.enum(["order", "supply", "defense", "escort", "arbitration", "study"]),
     /** 寄与する分野 */
     field: crisisFieldSchema,
     /** 出始める段階（0 始まりの段階番号） */
     fromStage: z.number().int().min(0).default(0),
-    /** 接続先の参照ID（注文・依頼・場所など。W-02 で解決する。省略可） */
+    /** 出なくなる段階（省略時は終幕まで出続ける） */
+    toStage: z.number().int().min(0).optional(),
+    /** 戦いの接点の相手（enemies.json の id。defense/escort で必須） */
     ref: z.string().min(1).optional(),
+    /** 提示条件（関係・持ち物・暦などの条件DSL。省略時は無条件） */
+    require: condSchema.optional(),
+    /**
+     * 「実際にしてきたこと」への親和：条件DSL ごとの加重（提示の重みに合算される）。
+     * 直近の行動履歴（within）・スキル値・カウンタ（実績）などを読む
+     */
+    affinity: z
+      .array(z.object({ cond: condSchema, weight: z.number().positive() }).strict())
+      .default([]),
+    /** 仕事の注文に乗る品（order/supply/arbitration/study で必須。kind は skills.json の id） */
+    offer: z
+      .object({
+        name: z.string().min(1),
+        /** 対応スキルID（注文の系統。skills.json の id） */
+        kind: z.string().min(1),
+        targetQuality: z.number().min(0).max(100),
+        rewardMoney: z.number().int().nonnegative(),
+      })
+      .strict()
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((tp, ctx) => {
+    const workKind = tp.kind !== "defense" && tp.kind !== "escort";
+    if (workKind && tp.offer === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["offer"],
+        message: `${tp.kind} の接点には offer（注文）が必要`,
+      });
+    }
+    if (!workKind && tp.offer !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["offer"],
+        message: `${tp.kind} の接点に offer は書けない（ref に敵IDを書く）`,
+      });
+    }
+    if (!workKind && tp.ref === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ref"],
+        message: `${tp.kind} の接点には ref（enemies.json の敵ID）が必要`,
+      });
+    }
+    if (workKind && tp.ref !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ref"],
+        message: `${tp.kind} の接点に ref は書けない（offer に注文を書く）`,
+      });
+    }
+    if (tp.toStage !== undefined && tp.toStage < tp.fromStage) {
+      ctx.addIssue({ code: "custom", path: ["toStage"], message: "toStage >= fromStage が必要" });
+    }
+  });
 export type CrisisTouchpointJson = z.infer<typeof crisisTouchpointSchema>;
 
 /** 語りの参照（新聞・噂・終幕の語りテンプレートへのキー。本文との接続は W-02/W-04） */
@@ -193,7 +253,7 @@ export const crisisTypeSchema = z
     finales: z.array(crisisFinaleSchema).min(1).max(3),
     /** シードで決める変数（省略可） */
     variables: z.array(crisisVariableSchema).default([]),
-    /** 接点（省略可。W-02 で実体を接続する） */
+    /** 接点（省略可。docs/08 §5、W-02：危機は日常に混ざる） */
     touchpoints: z.array(crisisTouchpointSchema).default([]),
     /** 語りの参照（省略可） */
     narration: crisisNarrationSchema.optional(),

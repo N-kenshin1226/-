@@ -53,6 +53,8 @@ import {
   crisisAreaClosed,
   crisisEnemyChallengeBonus,
   crisisEnemyMods,
+  crisisTouchpointOf,
+  crisisTouchpointOffers,
   crisisTypeOf,
   withWorldMods,
   worldFactor,
@@ -172,6 +174,8 @@ export const cfg: StepConfig = {
     types: crisisTypes(),
     strongFields: balance.crisis.strongFields,
     weakFieldFactor: balance.crisis.weakFieldFactor,
+    /** 接点（W-02）：日常へ混ざる量と寄与の係数 */
+    touchpoints: balance.crisis.touchpoints,
   },
 };
 
@@ -191,12 +195,23 @@ export const bookList = books.books;
 export const mentorList = mentors.mentors;
 export const narrator = new TemplateProvider(narration);
 
-/** 作品の表示名：注文名（特別注文は元の注文名）＞スキル名の順で解決する */
-export function workName(w: Pick<Work, "kind" | "order">): string {
+/**
+ * 作品の表示名：注文名（特別注文は元の注文名、接点の注文は接点の品名）＞スキル名の順。
+ * state を渡すと接点の注文（W-02）の名前も引ける
+ */
+export function workName(w: Pick<Work, "kind" | "order">, state?: GameState): string {
   const orderId = w.order?.split("#")[0];
-  return orderId
-    ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
-    : (skills.skills.find((s) => s.id === w.kind)?.name ?? w.kind);
+  if (orderId === undefined) {
+    return skills.skills.find((s) => s.id === w.kind)?.name ?? w.kind;
+  }
+  return (
+    orders.orders.find((o) => o.id === orderId)?.name ??
+    (state !== undefined
+      ? crisisTouchpointOf(state, cfg.crisis, orderId)?.offer?.name
+      : undefined) ??
+    w.order ??
+    w.kind
+  );
 }
 
 /**
@@ -234,7 +249,7 @@ export function bioLines(state: GameState, cause?: "retire" | "death"): string[]
       ...(m.bestWork !== null
         ? {
             work: {
-              name: workName(m.bestWork),
+              name: workName(m.bestWork, state),
               quality: m.bestWork.quality,
               tier: m.bestWork.tier,
             },
@@ -585,6 +600,13 @@ export function eventLines(events: ActionEvent[]): string[] {
         const line = crisisLogLine(e.outcome === "resolved" ? "end.resolved" : "end.ruin");
         return line === null ? [] : [line];
       }
+      // 接点を果たした（W-02）：備えに足された旨を1行出す（淡々とした機械的な口調）
+      case "crisisTouchpoint":
+        return [
+          tpl(t.text.crisisTouchpointDone, {
+            field: t.display.crisisFieldNames[e.field] ?? e.field,
+          }),
+        ];
       default:
         return [];
     }
@@ -734,6 +756,40 @@ export function specialOrderOf(seed: string, day: number): SpecialOrder | null {
     rewardFactor: balance.town.specialOrderRewardFactor,
     qualityFactor: balance.town.specialOrderQualityFactor,
   }) as SpecialOrder | null;
+}
+
+/**
+ * 危機の接点が仕事の注文に混ざる品（W-02、docs/08 §5）。
+ * 「異変：」の印でさりげなく示すだけ —— 受けても受けなくてもよい日替わりの注文。
+ * 判定（何が出るか）は core、ここでは表示用の形だけ作る
+ */
+export interface CrisisOrder extends Order {
+  crisis: true;
+}
+export function crisisOrders(state: GameState): CrisisOrder[] {
+  return crisisTouchpointOffers(state, cfg.crisis, cfg.time).flatMap((o) =>
+    o.order !== undefined
+      ? [
+          {
+            id: o.order.id,
+            kind: o.order.kind,
+            name: `${t.text.touchpointTag}${o.order.name}`,
+            targetQuality: o.order.targetQuality,
+            rewardMoney: o.order.rewardMoney,
+            crisis: true as const,
+          },
+        ]
+      : [],
+  );
+}
+
+/** 狩りの敵ID → 今日の接点ID（接点の相手には「異変：」の印を付ける。W-02） */
+export function crisisEnemyTouchpoints(state: GameState): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const o of crisisTouchpointOffers(state, cfg.crisis, cfg.time)) {
+    if (o.vessel === "combat" && o.enemyId !== undefined) map.set(o.enemyId, o.def.id);
+  }
+  return map;
 }
 
 // ---- ミニゲーム（手動プレイ） ----
@@ -1052,7 +1108,7 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
   const deeds = state.actionLog.filter((a) => a.day === day).map((a) => a.kind);
   const works = state.ledger
     .filter((w) => w.day === day)
-    .map((w) => ({ name: workName(w), quality: w.quality, tier: w.tier }));
+    .map((w) => ({ name: workName(w, state), quality: w.quality, tier: w.tier }));
   const deaths = state.counters["death.count"] ?? 0;
   const lastLife = loadChronicle().lives.at(-1);
   const prevLife =
@@ -1187,7 +1243,7 @@ export interface Notice {
   rewards: { label: string; name: string; sub?: string }[];
 }
 
-export function noticesOf(events: ActionEvent[]): Notice[] {
+export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
   const out: Notice[] = [];
   for (const e of events) {
     if (e.type === "titleGained" && !e.suppressed && e.rank === "S") {
@@ -1202,7 +1258,7 @@ export function noticesOf(events: ActionEvent[]): Notice[] {
       if (work) {
         rewards.push({
           label: "作品",
-          name: `《${workName(work.work)}》`,
+          name: `《${workName(work.work, state)}》`,
           sub: `品質${Math.round(work.work.quality)}`,
         });
       }

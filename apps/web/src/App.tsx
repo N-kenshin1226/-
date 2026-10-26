@@ -202,7 +202,7 @@ export function App() {
         push(opts?.format?.(res.events) ?? eventLines(res.events));
       }
       // S/Aの出来事は通知を重ねる（03 §6：S=画面全体の帯・A=光る窓）
-      const ns = noticesOf(res.events);
+      const ns = noticesOf(res.events, res.state);
       if (ns.length > 0) setNotices((q) => [...q, ...ns]);
       saveGame(res.state);
       stateRef.current = res.state;
@@ -583,6 +583,7 @@ function ScreenView(props: {
         <CombatScreen
           state={state}
           enemy={screen.enemy}
+          touchpoint={screen.touchpoint}
           setScreen={setScreen}
           act={act}
           push={push}

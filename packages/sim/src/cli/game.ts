@@ -49,6 +49,8 @@ import {
   createRng,
   crisisAreaClosed,
   crisisEnemyChallengeBonus,
+  crisisTouchpointOf,
+  crisisTouchpointOffers,
   crisisTypeOf,
   isSkillUnlocked,
   reachedPinnacles,
@@ -361,17 +363,30 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         const line = crisisLogLine(e.outcome === "resolved" ? "end.resolved" : "end.ruin");
         return line === null ? [] : [line];
       }
+      // 接点を果たした（W-02）：世界の備えに足された旨を1行出す（機械的な口調）
+      if (e.type === "crisisTouchpoint") {
+        return [
+          tpl(t.text.crisisTouchpointDone, {
+            field: t.display.crisisFieldNames[e.field] ?? e.field,
+          }),
+        ];
+      }
       return [];
     });
 
   // 語り層（07 §6）：文章だけを返す。ゲーム結果は core が先に決めている
   const narrator = opts.narrator ?? new TemplateProvider(narration);
-  /** 作品の表示名：注文名（特別注文は元の注文名）＞スキル名の順で解決する */
+  /** 作品の表示名：注文名（特別注文は元の注文名、接点の注文は接点の品名）＞スキル名の順で解決する */
   const workName = (w: Work): string => {
     const orderId = w.order?.split("#")[0];
-    return orderId
-      ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
-      : (skillNames.get(w.kind) ?? w.kind);
+    if (orderId === undefined) return skillNames.get(w.kind) ?? w.kind;
+    return (
+      orders.orders.find((o) => o.id === orderId)?.name ??
+      // 危機の接点の注文（W-02）：台帳や伝記に残った品も、現在の危機の型から接点IDで引く
+      crisisTouchpointOf(state!, cfg.crisis, orderId)?.offer?.name ??
+      w.order ??
+      w.kind
+    );
   };
   /** 伝記（T-37）：素材は core が摘み、表示名はここで解決する。cause 省略時は閉じ行を出さない */
   const bioLines = (st: GameState, cause?: "retire" | "death"): string[] => {
@@ -978,8 +993,26 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       out(t.text.orderPick);
       // 日替わりの特別注文（街の出来事。シード×日付で決定的に出る）
       const special = specialOrderOf(state.seed, state.time.day);
+      // 危機の接点（W-02）：「異変：」の印を付けた日替わりの注文として注文に混ざる。
+      // 印は示すだけ —— 受けても受けなくてもよく、無視する側には何も起きない
+      const crisisOrders: Order[] =
+        cfg.crisis !== undefined
+          ? crisisTouchpointOffers(state, cfg.crisis, cfg.time).flatMap((o) =>
+              o.order !== undefined
+                ? [
+                    {
+                      id: o.order.id,
+                      kind: o.order.kind,
+                      name: `${t.text.touchpointTag}${o.order.name}`,
+                      targetQuality: o.order.targetQuality,
+                      rewardMoney: o.order.rewardMoney,
+                    },
+                  ]
+                : [],
+            )
+          : [];
       if (special) out(t.text.specialOrder);
-      const orderList = special ? [...orders.orders, special] : orders.orders;
+      const orderList = [...orders.orders, ...crisisOrders, ...(special ? [special] : [])];
       orderList.forEach((o, i) =>
         out(
           tpl(t.text.orderLine, {
@@ -1078,7 +1111,14 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // エリアごとに見出しを付けて列挙する。選択番号はエリアをまたいで通し（T-23）
       // 同種を unique.afterKills 体倒すと強個体が並ぶ（T-44）。
       // 危機の段階で閉じられたエリアは「立ち入れない」とだけ出す（W-01。段階が変われば解放）
-      const huntList: { def: EnemyJson; unique: boolean }[] = [];
+      // 危機の接点（W-02）：今日の接点の相手には「異変：」の印を付ける（敵ID→接点ID）
+      const tpEnemies = new Map<string, string>();
+      if (cfg.crisis !== undefined) {
+        for (const o of crisisTouchpointOffers(state, cfg.crisis, cfg.time)) {
+          if (o.vessel === "combat" && o.enemyId !== undefined) tpEnemies.set(o.enemyId, o.def.id);
+        }
+      }
+      const huntList: { def: EnemyJson; unique: boolean; tp?: string }[] = [];
       const uniqueCfg = balance.combat.unique;
       for (const [area, group] of enemiesByArea(enemies)) {
         const areaName = t.display.huntAreas[area] ?? area;
@@ -1088,9 +1128,14 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         }
         out(tpl(t.text.huntArea, { name: areaName }));
         for (const e of group) {
-          huntList.push({ def: e, unique: false });
+          const tp = tpEnemies.get(e.id);
+          huntList.push({ def: e, unique: false, ...(tp !== undefined ? { tp } : {}) });
           out(
-            tpl(t.text.huntLine, { index: huntList.length, name: e.name, challenge: e.challenge }),
+            tpl(t.text.huntLine, {
+              index: huntList.length,
+              name: tp !== undefined ? `${t.text.touchpointTag}${e.name}` : e.name,
+              challenge: e.challenge,
+            }),
           );
           if (uniqueCfg !== undefined && canFightUnique(state, e.id, uniqueCfg)) {
             const ue: EnemyJson = {
@@ -1143,6 +1188,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           fled: r.fled,
           died: r.died,
           ...(isUnique ? { unique: true } : {}),
+          // 接点の相手なら接点の id を渡す（W-02。勝利時に備えへ寄与。逃げ・敗北では何も起きない）
+          ...(picked.tp !== undefined ? { touchpoint: picked.tp } : {}),
         },
         cfg,
       );

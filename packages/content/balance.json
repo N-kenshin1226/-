@@ -338,6 +338,11 @@
   },
   "crisis": {
     "strongFields": 2,
-    "weakFieldFactor": 0.3
+    "weakFieldFactor": 0.3,
+    "touchpoints": {
+      "weightBase": 0.5,
+      "offersPerStage": [1, 2, 3],
+      "contribution": { "work": 0.3, "combat": 0.5 }
+    }
   }
 }

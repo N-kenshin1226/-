@@ -85,8 +85,137 @@
         }
       ],
       "touchpoints": [
-        { "id": "tp.sample_mist.order", "kind": "order", "field": "craft", "fromStage": 1 },
-        { "id": "tp.sample_mist.defense", "kind": "defense", "field": "might", "fromStage": 2 }
+        {
+          "id": "tp.sample_mist.forgework",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "smithing", "atLeast": 1 }
+              },
+              "weight": 4
+            },
+            { "cond": { "skill": "smithing", "gte": 8 }, "weight": 2 }
+          ],
+          "offer": {
+            "name": "警備隊への武具納入",
+            "kind": "smithing",
+            "targetQuality": 45,
+            "rewardMoney": 90
+          }
+        },
+        {
+          "id": "tp.sample_mist.transport",
+          "kind": "supply",
+          "field": "wealth",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "eloquence", "atLeast": 1 }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "物資運びの段取り",
+            "kind": "eloquence",
+            "targetQuality": 35,
+            "rewardMoney": 60
+          }
+        },
+        {
+          "id": "tp.sample_mist.defense",
+          "kind": "defense",
+          "field": "might",
+          "fromStage": 1,
+          "ref": "wolf",
+          "affinity": [
+            { "cond": { "within": { "days": 14, "kind": "combat", "atLeast": 1 } }, "weight": 4 },
+            { "cond": { "counter": "kill.species.wolf", "gte": 1 }, "weight": 2 }
+          ]
+        },
+        {
+          "id": "tp.sample_mist.arbitration",
+          "kind": "arbitration",
+          "field": "bond",
+          "fromStage": 2,
+          "affinity": [
+            { "cond": { "skill": "eloquence", "gte": 8 }, "weight": 4 },
+            { "cond": { "counter": "society.offer.citizen", "gte": 1 }, "weight": 2 }
+          ],
+          "offer": {
+            "name": "避難民の仲裁",
+            "kind": "eloquence",
+            "targetQuality": 50,
+            "rewardMoney": 80
+          }
+        },
+        {
+          "id": "tp.sample_mist.study",
+          "kind": "study",
+          "field": "knowledge",
+          "fromStage": 1,
+          "affinity": [
+            { "cond": { "within": { "days": 14, "kind": "read", "atLeast": 1 } }, "weight": 4 },
+            { "cond": { "skill": "appraisal", "gte": 5 }, "weight": 2 }
+          ],
+          "offer": {
+            "name": "古い記録の写本",
+            "kind": "appraisal",
+            "targetQuality": 40,
+            "rewardMoney": 70
+          }
+        },
+        {
+          "id": "tp.sample_mist.rations",
+          "kind": "supply",
+          "field": "wealth",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "fishing", "atLeast": 1 }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "避難所への食糧納入",
+            "kind": "fishing",
+            "targetQuality": 35,
+            "rewardMoney": 55
+          }
+        },
+        {
+          "id": "tp.sample_mist.morale",
+          "kind": "order",
+          "field": "bond",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "performance", "atLeast": 1 }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "警備隊の士気を上げる演奏",
+            "kind": "performance",
+            "targetQuality": 40,
+            "rewardMoney": 65
+          }
+        },
+        {
+          "id": "tp.sample_mist.expedition",
+          "kind": "escort",
+          "field": "might",
+          "fromStage": 2,
+          "ref": "deserter",
+          "affinity": [
+            { "cond": { "counter": "action.combat", "gte": 5 }, "weight": 4 },
+            { "cond": { "skill": "swordplay", "gte": 15 }, "weight": 2 }
+          ]
+        }
       ],
       "narration": {
         "stage": {

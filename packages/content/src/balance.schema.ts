@@ -481,6 +481,25 @@ export const balanceSchema = z
         strongFields: z.number().int().min(1).max(5),
         /** 得意分野でない分野への1季節あたりの備え係数（0〜1） */
         weakFieldFactor: z.number().min(0).max(1),
+        /**
+         * 接点（docs/08 §5、W-02）：危機が日常に混ざる量と、達成で備えに足す量。
+         * 段階が進むほど多く出し、普通に暮らす範囲では世界全体の一部にとどまる量にする
+         */
+        touchpoints: z
+          .object({
+            /** 親和が全部外れても残る基底の重み（どの生き方にも接点があるための床） */
+            weightBase: z.number().positive(),
+            /** 1日に日常へ混ぜる接点の数（段階 index → 件数。段階が進むほど多く。0 は出さない） */
+            offersPerStage: z.array(z.number().int().min(0)).min(1),
+            /** 接点1回の達成で備えに足す量（乗せ先ごと） */
+            contribution: z
+              .object({
+                work: z.number().nonnegative(),
+                combat: z.number().nonnegative(),
+              })
+              .strict(),
+          })
+          .strict(),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

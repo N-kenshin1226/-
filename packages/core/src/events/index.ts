@@ -1,4 +1,4 @@
-import type { GameState, Work } from "../state/types.js";
+import type { CrisisFieldId, GameState, Work } from "../state/types.js";
 import type { GameTime } from "../time/index.js";
 import type { WakeReport } from "../growth/consolidate.js";
 
@@ -116,7 +116,12 @@ export type ActionEvent =
    */
   | { type: "crisisFinale"; id: string; success: boolean; total: number }
   /** 危機の終幕（通知Aランク相当。解決か、重い危機では滅び） */
-  | { type: "crisisEnded"; outcome: "resolved" | "ruin" };
+  | { type: "crisisEnded"; outcome: "resolved" | "ruin" }
+  /**
+   * 危機の接点を果たした（W-02、docs/08 §5。日常の行動の延長として世界の備えに寄与）。
+   * 接点の id、寄与した分野、備えに足した量を持つ
+   */
+  | { type: "crisisTouchpoint"; id: string; field: CrisisFieldId; amount: number };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -177,6 +182,20 @@ export const counterSubscriber: Subscriber = (state, event) => {
       return {
         ...state,
         counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
+      };
+    }
+    case "crisisTouchpoint": {
+      // 接点の達成を数える（関わりの深さを条件DSLから読める。W-02。
+      // 提示を見ても受けなければ何も刻まれない —— 断る・無視する側に不利益はない）
+      const done = "crisis.tp.done";
+      const key = `crisis.tp.${event.id}`;
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [done]: (state.counters[done] ?? 0) + 1,
+          [key]: (state.counters[key] ?? 0) + 1,
+        },
       };
     }
     default:

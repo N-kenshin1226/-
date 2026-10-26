@@ -392,6 +392,12 @@ try {
           npc?: { id?: string }[];
         };
       }[];
+      touchpoints?: {
+        id?: string;
+        kind?: string;
+        ref?: string;
+        offer?: { kind?: string };
+      }[];
     }[];
   };
   const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
@@ -419,6 +425,14 @@ try {
       }
       for (const n of s.effects?.npc ?? []) {
         if (n.id !== undefined && !npcIds.has(n.id)) bad.push(`${label}: NPC ${n.id}`);
+      }
+    }
+    // 接点（W-02）：戦いの接点 ref は実在の敵、注文の品 offer.kind は実在のスキル
+    for (const tp of c.touchpoints ?? []) {
+      const label = `crises ${c.id ?? "?"} 接点 ${tp.id ?? "?"}`;
+      if (tp.ref !== undefined && !enemyIds.has(tp.ref)) bad.push(`${label}: 敵 ${tp.ref}`);
+      if (tp.offer?.kind !== undefined && !skillIds.has(tp.offer.kind)) {
+        bad.push(`${label}: 注文の系統 ${tp.offer.kind}`);
       }
     }
   }

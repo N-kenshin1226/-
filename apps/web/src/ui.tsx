@@ -18,7 +18,8 @@ export type Screen =
   | { name: "workMode"; order: Order }
   | { name: "minigame"; kind: MinigameKind; order: Order }
   | { name: "hunt" }
-  | { name: "combat"; enemy: EnemyJson }
+  /** 危機の接点の相手なら touchpoint に接点の id が入る（勝ったときだけ寄与。W-02） */
+  | { name: "combat"; enemy: EnemyJson; touchpoint?: string }
   /** 深層ダンジョン（T-43）：層を下る連戦。進行は AbyssRun が持つ */
   | { name: "abyss" }
   | { name: "lore"; atomId?: string }

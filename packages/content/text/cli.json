@@ -67,7 +67,14 @@
         "upTo": 99,
         "label": "極上"
       }
-    ]
+    ],
+    "crisisFieldNames": {
+      "might": "力",
+      "craft": "技",
+      "bond": "縁",
+      "wealth": "財",
+      "knowledge": "知"
+    }
   },
   "text": {
     "playerName": "旅人",
@@ -290,6 +297,8 @@
       "end.resolved": "――世界の出来事は幕を閉じた。",
       "end.ruin": "――世界は滅びの影に沈んだ。"
     },
+    "touchpointTag": "異変：",
+    "crisisTouchpointDone": "――世界の備え《{field}》に、あなたの力が加わった。",
     "resetConfirm": "――この街での全ての記録を消します。よろしいですか"
   }
 }
