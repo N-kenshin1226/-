@@ -4,6 +4,8 @@ import {
   activeEffects,
   combatResult,
   combatTurn,
+  crisisEnemyChallengeBonus,
+  crisisEnemyMods,
   damageFactor,
   endRun,
   floorEnemy,
@@ -68,8 +70,15 @@ export async function fightEnemy(
     enemy.id,
   );
   // 運命の傾向・誓約の世界補正（T-45/T-46）：戦乱の世や強敵の誓で敵の基礎値が上がる。
-  // 攻撃側の傾向効果（workGainFactor など）は step 側のゲイン経路に乗る
-  const worldEnemy = withWorldMods(enemy, worldMods(st, balance.tendency, vows.vows));
+  // 攻撃側の傾向効果（workGainFactor など）は step 側のゲイン経路に乗る。
+  // 世界の危機（W-01）の段階の影響も掛け合わせる（霧に覆われた森の敵が強くなる等）
+  const fate = worldMods(st, balance.tendency, vows.vows);
+  const cm = crisisEnemyMods(st, cfg.crisis, { id: enemy.id, area: enemy.area });
+  const worldEnemy = withWorldMods(enemy, {
+    ...fate,
+    enemyHpFactor: (fate.enemyHpFactor ?? 1) * cm.enemyHpFactor,
+    enemyPowerFactor: (fate.enemyPowerFactor ?? 1) * cm.enemyPowerFactor,
+  });
   let cs = startCombat(worldEnemy, balance.combat, st.player, atkFactor);
   out(tpl(t.text.combatStart, { name: enemy.name }));
   let printed = 0;
@@ -144,7 +153,11 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
     const r = combatResult(cs);
     if (r.won) {
       // 倒した層を刻む。最後の灯りで倒しても層は数える（灯り切れはそのあとで閉じる）
-      run = killFloor(run, { enemyId: enemy.id, difficulty: enemy.challenge });
+      run = killFloor(run, {
+        enemyId: enemy.id,
+        difficulty:
+          enemy.challenge + crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id }),
+      });
       if (!run.done) {
         // 層の合間だけ引き返せる。戦闘中の離脱は「逃げる」で
         out(tpl(t.text.abyssCleared, { name: enemy.name }));
@@ -154,7 +167,11 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
         if (d.trim() !== "1") run = endRun(run, "retreat");
       }
     } else {
-      loss = { enemyId: enemy.id, difficulty: enemy.challenge };
+      loss = {
+        enemyId: enemy.id,
+        difficulty:
+          enemy.challenge + crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id }),
+      };
       if (r.died) run = endRun(run, "died");
       else if (r.fled) run = endRun(run, "fled");
       else run = endRun(run, "light"); // 灯り切れで未決着のまま中断

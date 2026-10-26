@@ -1,6 +1,8 @@
 import { createRng } from "../rng/index.js";
+import { drawCrisis, type CrisisConfig } from "../crisis/index.js";
 import {
   STAT_IDS,
+  type CrisisState,
   type GameState,
   type PlayerState,
   type SkillState,
@@ -48,6 +50,17 @@ export interface NewGameConfig {
    * （誓約称号の条件が flags/counters から読めるようにするため）
    */
   vows?: readonly string[];
+  /**
+   * 世界の危機の設定（docs/08、W-01）。指定すると世界生成時に seed から
+   * 決定論的に危機を抽選する。省略時は危機なし（crisis: null）
+   */
+  crisis?: CrisisConfig;
+  /**
+   * 同じ世界の次代に引き継ぐ危機の状態（succeedLife が渡す。W-01）。
+   * 危機は生ではなく世界のものなので、次代では進行をリセットせず
+   * 前代の状態をそのまま継ぐ。undefined のときだけ新規抽選する
+   */
+  carryoverCrisis?: CrisisState | null;
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -131,6 +144,8 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     // 運命の傾向（T-45。未選択は中立の "calm"）と誓約（T-46）
     tendency: cfg.tendency ?? "calm",
     vows: [...new Set(cfg.vows ?? [])],
+    // 世界の危機（W-01）：引き継ぎがあればそのまま、なければ世界シードから抽選
+    crisis: cfg.carryoverCrisis ?? (cfg.crisis ? drawCrisis(seed, cfg.crisis) : null),
   };
 }
 

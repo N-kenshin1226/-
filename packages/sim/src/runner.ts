@@ -57,6 +57,8 @@ export function runBot(
     skillIds,
     initialPotential: 100,
     initialStatValue: 10,
+    // 世界の危機（W-01）：ボットの世界にもシード由来の危機を抽選する
+    ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
   });
   const rng = createRng(`bot:${seed}:${bot.id}`);
   const ctx: BotCtx = { cfg, rng, skillIds };

@@ -2,6 +2,7 @@ import {
   bookDaysLeft,
   canAct,
   canApprentice,
+  crisisTypeOf,
   rivalsOf,
   step,
   suggestGoals,
@@ -15,6 +16,7 @@ import {
   atoms,
   balance,
   books,
+  canon,
   enemies,
   mentors,
   orders,
@@ -23,6 +25,7 @@ import {
   skills,
   society,
   titles,
+  voices,
   type CliText,
 } from "@trace/content";
 import { tpl } from "./render.js";
@@ -390,6 +393,43 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
     );
   }
   out(t.text.recordsRivalNote);
+  // 世界の出来事（W-01、docs/08）：危機の記録。段階や結末の語りは
+  // 新新聞・噂が担うので、ここは淡々とした出来事の一覧だけ出す
+  out(t.text.recordsCrisis);
+  const crisis = state.crisis;
+  if (crisis === null || crisis.log.length === 0) {
+    out(t.text.recordsCrisisNone);
+  } else {
+    const type = ctx.cfg.crisis !== undefined ? crisisTypeOf(state, ctx.cfg.crisis) : undefined;
+    const refName = (entry: { kind: string; ref?: string }): string => {
+      if (entry.ref === undefined) return "";
+      if (entry.kind === "stage") {
+        return type?.stages.find((s) => s.id === entry.ref)?.name ?? entry.ref;
+      }
+      if (entry.kind.startsWith("finale.")) {
+        return type?.finales.find((f) => f.id === entry.ref)?.name ?? entry.ref;
+      }
+      if (entry.kind.startsWith("npc.")) {
+        return (
+          voices.npcs.find((n) => n.id === entry.ref)?.name ??
+          canon.figures.find((f) => f.id === entry.ref)?.name ??
+          entry.ref
+        );
+      }
+      return entry.ref;
+    };
+    // 最新10件まで（古い出来事は下に流す）
+    for (const entry of crisis.log.slice(-10)) {
+      const text = t.text.crisisLog[entry.kind];
+      if (text === undefined) continue;
+      out(
+        tpl(t.text.recordsCrisisLine, {
+          day: entry.day + 1,
+          text: tpl(text, { name: refName(entry) }),
+        }),
+      );
+    }
+  }
   // 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る）
   chronicleLines(ctx.chronicle(), t).forEach(out);
   return state;

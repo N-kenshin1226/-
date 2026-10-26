@@ -275,6 +275,20 @@
     "recordsRivalEpithet": "《{epithet}》",
     "recordsRivalYou": "（あなた）",
     "recordsRivalNote": "――名声は実績で伸びる。ライバルの噂は新聞にも載る。",
+    "huntAreaClosed": "── {name}：いまは立ち入れない",
+    "recordsCrisis": "── 世界の出来事 ──",
+    "recordsCrisisNone": "  まだ何も起きていない。",
+    "recordsCrisisLine": "  {day}日目：{text}",
+    "crisisLog": {
+      "draw": "――世界のどこかで、何かが動き始めた。",
+      "stage": "――世の気配が変わった（{name}）。",
+      "finale.win": "――《{name}》の報せが届いた。世界は持ちこたえたらしい。",
+      "finale.loss": "――《{name}》の報せが届いた。うまくいかなかったらしい。",
+      "npc.leave": "――{name} が街を離れたという。",
+      "npc.die": "――{name} の訃報が届いた。",
+      "end.resolved": "――世界の出来事は幕を閉じた。",
+      "end.ruin": "――世界は滅びの影に沈んだ。"
+    },
     "resetConfirm": "――この街での全ての記録を消します。よろしいですか"
   }
 }

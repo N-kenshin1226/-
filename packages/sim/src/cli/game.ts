@@ -45,6 +45,9 @@ import {
 import {
   biographyMaterial,
   createRng,
+  crisisAreaClosed,
+  crisisEnemyChallengeBonus,
+  crisisTypeOf,
   isSkillUnlocked,
   reachedPinnacles,
   TENDENCY_IDS,
@@ -255,10 +258,26 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       initialMoney: balance.player.initialMoney,
       ...(legacy !== undefined ? { legacy } : {}),
       ...(fate !== undefined ? { tendency: fate.tendency, vows: fate.vows } : {}),
+      // 世界の危機（W-01）：この世界の危機をシードから抽選する
+      ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
     });
 
   /** 称号ID → 表示名 */
   const titleName = (id: string): string => titles.titles.find((x) => x.id === id)?.name ?? id;
+
+  /**
+   * 危機の段階・決着の場面の表示名（W-01。cfg.crisis の型定義から引く。
+   * state は呼び出し時点のものを見る —— applyTitles は step 後に呼ばれる）
+   */
+  const crisisRefName = (ref: string, list: "stages" | "finales"): string => {
+    const type = cfg.crisis !== undefined ? crisisTypeOf(state!, cfg.crisis) : undefined;
+    return type?.[list].find((x) => x.id === ref)?.name ?? ref;
+  };
+  /** 出来事ログの種別 → 定型文（text/cli.json crisisLog。{name} を差し込める） */
+  const crisisLogLine = (kind: string, name?: string): string | null => {
+    const text = t.text.crisisLog[kind];
+    return text === undefined ? null : tpl(text, { name: name ?? "" });
+  };
 
   if (!state) {
     // 出自を選ぶ（素質の初期値 80〜130 に幅が出る。02：出自）
@@ -317,6 +336,27 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // 老衰死（T-36）：起床ログのあとに1行出す。老いの兆候（oldAgeSign）は
       // report.surprises に既出なのでここでは行を出さない
       if (e.type === "deathByAge") return [tpl(t.text.deathByAge, { age: e.age })];
+      // 世界の危機（W-01）：季節の変わり目の出来事を定型文で出す。
+      // 危機の型名や段階番号は出さない（世界の出来事として「報せ」だけ届く）
+      if (e.type === "crisisDrawn") {
+        const line = crisisLogLine("draw");
+        return line === null ? [] : [line];
+      }
+      if (e.type === "crisisStageChanged") {
+        const line = crisisLogLine("stage", crisisRefName(e.stage, "stages"));
+        return line === null ? [] : [line];
+      }
+      if (e.type === "crisisFinale") {
+        const line = crisisLogLine(
+          e.success ? "finale.win" : "finale.loss",
+          crisisRefName(e.id, "finales"),
+        );
+        return line === null ? [] : [line];
+      }
+      if (e.type === "crisisEnded") {
+        const line = crisisLogLine(e.outcome === "resolved" ? "end.resolved" : "end.ruin");
+        return line === null ? [] : [line];
+      }
       return [];
     });
 
@@ -706,6 +746,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           initialMoney: balance.player.initialMoney,
           tendency: st.tendency,
           vows: heirVows,
+          // 世界の危機（W-01）：前代の危機は succeedLife が引き継ぐ。
+          // 未抽選の世界（旧セーブ）ならここで渡した設定から抽選される
+          ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
         },
         balance.heir,
       );
@@ -1010,11 +1053,17 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // ---- 狩りに出る（周辺エリアで敵と戦う。03 §4） ----
       out(t.text.huntPick);
       // エリアごとに見出しを付けて列挙する。選択番号はエリアをまたいで通し（T-23）
-      // 同種を unique.afterKills 体倒すと強個体が並ぶ（T-44）
+      // 同種を unique.afterKills 体倒すと強個体が並ぶ（T-44）。
+      // 危機の段階で閉じられたエリアは「立ち入れない」とだけ出す（W-01。段階が変われば解放）
       const huntList: { def: EnemyJson; unique: boolean }[] = [];
       const uniqueCfg = balance.combat.unique;
       for (const [area, group] of enemiesByArea(enemies)) {
-        out(tpl(t.text.huntArea, { name: t.display.huntAreas[area] ?? area }));
+        const areaName = t.display.huntAreas[area] ?? area;
+        if (crisisAreaClosed(state, cfg.crisis, area)) {
+          out(tpl(t.text.huntAreaClosed, { name: areaName }));
+          continue;
+        }
+        out(tpl(t.text.huntArea, { name: areaName }));
         for (const e of group) {
           huntList.push({ def: e, unique: false });
           out(
@@ -1060,7 +1109,13 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         {
           type: "combat",
           enemyId: enemy.id,
-          difficulty: enemy.challenge,
+          // 危機由来の強化分も挑戦差に乗る（W-01。強い敵ほど経験になる）
+          difficulty:
+            enemy.challenge +
+            crisisEnemyChallengeBonus(state, cfg.crisis, {
+              id: enemy.id,
+              area: enemy.area,
+            }),
           won: r.won,
           fled: r.fled,
           died: r.died,

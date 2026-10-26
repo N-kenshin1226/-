@@ -111,6 +111,91 @@ export interface TodayState {
   loads: number;
 }
 
+// ---- 世界の危機（docs/08_world_crisis.md §3〜4、W-01） ----
+// 世界を主人公に背負わせない：危機の進行・決着は世界の勢力の備えで決まり、
+// 主人公の寄与は hero にだけ積もる（W-02 の接点から加算される）
+
+/** 備えの5分野（docs/08 §4）：力・技・縁・財・知 */
+export type CrisisFieldId = "might" | "craft" | "bond" | "wealth" | "knowledge";
+
+/** 備えの5分野の全ID（列挙・初期化に使う） */
+export const CRISIS_FIELD_IDS: readonly CrisisFieldId[] = [
+  "might",
+  "craft",
+  "bond",
+  "wealth",
+  "knowledge",
+];
+
+/** 勢力ごとの備え状態（得意分野と速さは世界シードからの抽選で決まる） */
+export interface CrisisFactionState {
+  /** 危機の型の factions の id */
+  id: string;
+  /** 抽選で決まった得意分野 */
+  strongFields: CrisisFieldId[];
+  /** 抽選で決まった1季節あたりの備え速度 */
+  speed: number;
+  /** 分野ごとの蓄積した備え */
+  prep: Record<CrisisFieldId, number>;
+}
+
+/** 決着の場面の状態（時期は筋書き＋シード由来のずれで決まる） */
+export interface CrisisFinaleState {
+  /** 危機の型の finales の id */
+  id: string;
+  /** 判定する季節の変わり目の番号（危機開始から数える。jitter 適用済み） */
+  atBoundary: number;
+  /** 判定済みか */
+  resolved: boolean;
+  /** 判定の結果（resolved のときだけ入る） */
+  success?: boolean;
+  /** 判定時点の備え合計（世界の勢力の備え＋主人公の寄与） */
+  total?: number;
+}
+
+/** 世界の出来事の記録（街の記録・年代記タブに出すための簡潔なログ） */
+export interface CrisisLogEntry {
+  /** 起きた日 */
+  day: number;
+  /**
+   * 種別：draw（抽選）/ stage（段階が進んだ）/ finale.win・finale.loss（決着の場面）/
+   * npc.leave・npc.die（NPCの離散・死亡）/ end.resolved・end.ruin（終幕）
+   */
+  kind: string;
+  /** 参照ID（段階・決着の場面・NPCの id） */
+  ref?: string;
+}
+
+/**
+ * 世界の危機の状態（docs/08 §3〜4、W-01）。
+ * 型と変数は世界シードから決定論的に決まる。季節の変わり目に段階が進み、
+ * 決着の場面を経て outcome が resolved / ruin になる
+ */
+export interface CrisisState {
+  /** 危機の型のID（crises/*.json の id） */
+  typeId: string;
+  /** 現在の段階（型の stages のインデックス） */
+  stageIndex: number;
+  /** 現在の段階で経過した季節数 */
+  seasonsInStage: number;
+  /** 危機開始から数えた季節の変わり目の回数（決着の場面の時期の基準） */
+  boundaries: number;
+  /** 勢力ごとの備え状態 */
+  factions: CrisisFactionState[];
+  /** 主人公が寄与した備え（W-02 の接点から addHeroContribution で加算される） */
+  hero: Record<CrisisFieldId, number>;
+  /** 決着の場面（筋書きの時期順） */
+  finales: CrisisFinaleState[];
+  /** シードで決まった変数（場所・人物などの語り用） */
+  variables: Record<string, string>;
+  /** 離散・死亡したNPC（段階の影響で記録される。元に戻らない） */
+  npcGone: { id: string; kind: "leave" | "die"; day: number }[];
+  /** 出来事の記録（表示は新聞・噂・年代記が担う。ここはその素材） */
+  log: CrisisLogEntry[];
+  /** 結末：進行中／解決／滅び */
+  outcome: "ongoing" | "resolved" | "ruin";
+}
+
 export interface GameState {
   /** セーブスキーマのバージョン（save/ の SAVE_VERSION と一致させる） */
   version: number;
@@ -196,4 +281,10 @@ export interface GameState {
    * 選んだ誓約は flags["vow.taken.<id>"] にも刻まれ、条件DSLから読める
    */
   vows: string[];
+  /**
+   * 世界の危機（docs/08、W-01。v16〜）。型・勢力の得意分野と速さ・決着の
+   * 場面の時期・変数はすべて世界シードから決定論的に決まる。
+   * null は「未抽選」（v15 以前のセーブ → 次の季節の変わり目に抽選される）
+   */
+  crisis: CrisisState | null;
 }

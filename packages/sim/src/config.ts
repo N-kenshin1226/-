@@ -4,6 +4,7 @@ import {
   books,
   canon,
   cliText,
+  crisisTypes,
   mentors,
   pinnacles,
   skills,
@@ -12,7 +13,21 @@ import {
   titles,
   vows,
 } from "@trace/content";
-import type { StepConfig } from "@trace/core";
+import { loadHiddenCrises } from "@trace/content/hidden";
+import type { CrisisConfig, StepConfig } from "@trace/core";
+
+/**
+ * 世界の危機の設定（W-01、docs/08 §9）。
+ * hidden/crises の型があればそれを使い、無ければ公開サンプルに倒す。
+ * 係数は balance.crisis 由来
+ */
+export function crisisConfig(): CrisisConfig {
+  return {
+    types: crisisTypes(loadHiddenCrises()),
+    strongFields: balance.crisis.strongFields,
+    weakFieldFactor: balance.crisis.weakFieldFactor,
+  };
+}
 
 /** balance.json とコンテンツJSONから実行時の StepConfig を組み立てる */
 export function stepConfig(): StepConfig {
@@ -67,6 +82,8 @@ export function stepConfig(): StepConfig {
     /** 運命の傾向・誓約（T-45/T-46。balance.tendency + vows.json の世界補正表） */
     tendency: balance.tendency,
     vows: vows.vows,
+    /** 世界の危機（W-01、docs/08。hidden/crises があればそれ、なければ公開サンプル） */
+    crisis: crisisConfig(),
     lore: {
       atoms: atoms.map((a) => ({ id: a.id, reveals: a.reveals, unlock: a.unlock })),
       connections: canon.events

@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -101,6 +101,12 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
     13: (old) => ({ ...old, version: 14, tendency: "calm" }),
     /** 14 → 15: 誓約（T-46）。旧セーブは誓約なし */
     14: (old) => ({ ...old, version: 15, vows: [] }),
+    /**
+     * 15 → 16: 世界の危機（docs/08、W-01）を追加。
+     * 旧セーブは crisis: null（未抽選）。次の季節の変わり目に step の危機進行が
+     * 世界シードから抽選する（新しい世界と同じ危機になる。途中からでも決定論的）
+     */
+    15: (old) => ({ ...old, version: 16, crisis: null }),
   };
 
 export function serialize(state: GameState): string {
@@ -152,6 +158,7 @@ function assertShape(data: Record<string, unknown>): void {
     "legacy",
     "tendency",
     "vows",
+    "crisis",
   ];
   for (const key of required) {
     if (!(key in data)) throw new Error(`deserialize: ${key} がありません`);

@@ -1,5 +1,6 @@
 import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/index.js";
 import { evaluate, type Cond } from "./conditions/index.js";
+import { crisisPriceFactor, crisisSeasonTurn, type CrisisConfig } from "./crisis/index.js";
 import { activeEffects, gainModifier, priceFactor, type Effect } from "./effects/index.js";
 import { worldFactor, worldMods, type TendencyDefs, type VowDef } from "./fate/index.js";
 import { subscribers, type ActionEvent } from "./events/index.js";
@@ -79,6 +80,12 @@ export interface StepConfig {
   tendency?: TendencyDefs;
   /** 誓約の定義（06 §3C、T-46。content/vows.json）。省略時は誓約の効果なし */
   vows?: readonly VowDef[];
+  /**
+   * 世界の危機（docs/08、W-01。balance.crisis ＋ crises/*.json）。
+   * 指定すると睡眠・休養で季節が変わったときに危機が進行する。
+   * 未抽選の世界（v15 以前のセーブ）は次の季節の変わり目に抽選される
+   */
+  crisis?: CrisisConfig;
 }
 
 export type Command =
@@ -279,9 +286,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         agingEvents.push(...aged.events);
       }
 
+      // 世界の危機（W-01）：季節が変わった変わり目にだけ進行する。
+      // 未抽選の世界（v15 以前のセーブ）はこの変わり目に抽選される（移行の口）。
+      // 危機の出来事は世界の記録（crisis.log）とイベントに残る
+      const crisisEvents: ActionEvent[] = [];
+      if (cfg.crisis) {
+        const turned = crisisSeasonTurn(next, cfg.crisis, cfg.time, from);
+        next = turned.state;
+        crisisEvents.push(...turned.events);
+      }
+
       events.push({ type: "slept", from, to: next.time });
       events.push({ type: "wakeReport", report });
       events.push(...agingEvents);
+      events.push(...crisisEvents);
       break;
     }
     case "train": {
@@ -402,13 +420,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
       }
       // 報酬が入る（注文の約定額があればそれ、無ければ市場価値。認定の値段変化と
-      // 傾向・誓約の報酬係数（T-45/T-46）を乗せる）
+      // 傾向・誓約の報酬係数（T-45/T-46）、危機の物価変動（W-01）を乗せる）
       const pay = Math.max(
         0,
         Math.round(
           (command.rewardMoney ?? recorded.work.marketValue) *
             priceFactor(effects, command.kind) *
-            worldFactor(fate, "rewardFactor"),
+            worldFactor(fate, "rewardFactor") *
+            crisisPriceFactor(next, cfg.crisis, command.kind),
         ),
       );
       next = {

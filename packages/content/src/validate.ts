@@ -21,6 +21,7 @@ import { mentorsFileSchema } from "./mentors.schema.js";
 import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 import { vowsFileSchema } from "./vows.schema.js";
 import { rivalsFileSchema } from "./rivals.schema.js";
+import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -64,6 +65,7 @@ check("mentors.json", mentorsFileSchema);
 check("pinnacles.json", pinnaclesFileSchema);
 check("vows.json", vowsFileSchema);
 check("rivals.json", rivalsFileSchema);
+check("crises/sample.json", crisesFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ
@@ -345,6 +347,75 @@ try {
   }
 } catch (e) {
   console.error(`✗ ライバルの突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 危機の参照の突き合わせ（W-01）：crises/sample.json のエリア・敵・NPC・
+// 仕事の系統が実在すること（hidden/crises は内容を読まないので対象外。
+// 別経路でロード時にスキーマ検証される）
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const enemiesRaw = JSON.parse(readFileSync(join(root, "enemies.json"), "utf8")) as {
+    enemies?: { id?: string; area?: string }[];
+  };
+  const canonRaw = JSON.parse(readFileSync(join(root, "lore/canon.json"), "utf8")) as {
+    figures?: { id?: string }[];
+  };
+  const voicesRaw = JSON.parse(readFileSync(join(root, "voices.json"), "utf8")) as {
+    npcs?: { id?: string }[];
+  };
+  const crisesRaw = JSON.parse(readFileSync(join(root, "crises/sample.json"), "utf8")) as {
+    crises?: {
+      id?: string;
+      stages?: {
+        id?: string;
+        effects?: {
+          closeAreas?: string[];
+          price?: { kind?: string }[];
+          enemy?: { id?: string; area?: string }[];
+          npc?: { id?: string }[];
+        };
+      }[];
+    }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const enemyIds = new Set((enemiesRaw.enemies ?? []).map((e) => e.id));
+  const areas = new Set((enemiesRaw.enemies ?? []).map((e) => e.area));
+  const npcIds = new Set([
+    ...(canonRaw.figures ?? []).map((f) => f.id),
+    ...(voicesRaw.npcs ?? []).map((n) => n.id),
+  ]);
+  const bad: string[] = [];
+  for (const c of crisesRaw.crises ?? []) {
+    for (const s of c.stages ?? []) {
+      const label = `crises ${c.id ?? "?"} 段階 ${s.id ?? "?"}`;
+      for (const a of s.effects?.closeAreas ?? []) {
+        if (!areas.has(a)) bad.push(`${label}: 閉鎖エリア ${a}`);
+      }
+      for (const p of s.effects?.price ?? []) {
+        if (p.kind !== undefined && !skillIds.has(p.kind)) {
+          bad.push(`${label}: 物価の系統 ${p.kind}`);
+        }
+      }
+      for (const e of s.effects?.enemy ?? []) {
+        if (e.id !== undefined && !enemyIds.has(e.id)) bad.push(`${label}: 敵 ${e.id}`);
+        if (e.area !== undefined && !areas.has(e.area)) bad.push(`${label}: 敵エリア ${e.area}`);
+      }
+      for (const n of s.effects?.npc ?? []) {
+        if (n.id !== undefined && !npcIds.has(n.id)) bad.push(`${label}: NPC ${n.id}`);
+      }
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 危機の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 危機の参照（crises ↔ skills/enemies/canon/voices）");
+  }
+} catch (e) {
+  console.error(`✗ 危機の参照突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

@@ -156,12 +156,13 @@ describe("succeedLife（T-48 同じ世界で次代を継ぐ）", () => {
     expect(next.tendency).toBe("war");
   });
 
-  it("GameState の形は変わらない：counters/flags だけに刻むので v15 のまま往復できる", () => {
+  it("GameState の形は変わらない：counters/flags だけに刻むので往復できる（v16 は W-01 の危機由来）", () => {
     const prev = base();
     const { state: next } = succeedLife(prev, "次代", lifeInit(), CFG);
     const restored = deserialize(serialize(next));
     expect(restored.version).toBe(SAVE_VERSION);
     expect(restored).toEqual(next);
-    expect(SAVE_VERSION).toBe(15);
+    // T-48 自体は形を変えない。16 への版上げは W-01（世界の危機の追加）によるもの
+    expect(SAVE_VERSION).toBe(16);
   });
 });

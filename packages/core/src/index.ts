@@ -188,3 +188,39 @@ export {
 export type { AbyssConfig, AbyssEnd, AbyssKill, AbyssRun } from "./abyss/index.js";
 export { playerScore, rivalsOf } from "./rivals/index.js";
 export type { RivalEntry, RivalNamePool, Rivalry, RivalsConfig } from "./rivals/index.js";
+export {
+  addHeroContribution,
+  crisisAreaClosed,
+  crisisEffects,
+  crisisEnemyChallengeBonus,
+  crisisEnemyMods,
+  crisisFeatureActive,
+  crisisNpcAbsent,
+  crisisPreparedness,
+  crisisPriceFactor,
+  crisisSeasonTurn,
+  crisisTypeOf,
+  drawCrisis,
+  emptyCrisisFields,
+} from "./crisis/index.js";
+export type {
+  ActiveCrisisEffects,
+  CrisisConfig,
+  CrisisEnemyEffect,
+  CrisisFactionDef,
+  CrisisFinaleDef,
+  CrisisNpcEffect,
+  CrisisPriceEffect,
+  CrisisStageDef,
+  CrisisStageEffects,
+  CrisisTouchpointDef,
+  CrisisTypeDef,
+} from "./crisis/index.js";
+export { CRISIS_FIELD_IDS } from "./state/types.js";
+export type {
+  CrisisFactionState,
+  CrisisFieldId,
+  CrisisFinaleState,
+  CrisisLogEntry,
+  CrisisState,
+} from "./state/types.js";

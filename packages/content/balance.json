@@ -330,5 +330,9 @@
     "playerTitleWeight": 12,
     "playerKillWeight": 1.5,
     "playerAbyssWeight": 6
+  },
+  "crisis": {
+    "strongFields": 2,
+    "weakFieldFactor": 0.3
   }
 }

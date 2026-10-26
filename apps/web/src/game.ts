@@ -50,6 +50,10 @@ import {
   specialOrderOf as coreSpecialOrderOf,
   TENDENCY_IDS,
   TemplateProvider,
+  crisisAreaClosed,
+  crisisEnemyChallengeBonus,
+  crisisEnemyMods,
+  crisisTypeOf,
   withWorldMods,
   worldFactor,
   worldMods,
@@ -83,6 +87,7 @@ import {
   books,
   canon,
   cliText,
+  crisisTypes,
   enemies,
   enemiesByArea,
   mentors,
@@ -159,6 +164,15 @@ export const cfg: StepConfig = {
   /** 運命の傾向・誓約（T-45/T-46。balance.tendency + vows.json の世界補正表） */
   tendency: balance.tendency,
   vows: vows.vows,
+  /**
+   * 世界の危機（W-01、docs/08）。ブラウザ経路は公開サンプルの型を使う
+   * （hidden/crises は node 側の @trace/content/hidden から読む設計）
+   */
+  crisis: {
+    types: crisisTypes(),
+    strongFields: balance.crisis.strongFields,
+    weakFieldFactor: balance.crisis.weakFieldFactor,
+  },
 };
 
 /** 運命の傾向の選択肢（T-45。UI で3択を出す用） */
@@ -296,6 +310,8 @@ const gameInit = (origin: Origin, legacy?: Legacy, fate?: FateChoice): NewGameCo
   ...(legacy !== undefined ? { legacy } : {}),
   ...(fate?.tendency !== undefined ? { tendency: fate.tendency } : {}),
   ...(fate?.vows !== undefined ? { vows: fate.vows } : {}),
+  // 世界の危機（W-01）：この世界の危機をシードから抽選する
+  ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
 });
 
 /** 新規開始のシード。?seed= で固定できる（e2e・リプレイ用）。それ以外は一意に */
@@ -401,6 +417,23 @@ export function offerName(id: string): string {
     society.professions.find((p) => p.id === id)?.name ??
     id
   );
+}
+
+/**
+ * 危機の段階・決着の場面の表示名（W-01。型定義から id で引く。
+ * 出来事ログの定型文（text/cli.json crisisLog）に差し込む）
+ */
+export function crisisRefName(ref: string, list: "stages" | "finales"): string {
+  for (const ty of cfg.crisis?.types ?? []) {
+    const hit = ty[list].find((x) => x.id === ref);
+    if (hit !== undefined) return hit.name;
+  }
+  return ref;
+}
+/** 出来事ログの種別 → 定型文（{name} を差し込める） */
+export function crisisLogLine(kind: string, name?: string): string | null {
+  const text = t.text.crisisLog[kind];
+  return text === undefined ? null : tpl(text, { name: name ?? "" });
 }
 
 /** イベント → 表示行（CLIの applyTitles 相当） */
@@ -524,6 +557,27 @@ export function eventLines(events: ActionEvent[]): string[] {
       }
       case "tierUp":
         return [tpl(t.text.workResultTier, { tier: e.tier })];
+      // 世界の危機（W-01）：季節の変わり目の出来事を定型文で出す。
+      // 危機の型名や段階番号は出さない（世界の出来事として「報せ」だけ届く）
+      case "crisisDrawn": {
+        const line = crisisLogLine("draw");
+        return line === null ? [] : [line];
+      }
+      case "crisisStageChanged": {
+        const line = crisisLogLine("stage", crisisRefName(e.stage, "stages"));
+        return line === null ? [] : [line];
+      }
+      case "crisisFinale": {
+        const line = crisisLogLine(
+          e.success ? "finale.win" : "finale.loss",
+          crisisRefName(e.id, "finales"),
+        );
+        return line === null ? [] : [line];
+      }
+      case "crisisEnded": {
+        const line = crisisLogLine(e.outcome === "resolved" ? "end.resolved" : "end.ruin");
+        return line === null ? [] : [line];
+      }
       default:
         return [];
     }
@@ -827,8 +881,22 @@ export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
     enemy.id,
   );
   // 運命の傾向・誓約の世界補正（T-45/T-46。戦乱の世・強敵の誓で敵が強くなる）
-  const def = withWorldMods(toEnemyDef(enemy), worldMods(state, cfg.tendency, cfg.vows));
+  const def = worldEnemyDef(state, enemy);
   return startCombat(def, cfg.combat, state.player, fx);
+}
+
+/**
+ * 敵に世界補正を掛ける（傾向・誓約 T-45/T-46 ＋ 危機の段階の影響 W-01）。
+ * 危機由来の強化は傾向・誓約の係数に掛け合わされる
+ */
+function worldEnemyDef(state: GameState, enemy: EnemyJson): EnemyDef {
+  const fate = worldMods(state, cfg.tendency, cfg.vows);
+  const cm = crisisEnemyMods(state, cfg.crisis, { id: enemy.id, area: enemy.area });
+  return withWorldMods(toEnemyDef(enemy), {
+    ...fate,
+    enemyHpFactor: (fate.enemyHpFactor ?? 1) * cm.enemyHpFactor,
+    enemyPowerFactor: (fate.enemyPowerFactor ?? 1) * cm.enemyPowerFactor,
+  });
 }
 
 export function playCombatTurn(
@@ -841,11 +909,50 @@ export function playCombatTurn(
 ): CombatState {
   const ctx = combatCtx(state);
   // beginCombat と同じ世界補正を敵に掛ける（T-45/T-46。ターン解決も同じ強さでないと不整合）
-  const def = withWorldMods(toEnemyDef(enemy), worldMods(state, cfg.tendency, cfg.vows));
+  const def = worldEnemyDef(state, enemy);
   return combatTurn(cs, action, def, cfg.combat, seed === undefined ? ctx : { ...ctx, seed });
 }
 
 export { combatResult, telegraphLines, suggestGoals, sleepQuality };
+export { crisisAreaClosed, crisisEnemyChallengeBonus, crisisTypeOf };
+
+/**
+ * 街の記録の「世界の出来事」欄（W-01、docs/08）：危機の記録を
+ * 出来事ログ（crisis.log）から表示行にする。段階や結末の語りは新聞・噂が担うので、
+ * ここは淡々とした出来事の一覧だけ（最新10件）
+ */
+export function crisisRecordLines(state: GameState): string[] {
+  const crisis = state.crisis;
+  const out: string[] = [t.text.recordsCrisis];
+  if (crisis === null || crisis.log.length === 0) {
+    out.push(t.text.recordsCrisisNone);
+    return out;
+  }
+  const type = cfg.crisis !== undefined ? crisisTypeOf(state, cfg.crisis) : undefined;
+  const refName = (entry: { kind: string; ref?: string }): string => {
+    if (entry.ref === undefined) return "";
+    if (entry.kind === "stage") {
+      return type?.stages.find((s) => s.id === entry.ref)?.name ?? entry.ref;
+    }
+    if (entry.kind.startsWith("finale.")) {
+      return type?.finales.find((f) => f.id === entry.ref)?.name ?? entry.ref;
+    }
+    if (entry.kind.startsWith("npc.")) {
+      return (
+        voices.npcs.find((n) => n.id === entry.ref)?.name ??
+        canon.figures.find((f) => f.id === entry.ref)?.name ??
+        entry.ref
+      );
+    }
+    return entry.ref;
+  };
+  for (const entry of crisis.log.slice(-10)) {
+    const text = crisisLogLine(entry.kind, refName(entry));
+    if (text === null) continue;
+    out.push(tpl(t.text.recordsCrisisLine, { day: entry.day + 1, text }));
+  }
+  return out;
+}
 export type { BoardState, CombatState, DealState, TimingState };
 export type { Order };
 

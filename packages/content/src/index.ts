@@ -58,3 +58,25 @@ export { rivals } from "./rivals.js";
 export { rivalsFileSchema } from "./rivals.schema.js";
 export type { RivalsFile } from "./rivals.schema.js";
 export { worldModsSchema } from "./world-mods.schema.js";
+// 世界の危機（W-01、docs/08）。型のスキーマはコンテンツと並べて crises/schema.ts に置く
+export { crises, crisisTypes, sampleCrises } from "./crises.js";
+export {
+  crisesFileSchema,
+  crisisFactionSchema,
+  crisisFieldSchema,
+  crisisFinaleSchema,
+  crisisStageEffectsSchema,
+  crisisStageSchema,
+  crisisTouchpointSchema,
+  crisisTypeSchema,
+} from "../crises/schema.js";
+export type {
+  CrisesFile,
+  CrisisFactionJson,
+  CrisisFieldJson,
+  CrisisFinaleJson,
+  CrisisStageEffectsJson,
+  CrisisStageJson,
+  CrisisTouchpointJson,
+  CrisisTypeJson,
+} from "../crises/schema.js";

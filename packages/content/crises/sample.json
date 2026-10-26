@@ -1,0 +1,104 @@
+{
+  "crises": [
+    {
+      "id": "crisis.sample_mist",
+      "name": "境の霧（公開サンプル）",
+      "weight": 1,
+      "heavy": false,
+      "factions": [
+        {
+          "id": "faction.watch",
+          "name": "街道警備隊",
+          "speed": { "min": 3, "max": 5 },
+          "aptitude": { "might": 4, "bond": 2 }
+        },
+        {
+          "id": "faction.guild",
+          "name": "ギルド",
+          "speed": { "min": 2, "max": 4 },
+          "aptitude": { "craft": 2, "wealth": 2, "knowledge": 1 }
+        },
+        {
+          "id": "faction.shrine",
+          "name": "祠の祠守",
+          "speed": { "min": 1, "max": 2 },
+          "aptitude": { "knowledge": 3, "bond": 1 }
+        }
+      ],
+      "stages": [
+        {
+          "id": "omen",
+          "name": "兆し",
+          "seasons": 1,
+          "effects": {
+            "enemy": [{ "area": "forest", "challengeBonus": 2 }]
+          }
+        },
+        {
+          "id": "spread",
+          "name": "拡大",
+          "seasons": 1,
+          "effects": {
+            "closeAreas": ["highway"],
+            "price": [{ "factor": 1.2 }],
+            "enemy": [
+              { "area": "forest", "challengeBonus": 4 },
+              { "id": "bandit", "hpFactor": 1.1 }
+            ]
+          }
+        },
+        {
+          "id": "deep",
+          "name": "深刻",
+          "seasons": 1,
+          "effects": {
+            "closeAreas": ["highway"],
+            "price": [{ "factor": 1.3 }],
+            "enemy": [{ "hpFactor": 1.15, "challengeBonus": 6 }],
+            "npc": [{ "id": "npc.sado", "kind": "leave" }],
+            "features": ["crisis.sample_mist.survey"]
+          }
+        }
+      ],
+      "finales": [
+        {
+          "id": "finale.patrol",
+          "name": "街道の奪還",
+          "atBoundary": 2,
+          "fields": ["might"],
+          "required": 8,
+          "margin": 0.1
+        },
+        {
+          "id": "finale.rite",
+          "name": "霧晴らしの儀式",
+          "atBoundary": 4,
+          "fields": ["knowledge", "bond"],
+          "required": 12,
+          "margin": 0.1
+        }
+      ],
+      "variables": [
+        {
+          "key": "source",
+          "options": ["lake", "barrow", "marsh"]
+        }
+      ],
+      "touchpoints": [
+        { "id": "tp.sample_mist.order", "kind": "order", "field": "craft", "fromStage": 1 },
+        { "id": "tp.sample_mist.defense", "kind": "defense", "field": "might", "fromStage": 2 }
+      ],
+      "narration": {
+        "stage": {
+          "omen": "crisis.sample_mist.omen",
+          "spread": "crisis.sample_mist.spread",
+          "deep": "crisis.sample_mist.deep"
+        },
+        "finale": {
+          "resolved": "crisis.sample_mist.resolved",
+          "ruin": "crisis.sample_mist.ruin"
+        }
+      }
+    }
+  ]
+}

@@ -79,7 +79,8 @@ export function succeedLife(
 ): { state: GameState; kind: HeirKind; legacy: Legacy } {
   const kind = heirKindOf(prev);
   const legacy = heirLegacyOf(prev, heirCfg);
-  const next = newGame(prev.seed, name, { ...cfg, legacy });
+  // 世界の危機は生ではなく世界のもの（W-01）：次代では進行をリセットせず継ぐ
+  const next = newGame(prev.seed, name, { ...cfg, legacy, carryoverCrisis: prev.crisis });
   return {
     kind,
     legacy,

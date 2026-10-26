@@ -104,7 +104,19 @@ export type ActionEvent =
       fee: number;
       recovered: { skill: string; amount: number }[];
       flag?: string;
-    };
+    }
+  // ---- 世界の危機（docs/08、W-01） ----
+  /** 世界の危機が抽選された（世界生成時。v15 以前のセーブでは次の季節の変わり目） */
+  | { type: "crisisDrawn" }
+  /** 危機の段階が進んだ（季節の変わり目。stage は型の stages の id） */
+  | { type: "crisisStageChanged"; stage: string }
+  /**
+   * 決着の場面が判定された（季節の変わり目。通知Aランク相当）。
+   * success が立てば決着、total はその時点の備えの合計（世界の備え＋主人公の寄与）
+   */
+  | { type: "crisisFinale"; id: string; success: boolean; total: number }
+  /** 危機の終幕（通知Aランク相当。解決か、重い危機では滅び） */
+  | { type: "crisisEnded"; outcome: "resolved" | "ruin" };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -146,6 +158,22 @@ export const counterSubscriber: Subscriber = (state, event) => {
     case "mentorTrained": {
       // 師匠ごとの稽古回数を数える（条件DSLから「師匠の元でN回稽古」を読める。T-27）
       const key = `mentor.session.${event.id}`;
+      return {
+        ...state,
+        counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
+      };
+    }
+    case "crisisFinale": {
+      // 決着の場面の成否を数える（条件DSLから「危機の場面を支えた/見届けた」を読める。W-01）
+      const key = event.success ? "crisis.finale.win" : "crisis.finale.loss";
+      return {
+        ...state,
+        counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
+      };
+    }
+    case "crisisEnded": {
+      // 危機の終幕を数える（世界の記録の根拠にもなる。W-01）
+      const key = `crisis.end.${event.outcome}`;
       return {
         ...state,
         counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },

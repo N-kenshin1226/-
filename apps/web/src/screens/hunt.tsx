@@ -14,6 +14,8 @@ import {
   beginCombat,
   bioLines,
   cfg,
+  crisisAreaClosed,
+  crisisEnemyChallengeBonus,
   endRun,
   enemyAreas,
   eventLines,
@@ -85,32 +87,39 @@ export function HuntScreen({
   state: GameState;
   setScreen: (s: Screen) => void;
 }) {
-  const entries: MenuEntry[] = enemyAreas.flatMap(([area, group]): MenuEntry[] => [
-    { kind: "header", text: t.display.huntAreas[area] ?? area },
-    ...group.flatMap((e): MenuEntry[] => {
-      const ue = uniqueOf(state, e);
-      return [
-        {
-          id: `enemy-${e.id}`,
-          label: e.name,
-          sub: `挑戦差 ${e.challenge}`,
-          onPick: () => setScreen({ name: "combat", enemy: e }),
-        },
-        // 強個体は特別な相手（T-44）：金色の一行として別立て
-        ...(ue !== null
-          ? [
-              {
-                id: `enemy-${e.id}-unique`,
-                label: `《${ue.name}》`,
-                sub: `強個体・挑戦差 ${ue.challenge}`,
-                gold: true,
-                onPick: () => setScreen({ name: "combat", enemy: ue }),
-              } satisfies Extract<MenuEntry, { id: string }>,
-            ]
-          : []),
-      ];
-    }),
-  ]);
+  const entries: MenuEntry[] = enemyAreas.flatMap(([area, group]): MenuEntry[] => {
+    const areaName = t.display.huntAreas[area] ?? area;
+    // 危機の段階で閉じられたエリアは「立ち入れない」とだけ出す（W-01。段階が変われば解放）
+    if (crisisAreaClosed(state, cfg.crisis, area)) {
+      return [{ kind: "header", text: tpl(t.text.huntAreaClosed, { name: areaName }) }];
+    }
+    return [
+      { kind: "header", text: areaName },
+      ...group.flatMap((e): MenuEntry[] => {
+        const ue = uniqueOf(state, e);
+        return [
+          {
+            id: `enemy-${e.id}`,
+            label: e.name,
+            sub: `挑戦差 ${e.challenge}`,
+            onPick: () => setScreen({ name: "combat", enemy: e }),
+          },
+          // 強個体は特別な相手（T-44）：金色の一行として別立て
+          ...(ue !== null
+            ? [
+                {
+                  id: `enemy-${e.id}-unique`,
+                  label: `《${ue.name}》`,
+                  sub: `強個体・挑戦差 ${ue.challenge}`,
+                  gold: true,
+                  onPick: () => setScreen({ name: "combat", enemy: ue }),
+                } satisfies Extract<MenuEntry, { id: string }>,
+              ]
+            : []),
+        ];
+      }),
+    ];
+  });
   return (
     <div data-testid="screen-hunt" className="scene">
       <WorldFrame
@@ -184,7 +193,10 @@ export function CombatScreen({
     act({
       type: "combat",
       enemyId: enemy.id,
-      difficulty: enemy.challenge,
+      // 危機由来の強化分も挑戦差に乗る（W-01。強い敵ほど経験になる）
+      difficulty:
+        enemy.challenge +
+        crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id, area: enemy.area }),
       won: r.won,
       fled: r.fled,
       died: r.died,
@@ -326,20 +338,23 @@ export function AbyssScreen({
     setCs(next);
     const r = combatResult(next);
     let cur = { ...run, kills: [...run.kills] };
+    // 危機由来の強化分を層の難易度に乗せる（深層の敵はエリアを持たないので id だけで見る）
+    const difficulty =
+      enemy.challenge + crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id });
     if (r.won) {
       // 最後の灯りで倒しても層は刻む（灯り切れはそのあとで閉じる）
-      cur = killFloor(cur, { enemyId: enemy.id, difficulty: enemy.challenge });
+      cur = killFloor(cur, { enemyId: enemy.id, difficulty });
     }
     cur = spendLight(cur);
     if (r.died) {
       cur = endRun(cur, "died");
-      setLoss({ enemyId: enemy.id, difficulty: enemy.challenge });
+      setLoss({ enemyId: enemy.id, difficulty });
     } else if (r.fled) {
       cur = endRun(cur, "fled");
-      setLoss({ enemyId: enemy.id, difficulty: enemy.challenge });
+      setLoss({ enemyId: enemy.id, difficulty });
     } else if (!r.won && cur.done) {
       // 灯り切れで未決着のまま中断した層
-      setLoss({ enemyId: enemy.id, difficulty: enemy.challenge });
+      setLoss({ enemyId: enemy.id, difficulty });
     }
     if (cur.done && cur.end !== null) push(endLine(cur.end));
     setRun(cur);

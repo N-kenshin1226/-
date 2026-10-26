@@ -162,6 +162,17 @@ export const cliTextSchema = z
         recordsRivalEpithet: z.string(),
         recordsRivalYou: z.string(),
         recordsRivalNote: z.string(),
+        /** 危機で閉鎖されたエリアの行（W-01。{name} にエリア表示名） */
+        huntAreaClosed: z.string(),
+        /**
+         * 世界の出来事（W-01、docs/08 §3）：危機の記録欄の見出し・空行・各記録行
+         * （{day}/{text} を差し込む）
+         */
+        recordsCrisis: z.string(),
+        recordsCrisisNone: z.string(),
+        recordsCrisisLine: z.string(),
+        /** 出来事ログの種別ごとの文（キーは CrisisLogEntry.kind。{name} を差し込める） */
+        crisisLog: z.record(z.string(), z.string()),
         /** 年代記（T-38）：周回をまたぐ人生の一覧。開始時の件数・見出し・各頁の行・追記の告知 */
         chronicleLives: z.string(),
         chronicleHeader: z.string(),

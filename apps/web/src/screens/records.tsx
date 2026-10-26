@@ -5,6 +5,7 @@ import {
   atomList,
   bioLines,
   cfg,
+  crisisRecordLines,
   eventLines,
   loadChronicle,
   narrator,
@@ -164,6 +165,18 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
               </div>
             ))}
             <div style={{ color: P.dim, fontSize: 13 }}>{t.text.recordsRivalNote}</div>
+          </div>
+          {/* 世界の出来事（W-01、docs/08）：危機の記録。淡々とした出来事の一覧だけ */}
+          <div data-testid="records-crisis">
+            {crisisRecordLines(state).map((l, i) =>
+              i === 0 ? (
+                <PaperHead key="head">{l}</PaperHead>
+              ) : (
+                <div key={i} style={{ color: P.sub }}>
+                  {l}
+                </div>
+              ),
+            )}
           </div>
           {/* 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る） */}
           <ChronicleView />

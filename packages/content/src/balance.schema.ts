@@ -455,6 +455,19 @@ export const balanceSchema = z
       .refine((r) => r.scoreMin <= r.scoreMax, {
         message: "rivals.scoreMin <= rivals.scoreMax が必要",
       }),
+    /**
+     * docs/08_world_crisis.md §3〜4、W-01：世界の危機。
+     * core/crisis の CrisisConfig に対応（危機の型・段階・決着の中身は crises/*.json が持ち、
+     * ここには世界の備えの積み方の係数だけを置く）
+     */
+    crisis: z
+      .object({
+        /** 勢力ごとの得意分野の既定数（勢力側の strongFields 指定が優先） */
+        strongFields: z.number().int().min(1).max(5),
+        /** 得意分野でない分野への1季節あたりの備え係数（0〜1） */
+        weakFieldFactor: z.number().min(0).max(1),
+      })
+      .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */
     sim: z
       .object({
