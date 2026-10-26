@@ -50,13 +50,15 @@ function productOf(
 }
 
 /**
- * 現在有効な効果の一覧：獲得済み称号＋認定済みの職業。
- * 打診中（pendingOffers）や未獲得の称号は効かない
+ * 現在有効な効果の一覧：獲得済み称号＋認定済みの職業（＋弟子入り中の師匠）。
+ * 打診中（pendingOffers）や未獲得の称号は効かない。
+ * 師匠は mentors に定義一覧を渡したときだけ、現在の師匠の effect が乗る（T-27）
  */
 export function activeEffects(
   state: GameState,
   titles: readonly EffectBearer[],
   professions: readonly EffectBearer[],
+  mentors?: readonly EffectBearer[],
 ): Effect[] {
   const owned = new Set(state.titles);
   const list: Effect[] = [];
@@ -66,6 +68,10 @@ export function activeEffects(
   if (state.society.profession !== null) {
     const p = professions.find((x) => x.id === state.society.profession);
     if (p?.effect !== undefined) list.push(p.effect);
+  }
+  if (mentors !== undefined && state.mentor !== null) {
+    const m = mentors.find((x) => x.id === state.mentor!.id);
+    if (m?.effect !== undefined) list.push(m.effect);
   }
   return list;
 }

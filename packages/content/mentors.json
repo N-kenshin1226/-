@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "mentors": [
+    {
+      "id": "mentor.garo",
+      "name": "ガロ",
+      "npc": "npc.garo",
+      "skill": "swordplay",
+      "condition": { "skill": "swordplay", "gte": 10 },
+      "fee": 15,
+      "potentialRecover": 5,
+      "effect": { "gainVs": { "swordplay": 1.3 } },
+      "flag": "taught.garo_draw",
+      "desc": "猟師。獣の気配と間合いの取り方を教える。弟子の間、剣術の伸びが上がる",
+      "note": "剣の師。入門には剣術10以上"
+    },
+    {
+      "id": "mentor.fenn",
+      "name": "フェン",
+      "npc": "npc.fenn",
+      "skill": "mining",
+      "condition": { "skill": "mining", "gte": 10 },
+      "fee": 12,
+      "potentialRecover": 5,
+      "effect": { "gainVs": { "mining": 1.3 } },
+      "flag": "taught.fenn_vein",
+      "desc": "採掘場のまとめ役。鉱脈の読み方と岩の逃がし方を教える。弟子の間、採掘の伸びが上がる",
+      "note": "採掘の師。入門には採掘10以上"
+    },
+    {
+      "id": "mentor.nola",
+      "name": "ノラ",
+      "npc": "npc.nola",
+      "skill": "eloquence",
+      "condition": { "skill": "eloquence", "gte": 15 },
+      "fee": 18,
+      "potentialRecover": 4,
+      "effect": { "gainVs": { "eloquence": 1.3 } },
+      "flag": "taught.nola_appraisal",
+      "desc": "行商人。駆け引きの間合いと目利きのコツを教える。弟子の間、弁舌の伸びが上がる",
+      "note": "弁舌の師。入門には弁舌15以上"
+    },
+    {
+      "id": "mentor.cum",
+      "name": "クム",
+      "npc": "npc.cum",
+      "skill": "smithing",
+      "condition": { "skill": "smithing", "gte": 15 },
+      "fee": 15,
+      "potentialRecover": 5,
+      "effect": { "gainVs": { "smithing": 1.3 } },
+      "flag": "taught.cum_heat",
+      "desc": "炭焼き。火色の読みと焼きの入れ方を教える。弟子の間、鍛冶の伸びが上がる",
+      "note": "鍛冶の師。入門には鍛冶15以上"
+    },
+    {
+      "id": "mentor.edel",
+      "name": "エデル",
+      "npc": "npc.edel",
+      "skill": "observation",
+      "condition": { "skill": "observation", "gte": 20 },
+      "fee": 20,
+      "potentialRecover": 4,
+      "effect": { "gainVs": { "observation": 1.35 } },
+      "flag": "taught.edel_vigil",
+      "desc": "礼拝堂の番人。静けさの中で気配を見る目を教える。弟子の間、観察の伸びが上がる",
+      "note": "観察の師。入門には観察20以上"
+    }
+  ]
+}

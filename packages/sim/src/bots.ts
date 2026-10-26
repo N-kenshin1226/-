@@ -2,6 +2,7 @@ import {
   activeEffects,
   computeGain,
   gainModifier,
+  isSkillUnlocked,
   recentRepeats,
   windFor,
   type Command,
@@ -55,7 +56,7 @@ export function expectedTrainGain(
       fatigue: g.player.fatigue,
       wind: windFor(g, "train", skill),
       modifiers: gainModifier(
-        activeEffects(g, cfg.titles, cfg.society.professions),
+        activeEffects(g, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
         "train",
         skill,
       ),
@@ -68,6 +69,18 @@ export function expectedTrainGain(
 /** 挑戦係数が最大になる難度（Δ=+10） */
 function bestDifficulty(g: GameState, skill: string): number {
   return Math.round(g.player.skills[skill]!.value + 10);
+}
+
+/**
+ * 解放済みスキルだけに絞る。派生スキル（iaijutsu 等）は flags が立つまで
+ * step 側で訓練が拒否されるため、ボットも候補から外す
+ */
+function unlockedSkills(g: GameState, ctx: BotCtx): string[] {
+  const locked = new Set(
+    (ctx.cfg.skillUnlocks ?? []).filter((u) => !isSkillUnlocked(g, u)).map((u) => u.id),
+  );
+  const ok = ctx.skillIds.filter((id) => !locked.has(id));
+  return ok.length > 0 ? ok : [...ctx.skillIds];
 }
 
 /** 今日すでに行動した回数 */
@@ -100,8 +113,8 @@ export const singleBot: Bot = {
     if (actionsToday(g) >= 4 && willOverload(g, ctx, 1)) {
       return { type: "sleep", inn: "good", dinner: true };
     }
-    // 主スキル = いま一番高いスキル（序盤は先頭）。難度は Δ=+10
-    const skill = [...ctx.skillIds].reduce((a, b) =>
+    // 主スキル = いま一番高い解放済みスキル（序盤は先頭）。難度は Δ=+10
+    const skill = unlockedSkills(g, ctx).reduce((a, b) =>
       g.player.skills[a]!.value >= g.player.skills[b]!.value ? a : b,
     );
     return { type: "train", skill, difficulty: bestDifficulty(g, skill) };
@@ -119,11 +132,13 @@ export const diverseBot: Bot = {
     if (actionsToday(g) >= 3 && willOverload(g, ctx, 1)) {
       return { type: "sleep", inn: "normal", dinner: true };
     }
-    // 追い風の対象を優先し、なければ最も久しいスキル
+    // 追い風の対象を優先し、なければ最も久しいスキル（どちらも解放済みに限る）
+    const unlocked = unlockedSkills(g, ctx);
     const windy = g.today.winds
       .filter((w) => w.direction === "tailwind" && w.target.kind === "skill")
-      .map((w) => w.target.id);
-    const pool = windy.length > 0 ? windy : [...ctx.skillIds];
+      .map((w) => w.target.id)
+      .filter((id) => unlocked.includes(id));
+    const pool = windy.length > 0 ? windy : unlocked;
     const skill = pool.reduce((a, b) =>
       g.player.skills[a]!.lastUsedDay <= g.player.skills[b]!.lastUsedDay ? a : b,
     );
@@ -137,7 +152,7 @@ export const randomBot: Bot = {
   id: "random",
   act(g, ctx) {
     if (ctx.rng.chance(0.15)) return { type: "wait" };
-    const skill = ctx.rng.pick(ctx.skillIds);
+    const skill = ctx.rng.pick(unlockedSkills(g, ctx));
     const difficulty = ctx.rng.int(1, 50);
     return { type: "train", skill, difficulty };
   },
@@ -152,7 +167,7 @@ export const randomBot: Bot = {
 export const simpleBot: Bot = {
   id: "simple",
   act(g, ctx) {
-    const skill = ctx.skillIds[0]!;
+    const skill = unlockedSkills(g, ctx)[0]!;
     const difficulty = Math.max(1, Math.floor(g.player.skills[skill]!.value));
     return { type: "train", skill, difficulty };
   },
@@ -185,19 +200,20 @@ export function makeSeekerBot(titles: readonly { id: string; condition: Cond }[]
       if (actionsToday(g) >= 4 && willOverload(g, ctx, 1)) {
         return { type: "sleep", inn: "good", dinner: true };
       }
-      // 未獲得称号の条件から必要スキルを集め、最も足りないものを伸ばす
+      // 未獲得称号の条件から必要スキルを集め、最も足りないものを伸ばす（解放済みに限る）
+      const unlocked = unlockedSkills(g, ctx);
       const needs: { id: string; min: number }[] = [];
       for (const t of titles) {
         if (g.titles.includes(t.id)) continue;
-        needs.push(...requiredSkills(t.condition));
+        needs.push(...requiredSkills(t.condition).filter((r) => unlocked.includes(r.id)));
       }
       const target =
         needs.length > 0
           ? needs.reduce((a, b) =>
               g.player.skills[a.id]!.value / a.min <= g.player.skills[b.id]!.value / b.min ? a : b,
             )
-          : { id: ctx.skillIds[0]!, min: 100 };
-      const skill = g.player.skills[target.id] ? target.id : ctx.skillIds[0]!;
+          : { id: unlocked[0]!, min: 100 };
+      const skill = g.player.skills[target.id] ? target.id : unlocked[0]!;
       return { type: "train", skill, difficulty: bestDifficulty(g, skill) };
     },
     endDay: () => ({ type: "sleep", inn: "good", dinner: true }),

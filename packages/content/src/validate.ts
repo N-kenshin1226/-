@@ -17,6 +17,7 @@ import { narrationSchema } from "./narration.schema.js";
 import { voicesFileSchema } from "./voices.schema.js";
 import { originsFileSchema } from "./origins.schema.js";
 import { booksFileSchema } from "./books.schema.js";
+import { mentorsFileSchema } from "./mentors.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -56,6 +57,7 @@ check("text/narration.json", narrationSchema);
 check("voices.json", voicesFileSchema);
 check("origins.json", originsFileSchema);
 check("books.json", booksFileSchema);
+check("mentors.json", mentorsFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ
@@ -165,6 +167,72 @@ try {
   }
 } catch (e) {
   console.error(`✗ 書物のキー突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 師匠のキー突き合わせ：skill は skills.json、npc は canon.json figures と
+// voices.json npcs の両方に存在すること（口調差分を出せること）。
+// effect のキー規則は書物と同じ（gainVs=スキル/敵/行動kind、damageVs=敵、priceVs=スキル）
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const enemiesRaw = JSON.parse(readFileSync(join(root, "enemies.json"), "utf8")) as {
+    enemies?: { id?: string }[];
+  };
+  const canonRaw = JSON.parse(readFileSync(join(root, "lore/canon.json"), "utf8")) as {
+    figures?: { id?: string }[];
+  };
+  const voicesRaw = JSON.parse(readFileSync(join(root, "voices.json"), "utf8")) as {
+    npcs?: { id?: string }[];
+  };
+  const mentorsRaw = JSON.parse(readFileSync(join(root, "mentors.json"), "utf8")) as {
+    mentors?: {
+      id?: string;
+      skill?: string;
+      npc?: string;
+      effect?: {
+        gainVs?: Record<string, unknown>;
+        damageVs?: Record<string, unknown>;
+        priceVs?: Record<string, unknown>;
+      };
+    }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const enemyIds = new Set((enemiesRaw.enemies ?? []).map((e) => e.id));
+  const figureIds = new Set((canonRaw.figures ?? []).map((f) => f.id));
+  const voiceIds = new Set((voicesRaw.npcs ?? []).map((n) => n.id));
+  const kindIds = new Set(["train", "work", "combat"]);
+  const bad: string[] = [];
+  for (const m of mentorsRaw.mentors ?? []) {
+    const label = `mentors.json ${m.id ?? "?"}`;
+    if (m.skill !== undefined && !skillIds.has(m.skill)) {
+      bad.push(`${label}: 担当スキル ${m.skill}`);
+    }
+    if (m.npc !== undefined) {
+      if (!figureIds.has(m.npc)) bad.push(`${label}: NPC ${m.npc} が canon.figures に無い`);
+      if (!voiceIds.has(m.npc)) bad.push(`${label}: NPC ${m.npc} が voices.npcs に無い`);
+    }
+    for (const key of Object.keys(m.effect?.gainVs ?? {})) {
+      if (!skillIds.has(key) && !enemyIds.has(key) && !kindIds.has(key)) {
+        bad.push(`${label}: gainVs の対象 ${key}`);
+      }
+    }
+    for (const key of Object.keys(m.effect?.damageVs ?? {})) {
+      if (!enemyIds.has(key)) bad.push(`${label}: damageVs の敵 ${key}`);
+    }
+    for (const key of Object.keys(m.effect?.priceVs ?? {})) {
+      if (!skillIds.has(key)) bad.push(`${label}: priceVs の仕事 ${key}`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 師匠のキーが未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 師匠のキー（mentors ↔ skills/canon/voices/enemies）");
+  }
+} catch (e) {
+  console.error(`✗ 師匠のキー突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

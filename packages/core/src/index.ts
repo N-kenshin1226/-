@@ -113,3 +113,11 @@ export { isSkillUnlocked, unlockFlag, unlockSkills } from "./skills/index.js";
 export type { SkillUnlockDef } from "./skills/index.js";
 export { activeBookEffects, bookDaysLeft, buyBook, hasReadBook, readBook } from "./books/index.js";
 export type { BookDefLike, BooksConfig, BuyBookResult, ReadBookResult } from "./books/index.js";
+export {
+  apprentice,
+  canApprentice,
+  currentMentor,
+  leaveMentor,
+  mentorSession,
+} from "./mentors/index.js";
+export type { MentorDefLike, MentorsConfig, MentorSessionResult } from "./mentors/index.js";

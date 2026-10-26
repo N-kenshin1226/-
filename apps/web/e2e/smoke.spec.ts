@@ -53,3 +53,14 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
   await page.getByTestId("inn-cheap").click();
   await expect(page.getByTestId("status")).toContainText("3日");
 });
+
+test("師匠画面が開ける（T-27。初期状態では入門条件未達）", async ({ page }) => {
+  await page.goto("/?seed=e2e");
+  await page.getByTestId("origin-wanderer").click();
+  await page.getByTestId("menu-mentor").click();
+  await expect(page.getByTestId("screen-mentor")).toBeVisible();
+  await expect(page.getByTestId("mentor-mentor.garo")).toContainText("ガロ");
+  await expect(page.getByTestId("screen-mentor")).toContainText("まだ見込みなし");
+  await page.screenshot({ path: "e2e/artifacts/trace-mentor.png", fullPage: true });
+  await page.getByRole("button", { name: "戻る" }).click();
+});

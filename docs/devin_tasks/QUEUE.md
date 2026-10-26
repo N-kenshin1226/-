@@ -40,7 +40,7 @@
 | T-24 | [T-24_rust.md](T-24_rust.md) | T-06 | done | 錆：猶予14日→0.1/日低下・床peak×0.7・再習得3倍・脳容量 |
 | T-25 | [T-25_potential.md](T-25_potential.md) | T-08 | done | 素質の回復と出自（origins.json・potentialCap・セーブv10） |
 | T-26 | [T-26_books.md](T-26_books.md) | T-04 | done | 書物（効果・読む行動・入手経路） |
-| T-27 | [T-27_mentors.md](T-27_mentors.md) | T-19, T-33 | pending | 師匠（弟子入り・M項/素質/ヒント効果） |
+| T-27 | [T-27_mentors.md](T-27_mentors.md) | T-19, T-33 | done | 師匠（弟子入り・M項/素質/ヒント効果） |
 | T-28 | [T-28_derived_skills.md](T-28_derived_skills.md) | T-10 | done | 派生スキル4種（unlock条件DSL・flags解放・skillUnlocked） |
 | T-29 | [T-29_skins.md](T-29_skins.md) | T-12 | done | ミニゲーム皮追加：演奏（タイミング） |
 | T-30 | [T-29_skins.md](T-29_skins.md) | T-12 | done | タイミング皮拡張：釣り |
@@ -48,4 +48,11 @@
 | T-32 | [T-32_newspaper.md](T-32_newspaper.md) | T-19c | done | 新聞強化（作品・死亡・噂・立場差分） |
 | T-33 | [T-33_voices.md](T-33_voices.md) | T-19b | done | voices.json（NPC3人×立場の口調差分） |
 | T-34 | [T-34_life_goals.md](T-34_life_goals.md) | T-19 | done | 人生目標15件（society.offerカウンタ・simReachable・sim到達性ゲート） |
-| T-35 | [T-35_effects.md](T-35_effects.md) | T-19, T-22 | pending | 称号・職業の効果をgain/戦闘へ接続 |
+| T-35 | [T-35_effects.md](T-35_effects.md) | T-19, T-22 | done | 称号・職業の効果をgain/報酬/与ダメージへ接続（effect語彙） |
+| T-36 | [T-36_aging.md](T-36_aging.md) | T-03 | pending | 寿命・加齢（年齢帯で伸び変化・老いの兆候・老衰死） |
+| T-37 | [T-37_biography.md](T-37_biography.md) | T-19c | pending | 伝記の自動生成（biography リクエスト種別） |
+| T-38 | [T-38_chronicle.md](T-38_chronicle.md) | T-04 | pending | 年代記（別領域・別バージョンの蓄積） |
+| T-39 | [T-39_legacy.md](T-39_legacy.md) | T-25 | pending | 継承3項目（素質補正・称号・遺物）→newGame |
+| T-40 | [T-40_reincarnation.md](T-40_reincarnation.md) | T-36〜T-39 | pending | 引退・転生フロー（伝記→年代記→継承→新シード） |
+| T-41 | [T-41_pinnacle.md](T-41_pinnacle.md) | T-19 | pending | 頂点ルート2本（条件鎖＋エンディング） |
+| T-42 | [T-42_legend.md](T-42_legend.md) | T-38, T-40 | pending | 前世の伝説最小版（年代記に名・二つ名） |

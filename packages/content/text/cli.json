@@ -65,8 +65,8 @@
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
-    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  7) 見聞録を読む  8) 街の記録  9) 書店  q) 中断する",
-    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  4) 街の記録  5) 書店  q) 中断する",
+    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  7) 見聞録を読む  8) 街の記録  9) 書店  10) 師匠  q) 中断する",
+    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  4) 街の記録  5) 書店  6) 師匠  q) 中断する",
     "mustSleep": "――身体はもう動きません。今日はここまでです。",
     "promptChoice": "> ",
     "skillPick": "どの技能を鍛えますか",
@@ -180,6 +180,20 @@
     "bookRecovered": "――《{skill}》の素質が戻った（+{amount}）。",
     "bookEffectDays": "――この書物の教えはあと {days} 日、身体に残る。",
     "bookAlreadyRead": "――この書物はすでに読み終えている。",
-    "bookFlag": "――新たな知識を得た。"
+    "bookFlag": "――新たな知識を得た。",
+    "mentorHeaderCurrent": "── 師匠：《{name}》（《{skill}》の師・{days}日目の弟子）",
+    "mentorHeaderNone": "── 師匠はいない",
+    "mentorListLine": "  {i}) {name}（《{skill}》・稽古 {fee}G）{mark}",
+    "mentorDescLine": "      ― {desc}",
+    "mentorMarkOk": "（弟子入りできる）",
+    "mentorMarkNg": "（まだ見込みなし）",
+    "mentorMenuTrain": "  1) 稽古をつけてもらう（{fee}G・1行動）",
+    "mentorMenuLeave": "  2) 弟子をやめる",
+    "mentorMenuBack": "  3) 戻る",
+    "mentorApprenticed": "――{name} の門下に入った。",
+    "mentorLocked": "――まだ弟子にしてもらえない。見込みがないと言われた。",
+    "mentorLeft": "――{name} の門を出た。",
+    "mentorTrainResult": "《{name}》の稽古（難度 {difficulty}・礼金 {fee}G）―― 経験 +{amount}",
+    "mentorSecret": "――秘伝を教わった。"
   }
 }

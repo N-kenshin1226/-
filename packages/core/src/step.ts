@@ -16,6 +16,13 @@ import type { CombatConfig } from "./combat/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
 import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
 import { readAtom, type LoreConfig } from "./lore/index.js";
+import {
+  apprentice,
+  currentMentor,
+  leaveMentor,
+  mentorSession,
+  type MentorsConfig,
+} from "./mentors/index.js";
 import { unlockSkills } from "./skills/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
@@ -54,6 +61,8 @@ export interface StepConfig {
   skillUnlocks?: readonly { id: string; condition: Cond }[];
   /** 書物（02 §8、T-26。content/books.json と素質上限） */
   books?: BooksConfig;
+  /** 師匠（02 §8、T-27。content/mentors.json と素質上限） */
+  mentors?: MentorsConfig;
   /** 起床ログなどに出すスキル表示名（省略時はID） */
   skillNames?: Record<string, string>;
 }
@@ -106,7 +115,17 @@ export type Command =
   /** 書物を買う（02 §8、T-26。行動は消費しない） */
   | { type: "buyBook"; id: string }
   /** 所持する書物を読む（行動を1回消費。素質回復・期間効果・知識フラグ） */
-  | { type: "readBook"; id: string };
+  | { type: "readBook"; id: string }
+  /** 師匠に弟子入りする（02 §8、T-27。条件達成で認められる。行動は消費しない） */
+  | { type: "apprentice"; id: string }
+  /** 師匠の門を出る（行動は消費しない） */
+  | { type: "leaveMentor" }
+  /**
+   * 師匠の稽古を受ける（行動を1回消費＋礼金）。担当スキルの経験は train と同じ式で、
+   * M項には弟子期間の師匠効果が乗る。稽古ごとに担当スキルの素質が回復し、
+   * 初回は秘伝フラグが立つ
+   */
+  | { type: "trainWithMentor"; difficulty: number };
 
 export interface StepResult {
   state: GameState;
@@ -203,6 +222,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     case "train": {
       const skill = next.player.skills[command.skill];
       if (!skill) throw new Error(`train: 未知のスキル ${command.skill}`);
+      // 派生スキルは解放済み（flags）でないと鍛えられない（T-28）
+      const unlockCond = cfg.skillUnlocks?.find((u) => u.id === command.skill)?.condition;
+      if (unlockCond && next.flags[`skill.unlock.${command.skill}`] !== true) {
+        throw new Error(`train: 未解放のスキル ${command.skill}`);
+      }
 
       const repeats = recentRepeats(
         next.actionLog,
@@ -220,10 +244,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           potential: skill.potential,
           fatigue: next.player.fatigue,
           wind: windFor(next, "train", command.skill),
-          // M 項：称号・認定職に加えて、読了した書物の期間効果（T-26）も積に入る
+          // M 項：称号・認定職・師匠（T-27）に加えて、読了した書物の期間効果（T-26）も積に入る
           modifiers: gainModifier(
             [
-              ...activeEffects(next, cfg.titles, cfg.society.professions),
+              ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
               ...activeBookEffects(next, cfg.books),
             ],
             "train",
@@ -264,9 +288,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const skill = next.player.skills[command.kind];
       const skillValue = skill?.value ?? 0;
       const repeats = recentRepeats(next.actionLog, "work", command.kind, cfg.gain.noveltyWindow);
-      // 称号・認定職・読了書物の効果（T-35・T-26）：M 項の修正と報酬の値段変化
+      // 称号・認定職・師匠・読了書物の効果（T-35・T-27・T-26）：M 項の修正と報酬の値段変化
       const effects = [
-        ...activeEffects(next, cfg.titles, cfg.society.professions),
+        ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
         ...activeBookEffects(next, cfg.books),
       ];
       const { amount } = computeGain(
@@ -324,7 +348,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         cfg.gain.noveltyWindow,
       );
       const effects = [
-        ...activeEffects(next, cfg.titles, cfg.society.professions),
+        ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
         ...activeBookEffects(next, cfg.books),
       ];
       for (const skillId of ["swordplay", "evasion"] as const) {
@@ -456,6 +480,86 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         id: command.id,
         recovered: res.recovered,
         ...(res.flag !== undefined ? { flag: res.flag } : {}),
+      });
+      break;
+    }
+    case "apprentice": {
+      // 弟子入り：行動は消費しない（会話の一瞬。認定の受諾と同じ扱い）
+      const res = apprentice(next, command.id, cfg.mentors, cfg.time);
+      if (!res.ok) break;
+      next = res.state;
+      events.push({ type: "mentorApprenticed", id: command.id });
+      break;
+    }
+    case "leaveMentor": {
+      const res = leaveMentor(next);
+      if (!res.ok) break;
+      next = res.state;
+      events.push({ type: "mentorLeft", id: res.id! });
+      break;
+    }
+    case "trainWithMentor": {
+      // 師匠の稽古（1行動＋礼金）。師匠がいない・礼金不足・行動残なし・
+      // 担当スキル不明は何も起きない（readBook と同じく時間も進めない）
+      const mentor = currentMentor(next, cfg.mentors);
+      if (mentor === null) break;
+      if (!canAct(next.time, cfg.time)) break;
+      if (next.player.money < mentor.fee) break;
+      const skill = next.player.skills[mentor.skill];
+      if (!skill) break;
+
+      const repeats = recentRepeats(
+        next.actionLog,
+        "train",
+        mentor.skill,
+        cfg.gain.noveltyWindow,
+        String(command.difficulty),
+      );
+      const { amount } = computeGain(
+        {
+          kind: "train",
+          skill: skill.value,
+          delta: command.difficulty - skill.value,
+          repeats,
+          potential: skill.potential,
+          fatigue: next.player.fatigue,
+          wind: windFor(next, "train", mentor.skill),
+          // M 項：称号・認定職・師匠の弟子期間効果・読了書物（T-35・T-27・T-26）
+          modifiers: gainModifier(
+            [
+              ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
+              ...activeBookEffects(next, cfg.books),
+            ],
+            "train",
+            mentor.skill,
+          ),
+          isTraining: true,
+        },
+        cfg.gain,
+      );
+      skill.pending += amount;
+      skill.lastUsedDay = next.time.day;
+
+      // 礼金と素質回復・秘伝フラグ（gain の後に清算する）
+      const ses = mentorSession(next, cfg.mentors);
+      next = ses.state;
+
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "train", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "train",
+        day: next.time.day,
+        target: mentor.skill,
+        variant: String(command.difficulty),
+      });
+      events.push({ type: "gainApplied", skill: mentor.skill, amount });
+      events.push({
+        type: "mentorTrained",
+        id: mentor.id,
+        fee: mentor.fee,
+        recovered: ses.recovered,
+        ...(ses.flag !== undefined ? { flag: ses.flag } : {}),
       });
       break;
     }

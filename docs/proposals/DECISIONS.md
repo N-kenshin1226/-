@@ -64,3 +64,12 @@
 - 期間効果の起算は `books.read[].day`（読んだ日）から派生し、別枠の効果リストは持たない（activeBookEffects で都度計算。GameState を小さく保つ）
 - 読了は初回のみ（再読は何も起きない）。所持は一度買えば永続
 - セーブ v10→v11 で `books{owned,read}` を追加（旧セーブは空の書物状態で移行）
+
+### D-28: 師匠は同時1人・弟子入りは専用コマンド・効果は2層（T-27）
+- 師匠は同時に**1人だけ**。乗り換えるには `leaveMentor` で門を出てから改めて弟子入りする（複数師匠の積み上げは M項上限 ×2.5 を容易に食い尽くすため、制約にした）
+- 弟子入りは社会システムの打診（pendingOffers）とは**別枠組み**の `apprentice` コマンド。打診は「条件を満たすと向こうから来る受動的通知」、師匠は「条件を満たすNPCに自分から頼む能動的行動」なので、一覧表示＋ `canApprentice` 評価で十分と判断
+- 効果は書物（D-27）と同じ2層構え：`effect`（T-35語彙）は弟子期間中ずっと有効（`activeEffects` の第4引数で接続）、稽古の `potentialRecover` は稽古ごとに即時適用（上限は potentialCap/potentialMax、書物・休養日と同じ規則）
+- 素質回復は「週/定期」と「稽古ごと」のうち**稽古ごと**を選択：02 の「お金と日数がかかる」に合わせ、1行動＋礼金の `trainWithMentor` コマンドで回復する。稽古の gain は train と同じ式（挑戦係数の上限 0.6＝安全な練習）で、M項には弟子期間効果が乗る。actionLog の kind は "train"（新規性・追い風・`action.train` カウンタを共有しつつ、稽古回数は `mentor.session.<id>` で別途数える）
+- `flag`（秘伝）は初回の稽古で永続的に立つ。ミニゲームのヒント解放の受け皿とし、エンジンへの配線は今後（条件DSLの flag で先に読める）
+- `GameState.mentor: {id, sinceDay} | null` を追加（弟子期間の表示用に sinceDay だけ持つ）。セーブ v11→v12 で追加（旧セーブは師匠なし）
+- 師匠NPCは canon figures の既存人物に割当（ガロ/フェン/ノラ/クム/エデル）＋ voices.json に口調差分を追加。`mentor.npc` ↔ canon.figures / voices.npcs の両方を validate で突合する

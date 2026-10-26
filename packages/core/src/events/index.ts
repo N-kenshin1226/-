@@ -52,12 +52,27 @@ export type ActionEvent =
    * 書物を読み終えた（T-26。行動1回消費）。
    * recovered は実際に回復した素質（上限で削られた分を除く）。flag は今回立った知識フラグ
    */
-  | { type: "bookRead"; id: string; recovered: { skill: string; amount: number }[]; flag?: string };
+  | { type: "bookRead"; id: string; recovered: { skill: string; amount: number }[]; flag?: string }
+  /** 師匠に弟子入りした（T-27。行動は消費しない） */
+  | { type: "mentorApprenticed"; id: string }
+  /** 師匠の門を出た */
+  | { type: "mentorLeft"; id: string }
+  /**
+   * 師匠の稽古を受けた（行動1回消費＋礼金 fee）。
+   * recovered は実際に回復した素質（上限で削られた分を除く）。flag は今回立った秘伝フラグ
+   */
+  | {
+      type: "mentorTrained";
+      id: string;
+      fee: number;
+      recovered: { skill: string; amount: number }[];
+      flag?: string;
+    };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
 
-/** カウンタを数える購読者（`action.<kind>`、`action.total`、`days.slept`、`title.total`、`society.offer.<id>`） */
+/** カウンタを数える購読者（`action.<kind>`、`action.total`、`days.slept`、`title.total`、`society.offer.<id>`、`mentor.session.<id>`） */
 export const counterSubscriber: Subscriber = (state, event) => {
   switch (event.type) {
     case "actionPerformed": {
@@ -86,6 +101,14 @@ export const counterSubscriber: Subscriber = (state, event) => {
     case "offerAccepted": {
       // 認定の受諾を数える（立場・職業への到達を条件DSLから読めるようにする。T-34）
       const key = `society.offer.${event.id}`;
+      return {
+        ...state,
+        counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
+      };
+    }
+    case "mentorTrained": {
+      // 師匠ごとの稽古回数を数える（条件DSLから「師匠の元でN回稽古」を読める。T-27）
+      const key = `mentor.session.${event.id}`;
       return {
         ...state,
         counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },

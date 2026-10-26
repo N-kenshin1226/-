@@ -49,6 +49,7 @@ import {
   cliText,
   enemies,
   enemiesByArea,
+  mentors,
   narration,
   orders,
   origins,
@@ -101,6 +102,7 @@ export const cfg: StepConfig = {
   skillNames: Object.fromEntries(skills.skills.map((s) => [s.id, s.name])),
   skillUnlocks: skills.skills.flatMap((s) => (s.unlock ? [{ id: s.id, condition: s.unlock }] : [])),
   books: { books: books.books, potentialMax: balance.body.potentialMax },
+  mentors: { mentors: mentors.mentors, potentialMax: balance.body.potentialMax },
 };
 
 export const skillList = skills.skills;
@@ -111,6 +113,7 @@ export const enemyAreas = enemiesByArea(enemies);
 export const atomList = atoms;
 export const societyDefs = society;
 export const bookList = books.books;
+export const mentorList = mentors.mentors;
 export const narrator = new TemplateProvider(narration);
 
 const SAVE_KEY = "trace.save.v1";
@@ -234,6 +237,27 @@ export function eventLines(events: ActionEvent[]): string[] {
           lines.push(tpl(t.text.bookEffectDays, { days: def.durationDays }));
         }
         if (lines.length === 0) lines.push(tpl(t.text.bookReadDone, { name }));
+        return lines;
+      }
+      case "mentorApprenticed": {
+        const name = mentors.mentors.find((m) => m.id === e.id)?.name ?? e.id;
+        return [tpl(t.text.mentorApprenticed, { name })];
+      }
+      case "mentorLeft": {
+        const name = mentors.mentors.find((m) => m.id === e.id)?.name ?? e.id;
+        return [tpl(t.text.mentorLeft, { name })];
+      }
+      case "mentorTrained": {
+        const lines: string[] = [];
+        for (const r of e.recovered) {
+          lines.push(
+            tpl(t.text.bookRecovered, {
+              skill: skills.skills.find((s) => s.id === r.skill)?.name ?? r.skill,
+              amount: r.amount,
+            }),
+          );
+        }
+        if (e.flag !== undefined) lines.push(t.text.mentorSecret);
         return lines;
       }
       case "tierUp":
@@ -479,10 +503,10 @@ function combatCtx(state: GameState): MiniGameCtx {
 }
 
 export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
-  // 称号・認定職・読了書物の与ダメージ効果（T-35・T-26。例《百狼斬り》の damageVs.wolf）
+  // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
   const fx = damageFactor(
     [
-      ...activeEffects(state, cfg.titles, cfg.society.professions),
+      ...activeEffects(state, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
       ...activeBookEffects(state, cfg.books),
     ],
     enemy.id,

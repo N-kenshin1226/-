@@ -89,5 +89,6 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     },
     lore: { read: [], facts: [], connections: [] },
     books: { owned: [], read: [] },
+    mentor: null,
   };
 }

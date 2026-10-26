@@ -57,7 +57,7 @@ import {
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
 import { innPickLines, skillPickLines, statusLines, tpl, wakeBlock } from "./render.js";
-import { booksMenu, loreMenu, recordsMenu, societyMenu } from "./menus.js";
+import { booksMenu, loreMenu, mentorMenu, recordsMenu, societyMenu } from "./menus.js";
 import { specialOrderOf, type SpecialOrder } from "./town.js";
 
 export interface PlayCliOptions {
@@ -455,7 +455,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       return state;
     }
 
-    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定, 4=街の記録, 5=書店）
+    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定, 4=街の記録, 5=書店, 6=師匠）
     const pick = canAction
       ? c
       : c === "1"
@@ -468,7 +468,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
               ? "8"
               : c === "5"
                 ? "9"
-                : c;
+                : c === "6"
+                  ? "10"
+                  : c;
 
     if (pick === "1") {
       // ---- 訓練（派生スキルは解放済みだけ出す）----
@@ -628,10 +630,10 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         skill: 0,
         seed: `${state.seed}-combat-${state.counters["action.combat"] ?? 0}`,
       };
-      // 称号・認定職・読了書物の与ダメージ効果（T-35・T-26。例《百狼斬り》の damageVs.wolf）
+      // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
       const atkFactor = damageFactor(
         [
-          ...activeEffects(state, cfg.titles, cfg.society.professions),
+          ...activeEffects(state, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
           ...activeBookEffects(state, cfg.books),
         ],
         enemy.id,
@@ -760,6 +762,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     } else if (pick === "9") {
       // ---- 書店（購入は行動を消費しない。読むには1行動） → menus.ts ----
       const r = await booksMenu(state, menuCtx);
+      if (r === null) return state;
+      state = r;
+    } else if (pick === "10") {
+      // ---- 師匠（弟子入りは行動を消費しない。稽古は1行動＋礼金） → menus.ts ----
+      const r = await mentorMenu(state, menuCtx);
       if (r === null) return state;
       state = r;
     } else {

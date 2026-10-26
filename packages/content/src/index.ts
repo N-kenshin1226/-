@@ -41,3 +41,6 @@ export type { Origin, OriginsFile } from "./origins.schema.js";
 export { books } from "./books.js";
 export { bookSchema, booksFileSchema } from "./books.schema.js";
 export type { Book, BooksFile } from "./books.schema.js";
+export { mentors } from "./mentors.js";
+export { mentorSchema, mentorsFileSchema } from "./mentors.schema.js";
+export type { Mentor, MentorsFile } from "./mentors.schema.js";

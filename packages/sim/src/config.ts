@@ -4,6 +4,7 @@ import {
   books,
   canon,
   cliText,
+  mentors,
   skills,
   society,
   tailwinds,
@@ -48,6 +49,7 @@ export function stepConfig(): StepConfig {
       s.unlock ? [{ id: s.id, condition: s.unlock }] : [],
     ),
     books: { books: books.books, potentialMax: balance.body.potentialMax },
+    mentors: { mentors: mentors.mentors, potentialMax: balance.body.potentialMax },
     lore: {
       atoms: atoms.map((a) => ({ id: a.id, reveals: a.reveals, unlock: a.unlock })),
       connections: canon.events

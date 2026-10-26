@@ -157,4 +157,14 @@ export interface GameState {
     /** 読了済みの書物。day は読んだ日（期間効果の起算日） */
     read: { id: string; day: number }[];
   };
+  /**
+   * 師匠（02 §8、T-27）。弟子入り中の師匠は1人だけ。
+   * 効果（effect 語彙）は弟子期間中ずっと有効で、稽古ごとに素質が回復する（v12〜）
+   */
+  mentor: {
+    /** mentors.json の id */
+    id: string;
+    /** 弟子入りした日（期間の表示用） */
+    sinceDay: number;
+  } | null;
 }

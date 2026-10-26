@@ -32,8 +32,11 @@ const cfg: StepConfig = {
   time: TIME,
   actionLogMax: 10,
   gain: {
-    base: {},
-    challengePoints: [],
+    base: { train: 1.0 },
+    challengePoints: [
+      [-999, 1.0],
+      [999, 1.0],
+    ],
     challengeTrainCap: 1,
     noveltyK: 0,
     noveltyWindow: 1,
@@ -145,6 +148,17 @@ describe("派生スキル", () => {
     const res = step(s, { type: "wait" }, cfg);
     expect(res.events.some((e) => e.type === "skillUnlocked" && e.id === "iaijutsu")).toBe(true);
     expect(res.state.flags[unlockFlag("iaijutsu")]).toBe(true);
+  });
+
+  it("未解放の派生スキルは step でも鍛えられない", () => {
+    const s = game();
+    expect(() => step(s, { type: "train", skill: "iaijutsu", difficulty: 10 }, cfg)).toThrow(
+      "未解放",
+    );
+    // 解放後なら鍛えられる
+    const u = unlockSkills(setSkill(setSkill(s, "swordplay", 30), "observation", 20), defs, TIME);
+    const r = step(u.state, { type: "train", skill: "iaijutsu", difficulty: 10 }, cfg);
+    expect(r.state.player.skills["iaijutsu"]!.pending).toBeGreaterThan(0);
   });
 });
 

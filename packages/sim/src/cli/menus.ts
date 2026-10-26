@@ -1,13 +1,14 @@
 import {
   bookDaysLeft,
   canAct,
+  canApprentice,
   step,
   suggestGoals,
   type ActionEvent,
   type GameState,
   type StepConfig,
 } from "@trace/core";
-import { atoms, books, skills, society, titles, type CliText } from "@trace/content";
+import { atoms, books, mentors, skills, society, titles, type CliText } from "@trace/content";
 import { tpl } from "./render.js";
 
 /**
@@ -182,6 +183,114 @@ export async function booksMenu(state: GameState, ctx: MenuCtx): Promise<GameSta
   if (ev?.flag !== undefined) out(t.text.bookFlag);
   const daysLeft = bookDaysLeft(res.state, b);
   if (daysLeft > 0) out(tpl(t.text.bookEffectDays, { days: daysLeft }));
+  outAll(applyTitles(res.events));
+  save(res.state);
+  return res.state;
+}
+
+/** 「10) 師匠」：弟子入り・稽古・門を出る（T-27。弟子入りは行動を消費せず、稽古は1行動＋礼金） */
+export async function mentorMenu(state: GameState, ctx: MenuCtx): Promise<GameState | null> {
+  const { out, outAll, ask, cfg, t, save, applyTitles } = ctx;
+  const skillName = (id: string) => skills.skills.find((s) => s.id === id)?.name ?? id;
+
+  const current = state.mentor
+    ? (mentors.mentors.find((m) => m.id === state.mentor!.id) ?? null)
+    : null;
+
+  if (current !== null) {
+    // 師匠がいる：稽古か別れを選ぶ
+    out(
+      tpl(t.text.mentorHeaderCurrent, {
+        name: current.name,
+        skill: skillName(current.skill),
+        days: state.time.day - state.mentor!.sinceDay + 1,
+      }),
+    );
+    out(tpl(t.text.mentorDescLine, { desc: current.desc }));
+    out(tpl(t.text.mentorMenuTrain, { fee: current.fee }));
+    out(t.text.mentorMenuLeave);
+    out(t.text.mentorMenuBack);
+    const a = await ask(t.text.promptChoice);
+    if (a === null) return null;
+    const c = a.trim();
+    if (c === "1") {
+      // 稽古：1行動＋礼金（難度は訓練と同じく現在値+10を推奨）
+      if (!canAct(state.time, cfg.time)) {
+        out(t.text.mustSleep);
+        return state;
+      }
+      if (state.player.money < current.fee) {
+        out(t.text.bookTooPoor);
+        return state;
+      }
+      const recommended = Math.round(state.player.skills[current.skill]?.value ?? 0) + 10;
+      const di = await ask(tpl(t.text.difficultyPrompt, { recommended }));
+      if (di === null) return null;
+      const difficulty = di.trim() === "" ? recommended : Number.parseInt(di.trim(), 10);
+      if (!Number.isFinite(difficulty) || difficulty < 0) {
+        out(t.text.invalidInput);
+        return state;
+      }
+      const res = step(state, { type: "trainWithMentor", difficulty }, cfg);
+      const gain = res.events.find(
+        (e): e is Extract<ActionEvent, { type: "gainApplied" }> => e.type === "gainApplied",
+      );
+      out(
+        tpl(t.text.mentorTrainResult, {
+          name: skillName(current.skill),
+          difficulty,
+          fee: current.fee,
+          amount: (gain?.amount ?? 0).toFixed(1),
+        }),
+      );
+      const ev = res.events.find(
+        (e): e is Extract<ActionEvent, { type: "mentorTrained" }> => e.type === "mentorTrained",
+      );
+      for (const r of ev?.recovered ?? []) {
+        out(tpl(t.text.bookRecovered, { skill: skillName(r.skill), amount: r.amount }));
+      }
+      if (ev?.flag !== undefined) out(t.text.mentorSecret);
+      outAll(applyTitles(res.events));
+      save(res.state);
+      return res.state;
+    }
+    if (c === "2") {
+      const res = step(state, { type: "leaveMentor" }, cfg);
+      out(tpl(t.text.mentorLeft, { name: current.name }));
+      outAll(applyTitles(res.events));
+      save(res.state);
+      return res.state;
+    }
+    return state; // 3) 戻る、または読めない入力
+  }
+
+  // 師匠がいない：入門条件を満たす師匠の一覧から弟子入りを選ぶ
+  out(t.text.mentorHeaderNone);
+  for (let i = 0; i < mentors.mentors.length; i++) {
+    const m = mentors.mentors[i]!;
+    const ok = canApprentice(state, m.id, cfg.mentors, cfg.time);
+    out(
+      tpl(t.text.mentorListLine, {
+        i: i + 1,
+        name: m.name,
+        skill: skillName(m.skill),
+        fee: m.fee,
+        mark: ok ? t.text.mentorMarkOk : t.text.mentorMarkNg,
+      }),
+    );
+    out(tpl(t.text.mentorDescLine, { desc: m.desc }));
+  }
+  const a = await ask(t.text.promptChoice);
+  if (a === null) return null;
+  const idx = Number.parseInt(a.trim(), 10) - 1;
+  if (!(idx >= 0 && idx < mentors.mentors.length)) return state;
+  const m = mentors.mentors[idx]!;
+  if (!canApprentice(state, m.id, cfg.mentors, cfg.time)) {
+    out(t.text.mentorLocked);
+    return state;
+  }
+  const res = step(state, { type: "apprentice", id: m.id }, cfg);
+  out(tpl(t.text.mentorApprenticed, { name: m.name }));
   outAll(applyTitles(res.events));
   save(res.state);
   return res.state;
