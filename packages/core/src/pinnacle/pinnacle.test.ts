@@ -217,6 +217,117 @@ const cfg: StepConfig = {
   pinnacles: [route],
 };
 
+// ---- 大賢者型の条件鎖（X-4）：読了数・知識フラグ・仕事を通った段進行 ----
+
+const sageRoute: PinnacleRouteDef = {
+  id: "sage_like",
+  name: "賢者もどき",
+  desc: "読む系の条件を含む条件鎖の確認用",
+  title: "title.sage_apex",
+  stages: [
+    {
+      id: "voracity",
+      name: "読書の虫",
+      rank: "B",
+      notice: "――頂点への段《読書の虫》に至りました。",
+      condition: {
+        and: [
+          { counter: "action.read", gte: 2 },
+          { skill: "observation", gte: 20 },
+        ],
+      },
+    },
+    {
+      id: "discerning",
+      name: "鑑定の眼",
+      rank: "A",
+      notice: "――頂点への段《鑑定の眼》に至りました。",
+      condition: {
+        and: [{ skill: "appraisal", gte: 45 }, { work: { kind: "appraisal", tierGte: 2 } }],
+      },
+    },
+    {
+      id: "forbidden",
+      name: "禁書の探索",
+      rank: "A",
+      notice: "――頂点への段《禁書の探索》に至りました。",
+      condition: {
+        and: [{ flag: "found.taboo_codex" }, { skill: "appraisal", gte: 65 }],
+      },
+    },
+    {
+      id: "apex",
+      name: "世界の真理",
+      rank: "S",
+      notice: "――頂点《賢者もどき》に至りました。",
+      condition: {
+        and: [{ flag: "knows.world_truth" }, { skill: "appraisal", gte: 90 }],
+      },
+    },
+  ],
+};
+
+describe("読む系の条件を含む条件鎖（X-4 大賢者型）", () => {
+  it("カウンタ action.read・知識フラグ・仕事の条件でも順に段が進む", () => {
+    let s = newGame("seed", "読み手", {
+      skillIds: ["observation", "appraisal", "eloquence"],
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    // 1段目：読了2回＋観察20
+    s = {
+      ...s,
+      counters: { "action.read": 2 },
+      player: {
+        ...s.player,
+        skills: { ...s.player.skills, observation: { ...s.player.skills.observation!, value: 20 } },
+      },
+    };
+    const r1 = checkPinnacles(s, [sageRoute], time);
+    expect(r1.reached.map((x) => x.stage.id)).toEqual(["voracity"]);
+    expect(nextStage(r1.state, sageRoute)?.id).toBe("discerning");
+
+    // 2段目は flag が立つまで進まない（3段目の旗を先に立てても順序は変わらない）
+    const withFlag = {
+      ...r1.state,
+      flags: { ...r1.state.flags, "found.taboo_codex": true, "knows.world_truth": true },
+    };
+    const r2 = checkPinnacles(withFlag, [sageRoute], time);
+    expect(r2.reached).toEqual([]); // 2段目（鑑定＋仕事）が未達なので進まない
+    expect(nextStage(r2.state, sageRoute)?.id).toBe("discerning");
+  });
+
+  it("最終段（S）は知識フラグと技能の両方が要る", () => {
+    let s = newGame("seed", "読み手", {
+      skillIds: ["observation", "appraisal", "eloquence"],
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    s = {
+      ...s,
+      flags: {
+        "pinnacle.sage_like.voracity": true,
+        "pinnacle.sage_like.discerning": true,
+        "pinnacle.sage_like.forbidden": true,
+      },
+      player: {
+        ...s.player,
+        skills: { ...s.player.skills, appraisal: { ...s.player.skills.appraisal!, value: 95 } },
+      },
+    };
+    // 旗が無いと最終段は進まない
+    expect(checkPinnacles(s, [sageRoute], time).reached).toEqual([]);
+    // 旗が立つと頂点に至る
+    const done = checkPinnacles(
+      { ...s, flags: { ...s.flags, "knows.world_truth": true } },
+      [sageRoute],
+      time,
+    );
+    expect(done.reached.map((x) => x.stage.id)).toEqual(["apex"]);
+    expect(pinnacleReached(done.state, sageRoute)).toBe(true);
+  });
+});
+
 describe("step() の頂点ルート統合（T-41）", () => {
   it("段に達すると pinnacleStageReached イベントが出てランクを持つ", () => {
     let s = mk();

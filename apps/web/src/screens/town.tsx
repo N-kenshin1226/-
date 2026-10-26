@@ -697,7 +697,9 @@ function SkillDetail({ state, skillId }: { state: GameState; skillId: string }) 
           《{def.name}》 ― {band.name}
         </p>
         <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.7, color: "#cdeff6" }}>
-          ――{chip.text}。使えば育ち、置けば錆びる。
+          {chip.text === "―"
+            ? "――使えば育ち、置けば錆びる。"
+            : `――${chip.text}。使えば育ち、置けば錆びる。`}
         </p>
       </div>
       <dl

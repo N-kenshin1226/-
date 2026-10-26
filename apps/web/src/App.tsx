@@ -24,6 +24,7 @@ import {
   nextLife,
   noticesOf,
   recordLifeEnd,
+  resetSave as clearSaves,
   saveGame,
   skillList,
   t,
@@ -60,7 +61,7 @@ import { dateLabel, type Notice as NoticeData } from "./game.js";
 /** セーブ削除の確認画面（UI-01：記録を消す操作は必ず確認を挟む） */
 function ResetScreen({ back, onReset }: { back: () => void; onReset: () => void }) {
   return (
-    <div style={{ ...pos({ left: 340, top: 240, width: 600 }) }}>
+    <div data-testid="screen-reset" style={{ ...pos({ left: 340, top: 240, width: 600 }) }}>
       <ConfirmWindow
         title="記録を消す"
         body={t.text.resetConfirm}
@@ -243,6 +244,7 @@ export function App() {
 
   /** セーブの削除（UI-01。記録を消す操作は必ず確認を挟む） */
   const resetSave = useCallback(() => {
+    clearSaves();
     stateRef.current = null;
     setState(null);
     setLog([]);

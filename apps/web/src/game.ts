@@ -257,6 +257,7 @@ export function saveGame(state: GameState): void {
 }
 export function resetSave(): void {
   localStorage.removeItem(SAVE_KEY);
+  localStorage.removeItem(CHRONICLE_KEY);
 }
 
 // 年代記（T-38。周回をまたぐのでセーブとは別キー・別バージョンで保存）

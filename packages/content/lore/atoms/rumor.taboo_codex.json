@@ -1,0 +1,10 @@
+{
+  "id": "rumor.taboo_codex",
+  "kind": "event",
+  "title": "禁書の噂",
+  "text": "書店の奥に、誰にも売らない写本が一冊あるという。巡礼路を行く者の話では、開いた者は世界の外側を見たとされる。店主は相応の金を求めるそうだ。",
+  "refs": ["event.pilgrim_road", "place.hill_chapel"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "found.taboo_codex" }
+}

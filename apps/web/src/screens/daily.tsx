@@ -431,7 +431,8 @@ export function NewsScreen({
                   {v.role}
                   {v.name}
                 </span>
-                <br />「{v.text}」
+                <br />
+                {v.text}
               </p>
             ))}
           </div>

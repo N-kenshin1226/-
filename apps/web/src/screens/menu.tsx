@@ -265,7 +265,7 @@ export function MenuScreen({
           </div>
         )}
         <div style={{ fontFamily: theme.font.mincho, fontSize: 20, color: "#f4ecd8" }}>
-          「{voice.text}」
+          {voice.text}
         </div>
       </DialogueBox>
 
