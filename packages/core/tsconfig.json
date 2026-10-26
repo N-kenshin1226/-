@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src"
+    "rootDir": "src",
+    // node の型はテストがコンテンツJSONを読むためにだけ使う（core のランタイムは
+    // DOM・node ともに依存しない。types を明示しないと @types/node が拾われない）
+    "types": ["node"]
   },
   "include": ["src"]
 }

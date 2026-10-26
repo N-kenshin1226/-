@@ -6,10 +6,11 @@
  */
 import { useState } from "react";
 import type { CrisisFieldId, GameState } from "@trace/core";
+import { narration } from "@trace/content";
 import {
   cfg,
   crisisFinaleOffers,
-  crisisInvolvement,
+  crisisOfferSpeaker,
   enemyList,
   eventLines,
   t,
@@ -20,6 +21,7 @@ import {
 import {
   CommandMenu,
   ConfirmWindow,
+  DialogueBox,
   HintBar,
   Kicker,
   WorldFrame,
@@ -72,7 +74,6 @@ export function CrisisScreen({
   act: Act;
 }) {
   const offers = crisisFinaleOffers(state, cfg.crisis);
-  const inv = crisisInvolvement(state, cfg.crisis);
   /** 「自分で起こす」の対象として選んだ場面（分野選び → 確認の2段） */
   const [leadTarget, setLeadTarget] = useState<string | null>(null);
   /** 選んだ分野（undefined=全面的に）＋確認窓を出すか */
@@ -83,12 +84,15 @@ export function CrisisScreen({
       ? t.text.crisisStatusDone
       : o.joined
         ? t.text.crisisStatusJoined
-        : o.offered
-          ? t.text.crisisStatusOffered
-          : t.text.crisisStatusWaiting;
+        : t.text.crisisStatusOffered;
 
   const pending = offers.find((o) => o.joinable || (o.joined && !o.attempted));
-  const stageName = t.display.crisisStageNames[String(inv.stage)] ?? String(inv.stage);
+  // W-04：届いた打診だけを見せる（クエスト一覧にしない）。
+  // 段階の番号・関与の進行度はここにも出さない ―― 打診は人物の言葉として届く
+  const invited = offers.filter((o) => o.offered || o.joined || o.attempted);
+  // 打診を運ぶ人：その場面にいちばん備えを積んだ勢力の使い（core が決める）
+  const speaker =
+    pending !== undefined ? (crisisOfferSpeaker(state, cfg.crisis, pending.def.id) ?? null) : null;
 
   // ---- 打診に応える（行動は消費しない。応えなくても世界は進む） ----
   const join = (id: string) => {
@@ -200,18 +204,34 @@ export function CrisisScreen({
           >
             {t.text.crisisSceneHeader.replace(/^[─\s]+|[─\s]+$/g, "")}
           </div>
-          {/* 関与と役目：あなたが世界にどれだけ関わってきたか（淡々とした機械的な口調） */}
-          <p style={{ margin: "6px 0 0", fontSize: 14, color: W.text }}>
-            {tpl(t.text.crisisSceneStage, { stage: stageName })}
-            {offers[0] !== undefined &&
-              " " +
-                tpl(t.text.crisisSceneRole, {
-                  role: t.display.crisisRoleNames[offers[0].role] ?? offers[0].role,
-                })}
-          </p>
+          {/* あなたの役目だけを伝える（関与の段階・進行度の数字は出さない。W-04） */}
+          {pending !== undefined && (
+            <p style={{ margin: "6px 0 0", fontSize: 14, color: W.text }}>
+              {tpl(t.text.crisisSceneRole, {
+                role: t.display.crisisRoleNames[pending.role] ?? pending.role,
+              })}
+            </p>
+          )}
         </div>
+        {/* 打診は人物からの言葉として届く（W-04、docs/08 §6：会話の窓で持ちかける） */}
+        {pending?.joinable === true && (
+          <DialogueBox
+            speaker={tpl(narration.crisis.offer.speaker, {
+              faction: speaker ?? "街",
+            })}
+            style={{ margin: "6px 16px 10px" }}
+            testId="crisis-offer-dialogue"
+          >
+            <p style={{ margin: 0, fontSize: 17 }}>
+              {tpl(narration.crisis.offer.line, { name: pending.def.name })}
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: 13, color: W.dim }}>
+              {narration.crisis.offer.hint}
+            </p>
+          </DialogueBox>
+        )}
         <div style={{ margin: "8px 16px", borderTop: `1px solid ${W.frame}` }}>
-          {offers.map((o) => (
+          {invited.map((o) => (
             <p
               key={o.def.id}
               data-testid={`crisis-finale-${o.def.id}`}

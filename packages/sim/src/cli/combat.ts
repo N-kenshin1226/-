@@ -42,7 +42,7 @@ export interface CombatIo {
   /** イベント → 表示行（称号・気配・打診など） */
   applyTitles: (events: ActionEvent[]) => string[];
   /** 伝記の表示行（T-37） */
-  bioLines: (st: GameState, cause?: "retire" | "death") => string[];
+  bioLines: (st: GameState, cause?: "retire" | "death", worldEpilogue?: boolean) => string[];
   /** 戦闘死を年代記に刻む（刻んだなら true） */
   noteDeath: (res: StepResult) => boolean;
 }
@@ -201,7 +201,7 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
   outAll(io.applyTitles(res.events));
   // 深層での死も教会蘇生の扱いは同じ（03 §4）。伝記は生成して年代記に残す
   if (run.end === "died") {
-    outAll(io.bioLines(next, "death"));
+    outAll(io.bioLines(next, "death", true));
     if (io.noteDeath(res)) out(t.text.chronicleRecorded);
   }
   return next;

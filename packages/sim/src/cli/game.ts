@@ -48,9 +48,13 @@ import {
   biographyMaterial,
   createRng,
   crisisAreaClosed,
+  crisisEnding,
   crisisEnemyChallengeBonus,
+  crisisEpilogue,
   crisisFinaleOffers,
+  crisisOfferSpeaker,
   crisisRivalName,
+  crisisStageLine,
   crisisTouchpointOf,
   crisisTouchpointOffers,
   crisisTypeOf,
@@ -79,6 +83,7 @@ import {
   skills,
   society,
   titles,
+  voices,
   vows,
   type EnemyJson,
   type Order,
@@ -363,8 +368,18 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         return line === null ? [] : [line];
       }
       if (e.type === "crisisEnded") {
+        // 終幕（W-04、docs/08 §7）：世界の記録の1行＋最小限の終幕の語り
+        // （危機の型の語り＋関与の段階の痕跡。素材は core の crisisEnding が摘む）
         const line = crisisLogLine(e.outcome === "resolved" ? "end.resolved" : "end.ruin");
-        return line === null ? [] : [line];
+        const ending =
+          cfg.crisis !== undefined
+            ? crisisEnding(state!, cfg.crisis, narration.crisis, endingNames)
+            : null;
+        return [
+          ...(line === null ? [] : [line]),
+          ...(ending?.narration ?? []),
+          ...(ending?.trace ?? []),
+        ];
       }
       // 接点を果たした（W-02）：世界の備えに足された旨を1行出す（機械的な口調）
       if (e.type === "crisisTouchpoint") {
@@ -376,7 +391,17 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       // 決着の場面への打診・参加・勝負所・起こし（W-03、docs/08 §6）
       if (e.type === "crisisFinaleOffered") {
-        return [tpl(t.text.crisisFinaleOffered, { name: crisisRefName(e.id, "finales") })];
+        // W-04：打診は人物から持ちかけられる（その場面に備えを積んだ勢力の使い）
+        const name = crisisRefName(e.id, "finales");
+        const offer = narration.crisis.offer;
+        const faction =
+          cfg.crisis !== undefined ? crisisOfferSpeaker(state!, cfg.crisis, e.id) : null;
+        const speaker = tpl(offer.speaker, { faction: faction ?? "街" });
+        return [
+          tpl(t.text.crisisFinaleOffered, { name }),
+          tpl(offer.arrive, { speaker }),
+          tpl(offer.line, { name }),
+        ];
       }
       if (e.type === "crisisFinaleJoined") {
         return [tpl(t.text.crisisFinaleJoined, { name: crisisRefName(e.id, "finales") })];
@@ -417,8 +442,38 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       w.kind
     );
   };
-  /** 伝記（T-37）：素材は core が摘み、表示名はここで解決する。cause 省略時は閉じ行を出さない */
-  const bioLines = (st: GameState, cause?: "retire" | "death"): string[] => {
+  /** 終幕・後日談に差し込む表示名の解決（人名・役割・作品名。W-04） */
+  const endingNames = {
+    stage: (s: number) => t.display.crisisStageNames[String(s)] ?? String(s),
+    role: (r: string) => t.display.crisisRoleNames[r] ?? r,
+    npc: (id: string) =>
+      voices.npcs.find((n) => n.id === id)?.name ??
+      canon.figures.find((f) => f.id === id)?.name ??
+      id,
+    rival: (ref: string) =>
+      cfg.crisis !== undefined ? crisisRivalName(state!, cfg.crisis, ref) : ref,
+    work: (w: Work) => workName(w),
+  };
+  /**
+   * 危機の後日談（W-04、docs/08 §7）：その生の終わり時点の世界の行方を1節。
+   * 決着を見届けた生なら「見届けた」、未決着なら世界の結末の先読みを語る
+   */
+  const crisisEpilogueLines = (st: GameState): string[] => {
+    if (cfg.crisis === undefined) return [];
+    const ep = crisisEpilogue(st, cfg.crisis, cfg.time);
+    if (ep === null) return [];
+    const type = crisisTypeOf(st, cfg.crisis);
+    const key = ep.witnessed
+      ? ep.outcome === "ruin"
+        ? "witnessedRuin"
+        : "witnessedResolved"
+      : ep.outcome;
+    const text = narration.crisis.epilogue[key];
+    return text === undefined ? [] : [tpl(text, { type: type?.name ?? "", name: st.player.name })];
+  };
+  /** 伝記（T-37）：素材は core が摘み、表示名はここで解決する。cause 省略時は閉じ行を出さない。
+   *  worldEpilogue は生の終わりの記録にだけ立てる（W-04：世界の行方の後日談を1節添える） */
+  const bioLines = (st: GameState, cause?: "retire" | "death", worldEpilogue = false): string[] => {
     const m = biographyMaterial(st, cfg.pinnacles);
     const titleNames = m.titleIds
       .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
@@ -430,7 +485,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     const pinnacleNames = m.pinnacleIds
       .map((id) => pinnacles.pinnacles.find((r) => r.id === id)?.name ?? id)
       .join("、");
-    return narrator.narrate(
+    const lines = narrator.narrate(
       {
         scene: "biography",
         name: m.name,
@@ -469,6 +524,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // 同じ死には同じ伝記（通算死亡数でシードを分ける）
       createRng(`${seed}:bio:${st.seed}:${m.days}:${m.deaths}`),
     );
+    return [...lines, ...(worldEpilogue ? crisisEpilogueLines(st) : [])];
   };
 
   /** died イベントがあれば年代記に追記する（戦闘死＝蘇生する死。老衰死・引退は reincarnate 側で刻む。T-40） */
@@ -480,8 +536,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       titleDefs: cfg.titles,
       // 頂点に至ったルートの記録（T-41。伝記とは別に構造化して残す）
       pinnacles: reachedPinnacles(res.state, cfg.pinnacles ?? []),
-      // 表示した伝記と同じものを年代記にも残す（06 §1：伝記 → 年代記の順）
-      biography: bioLines(res.state, "death").join("\n"),
+      // 表示した伝記と同じものを年代記にも残す（06 §1：伝記 → 年代記の順。
+      // 末行には世界の危機の後日談を1節添える。W-04）
+      biography: bioLines(res.state, "death", true).join("\n"),
     });
     saveChronicle(chronicle);
     return true;
@@ -520,7 +577,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     );
     // ライバルの噂（T-47）：ランキングの筆頭ライバルが話題に混ざる
     const topRival = rivalsOf(state!, rivals, balance.rivals).entries.find((e) => !e.isPlayer);
-    return narrator.narrate(
+    const lines = narrator.narrate(
       {
         scene: "newspaper",
         deeds,
@@ -542,6 +599,18 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       },
       createRng(`${seed}:news:${day}`),
     );
+    // 危機の記事（W-04、docs/08 §3）：段階は数字で出さず、世界の出来事として
+    // 新聞の末尾に混ぜる。解決した世では噂に残らない
+    const crisisLine =
+      cfg.crisis !== undefined
+        ? crisisStageLine(
+            state!,
+            cfg.crisis,
+            narration.crisis,
+            createRng(`${seed}:news-crisis:${day}`),
+          )
+        : null;
+    return crisisLine === null ? lines : [...lines, crisisLine];
   };
 
   const delay = opts.delay ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
@@ -760,7 +829,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
   const reincarnate = async (st: GameState, cause: "retire" | "oldAge"): Promise<GameState> => {
     // 伝記（語り層の cause 語彙は retire/death だけ。老衰は death に倒す）。
     // 次代を継ぐ道でも前代の記録として同じ伝記がその場に残る（T-48）
-    const bio = bioLines(st, cause === "retire" ? "retire" : "death");
+    const bio = bioLines(st, cause === "retire" ? "retire" : "death", true);
     outAll(bio);
 
     // 生の継ぎ方を選ぶ（T-48）：転生（新しい世界・強い継承）か次代（同じ世界・弱い継承）か。
@@ -1238,7 +1307,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         out(t.text.combatLost);
         // 死亡時は伝記が生成される（06 §1。蘇生するが記録は残る）
         if (r.died) {
-          outAll(bioLines(state, "death"));
+          outAll(bioLines(state, "death", true));
           // 伝記 → 年代記への記録（T-38。T-40 までは戦闘死のみ追記する最小接続）
           if (noteDeath(res)) out(t.text.chronicleRecorded);
         }
@@ -1460,7 +1529,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
             state = res.state;
             outAll(applyTitles(res.events));
             if (died) {
-              outAll(bioLines(res.state, "death"));
+              outAll(bioLines(res.state, "death", true));
               if (noteDeath(res)) out(t.text.chronicleRecorded);
             }
             return true;

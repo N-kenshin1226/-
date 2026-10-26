@@ -6,10 +6,12 @@
  */
 import type { CSSProperties } from "react";
 import type { ActionEvent, GameState, WakeReport } from "@trace/core";
-import { dateLabel, newsPack, t, wakePack, type Notice } from "../game.js";
+import { narration } from "@trace/content";
+import { dateLabel, endingPageLines, newsPack, t, wakePack, type Notice } from "../game.js";
 import {
   BlessingWindow,
   CommandMenu,
+  DialogueBox,
   HintBar,
   Paper,
   SegGauge,
@@ -492,14 +494,31 @@ export function NewsScreen({
 
 /* ================= S/A通知（Notice見本） ================= */
 
-export function NoticeOverlay({ notice, onClose }: { notice: Notice; onClose: () => void }) {
-  useHotkeys({ enter: onClose, escape: onClose });
+export function NoticeOverlay({
+  state,
+  notice,
+  onEnd,
+  onClose,
+}: {
+  state: GameState;
+  notice: Notice;
+  /** 「一頁を開く」先（W-04：終幕の通知から結末画面へ） */
+  onEnd?: () => void;
+  onClose: () => void;
+}) {
+  const done = () => {
+    onClose();
+    if (notice.openEnding === true) onEnd?.();
+  };
+  useHotkeys({ enter: done, escape: done });
   const isS = notice.rank === "S";
+  // 終幕の通知：その世界の年代記の一頁の予告を帯の内側に差す（W-04）
+  const page = notice.openEnding === true ? endingPageLines(state).slice(-4) : [];
   return (
     <div
       data-testid={isS ? "notice-s" : "notice-a"}
       className="notice-in"
-      onClick={onClose}
+      onClick={done}
       style={{ position: "absolute", inset: 0, zIndex: 30 }}
     >
       {/* 世界が黙る：全体を薄暗く */}
@@ -578,10 +597,10 @@ export function NoticeOverlay({ notice, onClose }: { notice: Notice; onClose: ()
               color: "#e8c77f",
             }}
           >
-            WORLD FIRST
+            {notice.kicker ?? "WORLD FIRST"}
           </p>
           <p style={{ margin: "14px 0 0", fontSize: 15, letterSpacing: "0.1em", color: "#cfc2a2" }}>
-            ――この世界で、初めての記録です。
+            {notice.lead ?? "――この世界で、初めての記録です。"}
           </p>
           <h1
             style={{
@@ -607,9 +626,70 @@ export function NoticeOverlay({ notice, onClose }: { notice: Notice; onClose: ()
             {notice.sub}
           </p>
           <p style={{ margin: "6px 0 0", fontSize: 13, color: "#a99c80" }}>
-            この名は年代記に刻まれ、次の世界にも語り継がれる。
+            {notice.footnote ?? "この名は年代記に刻まれ、次の世界にも語り継がれる。"}
           </p>
+          {/* 終幕の通知：その世界の年代記の一頁の予告（紙の端を覗かせる） */}
+          {page.length > 0 && (
+            <div
+              data-testid="notice-ending-page"
+              style={{
+                margin: "16px 0 0",
+                padding: "10px 22px",
+                maxWidth: 560,
+                background: "linear-gradient(180deg, #e8dcbf, #d9c8a4)",
+                color: "#4a3b26",
+                boxShadow: "0 3px 12px rgba(0,0,0,.5)",
+                transform: "rotate(-0.4deg)",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 4px",
+                  fontSize: 11,
+                  letterSpacing: "0.3em",
+                  color: "#7a6844",
+                }}
+              >
+                {narration.crisis.ending.pageHeader}
+              </p>
+              {page.map((l, i) => (
+                <p key={i} style={{ margin: "2px 0", fontSize: 13, lineHeight: 1.6 }}>
+                  {l.day}日目 ― {l.text}
+                </p>
+              ))}
+            </div>
+          )}
         </section>
+      ) : notice.dialogue !== undefined ? (
+        /* A（会話）：人物からの持ちかけは会話の窓で届く（W-04、docs/08 §6） */
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%,-50%)",
+            width: 640,
+          }}
+        >
+          <DialogueBox speaker={notice.dialogue.speaker} testId="notice-dialogue">
+            {notice.dialogue.lines.map((line, i) => (
+              <p key={i} style={{ margin: 0 }}>
+                {line}
+              </p>
+            ))}
+            {notice.dialogue.hint !== undefined && (
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  fontSize: 14,
+                  color: theme.colors.world.dim,
+                }}
+              >
+                {notice.dialogue.hint}
+              </p>
+            )}
+          </DialogueBox>
+        </div>
       ) : (
         /* A：中央に光る窓 */
         <section
@@ -664,44 +744,48 @@ export function NoticeOverlay({ notice, onClose }: { notice: Notice; onClose: ()
           </p>
         </section>
       )}
-      {/* 報酬の行（.rw） */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: isS ? 534 : "62%",
-          display: "flex",
-          justifyContent: "center",
-          gap: 16,
-        }}
-      >
-        {notice.rewards.map((r, i) => (
-          <div key={i} className="rw">
-            <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-              <path
-                d="M14 2l3.5 7.5L26 11l-6 5.8 1.5 8.2L14 21l-7.5 4 1.5-8.2L2 11l8.5-1.5z"
-                fill="#e8c77f"
-              />
-            </svg>
-            <div>
-              <div style={{ fontSize: 11, color: "#a99c80", letterSpacing: "0.1em" }}>
-                {r.label}
+      {/* 報酬の行（.rw）。会話の打診では出さない ―― 人物の言葉がそのまま届く */}
+      {notice.dialogue === undefined && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: isS ? 534 : "62%",
+            display: "flex",
+            justifyContent: "center",
+            gap: 16,
+          }}
+        >
+          {notice.rewards.map((r, i) => (
+            <div key={i} className="rw">
+              <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+                <path
+                  d="M14 2l3.5 7.5L26 11l-6 5.8 1.5 8.2L14 21l-7.5 4 1.5-8.2L2 11l8.5-1.5z"
+                  fill="#e8c77f"
+                />
+              </svg>
+              <div>
+                <div style={{ fontSize: 11, color: "#a99c80", letterSpacing: "0.1em" }}>
+                  {r.label}
+                </div>
+                <div
+                  style={{
+                    fontFamily: theme.font.mincho,
+                    fontSize: 17,
+                    color: "#f3dfa8",
+                  }}
+                >
+                  {r.name}
+                </div>
+                {r.sub !== undefined && (
+                  <div style={{ fontSize: 11, color: "#a99c80" }}>{r.sub}</div>
+                )}
               </div>
-              <div
-                style={{
-                  fontFamily: theme.font.mincho,
-                  fontSize: 17,
-                  color: "#f3dfa8",
-                }}
-              >
-                {r.name}
-              </div>
-              {r.sub !== undefined && <div style={{ fontSize: 11, color: "#a99c80" }}>{r.sub}</div>}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       <div
         style={{
           position: "absolute",
@@ -711,7 +795,7 @@ export function NoticeOverlay({ notice, onClose }: { notice: Notice; onClose: ()
           color: "#cfc2a2",
         }}
       >
-        <span className="key">Enter</span> 続ける
+        <span className="key">Enter</span> {notice.openEnding === true ? "一頁を開く" : "続ける"}
       </div>
     </div>
   );

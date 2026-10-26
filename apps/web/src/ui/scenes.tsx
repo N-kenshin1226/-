@@ -5,7 +5,17 @@
  */
 export type SceneKind = "town" | "dawn" | "night" | "desk" | "plain" | "abyss";
 
-export function SceneBackground({ kind }: { kind: SceneKind }) {
+export function SceneBackground({
+  kind,
+  haze = 0,
+}: {
+  kind: SceneKind;
+  /**
+   * 危機の段階による景色の霞（W-04、docs/08 §3「景色の差分」）。
+   * 0=晴れ 〜 1=強く翳る。派生値は core の crisisSceneHaze が決める
+   */
+  haze?: number;
+}) {
   return (
     <svg
       className="scene"
@@ -21,6 +31,13 @@ export function SceneBackground({ kind }: { kind: SceneKind }) {
       {kind === "desk" && <Desk />}
       {kind === "plain" && <Plain />}
       {kind === "abyss" && <Abyss />}
+      {/* 世界の危機の霞：段階が進むほど景色が白く滲み、滅びた世は強く翳る */}
+      {haze > 0 && (
+        <>
+          <rect width="1280" height="720" fill="#aebdc2" opacity={haze * 0.45} />
+          <rect width="1280" height="720" fill="#04060b" opacity={haze * 0.22} />
+        </>
+      )}
     </svg>
   );
 }

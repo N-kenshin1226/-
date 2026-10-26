@@ -190,7 +190,7 @@ export function SuccessionScreen({
     <div data-testid="screen-succession" className="scene">
       <BioPaper
         testId="succession-bio"
-        bio={bioLines(prev, cause === "retire" ? "retire" : "death")}
+        bio={bioLines(prev, cause === "retire" ? "retire" : "death", true)}
       />
       <ChoiceWindow title={t.text.heirWayPick} entries={entries} />
       <HintBar
@@ -218,7 +218,10 @@ export function HeirScreen({
   cause: "retire" | "oldAge";
   onBorn: (prev: GameState, originId: string, vows: readonly string[]) => void;
 }) {
-  const bio = useMemo(() => bioLines(prev, cause === "retire" ? "retire" : "death"), [prev, cause]);
+  const bio = useMemo(
+    () => bioLines(prev, cause === "retire" ? "retire" : "death", true),
+    [prev, cause],
+  );
   const kind = useMemo(() => heirKindOf(prev), [prev]);
   const [originId, setOriginId] = useState<string | null>(null);
   const [pickedVows, setPickedVows] = useState<string[]>([]);
@@ -314,7 +317,10 @@ export function RebirthScreen({
   ) => void;
 }) {
   const { auto, topWorks } = useMemo(() => legacyDefaults(prev), [prev]);
-  const bio = useMemo(() => bioLines(prev, cause === "retire" ? "retire" : "death"), [prev, cause]);
+  const bio = useMemo(
+    () => bioLines(prev, cause === "retire" ? "retire" : "death", true),
+    [prev, cause],
+  );
   // 二つ名は年代記に刻まれた頁から読む（recordLife が自動で選んでいる）。
   // この一生の頁を探す（末尾とは限らない：別の生が後に刻まれている場合もある）
   const epithet = useMemo(

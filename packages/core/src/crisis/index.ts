@@ -1,13 +1,14 @@
 import { evaluate, type Cond } from "../conditions/index.js";
 import type { ActionEvent } from "../events/index.js";
 import { reachedPinnacles, routeProgress, type PinnacleRouteDef } from "../pinnacle/index.js";
-import { createRng } from "../rng/index.js";
+import { createRng, type Rng } from "../rng/index.js";
 import { drawRivalCast, playerScore, type RivalsConfig } from "../rivals/index.js";
 import {
   CRISIS_FIELD_IDS,
   type CrisisFieldId,
   type CrisisState,
   type GameState,
+  type Work,
 } from "../state/types.js";
 import { describe as describeTime, type GameTime, type TimeConfig } from "../time/index.js";
 
@@ -1182,4 +1183,264 @@ export function crisisRivalName(
     : rival.epithet !== ""
       ? `${rival.name}《${rival.epithet}》`
       : rival.name;
+}
+
+// ---- 終幕の見せ方（W-04、docs/08 §3・§7） ----
+// 危機の見せ方は新聞・噂・景色・物価・人物の不在で担い、画面に段階を常時出さない。
+// 決着した危機の「終幕」（紙の層の語り＋主人公の痕跡＋世界の年代記の一頁）は、
+// 「危機の型の語り＋関与の段階＋関わった人物・作品」のテンプレートで組み立てる。
+// ここはその素材を GameState から摘む層。画面への提示は UI が担う
+
+/**
+ * 終幕の語りに使うテキスト群（content/text/narration.json の crisis 節。
+ * core は形だけを知り、本文はコンテンツから注入される）
+ */
+export interface CrisisEndingText {
+  /** 危機の変数の表示語（変数key → 値 → 表示名） */
+  vars: Record<string, Record<string, string>>;
+  /** 段階の語りref → 噂・記事の行 */
+  stage: Record<string, readonly string[]>;
+  /** 語りrefを持たない段階・型への汎用の噂 */
+  stageFallback: readonly string[];
+  /** 滅びた世の噂 */
+  ruin: readonly string[];
+  /** 終幕の語りref → 紙の層の段落行 */
+  finale: Record<string, readonly string[]>;
+  /** 語りrefを持たない型への汎用の終幕 */
+  finaleFallback: { resolved: readonly string[]; ruin: readonly string[] };
+  /**
+   * 主人公の痕跡の候補行（関与の段階 → 行。"4b" は率いる立場に
+   * ありながら勝者ではなかった場合。{var}が埋められない行は選ばない）
+   */
+  trace: Record<string, readonly string[]>;
+  /** 滅びの終幕用の痕跡の候補行 */
+  traceRuin: Record<string, readonly string[]>;
+}
+
+/** 語りに差し込む表示名の解決（人名・役割・作品名は呼び出し側の語彙で） */
+export interface CrisisEndingNames {
+  /** 関与の段階 → 表示名（例: 3 → "担った"） */
+  stage?: (stage: CrisisInvolvementStage) => string;
+  /** 決着の場面での役割 → 表示名（例: vanguard → "前線の要"） */
+  role?: (role: CrisisFinaleRole) => string;
+  /** NPCのid → 表示名（離散・死亡した者を名前で語る） */
+  npc?: (id: string) => string;
+  /** ライバルの参照（"rival.<index>"）→ 表示名 */
+  rival?: (ref: string) => string;
+  /** 作品（台帳の品）→ 表示名 */
+  work?: (work: Work) => string;
+}
+
+/** 語りのテンプレートに変数を差し込む（{var}。埋められない変数はそのまま残る） */
+const tplEnding = (s: string, vars: Record<string, string>): string =>
+  s.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? `{${k}}`);
+
+/** テンプレート中の {var} がすべて差し込めるか（埋められない行は痕跡の候補から外す） */
+const endingFillable = (s: string, vars: Record<string, string>): boolean =>
+  ![...s.matchAll(/\{(\w+)\}/g)].some((m) => vars[m[1]!] === undefined);
+
+/**
+ * 終幕の素材（docs/08 §7）：危機の型の語り＋関与の段階の痕跡＋世界の年代記の一頁。
+ * 進行中・危機の無い世界では null（何も見せない）
+ */
+export interface CrisisEnding {
+  outcome: "resolved" | "ruin";
+  /** 危機の型の id と表示名 */
+  typeId: string;
+  typeName: string;
+  /** 関与の段階（表示側で段階名に解決する。段階名そのものは語りに出さない） */
+  stage: CrisisInvolvementStage;
+  /** 紙の層の語り（危機の型の語り。変数・決着の場面名を織り込んだ段落行） */
+  narration: string[];
+  /** 主人公の痕跡（関与の段階に応じて織り込まれる1行。関わった人物・作品も差し込む） */
+  trace: string[];
+  /** その世界の年代記の一頁の素材（世界の記録。表示側が行にする） */
+  page: readonly { day: number; kind: string; ref?: string }[];
+}
+
+export function crisisEnding(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  text: CrisisEndingText,
+  names: CrisisEndingNames = {},
+): CrisisEnding | null {
+  const crisis = state.crisis;
+  if (crisis === null || cfg === undefined) return null;
+  const outcome = crisis.outcome;
+  if (outcome === "ongoing") return null;
+  const type = crisisTypeOf(state, cfg);
+
+  // 語りに差し込む語：あなたの名・危機の型・シードで決まった変数の表示名
+  const vars: Record<string, string> = {
+    name: state.player.name,
+    type: type?.name ?? crisis.typeId,
+  };
+  for (const [k, v] of Object.entries(crisis.variables)) {
+    vars[k] = text.vars[k]?.[v] ?? v;
+  }
+  // 決着の場面名：あなたが率いた場面 → 世界が勝ち取った場面 → 最後に判定された場面
+  const led = crisis.log.find((l) => l.kind === "finale.hero" || l.kind === "finale.heroFail")?.ref;
+  const won = crisis.finales.find((f) => f.success === true)?.id;
+  const last = [...crisis.finales].reverse().find((f) => f.resolved)?.id;
+  const finaleDef = type?.finales.find((f) => f.id === (led ?? won ?? last));
+  if (finaleDef !== undefined) vars["finale"] = finaleDef.name;
+  // 関わった人物：英雄として記録されたライバル・この世を去ったNPC
+  const heroes = crisis.log.filter((l) => l.kind === "rival.hero" && l.ref !== undefined);
+  if (heroes.length > 0 && names.rival !== undefined) {
+    vars["person"] = heroes.map((l) => names.rival!(l.ref!)).join("、");
+  }
+  if (crisis.npcGone.length > 0 && names.npc !== undefined) {
+    vars["gone"] = crisis.npcGone.map((n) => names.npc!(n.id)).join("、");
+  }
+  // 関わった作品：接点の注文として納めた最も良い品（「支えた」は名もなき形で語られる）
+  const tpIds = new Set((type?.touchpoints ?? []).map((tp) => tp.id));
+  const tpWork = state.ledger
+    .filter((w) => w.order !== undefined && tpIds.has(w.order.split("#")[0] ?? ""))
+    .sort((a, b) => b.quality - a.quality || b.tier - a.tier || a.day - b.day)[0];
+  if (tpWork !== undefined) {
+    vars["work"] =
+      names.work?.(tpWork) ??
+      crisisTouchpointOf(state, cfg, tpWork.order!.split("#")[0]!)?.offer?.name ??
+      tpWork.order!;
+  }
+  const involvement = crisisInvolvement(state, cfg);
+  const role = crisisFinaleRole(state, cfg);
+  vars["stage"] = names.stage?.(involvement.stage) ?? String(involvement.stage);
+  vars["role"] = names.role?.(role) ?? role;
+
+  // 紙の層の語り：危機の型の語りrefを本文に解決する（無い型は汎用の終幕）
+  const ref = type?.narration?.finale?.[outcome];
+  const paras = (ref !== undefined ? text.finale[ref] : undefined) ?? text.finaleFallback[outcome];
+  const narration = paras.map((p) => tplEnding(p, vars));
+
+  // 主人公の痕跡：関与の段階で差し込まれる語り（埋められない変数を持つ行は選ばない）
+  const hero = state.flags[CRISIS_HERO_FLAG] === true;
+  const key = involvement.stage === 4 && !hero ? "4b" : String(involvement.stage);
+  const table = outcome === "ruin" ? text.traceRuin : text.trace;
+  const cands = (table[key] ?? table[String(involvement.stage)] ?? []).filter((l) =>
+    endingFillable(l, vars),
+  );
+  const pick =
+    cands.length > 0
+      ? createRng(state.seed)
+          .fork(`crisis:trace:${outcome}:${key}`)
+          .pick([...cands])
+      : null;
+  const trace = pick === null ? [] : [tplEnding(pick, vars)];
+
+  return {
+    outcome,
+    typeId: crisis.typeId,
+    typeName: type?.name ?? crisis.typeId,
+    stage: involvement.stage,
+    narration,
+    trace,
+    page: crisis.log,
+  };
+}
+
+/**
+ * 現在の危機の段階の噂・記事の1行（docs/08 §3：新聞・噂で知る）。
+ * 危機の無い世界・解決した世界では null（解決後は噂に残らない）。
+ * rng は日付など呼び出し側で分けた列を渡す
+ */
+export function crisisStageLine(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  text: Pick<CrisisEndingText, "vars" | "stage" | "stageFallback" | "ruin">,
+  rng: Rng,
+): string | null {
+  const crisis = state.crisis;
+  if (crisis === null || cfg === undefined) return null;
+  const type = crisisTypeOf(state, cfg);
+  const vars: Record<string, string> = {};
+  for (const [k, v] of Object.entries(crisis.variables)) {
+    vars[k] = text.vars[k]?.[v] ?? v;
+  }
+  if (crisis.outcome === "ruin") {
+    // 滅びた世は、滅びた世として生き続ける。噂もその世のものになる
+    return text.ruin.length === 0 ? null : tplEnding(rng.pick([...text.ruin]), vars);
+  }
+  if (crisis.outcome === "resolved") return null;
+  const stage = type?.stages[crisis.stageIndex];
+  const ref = stage !== undefined ? type?.narration?.stage?.[stage.id] : undefined;
+  const lines = (ref !== undefined ? text.stage[ref] : undefined) ?? text.stageFallback;
+  return lines.length === 0 ? null : tplEnding(rng.pick([...lines]), vars);
+}
+
+/**
+ * 転生の年代記に残る後日談（docs/08 §7「あなたが去った後、この世界は…」）。
+ * 決着を生きて見届けた生なら witnessed、未決着で終わった生なら、
+ * 主人公なしの世界がこの先どうなるかを同じ決定論で先読みする
+ * （世界は主人公を待たない：勢力の備えとライバルの名乗りだけで季節の変わり目を回す）
+ */
+export interface CrisisEpilogue {
+  /** この世界が向かう結末（ongoing = 予見できる範囲ではまだ決着しない） */
+  outcome: "resolved" | "ruin" | "ongoing";
+  /** この生のうちに決着を見届けたか */
+  witnessed: boolean;
+}
+
+export function crisisEpilogue(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  time: TimeConfig,
+): CrisisEpilogue | null {
+  const crisis = state.crisis;
+  if (crisis === null || cfg === undefined) return null;
+  if (crisis.outcome !== "ongoing") return { outcome: crisis.outcome, witnessed: true };
+  // 季節の変わり目を決定的に回して結末を先読みする。決着の場面は必ず有限の
+  // 境界で判定されるので、上限は安全のための大きな値（想定の判定数より十分大きい）
+  let sim: GameState = state;
+  let from: GameTime = state.time;
+  for (let i = 0; i < 64; i++) {
+    const to: GameTime = { day: from.day + time.daysPerSeason, action: 0 };
+    sim = { ...sim, time: to };
+    sim = crisisSeasonTurn(sim, cfg, time, from).state;
+    from = to;
+    const out = sim.crisis?.outcome ?? "ongoing";
+    if (out !== "ongoing") return { outcome: out, witnessed: false };
+  }
+  return { outcome: "ongoing", witnessed: false };
+}
+
+/**
+ * 打診を運ぶ人（W-04、docs/08 §6「会話の窓で人物から持ちかけられる」）。
+ * その場面の分野にいちばん備えを積んだ勢力が、あなたに使いを寄こす。
+ * 勢力が引けない世界では null（会話の名札は表示側が適当な言葉に倒す）
+ */
+export function crisisOfferSpeaker(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  finaleId: string,
+): string | null {
+  const crisis = state.crisis;
+  if (crisis === null || cfg === undefined) return null;
+  const type = crisisTypeOf(state, cfg);
+  const def = type?.finales.find((f) => f.id === finaleId);
+  if (def === undefined) return null;
+  let best: { name: string; prep: number } | null = null;
+  for (const f of crisis.factions) {
+    const prep = def.fields.reduce((s, x) => s + (f.prep[x] ?? 0), 0);
+    if (best === null || prep > best.prep) {
+      const name = type?.factions.find((x) => x.id === f.id)?.name ?? f.id;
+      best = { name, prep };
+    }
+  }
+  return best?.name ?? null;
+}
+
+/**
+ * 危機の段階による景色の霞（docs/08 §3「景色の差分」。W-04）。
+ * 段階が進むほど背景に白い霞が深まり、滅びた世は強く翳る。解決した世界は晴れる。
+ * GameState には持たない派生値で、数値は見た目の量（画面側が背景に重ねる濃さ 0〜1）
+ */
+export function crisisSceneHaze(state: GameState, cfg: CrisisConfig | undefined): number {
+  const crisis = state.crisis;
+  if (crisis === null || cfg === undefined) return 0;
+  if (crisis.outcome === "resolved") return 0;
+  if (crisis.outcome === "ruin") return 0.8;
+  const lastStage = Math.max(1, (crisisTypeOf(state, cfg)?.stages.length ?? 1) - 1);
+  // 兆し≈0.15 から最終段≈0.5 まで段階に応じて霞が深まる（見た目の量）
+  return 0.15 + (crisis.stageIndex / lastStage) * 0.35;
 }

@@ -48,6 +48,88 @@ export const narrationSchema = z
       })
       .strict(),
     loreDigest: z.object({ header: z.string(), line: z.string() }).strict(),
+    /**
+     * 世界の危機の見せ方（W-04、docs/08 §3・§7）：段階の噂・終幕の語り・
+     * 主人公の痕跡・打診の会話・後日談・通知・結末画面の定型文。
+     * 危機の型の narration 節が指す語りrefをここで本文に解決する
+     */
+    crisis: z
+      .object({
+        /** 危機の変数の表示語（変数key → 値 → 表示名。語りに差し込む） */
+        vars: z.record(z.string(), z.record(z.string(), z.string())),
+        /** 段階の語りref → 新聞の記事・噂の行（危機の型の narration.stage が指す） */
+        stage: z.record(z.string(), z.array(z.string()).min(1)),
+        /** 語りrefを持たない段階・型への汎用の噂（hidden の型にも必ず出せる床） */
+        stageFallback: z.array(z.string()).min(1),
+        /** 滅びた世の噂（終幕後の世界で流れる） */
+        ruin: z.array(z.string()).min(1),
+        /** 終幕の語りref → 紙の層の段落行（危機の型の narration.finale が指す） */
+        finale: z.record(z.string(), z.array(z.string()).min(1)),
+        /** 語りrefを持たない型への汎用の終幕（解決／滅び） */
+        finaleFallback: z
+          .object({
+            resolved: z.array(z.string()).min(1),
+            ruin: z.array(z.string()).min(1),
+          })
+          .strict(),
+        /**
+         * 主人公の痕跡の候補行（関与の段階 → 行。{var}の埋められない行は選ばない。
+         * "4b" は率いる立場にありながら勝者ではなかった場合）
+         */
+        trace: z.record(z.string(), z.array(z.string()).min(1)),
+        /** 滅びの終幕用の痕跡の候補行（同じ段階の語彙） */
+        traceRuin: z.record(z.string(), z.array(z.string()).min(1)),
+        /** 転生の年代記の後日談（その生の終わり時点の世界の行方を1節） */
+        epilogue: z
+          .object({
+            witnessedResolved: z.string(),
+            witnessedRuin: z.string(),
+            resolved: z.string(),
+            ruin: z.string(),
+            ongoing: z.string(),
+          })
+          .strict(),
+        /** 決着の場面への打診（段階3・4。会話の窓で人物から持ちかける形） */
+        offer: z
+          .object({
+            /** 使いが訪ねてきた旨の導入行（{speaker} を差し込む） */
+            arrive: z.string(),
+            /** 話し手の名札（{faction} を差し込む） */
+            speaker: z.string(),
+            /** 打診の台詞（{name}＝場面名 を差し込む） */
+            line: z.string(),
+            /** 受けるかは自由である旨の追記 */
+            hint: z.string(),
+          })
+          .strict(),
+        /** 終幕のランクS通知の文 */
+        notice: z
+          .object({
+            kicker: z.string(),
+            lead: z.string(),
+            footnote: z.string(),
+            resolvedTitle: z.string(),
+            resolvedSub: z.string(),
+            ruinTitle: z.string(),
+            ruinSub: z.string(),
+            /** 報酬欄のラベル（世界の頁・関与の段階） */
+            worldPage: z.string(),
+            involvement: z.string(),
+          })
+          .strict(),
+        /** 結末画面の文 */
+        ending: z
+          .object({
+            resolvedTitle: z.string(),
+            ruinTitle: z.string(),
+            /** その世界の年代記の一頁の見出し */
+            pageHeader: z.string(),
+            /** 閉じて世界で遊び続ける主ボタン */
+            continue: z.string(),
+          })
+          .strict(),
+      })
+      .strict(),
     biography: z
       .object({
         header: z.string(),

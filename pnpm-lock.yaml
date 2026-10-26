@@ -80,7 +80,11 @@ importers:
         specifier: ^26.6.5
         version: 26.6.5
 
-  packages/core: {}
+  packages/core:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.5
+        version: 26.6.5
 
   packages/lore-check:
     dependencies:

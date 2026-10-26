@@ -18,6 +18,7 @@ import { balance, titles } from "@trace/content";
 import {
   bioLines,
   cfg,
+  crisisSceneHaze,
   eventLines,
   heirLife,
   legacyArtifactName,
@@ -59,6 +60,7 @@ import { CrisisScreen } from "./screens/crisis.js";
 import { LoreScreen, RecordsScreen } from "./screens/records.js";
 import { MentorScreen, SocietyScreen } from "./screens/society.js";
 import { HeirScreen, RebirthScreen, RetireScreen, SuccessionScreen } from "./screens/end.js";
+import { EndingScreen } from "./screens/ending.js";
 import { NewsScreen, NoticeOverlay, WakeScreen } from "./screens/daily.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
 
@@ -95,6 +97,7 @@ function sceneOf(s: Screen): SceneKind {
       return "abyss";
     case "combat":
     case "crisis":
+    case "ending":
     case "sleep":
     case "retire":
     case "reset":
@@ -176,7 +179,7 @@ export function App() {
       if (res.events.some((e) => e.type === "deathByAge")) {
         // 老衰死（T-40・D-31）：教会蘇生はしない。起床ログ＋伝記を表示し、
         // 生の継ぎ方を選ぶ画面へ（T-48。年代記への記録は転生を選んだ時点で行う）。
-        const bio = bioLines(res.state, "death");
+        const bio = bioLines(res.state, "death", true);
         const wake = wakeLines(res.state, res.events, opts?.atHome ?? false);
         push([...wake, ...bio]);
         saveGame(res.state);
@@ -187,7 +190,7 @@ export function App() {
       }
       // 年代記への追記（T-38。戦闘死＝教会で蘇生する死。老衰死は上で転生へ回す）
       if (res.events.some((e) => e.type === "died")) {
-        recordLifeEnd(res.state, "death", bioLines(res.state, "death").join("\n"));
+        recordLifeEnd(res.state, "death", bioLines(res.state, "death", true).join("\n"));
       }
       // 起床（UI-01：Wake見本）：報告は専用の窓で渡し、記録にも同じ行を残す
       const wakeEv = res.events.find(
@@ -238,7 +241,7 @@ export function App() {
       const res = step(s, { type: "retire" }, cfg);
       // 伝記を開き、生の継ぎ方（転生か次代か）を選ぶ画面へ（T-48）。
       // 年代記への記録は転生を選んだ時点で行う
-      const bio = bioLines(res.state, "retire");
+      const bio = bioLines(res.state, "retire", true);
       push(bio);
       saveGame(res.state);
       stateRef.current = res.state;
@@ -318,7 +321,7 @@ export function App() {
   const chooseWay = useCallback(
     (prev: GameState, cause: "retire" | "oldAge", way: "rebirth" | "heir") => {
       if (way === "rebirth") {
-        const bio = bioLines(prev, cause === "retire" ? "retire" : "death");
+        const bio = bioLines(prev, cause === "retire" ? "retire" : "death", true);
         recordLifeEnd(prev, cause, bio.join("\n"));
         setScreen({ name: "rebirth", prev, cause });
       } else {
@@ -363,12 +366,15 @@ export function App() {
 
   const scene = sceneOf(screen);
   const notice = notices[0];
+  // 危機の段階による景色の霞（W-04、docs/08 §3「景色の差分」）。
+  // 段階の数字は出さず、世界の気配として背景に滲ませる
+  const haze = crisisSceneHaze(state, cfg.crisis);
 
   return (
     <Stage>
       <div data-testid="app" className="scene">
         {/* 背景 → 名札 → HUD → 画面の窓 → 会話窓 → 操作ガイド → 通知 の順に重ねる */}
-        <SceneBackground kind={scene} />
+        <SceneBackground kind={scene} haze={haze} />
         {HUD_SCREENS.has(screen.name) && <TopChrome state={state} />}
         <div key={screen.name} className="screen-fade">
           <ScreenView
@@ -428,7 +434,12 @@ export function App() {
           }}
         />
         {notice !== undefined && (
-          <NoticeOverlay notice={notice} onClose={() => setNotices((q) => q.slice(1))} />
+          <NoticeOverlay
+            state={state}
+            notice={notice}
+            onEnd={() => setScreen({ name: "ending" })}
+            onClose={() => setNotices((q) => q.slice(1))}
+          />
         )}
       </div>
     </Stage>
@@ -596,6 +607,8 @@ function ScreenView(props: {
       );
     case "crisis":
       return <CrisisScreen state={state} setScreen={setScreen} act={act} />;
+    case "ending":
+      return <EndingScreen state={state} back={toMenu} />;
     case "lore":
       return <LoreScreen state={state} atomId={screen.atomId} setScreen={setScreen} act={act} />;
     case "book":

@@ -51,11 +51,17 @@ import {
   TENDENCY_IDS,
   TemplateProvider,
   crisisAreaClosed,
+  crisisEnding,
   crisisEnemyChallengeBonus,
   crisisEnemyMods,
+  crisisEpilogue,
   crisisFinaleOffers,
   crisisInvolvement,
+  crisisNpcAbsent,
+  crisisOfferSpeaker,
   crisisRivalName,
+  crisisSceneHaze,
+  crisisStageLine,
   crisisTouchpointOf,
   crisisTouchpointOffers,
   crisisTypeOf,
@@ -67,6 +73,7 @@ import {
   type BoardInput,
   type BoardState,
   type Chronicle,
+  type CrisisEnding,
   type CombatAction,
   type CombatState,
   type DealInput,
@@ -239,9 +246,15 @@ export function workName(w: Pick<Work, "kind" | "order">, state?: GameState): st
 
 /**
  * 伝記（T-37）：素材は core（biographyMaterial）が摘み、表示名はここで解決する。
- * cause 省略時は「いまの記録」の途中経過（引退・死亡の行を出さない）
+ * cause 省略時は「いまの記録」の途中経過（引退・死亡の行を出さない）。
+ * worldEpilogue は「生の終わり」の画面・記録にだけ立てる
+ * （W-04、docs/08 §7：転生の年代記に世界の行方の後日談を1節残す）
  */
-export function bioLines(state: GameState, cause?: "retire" | "death"): string[] {
+export function bioLines(
+  state: GameState,
+  cause?: "retire" | "death",
+  worldEpilogue = false,
+): string[] {
   const m = biographyMaterial(state, cfg.pinnacles);
   const titleNames = m.titleIds
     .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
@@ -253,7 +266,7 @@ export function bioLines(state: GameState, cause?: "retire" | "death"): string[]
   const pinnacleNames = m.pinnacleIds
     .map((id) => pinnacles.pinnacles.find((r) => r.id === id)?.name ?? id)
     .join("、");
-  return narrator.narrate(
+  const lines = narrator.narrate(
     {
       scene: "biography",
       name: m.name,
@@ -292,6 +305,27 @@ export function bioLines(state: GameState, cause?: "retire" | "death"): string[]
     // 同じ死には同じ伝記（通算死亡数でシードを分ける）
     createRng(`${state.seed}:bio:${m.days}:${m.deaths}`),
   );
+  // 危機の後日談（W-04）：その生の終わり時点で、世界がどうなるかを1節添える
+  return worldEpilogue ? [...lines, ...crisisEpilogueLines(state)] : lines;
+}
+
+/**
+ * 危機の後日談（W-04、docs/08 §7）：その生の終わり時点の世界の行方を1節。
+ * 決着を見届けた生なら「見届けた」、未決着なら世界の結末の先読みを語る。
+ * 危機の無い世界では空（何も足さない）
+ */
+export function crisisEpilogueLines(state: GameState): string[] {
+  if (cfg.crisis === undefined) return [];
+  const ep = crisisEpilogue(state, cfg.crisis, cfg.time);
+  if (ep === null) return [];
+  const type = crisisTypeOf(state, cfg.crisis);
+  const key = ep.witnessed
+    ? ep.outcome === "ruin"
+      ? "witnessedRuin"
+      : "witnessedResolved"
+    : ep.outcome; // resolved / ruin / ongoing
+  const text = narration.crisis.epilogue[key];
+  return text === undefined ? [] : [tpl(text, { type: type?.name ?? "", name: state.player.name })];
 }
 
 const SAVE_KEY = "trace.save.v1";
@@ -1028,7 +1062,9 @@ export {
   crisisEnemyChallengeBonus,
   crisisFinaleOffers,
   crisisInvolvement,
+  crisisOfferSpeaker,
   crisisRivalName,
+  crisisSceneHaze,
   crisisTypeOf,
 };
 
@@ -1037,6 +1073,30 @@ export {
  * 出来事ログ（crisis.log）から表示行にする。段階や結末の語りは新聞・噂が担うので、
  * ここは淡々とした出来事の一覧だけ（最新10件）
  */
+/** 世界の記録の ref（段階・場面・NPC・ライバルの id）→ 表示名（W-01〜W-04 共通） */
+function crisisLogRefName(state: GameState, entry: { kind: string; ref?: string }): string {
+  if (entry.ref === undefined) return "";
+  const type = cfg.crisis !== undefined ? crisisTypeOf(state, cfg.crisis) : undefined;
+  if (entry.kind === "stage") {
+    return type?.stages.find((s) => s.id === entry.ref)?.name ?? entry.ref;
+  }
+  if (entry.kind.startsWith("finale.")) {
+    return type?.finales.find((f) => f.id === entry.ref)?.name ?? entry.ref;
+  }
+  if (entry.kind.startsWith("npc.")) {
+    return (
+      voices.npcs.find((n) => n.id === entry.ref)?.name ??
+      canon.figures.find((f) => f.id === entry.ref)?.name ??
+      entry.ref
+    );
+  }
+  // 英雄として記録されたライバル（W-03）：ref は "rival.<index>"
+  if (entry.ref.startsWith("rival.") && cfg.crisis !== undefined) {
+    return crisisRivalName(state, cfg.crisis, entry.ref);
+  }
+  return entry.ref;
+}
+
 export function crisisRecordLines(state: GameState): string[] {
   const crisis = state.crisis;
   const out: string[] = [t.text.recordsCrisis];
@@ -1044,34 +1104,40 @@ export function crisisRecordLines(state: GameState): string[] {
     out.push(t.text.recordsCrisisNone);
     return out;
   }
-  const type = cfg.crisis !== undefined ? crisisTypeOf(state, cfg.crisis) : undefined;
-  const refName = (entry: { kind: string; ref?: string }): string => {
-    if (entry.ref === undefined) return "";
-    if (entry.kind === "stage") {
-      return type?.stages.find((s) => s.id === entry.ref)?.name ?? entry.ref;
-    }
-    if (entry.kind.startsWith("finale.")) {
-      return type?.finales.find((f) => f.id === entry.ref)?.name ?? entry.ref;
-    }
-    if (entry.kind.startsWith("npc.")) {
-      return (
-        voices.npcs.find((n) => n.id === entry.ref)?.name ??
-        canon.figures.find((f) => f.id === entry.ref)?.name ??
-        entry.ref
-      );
-    }
-    // 英雄として記録されたライバル（W-03）：ref は "rival.<index>"
-    if (entry.ref.startsWith("rival.") && cfg.crisis !== undefined) {
-      return crisisRivalName(state, cfg.crisis, entry.ref);
-    }
-    return entry.ref;
-  };
   for (const entry of crisis.log.slice(-10)) {
-    const text = crisisLogLine(entry.kind, refName(entry));
+    const text = crisisLogLine(entry.kind, crisisLogRefName(state, entry));
     if (text === null) continue;
     out.push(tpl(t.text.recordsCrisisLine, { day: entry.day + 1, text }));
   }
   return out;
+}
+
+/**
+ * 終幕の素材（W-04、docs/08 §7）：決着/滅びの紙の層の語り＋関与の段階の痕跡。
+ * 表示名（NPC・ライバル・役割・段階・作品）はここで解決する。
+ * 進行中・危機の無い世界では null（終幕の画面は出さない）
+ */
+export function endingOf(state: GameState): CrisisEnding | null {
+  return crisisEnding(state, cfg.crisis, narration.crisis, {
+    stage: (s) => t.display.crisisStageNames[String(s)] ?? String(s),
+    role: (r) => t.display.crisisRoleNames[r] ?? r,
+    npc: (id) =>
+      voices.npcs.find((n) => n.id === id)?.name ??
+      canon.figures.find((f) => f.id === id)?.name ??
+      id,
+    rival: (ref) => (cfg.crisis !== undefined ? crisisRivalName(state, cfg.crisis, ref) : ref),
+    work: (w) => workName(w, state),
+  });
+}
+
+/** その世界の年代記の一頁（終幕の画面の右紙。世界の記録を日付つきの行にする） */
+export function endingPageLines(state: GameState): { day: number; text: string }[] {
+  const ending = endingOf(state);
+  if (ending === null) return [];
+  return ending.page.flatMap((entry) => {
+    const text = crisisLogLine(entry.kind, crisisLogRefName(state, entry));
+    return text === null ? [] : [{ day: entry.day + 1, text }];
+  });
 }
 export type { BoardState, CombatState, DealState, TimingState };
 export type { Order };
@@ -1196,6 +1262,14 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
     .concat(narrator.narrate({ scene: "newspaper", ...req }, rng("r3"))[1] ?? "")
     .filter((x, i, a) => x !== "" && x !== lead && a.indexOf(x) === i)
     .slice(0, 2);
+  // 危機の記事（W-04、docs/08 §3「画面に危機の段階を常に出さない」）：
+  // 段階は欄を設けて見せず、世界の出来事として続報の先頭に混ぜる
+  const crisisLine =
+    cfg.crisis !== undefined
+      ? crisisStageLine(state, cfg.crisis, narration.crisis, rng("crisis"))
+      : null;
+  if (crisisLine !== null) rumors.unshift(crisisLine);
+  rumors.splice(3);
 
   // 昨日の記録：行動種別ごとにまとめる
   const grouped = new Map<string, number>();
@@ -1208,10 +1282,13 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
   );
   for (const w of works) recordLines.push(`《${w.name}》を仕上げた`);
 
-  // 街の声：住人を2〜3人選び、話題があれば respect、無ければ greet
+  // 街の声：住人を2〜3人選び、話題があれば respect、無ければ greet。
+  // 危機の段階で街を離れた・亡くなった住人は紙面に出ない（W-04：人の不在で伝える）
   const deed = deeds.includes("combat") ? "狩り" : deeds.includes("work") ? "仕事" : undefined;
   const npcRng = rng("npc");
-  const rest = [...voices.npcs];
+  const rest = voices.npcs.filter(
+    (n) => cfg.crisis === undefined || crisisNpcAbsent(state, n.id) === null,
+  );
   const pool = [0, 1, 2].flatMap(() =>
     rest.length > 0 ? [rest.splice(npcRng.int(0, rest.length - 1), 1)[0]!] : [],
   );
@@ -1270,7 +1347,11 @@ export function townVoice(state: GameState): { name: string; role: string; text:
       : deeds.includes("train")
         ? "鍛錬"
         : undefined;
-  const npc = rng.pick([...voices.npcs]);
+  // 危機の段階で街を離れた・亡くなった住人は窓に出ない（W-04：人の不在で伝える）
+  const pool = voices.npcs.filter(
+    (n) => cfg.crisis === undefined || crisisNpcAbsent(state, n.id) === null,
+  );
+  const npc = rng.pick(pool.length > 0 ? pool : [...voices.npcs]);
   const by = npc.lines.byStanding?.[state.society.standing];
   const lines =
     deed !== undefined ? (by?.respect ?? npc.lines.respect) : (by?.greet ?? npc.lines.greet);
@@ -1284,6 +1365,13 @@ export function townVoice(state: GameState): { name: string; role: string; text:
 /** 下帯の「噂」（新聞の rumor 系を1本、日替わり・決定的） */
 export function townRumor(state: GameState): string {
   const rng = createRng(`${state.seed}:rumor:${state.time.day}`);
+  // 危機は噂で知る（W-04、docs/08 §3）：進行中は一日おきに、滅びた世は毎日、
+  // 世界の噂が下帯に混ざる。段階の数字は出さない
+  const crisis =
+    cfg.crisis !== undefined ? crisisStageLine(state, cfg.crisis, narration.crisis, rng) : null;
+  if (crisis !== null && (state.crisis?.outcome === "ruin" || state.time.day % 2 === 0)) {
+    return `噂 ―「${crisis}」`;
+  }
   const deeds = state.actionLog.filter((a) => a.day === state.time.day - 1).map((a) => a.kind);
   const line = narrator.narrate({ scene: "newspaper", deeds, works: [], deaths: 0 }, rng)[1];
   return `噂 ―「${line ?? "今日は静かだ"}」`;
@@ -1298,6 +1386,19 @@ export interface Notice {
   sub: string;
   /** 報酬の行（称号・作品・見聞の断片など） */
   rewards: { label: string; name: string; sub?: string }[];
+  /** 帯の欧文の小見出し（S。省略時は WORLD FIRST） */
+  kicker?: string;
+  /** 帯の導入文（S。省略時は「この世界で、初めての記録です」） */
+  lead?: string;
+  /** 帯の末尾の小文（S。省略時は年代記への言及） */
+  footnote?: string;
+  /**
+   * 人物からの会話として出す（W-04：決着の場面への打診は
+   * 会話の窓で人物が持ちかける。speaker/行を持つと DialogueBox で描く）
+   */
+  dialogue?: { speaker: string; lines: string[]; hint?: string };
+  /** 閉じたあと結末画面（世界の年代記の一頁）を開く（W-04：終幕の通知） */
+  openEnding?: boolean;
 }
 
 export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
@@ -1354,14 +1455,53 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         rewards: [{ label: "人生目標", name: `《${name}》` }],
       });
     }
-    // 決着の場面への打診（W-03、docs/08 §6）：関与が段階3に届いた証。通知Aランク相当
+    // 決着の場面への打診（W-03・W-04、docs/08 §6）：関与が段階3・4に届いた証。
+    // 会話の窓で人物から持ちかけられる形にする（その場面に備えを積んだ勢力の使い）
     if (e.type === "crisisFinaleOffered") {
       const name = crisisRefName(e.id, "finales");
+      const faction =
+        state !== undefined && cfg.crisis !== undefined
+          ? crisisOfferSpeaker(state, cfg.crisis, e.id)
+          : null;
+      const offer = narration.crisis.offer;
+      const speaker = tpl(offer.speaker, { faction: faction ?? "街" });
       out.push({
         rank: "A",
         title: `《${name}》への打診`,
         sub: "世界の決着に、あなたの名が挙がりました",
         rewards: [{ label: "決着の場面", name: `《${name}》` }],
+        dialogue: {
+          speaker,
+          lines: [tpl(offer.line, { name })],
+          hint: offer.hint,
+        },
+      });
+    }
+    // 終幕（W-04、docs/08 §7）：危機の決着は世界級の出来事 ―― ランクSの通知。
+    // このあと結末画面（紙の層の語り＋世界の年代記の一頁）が開く
+    if (e.type === "crisisEnded") {
+      const type =
+        state !== undefined && cfg.crisis !== undefined
+          ? crisisTypeOf(state, cfg.crisis)
+          : undefined;
+      const stage =
+        state !== undefined && cfg.crisis !== undefined
+          ? (t.display.crisisStageNames[String(crisisInvolvement(state, cfg.crisis).stage)] ?? "")
+          : "";
+      const n = narration.crisis.notice;
+      const resolved = e.outcome === "resolved";
+      out.push({
+        rank: "S",
+        openEnding: true,
+        kicker: n.kicker,
+        lead: n.lead,
+        footnote: n.footnote,
+        title: resolved ? n.resolvedTitle : n.ruinTitle,
+        sub: tpl(resolved ? n.resolvedSub : n.ruinSub, { type: type?.name ?? "" }),
+        rewards: [
+          { label: n.worldPage, name: `《${type?.name ?? ""}》` },
+          ...(stage !== "" ? [{ label: n.involvement, name: `《${stage}》` }] : []),
+        ],
       });
     }
     // 自分で起こした決着（W-03）：英雄の記録は世界級の出来事。成がS、不成でもA

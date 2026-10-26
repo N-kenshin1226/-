@@ -218,7 +218,7 @@ export function CombatScreen({
         {
           format: (ev) => [
             ...eventLines(ev, state),
-            ...(r.died ? [...bioLines(state, "death"), t.text.chronicleRecorded] : []),
+            ...(r.died ? [...bioLines(state, "death", true), t.text.chronicleRecorded] : []),
           ],
         },
       );
@@ -244,7 +244,7 @@ export function CombatScreen({
     push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
     // 死亡時は伝記が生成される（06 §1。蘇生するが記録は残る）
     if (r.died) {
-      push(bioLines(state, "death"));
+      push(bioLines(state, "death", true));
       // 伝記 → 年代記への記録（T-38。実際の追記は act 内で died イベントを見て行う）
       push(t.text.chronicleRecorded);
     }
@@ -418,7 +418,7 @@ export function AbyssScreen({
         format: (ev) => [
           ...eventLines(ev, state),
           // 深層での死も教会蘇生の扱いは同じ（03 §4）。伝記を残す
-          ...(end === "died" ? [...bioLines(state, "death"), t.text.chronicleRecorded] : []),
+          ...(end === "died" ? [...bioLines(state, "death", true), t.text.chronicleRecorded] : []),
         ],
       },
     );

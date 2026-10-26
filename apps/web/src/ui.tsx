@@ -23,6 +23,12 @@ export type Screen =
   | { name: "combat"; enemy: EnemyJson; touchpoint?: string; finale?: string }
   /** 決着の場面（W-03、docs/08 §6）：打診への応え・勝負所・自分で起こす */
   | { name: "crisis" }
+  /**
+   * 終幕の画面（W-04、docs/08 §7）：危機の決着・滅びを紙の層の語り＋
+   * その世界の年代記の一頁で見せる。通知の「一頁を開く」から開き、
+   * 閉じればそのまま世界で遊び続けられる（終幕は終了画面ではない）
+   */
+  | { name: "ending" }
   /** 深層ダンジョン（T-43）：層を下る連戦。進行は AbyssRun が持つ */
   | { name: "abyss" }
   | { name: "lore"; atomId?: string }
