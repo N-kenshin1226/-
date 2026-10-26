@@ -135,4 +135,13 @@ export interface GameState {
     /** 達成済みの人生目標ID */
     achievedGoals: string[];
   };
+  /** 見聞録（07 §3）。読んだアトムと分かった事実・発掘済みのつながり */
+  lore: {
+    /** 読んだアトムID */
+    read: string[];
+    /** 判明した事実ID（canon.facts） */
+    facts: string[];
+    /** 報酬を発掘済みの出来事ID（canon.events の reward 済み） */
+    connections: string[];
+  };
 }

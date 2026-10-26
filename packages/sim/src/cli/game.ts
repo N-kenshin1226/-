@@ -25,7 +25,9 @@ import {
 } from "@trace/core";
 import { startCombat, suggestGoals, telegraphLines } from "@trace/core";
 import {
+  atoms,
   balance,
+  canon,
   cliText,
   enemies,
   orders,
@@ -140,6 +142,14 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       if (e.type === "goalAchieved") {
         const name = society.lifeGoals.find((g) => g.id === e.id)?.name ?? e.id;
         return [tpl(t.text.goalAchieved, { name })];
+      }
+      if (e.type === "factLearned") {
+        const text = canon.facts.find((f) => f.id === e.id)?.text ?? e.id;
+        return [tpl(t.text.factLearned, { text })];
+      }
+      if (e.type === "loreConnection") {
+        const name = canon.events.find((x) => x.id === e.id)?.name ?? e.id;
+        return [tpl(t.text.loreConnection, { name })];
       }
       return [];
     });
@@ -575,6 +585,39 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           const res = step(state, { type: "declareGoal", id: goal.id }, cfg);
           state = res.state;
           out(tpl(t.text.societyDeclared, { name: goal.name }));
+          save(state);
+        }
+      }
+    } else if (pick === "7" && canAction) {
+      // ---- 見聞録を読む（07 §3：アトムを読み、事実が繋がる） ----
+      out(
+        tpl(t.text.loreListHeader, {
+          read: state.lore.read.length,
+          total: atoms.length,
+          facts: state.lore.facts.length,
+        }),
+      );
+      if (atoms.length === 0) {
+        out(t.text.loreNone);
+      } else {
+        for (let i = 0; i < atoms.length; i++) {
+          const a = atoms[i]!;
+          const mark = state.lore.read.includes(a.id) ? "読" : "未";
+          out(tpl(t.text.loreLine, { i: i + 1, mark, title: a.title }));
+        }
+        const li = await ask(t.text.promptChoice);
+        if (li === null) return state;
+        const liN = Number.parseInt(li.trim(), 10) - 1;
+        if (liN >= 0 && liN < atoms.length) {
+          const a = atoms[liN]!;
+          if (state.lore.read.includes(a.id)) {
+            out(tpl(t.text.loreRead, { title: a.title, text: a.text }));
+            continue;
+          }
+          const res = step(state, { type: "readAtom", id: a.id }, cfg);
+          state = res.state;
+          out(tpl(t.text.loreRead, { title: a.title, text: a.text }));
+          outAll(applyTitles(res.events));
           save(state);
         }
       }

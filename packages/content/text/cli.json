@@ -59,7 +59,7 @@
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
-    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  q) 中断する",
+    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  7) 見聞録を読む  q) 中断する",
     "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  q) 中断する",
     "mustSleep": "――身体はもう動きません。今日はここまでです。",
     "promptChoice": "> ",
@@ -129,6 +129,12 @@
     "societyAccepted": "――打診を受けました。{name} となります。",
     "societyDeclared": "――目標を宣言しました：《{name}》",
     "offerReceived": "――{name} への打診が届きました（目標と認定で応えられます）。",
-    "goalAchieved": "――目標《{name}》を達成しました。世界が覚えています。"
+    "goalAchieved": "――目標《{name}》を達成しました。世界が覚えています。",
+    "loreListHeader": "── 見聞録（読んだもの {read}/{total}、判明した事実 {facts}）",
+    "loreLine": "  {i}) {mark} {title}",
+    "loreNone": "まだ読めるものがない。",
+    "loreRead": "──《{title}》\n  {text}",
+    "factLearned": "――新たな事実が記録された：《{text}》",
+    "loreConnection": "――断片が繋がった。{name} の真相に近づいた気がする。"
   }
 }

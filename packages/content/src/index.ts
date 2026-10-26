@@ -23,3 +23,8 @@ export type { Order, OrdersFile } from "./orders.schema.js";
 export { cliText } from "./cli-text.js";
 export { cliTextSchema } from "./cli-text.schema.js";
 export type { CliText } from "./cli-text.schema.js";
+export { atoms, canon, canonIds } from "./lore.js";
+export { atomSchema } from "./atom.schema.js";
+export type { Atom } from "./atom.schema.js";
+export { canonSchema } from "./canon.schema.js";
+export type { Canon } from "./canon.schema.js";

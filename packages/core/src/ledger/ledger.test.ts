@@ -147,6 +147,7 @@ describe("step の work コマンド", () => {
       lifeGoals: [],
       goalRewardFactor: 1,
     },
+    lore: { atoms: [], connections: [] },
     titles: [],
     ...over,
   });

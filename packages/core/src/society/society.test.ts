@@ -123,6 +123,7 @@ const base = (): StepConfig => ({
     ],
     goalRewardFactor: 1.5,
   },
+  lore: { atoms: [], connections: [] },
   titles: [],
 });
 

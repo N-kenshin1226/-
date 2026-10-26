@@ -208,6 +208,7 @@ const baseCfg = (): StepConfig => ({
     lifeGoals: [],
     goalRewardFactor: 1,
   },
+  lore: { atoms: [], connections: [] },
   titles: [
     {
       id: "title.wolf_test",

@@ -31,7 +31,7 @@
 | T-17 | [T-17_ct_combat.md](T-17_ct_combat.md) | T-04 | done | CT戦闘コア。予兆・防御・観察・逃走 |
 | T-18 | [T-18_notify.md](T-18_notify.md) | T-10 | done | 通知予算S/A/B・気配（Sは1日1回） |
 | T-19 | [T-19_society.md](T-19_society.md) | T-10, T-16 | done | 立場3段階×職業2・打診(A通知)・人生目標 |
-| T-19b | [T-19b_lore.md](T-19b_lore.md) | T-10 | todo | アトム型・canon骨格・lore:check・見聞録 |
+| T-19b | [T-19b_lore.md](T-19b_lore.md) | T-10 | done | アトム型・canon骨格・lore:check・見聞録（セーブv8） |
 | T-19c | [T-19c_narration.md](T-19c_narration.md) | T-16 | todo | NarrationProvider+Template |
 | T-20 | [T-20_cli_town.md](T-20_cli_town.md) | T-13〜T-19 | todo | CLIで街のプレイループ |
 | T-21 | [T-21_web_ui.md](T-21_web_ui.md) | T-20 | todo | Web UI（M1） |

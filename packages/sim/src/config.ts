@@ -1,4 +1,4 @@
-import { balance, society, tailwinds, titles } from "@trace/content";
+import { atoms, balance, canon, society, tailwinds, titles } from "@trace/content";
 import type { StepConfig } from "@trace/core";
 
 /** balance.json とコンテンツJSONから実行時の StepConfig を組み立てる */
@@ -19,6 +19,12 @@ export function stepConfig(): StepConfig {
       goalRewardFactor: balance.society.goalRewardFactor,
     },
     titles: titles.titles.map((t) => ({ id: t.id, rank: t.rank, condition: t.condition })),
+    lore: {
+      atoms: atoms.map((a) => ({ id: a.id, reveals: a.reveals, unlock: a.unlock })),
+      connections: canon.events
+        .filter((e) => e.reward !== null)
+        .map((e) => ({ eventId: e.id, facts: e.reward!.facts, flag: e.reward!.flag })),
+    },
   };
 }
 

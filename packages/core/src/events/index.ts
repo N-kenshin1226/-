@@ -35,7 +35,13 @@ export type ActionEvent =
   /** 人生目標を宣言した */
   | { type: "goalDeclared"; id: string }
   /** 宣言した人生目標を達成した（報酬済み） */
-  | { type: "goalAchieved"; id: string };
+  | { type: "goalAchieved"; id: string }
+  /** アトムを読んだ（見聞録に記録） */
+  | { type: "atomRead"; id: string }
+  /** 事実が判明した（アトムの reveals 由来） */
+  | { type: "factLearned"; id: string }
+  /** 出来事の事実が揃い、つながりの報酬（隠しフラグ）が立った */
+  | { type: "loreConnection"; id: string; flag: string };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;

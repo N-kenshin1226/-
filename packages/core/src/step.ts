@@ -13,6 +13,7 @@ import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import type { CombatConfig } from "./combat/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
 import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
+import { readAtom, type LoreConfig } from "./lore/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
@@ -37,6 +38,8 @@ export interface StepConfig {
   combat: CombatConfig;
   /** 立場・職業・人生目標の定義（03 §1。content/society.json）＋達成報酬の係数 */
   society: SocietyDefs & { goalRewardFactor: number };
+  /** 見聞録（07 §3。content/lore のアトムとつながり定義） */
+  lore: LoreConfig;
   /** 称号の定義（content/titles.json。core が必要とする最小形） */
   titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond }[];
 }
@@ -81,7 +84,9 @@ export type Command =
   /** 人生目標を宣言する（03 §1）。行動は消費しない */
   | { type: "declareGoal"; id: string }
   /** 人生目標を取り下げる（差し替え用） */
-  | { type: "abandonGoal" };
+  | { type: "abandonGoal" }
+  /** アトムを読む（見聞録。行動を1回消費する） */
+  | { type: "readAtom"; id: string };
 
 export interface StepResult {
   state: GameState;
@@ -336,6 +341,26 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     case "abandonGoal": {
       if (next.society.goal !== null) {
         next = { ...next, society: { ...next.society, goal: null } };
+      }
+      break;
+    }
+    case "readAtom": {
+      // 読むのも行動（1回消費）。読み済み・不明IDは時間だけ使わない
+      const res = readAtom(next, command.id, cfg.lore);
+      if (!res.ok) break;
+      next = res.state;
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "read", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "read",
+        day: next.time.day,
+        target: command.id,
+      });
+      events.push({ type: "atomRead", id: command.id });
+      for (const f of res.newFacts) events.push({ type: "factLearned", id: f });
+      for (const c of res.connections) {
+        events.push({ type: "loreConnection", id: c.eventId, flag: c.flag });
       }
       break;
     }

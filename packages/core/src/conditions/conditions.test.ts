@@ -97,6 +97,7 @@ const cfg: StepConfig = {
     lifeGoals: [],
     goalRewardFactor: 1,
   },
+  lore: { atoms: [], connections: [] },
   titles: [],
 };
 
