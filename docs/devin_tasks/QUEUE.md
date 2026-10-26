@@ -18,3 +18,20 @@
 | T-09 | [T-09_balance_gate.md](T-09_balance_gate.md) | T-07, T-08, T-10 | done | |
 | T-11 | [T-11_cli.md](T-11_cli.md) | T-09 | done | |
 | H-01 | オーナーがCLIで3日分遊び、「起床ログが気持ちいいか」を判断する | T-11 | needs_human | M0の終わり。オーナーの指示でスキップして先へ進む |
+
+## M1
+
+| ID | タスク | 依存 | 状態 | 備考 |
+|---|---|---|---|---|
+| T-12 | [T-12_minigame_engines.md](T-12_minigame_engines.md) | T-04 | todo | MiniGame型と3エンジン |
+| T-13 | [T-13_smithing.md](T-13_smithing.md) | T-12 | todo | 鍛冶（タイミング） |
+| T-14 | [T-14_mining.md](T-14_mining.md) | T-12 | todo | 採掘（盤面） |
+| T-15 | [T-15_negotiation.md](T-15_negotiation.md) | T-12 | todo | 交渉（駆け引き） |
+| T-16 | [T-16_ledger.md](T-16_ledger.md) | T-04 | todo | 作品台帳。T-13と並行可 |
+| T-17 | [T-17_ct_combat.md](T-17_ct_combat.md) | T-04 | todo | CT戦闘コア |
+| T-18 | [T-18_notify.md](T-18_notify.md) | T-10 | todo | 通知予算S/A/B・気配 |
+| T-19 | [T-19_society.md](T-19_society.md) | T-10, T-16 | todo | 立場×職業・認定・人生目標 |
+| T-19b | [T-19b_lore.md](T-19b_lore.md) | T-10 | todo | アトム型・canon骨格・lore:check・見聞録 |
+| T-19c | [T-19c_narration.md](T-19c_narration.md) | T-16 | todo | NarrationProvider+Template |
+| T-20 | [T-20_cli_town.md](T-20_cli_town.md) | T-13〜T-19 | todo | CLIで街のプレイループ |
+| T-21 | [T-21_web_ui.md](T-21_web_ui.md) | T-20 | todo | Web UI（M1） |
