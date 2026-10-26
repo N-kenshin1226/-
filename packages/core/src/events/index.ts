@@ -1,4 +1,4 @@
-import type { GameState } from "../state/types.js";
+import type { GameState, Work } from "../state/types.js";
 import type { GameTime } from "../time/index.js";
 import type { WakeReport } from "../growth/consolidate.js";
 
@@ -17,7 +17,11 @@ export type ActionEvent =
   /** 起床ログの構造化データ（睡眠時に発行） */
   | { type: "wakeReport"; report: WakeReport }
   /** 称号を獲得した。rank は通知ランク（S/A/B） */
-  | { type: "titleGained"; id: string; rank: "S" | "A" | "B" };
+  | { type: "titleGained"; id: string; rank: "S" | "A" | "B" }
+  /** 作品台帳に記録された */
+  | { type: "workRecorded"; work: Work }
+  /** 作品のティアが更新された（自己ベスト。大きな成長のトリガー） */
+  | { type: "tierUp"; kind: string; tier: number };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;

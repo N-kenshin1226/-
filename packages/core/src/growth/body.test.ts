@@ -67,6 +67,12 @@ const cfg: StepConfig = {
     drawMin: 1,
     drawMax: 2,
   },
+  ledger: {
+    basePricePerQuality: 2,
+    marketWindowDays: 7,
+    marketDecayPerWork: 0.9,
+    tierUpBonusPending: 8,
+  },
   body,
   titles: [],
 };

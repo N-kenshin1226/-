@@ -95,6 +95,12 @@ const cfg: StepConfig = {
     potentialDecayPerPoint: 0.01,
   },
   tailwind,
+  ledger: {
+    basePricePerQuality: 2,
+    marketWindowDays: 7,
+    marketDecayPerWork: 0.9,
+    tierUpBonusPending: 8,
+  },
   body: {
     fatiguePerAction: { wait: 1, train: 6 },
     fatigueDefaultPerAction: 2,

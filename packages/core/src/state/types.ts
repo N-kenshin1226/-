@@ -63,6 +63,32 @@ export interface ActionLogEntry {
   variant?: string;
 }
 
+/**
+ * 作品・偉業の記録（docs/03 §3 作品台帳）。
+ * 成長（ティア更新）・称号・新聞・年代記・転生の遺物はすべてこの帳簿を読む
+ */
+export interface Work {
+  id: string;
+  /** 仕事の系統（スキルIDに対応: smithing / mining / …） */
+  kind: string;
+  /** 作った人（プレイヤー名） */
+  maker: string;
+  /** 品質 0〜100 */
+  quality: number;
+  /** 自己ベストの段階（記録時点で決まる） */
+  tier: number;
+  /** 注文ID（特別な注文への対応作なら） */
+  order?: string;
+  /** 特記フラグ（会心・世界初・珍品・呪い など） */
+  flags: string[];
+  /** 作られた日 */
+  day: number;
+  /** この世界のシード */
+  worldSeed: string;
+  /** 記録時点の相場評価（同種の反復で下がる） */
+  marketValue: number;
+}
+
 /** 今日だけ有効なもの（追い風・気配など）。睡眠時に更新される */
 export interface TodayState {
   winds: RolledWind[];
@@ -86,4 +112,6 @@ export interface GameState {
   today: TodayState;
   /** 獲得済みの称号ID（titles.json の id） */
   titles: string[];
+  /** 作品台帳（03 §3）。古い順 */
+  ledger: Work[];
 }

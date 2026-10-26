@@ -10,6 +10,7 @@ export function stepConfig(): StepConfig {
     sleep: balance.sleep,
     tailwind: { defs: tailwinds.tailwinds, ...balance.tailwind },
     body: balance.body,
+    ledger: balance.ledger,
     titles: titles.titles.map((t) => ({ id: t.id, rank: t.rank, condition: t.condition })),
   };
 }

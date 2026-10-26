@@ -9,6 +9,7 @@ import {
 import { consolidateSleep, type InnRank, type SleepConfig } from "./growth/consolidate.js";
 import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
 import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js";
+import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
@@ -27,6 +28,8 @@ export interface StepConfig {
   sleep: SleepConfig;
   tailwind: TailwindConfig;
   body: BodyConfig;
+  /** 作品台帳（T-16。03 §3） */
+  ledger: LedgerConfig;
   /** 称号の定義（content/titles.json。core が必要とする最小形） */
   titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond }[];
 }
@@ -38,7 +41,19 @@ export type Command =
   /** 休養：家で休んで眠る。行動0回なら休養日（素質回復・オーバーワーク解除） */
   | { type: "rest" }
   /** 訓練：安全だが挑戦係数に上限がある（02 §8）。difficulty は行動の難度 */
-  | { type: "train"; skill: SkillId; difficulty: number; failed?: boolean };
+  | { type: "train"; skill: SkillId; difficulty: number; failed?: boolean }
+  /**
+   * 仕事で作品を作る（03 §3 作品台帳）。quality は結果、difficulty は注文の難しさ
+   * （省略時は quality − 現在値を挑戦差とみなす＝自己ベスト級の挑戦）
+   */
+  | {
+      type: "work";
+      kind: string;
+      quality: number;
+      difficulty?: number;
+      order?: string;
+      flags?: string[];
+    };
 
 export interface StepResult {
   state: GameState;
@@ -155,6 +170,54 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         variant: String(command.difficulty),
       });
       events.push({ type: "gainApplied", skill: command.skill, amount });
+      break;
+    }
+    case "work": {
+      // 技能を使う仕事。作品が台帳に載り、ティア更新なら大きな経験ボーナス
+      const recorded = recordWork(
+        next,
+        {
+          kind: command.kind,
+          quality: command.quality,
+          ...(command.order !== undefined ? { order: command.order } : {}),
+          ...(command.flags !== undefined ? { flags: command.flags } : {}),
+        },
+        cfg.ledger,
+      );
+      next = recorded.state;
+      const skill = next.player.skills[command.kind];
+      const skillValue = skill?.value ?? 0;
+      const repeats = recentRepeats(next.actionLog, "work", command.kind, cfg.gain.noveltyWindow);
+      const { amount } = computeGain(
+        {
+          kind: "work",
+          skill: skillValue,
+          delta: command.difficulty ?? command.quality - skillValue,
+          repeats,
+          potential: skill?.potential ?? 0,
+          fatigue: next.player.fatigue,
+          wind: windFor(next, "work", command.kind),
+        },
+        cfg.gain,
+      );
+      if (skill) {
+        skill.pending += amount + (recorded.tierUp ? cfg.ledger.tierUpBonusPending : 0);
+        skill.lastUsedDay = next.time.day;
+      }
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "work", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "work",
+        day: next.time.day,
+        target: command.kind,
+        ...(command.order !== undefined ? { variant: command.order } : {}),
+      });
+      events.push({ type: "gainApplied", skill: command.kind, amount });
+      events.push({ type: "workRecorded", work: recorded.work });
+      if (recorded.tierUp) {
+        events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
+      }
       break;
     }
   }

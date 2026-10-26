@@ -28,6 +28,8 @@ export { rollTailwind, windFor } from "./growth/tailwind.js";
 export type { RolledWind, TailwindConfig, TailwindDef, WindDirection } from "./growth/tailwind.js";
 export { step } from "./step.js";
 export type { Command, StepConfig, StepResult } from "./step.js";
+export { recordWork, matchesWork } from "./ledger/index.js";
+export type { LedgerConfig, RecordedWork } from "./ledger/index.js";
 export { newGame } from "./state/newGame.js";
 export type { NewGameConfig } from "./state/newGame.js";
 export type {
@@ -38,6 +40,7 @@ export type {
   SkillState,
   StatId,
   TodayState,
+  Work,
 } from "./state/types.js";
 export { subscribers } from "./events/index.js";
 export type { ActionEvent, Subscriber } from "./events/index.js";

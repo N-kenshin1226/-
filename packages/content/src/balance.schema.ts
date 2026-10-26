@@ -108,6 +108,15 @@ export const balanceSchema = z
         potentialMax: z.number().positive(),
       })
       .strict(),
+    /** docs/03 §3 作品台帳。core/ledger の LedgerConfig に対応 */
+    ledger: z
+      .object({
+        basePricePerQuality: z.number().positive(),
+        marketWindowDays: z.number().int().positive(),
+        marketDecayPerWork: z.number().min(0).max(1),
+        tierUpBonusPending: z.number().nonnegative(),
+      })
+      .strict(),
     /** docs/02_growth_system.md §4。core/growth/tailwind.ts の TailwindConfig に対応 */
     tailwind: z
       .object({
