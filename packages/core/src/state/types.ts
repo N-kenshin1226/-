@@ -23,6 +23,15 @@ export const STAT_IDS: readonly StatId[] = [
   "spirit",
 ];
 
+/**
+ * 運命の傾向（docs/06 §3C、T-45）。周の開始時に3択で選ぶ世界の修飾。
+ * "calm" は中立（従来どおり）。係数は balance.json の tendency 節
+ */
+export type TendencyId = "calm" | "war" | "famine";
+
+/** 傾向の全ID（選択肢の列挙・既定値の解決に使う） */
+export const TENDENCY_IDS: readonly TendencyId[] = ["calm", "war", "famine"];
+
 export interface SkillState {
   /** 現在値 0.0〜100.0（錆は将来表示側で扱う） */
   value: number;
@@ -177,4 +186,14 @@ export interface GameState {
     /** 遺物：前世の台帳から選んだ名品（この世界に現れている） */
     artifact: { name: string; kind: string; quality: number; tier: number } | null;
   } | null;
+  /**
+   * 運命の傾向（T-45、06 §3C）。周の開始時に選ぶ1軸の世界修飾（v14〜）。
+   * 未選択・既定は "calm"（従来どおり）
+   */
+  tendency: TendencyId;
+  /**
+   * 誓約（T-46、06 §3C）。開始時に自分で積む難度修飾子（vows.json の id、v15〜）。
+   * 選んだ誓約は flags["vow.taken.<id>"] にも刻まれ、条件DSLから読める
+   */
+  vows: string[];
 }

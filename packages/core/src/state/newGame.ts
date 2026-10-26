@@ -1,5 +1,11 @@
 import { createRng } from "../rng/index.js";
-import { STAT_IDS, type GameState, type PlayerState, type SkillState } from "./types.js";
+import {
+  STAT_IDS,
+  type GameState,
+  type PlayerState,
+  type SkillState,
+  type TendencyId,
+} from "./types.js";
 import { SAVE_VERSION } from "../save/index.js";
 import type { Legacy } from "../legacy/index.js";
 
@@ -31,6 +37,17 @@ export interface NewGameConfig {
    * artifact はこの世界に名品として現れる
    */
   legacy?: Legacy;
+  /**
+   * 運命の傾向（T-45、06 §3C）。周の開始時に3択で選ぶ世界の修飾。
+   * 省略時は "calm"（従来どおり）
+   */
+  tendency?: TendencyId;
+  /**
+   * 誓約（T-46、06 §3C）。開始時に自分で積む難度修飾子（vows.json の id）。
+   * 選んだ誓約は state.vows に記録され、flags["vow.taken.<id>"] にも刻まれる
+   * （誓約称号の条件が flags/counters から読めるようにするため）
+   */
+  vows?: readonly string[];
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -84,9 +101,12 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       money: cfg.initialMoney ?? 0,
     },
     counters: {},
-    flags: Object.fromEntries(
-      (cfg.legacy?.rememberedTitles ?? []).map((id) => [`memory.title.${id}`, true]),
-    ),
+    flags: Object.fromEntries([
+      // 「前世の記憶」の称号フラグ（T-39）
+      ...(cfg.legacy?.rememberedTitles ?? []).map((id) => [`memory.title.${id}`, true] as const),
+      // 積んだ誓約のフラグ（T-46。誓約称号の条件DSLが読む）
+      ...(cfg.vows ?? []).map((id) => [`vow.taken.${id}`, true] as const),
+    ]),
     actionLog: [],
     today: { winds: [], loads: 0 },
     titles: [...(cfg.legacy?.rememberedTitles ?? [])],
@@ -108,6 +128,9 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
           artifact: cfg.legacy.artifact ? { ...cfg.legacy.artifact } : null,
         }
       : null,
+    // 運命の傾向（T-45。未選択は中立の "calm"）と誓約（T-46）
+    tendency: cfg.tendency ?? "calm",
+    vows: [...new Set(cfg.vows ?? [])],
   };
 }
 

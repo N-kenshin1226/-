@@ -157,6 +157,38 @@ describe("newGame", () => {
     });
     expect(h.player.origin).toBe("origin.hunter_child");
   });
+
+  it("運命の傾向と誓約（T-45/T-46）：既定は calm＋誓約なし", () => {
+    const g = newGame("seed-fate", "運命", newGameCfg);
+    expect(g.tendency).toBe("calm");
+    expect(g.vows).toEqual([]);
+    expect(Object.keys(g.flags).some((f) => f.startsWith("vow.taken."))).toBe(false);
+  });
+
+  it("運命の傾向と誓約を選んで開始できる。誓約は重複を除き、旗にも刻む", () => {
+    const g = newGame("seed-fate2", "運命", {
+      ...newGameCfg,
+      tendency: "war",
+      vows: ["vow.iron_hide", "vow.windless", "vow.iron_hide"],
+    });
+    expect(g.tendency).toBe("war");
+    expect(g.vows).toEqual(["vow.iron_hide", "vow.windless"]);
+    // 誓約称号の条件DSLが読めるよう flags に刻む（T-46）
+    expect(g.flags["vow.taken.vow.iron_hide"]).toBe(true);
+    expect(g.flags["vow.taken.vow.windless"]).toBe(true);
+    expect(g.flags["vow.taken.vow.dear_bed"]).toBeUndefined();
+  });
+
+  it("serialize → deserialize で傾向と誓約も往復する（T-45/T-46）", () => {
+    const g = newGame("seed-fate3", "運命", {
+      ...newGameCfg,
+      tendency: "famine",
+      vows: ["vow.bare_purse"],
+    });
+    const restored = deserialize(serialize(g));
+    expect(restored.tendency).toBe("famine");
+    expect(restored.vows).toEqual(["vow.bare_purse"]);
+  });
 });
 
 describe("step", () => {
@@ -296,6 +328,41 @@ describe("save", () => {
     const restored = deserialize(JSON.stringify(v11));
     expect(restored.version).toBe(SAVE_VERSION);
     expect(restored.mentor).toBeNull();
+  });
+
+  it("version 12 のセーブは legacy を補って version 13 へ移行される", () => {
+    const g = newGame("seed-13", "移行6", newGameCfg);
+    const v12 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v12["version"] = 12;
+    delete v12["legacy"];
+    const restored = deserialize(JSON.stringify(v12));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.legacy).toBeNull();
+  });
+
+  it("version 13 のセーブは運命の傾向を中立（calm）で補って version 14 へ移行される（T-45）", () => {
+    const g = newGame("seed-14", "移行7", newGameCfg);
+    const v13 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v13["version"] = 13;
+    delete v13["tendency"];
+    delete v13["vows"];
+    const restored = deserialize(JSON.stringify(v13));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.tendency).toBe("calm");
+    // 誓約も続けて移行されて空になる
+    expect(restored.vows).toEqual([]);
+  });
+
+  it("version 14 のセーブ（傾向あり・誓約なし）は vows を補って version 15 へ移行される（T-46）", () => {
+    const g = newGame("seed-15", "移行8", { ...newGameCfg, tendency: "war" });
+    const v14 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v14["version"] = 14;
+    delete v14["vows"];
+    const restored = deserialize(JSON.stringify(v14));
+    expect(restored.version).toBe(SAVE_VERSION);
+    // 既に選ばれていた傾向は上書きせず保持する
+    expect(restored.tendency).toBe("war");
+    expect(restored.vows).toEqual([]);
   });
 
   it("未知のバージョンは拒否する", () => {

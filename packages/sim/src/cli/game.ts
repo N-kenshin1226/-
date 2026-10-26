@@ -2,11 +2,19 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
+  abyssRunSeed,
   appraisalGame,
   canAct,
+  canFightUnique,
   combatResult,
   combatTurn,
   deserialize,
+  endRun,
+  floorEnemy,
+  killFloor,
+  spendLight,
+  startRun,
+  enhancedEnemy,
   deserializeChronicle,
   emptyChronicle,
   fishingGame,
@@ -31,6 +39,7 @@ import {
   type DealCard,
   type GameState,
   type CombatAction,
+  type CombatState,
   type Legacy,
   type LifeCause,
   type MiniGame,
@@ -48,9 +57,14 @@ import {
   isSkillUnlocked,
   reachedPinnacles,
   startCombat,
+  TENDENCY_IDS,
   telegraphLines,
   TemplateProvider,
+  withWorldMods,
+  worldFactor,
+  worldMods,
   type NarrationProvider,
+  type TendencyId,
   type Work,
 } from "@trace/core";
 import {
@@ -66,6 +80,7 @@ import {
   skills,
   society,
   titles,
+  vows,
   type EnemyJson,
   type Order,
   type Origin,
@@ -190,8 +205,56 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     return origin;
   };
 
+  /** 運命の傾向を選ぶ（T-45、06 §3C。新規・転生の両方で使う）。空/EOF は calm（既定）に倒す */
+  const pickTendency = async (): Promise<TendencyId> => {
+    out(t.text.tendencyPick);
+    TENDENCY_IDS.forEach((id, i) =>
+      out(
+        tpl(t.text.tendencyLine, {
+          index: i + 1,
+          name: t.display.tendencyNames[id] ?? id,
+          desc: t.display.tendencyDescs[id] ?? "",
+        }),
+      ),
+    );
+    const ta = await ask(t.text.promptChoice);
+    const ti = Math.max(0, Math.min(TENDENCY_IDS.length - 1, (parseInt(ta ?? "1", 10) || 1) - 1));
+    const tendency = TENDENCY_IDS[ti]!;
+    out(tpl(t.text.tendencyChosen, { name: t.display.tendencyNames[tendency] ?? tendency }));
+    return tendency;
+  };
+
+  /** 誓約を選ぶ（T-46、06 §3C。番号をカンマ区切りで任意個。空/EOF は誓約なし） */
+  const pickVows = async (): Promise<string[]> => {
+    out(t.text.vowPick);
+    vows.vows.forEach((v, i) =>
+      out(tpl(t.text.vowLine, { index: i + 1, name: v.name, desc: v.desc })),
+    );
+    const va = await ask(t.text.promptChoice);
+    if (va === null || va.trim() === "") return [];
+    const picked = [
+      ...new Set(
+        va
+          .split(/[、,\s]+/)
+          .map((s) => Number.parseInt(s, 10) - 1)
+          .filter((i) => i >= 0 && i < vows.vows.length)
+          .map((i) => vows.vows[i]!.id),
+      ),
+    ];
+    if (picked.length > 0) {
+      const names = picked.map((id) => vows.vows.find((v) => v.id === id)?.name ?? id).join("、");
+      out(tpl(t.text.vowChosen, { names }));
+    }
+    return picked;
+  };
+
   /** 新しい周の GameState を作る（新規・転生で共通の初期値） */
-  const startLife = (seed2: string, origin: Origin, legacy?: Legacy): GameState =>
+  const startLife = (
+    seed2: string,
+    origin: Origin,
+    legacy?: Legacy,
+    fate?: { tendency: TendencyId; vows: string[] },
+  ): GameState =>
     newGame(seed2, t.text.playerName, {
       skillIds: skillList.map((s) => s.id),
       initialPotential: balance.player.initialPotential,
@@ -201,6 +264,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       initialStatValue: balance.player.initialStatValue,
       initialMoney: balance.player.initialMoney,
       ...(legacy !== undefined ? { legacy } : {}),
+      ...(fate !== undefined ? { tendency: fate.tendency, vows: fate.vows } : {}),
     });
 
   /** 称号ID → 表示名 */
@@ -208,7 +272,10 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
 
   if (!state) {
     // 出自を選ぶ（素質の初期値 80〜130 に幅が出る。02：出自）
-    state = startLife(seed, await pickOrigin());
+    // その世の運命の傾向（T-45）と自ら課す誓約（T-46）もここで決める
+    const origin = await pickOrigin();
+    const fate = { tendency: await pickTendency(), vows: await pickVows() };
+    state = startLife(seed, origin, undefined, fate);
   }
 
   /** 称号獲得・気配の表示行（S予算超過の称号は折りたたみ表現） */
@@ -222,6 +289,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         return [titleMessage(e.id, t)];
       }
       if (e.type === "kehai") return [t.text.kehai];
+      // 強個体の討伐（T-44）：図鑑に刻んだ旨を1行出す
+      if (e.type === "uniqueDefeated") {
+        const name = enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId;
+        return [tpl(t.text.uniqueDefeated, { name })];
+      }
       // 頂点ルートの段（T-41）：通知文は pinnacles.json 側に書かれている
       if (e.type === "pinnacleStageReached") {
         const notice = pinnacles.pinnacles
@@ -683,8 +755,13 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       ...(artifactId !== undefined ? { artifactId } : {}),
     });
 
-    // 転生：新しいシードの世界へ（旧セーブは新しい周に置き換わる）
-    const next = startLife(nextWorldSeed(st), await pickOrigin(), legacy);
+    // 転生：新しいシードの世界へ（旧セーブは新しい周に置き換わる）。
+    // 生まれ変わった世の傾向と新たな誓約もここで選ぶ（T-45/T-46）
+    const nextOrigin = await pickOrigin();
+    const next = startLife(nextWorldSeed(st), nextOrigin, legacy, {
+      tendency: await pickTendency(),
+      vows: await pickVows(),
+    });
     save(next);
     out(t.text.rebirthStart);
     const bonus = Object.entries(legacy.potentialBonus)
@@ -698,6 +775,66 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       out(tpl(t.text.rebirthArtifact, { name: artifactName(legacy.artifact) }));
     }
     return next;
+  };
+
+  /**
+   * CT戦闘を対話的に回す（狩り・深層の共通部品）。
+   * seed は逃走判定などの乱数源（狩りは日付×行動、深層はラン×層で別々に与える）。
+   * opts.spend はプレイヤー行動ごとの消費（深層の灯り）。opts.aborted() が true なら
+   * 未決着のまま打ち切る（灯り切れ）。戻り値は最終 CombatState。EOF なら null
+   */
+  const fightEnemy = async (
+    enemy: EnemyJson,
+    seed: string,
+    st: GameState,
+    opts?: { spend?: () => void; aborted?: () => boolean },
+  ): Promise<CombatState | null> => {
+    // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
+    const atkFactor = damageFactor(
+      [
+        ...activeEffects(st, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
+        ...activeBookEffects(st, cfg.books),
+      ],
+      enemy.id,
+    );
+    // 運命の傾向・誓約の世界補正（T-45/T-46）：戦乱の世や強敵の誓で敵の基礎値が上がる。
+    // 攻撃側の傾向効果（workGainFactor など）は step 側のゲイン経路に乗る
+    const worldEnemy = withWorldMods(enemy, worldMods(st, balance.tendency, vows.vows));
+    let cs = startCombat(worldEnemy, balance.combat, st.player, atkFactor);
+    out(tpl(t.text.combatStart, { name: enemy.name }));
+    let printed = 0;
+    while (!cs.done && !(opts?.aborted?.() ?? false)) {
+      outAll(telegraphLines(cs, worldEnemy, balance.combat));
+      out(
+        tpl(t.text.combatStatus, {
+          playerHp: Math.max(0, cs.playerHp),
+          playerMax: cs.playerHpMax,
+          enemy: enemy.name,
+          enemyHp: Math.max(0, cs.enemyHp),
+        }),
+      );
+      const a = await ask(t.text.combatPrompt);
+      if (a === null) return null;
+      const act: CombatAction | null =
+        a.trim() === "1"
+          ? "attack"
+          : a.trim() === "2"
+            ? "defend"
+            : a.trim() === "3"
+              ? "observe"
+              : a.trim() === "4"
+                ? "flee"
+                : null;
+      if (!act) {
+        out(t.text.invalidInput);
+        continue;
+      }
+      cs = combatTurn(cs, act, worldEnemy, balance.combat, { skill: 0, seed });
+      opts?.spend?.();
+      for (const e of cs.log.slice(printed)) out(`\u3000${e.text}`);
+      printed = cs.log.length;
+    }
+    return cs;
   };
 
   // ---- ループ ----
@@ -877,68 +1014,49 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // ---- 狩りに出る（周辺エリアで敵と戦う。03 §4） ----
       out(t.text.huntPick);
       // エリアごとに見出しを付けて列挙する。選択番号はエリアをまたいで通し（T-23）
-      const huntList: EnemyJson[] = [];
+      // 同種を unique.afterKills 体倒すと強個体が並ぶ（T-44）
+      const huntList: { def: EnemyJson; unique: boolean }[] = [];
+      const uniqueCfg = balance.combat.unique;
       for (const [area, group] of enemiesByArea(enemies)) {
         out(tpl(t.text.huntArea, { name: t.display.huntAreas[area] ?? area }));
         for (const e of group) {
-          huntList.push(e);
+          huntList.push({ def: e, unique: false });
           out(
             tpl(t.text.huntLine, { index: huntList.length, name: e.name, challenge: e.challenge }),
           );
+          if (uniqueCfg !== undefined && canFightUnique(state, e.id, uniqueCfg)) {
+            const ue: EnemyJson = {
+              ...e,
+              ...enhancedEnemy(e, uniqueCfg),
+              name: tpl(t.text.uniqueName, { name: e.name }),
+            };
+            huntList.push({ def: ue, unique: true });
+            out(
+              tpl(t.text.huntLine, {
+                index: huntList.length,
+                name: ue.name,
+                challenge: ue.challenge,
+              }),
+            );
+          }
         }
       }
       const ei = await ask(t.text.promptChoice);
       if (ei === null) return state;
-      const enemy = huntList[Number.parseInt(ei.trim(), 10) - 1];
-      if (!enemy) {
+      const picked = huntList[Number.parseInt(ei.trim(), 10) - 1];
+      if (!picked) {
         out(t.text.invalidInput);
         continue;
       }
-      const combatCtx = {
-        skill: 0,
-        seed: `${state.seed}-combat-${state.counters["action.combat"] ?? 0}`,
-      };
-      // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
-      const atkFactor = damageFactor(
-        [
-          ...activeEffects(state, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
-          ...activeBookEffects(state, cfg.books),
-        ],
-        enemy.id,
+      const enemy = picked.def;
+      const isUnique = picked.unique;
+      // 逃走判定の乱数は従来どおり「この日何度目の戦闘か」で決める
+      const cs = await fightEnemy(
+        enemy,
+        `${state.seed}-combat-${state.counters["action.combat"] ?? 0}`,
+        state,
       );
-      let cs = startCombat(enemy, balance.combat, state.player, atkFactor);
-      out(tpl(t.text.combatStart, { name: enemy.name }));
-      let printed = 0;
-      while (!cs.done) {
-        outAll(telegraphLines(cs, enemy, balance.combat));
-        out(
-          tpl(t.text.combatStatus, {
-            playerHp: Math.max(0, cs.playerHp),
-            playerMax: cs.playerHpMax,
-            enemy: enemy.name,
-            enemyHp: Math.max(0, cs.enemyHp),
-          }),
-        );
-        const a = await ask(t.text.combatPrompt);
-        if (a === null) return state;
-        const act: CombatAction | null =
-          a.trim() === "1"
-            ? "attack"
-            : a.trim() === "2"
-              ? "defend"
-              : a.trim() === "3"
-                ? "observe"
-                : a.trim() === "4"
-                  ? "flee"
-                  : null;
-        if (!act) {
-          out(t.text.invalidInput);
-          continue;
-        }
-        cs = combatTurn(cs, act, enemy, balance.combat, combatCtx);
-        for (const e of cs.log.slice(printed)) out(`\u3000${e.text}`);
-        printed = cs.log.length;
-      }
+      if (cs === null) return state;
       const r = combatResult(cs);
       const res = step(
         state,
@@ -949,6 +1067,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           won: r.won,
           fled: r.fled,
           died: r.died,
+          ...(isUnique ? { unique: true } : {}),
         },
         cfg,
       );
@@ -996,12 +1115,17 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       out(t.text.wake.saved);
     } else if (pick === "5" || pick === "sleep") {
       // ---- 寝る（宿・夕食を選ぶ） ----
+      // 表示する宿代にも世界補正を掛ける（T-45/T-46：飢饉の世・高い宿の誓い。実際の支払いは step 側）
       const withDinner = true;
+      const innCostFactor = worldFactor(
+        worldMods(state, balance.tendency, vows.vows),
+        "innCostFactor",
+      );
       const { lines: innLines, affordable } = innPickLines(
         t,
         (inn) => sleepQuality(inn, withDinner, cfg.sleep),
         state.player.money,
-        (inn) => cfg.sleep.innCost?.[inn] ?? 0,
+        (inn) => Math.round((cfg.sleep.innCost?.[inn] ?? 0) * innCostFactor),
       );
       outAll(innLines);
       if (affordable.length === 0) continue;
@@ -1066,6 +1190,80 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         state = await reincarnate(res.state, "retire");
       } else {
         out(t.text.retireCancelled);
+      }
+    } else if (pick === "12" && canAction) {
+      // ---- 深層に潜る（T-43、06 §3B）：層を下る連戦。灯り（行動回数）が尽きるまで ----
+      let run = startRun(
+        abyssRunSeed(state.seed, state.counters["abyss.runs"] ?? 0),
+        balance.abyss,
+      );
+      out(tpl(t.text.abyssStart, { light: run.light }));
+      let loss: { enemyId: string; difficulty: number } | undefined;
+      while (!run.done) {
+        const floor = run.floor;
+        const enemy = floorEnemy(run.seed, floor, enemies.enemies, balance.abyss);
+        out(tpl(t.text.abyssFloor, { floor }));
+        const cs = await fightEnemy(enemy, `${run.seed}:f${floor}`, state, {
+          spend: () => {
+            run = spendLight(run);
+          },
+          aborted: () => run.done,
+        });
+        if (cs === null) return state;
+        const r = combatResult(cs);
+        if (r.won) {
+          // 倒した層を刻む。最後の灯りで倒しても層は数える（灯り切れはそのあとで閉じる）
+          run = killFloor(run, { enemyId: enemy.id, difficulty: enemy.challenge });
+          if (!run.done) {
+            // 層の合間だけ引き返せる。戦闘中の離脱は「逃げる」で
+            out(tpl(t.text.abyssCleared, { name: enemy.name }));
+            out(tpl(t.text.abyssLight, { light: run.light }));
+            const d = await ask(t.text.abyssDescendPrompt);
+            if (d === null) return state;
+            if (d.trim() !== "1") run = endRun(run, "retreat");
+          }
+        } else {
+          loss = { enemyId: enemy.id, difficulty: enemy.challenge };
+          if (r.died) run = endRun(run, "died");
+          else if (r.fled) run = endRun(run, "fled");
+          else run = endRun(run, "light"); // 灯り切れで未決着のまま中断
+        }
+      }
+      if (run.end === "light") out(t.text.abyssLightOut);
+      else if (run.end === "retreat") out(t.text.abyssRetreat);
+      else if (run.end === "fled") out(t.text.combatFled);
+      else out(t.text.combatLost);
+      const res = step(
+        state,
+        {
+          type: "abyss",
+          end: run.end ?? "light",
+          kills: run.kills,
+          ...(loss !== undefined ? { loss } : {}),
+        },
+        cfg,
+      );
+      state = res.state;
+      const ended = res.events.find(
+        (e): e is Extract<ActionEvent, { type: "abyssEnded" }> => e.type === "abyssEnded",
+      );
+      out(tpl(t.text.abyssResult, { depth: ended?.depth ?? 0, best: ended?.best ?? 0 }));
+      if (ended?.newBest) out(tpl(t.text.abyssBest, { best: ended.best }));
+      for (const e of res.events) {
+        if (e.type === "gainApplied" && e.amount > 0) {
+          out(
+            tpl(t.text.combatGain, {
+              skill: skillNames.get(e.skill) ?? e.skill,
+              amount: e.amount.toFixed(1),
+            }),
+          );
+        }
+      }
+      outAll(applyTitles(res.events));
+      // 深層での死も教会蘇生の扱いは同じ（03 §4）。伝記は生成して年代記に残す
+      if (run.end === "died") {
+        outAll(bioLines(state, "death"));
+        if (noteDeath(res)) out(t.text.chronicleRecorded);
       }
     } else {
       out(t.text.invalidInput);

@@ -13,6 +13,7 @@ import {
 import {
   atoms,
   books,
+  enemies,
   mentors,
   orders,
   pinnacles,
@@ -350,6 +351,27 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
   );
   // ここまでの記録（T-37 伝記の途中経過プレビュー）
   ctx.bio?.(state).forEach(out);
+  // 討伐図鑑（T-44）：kill.species.* / kill.unique.* カウンタから実績一覧を作る
+  out(t.text.recordsHunt);
+  for (const e of enemies.enemies) {
+    const kills = state.counters[`kill.species.${e.id}`] ?? 0;
+    const uniques = state.counters[`kill.unique.${e.id}`] ?? 0;
+    if (kills === 0) continue;
+    out(
+      tpl(t.text.recordsHuntLine, {
+        name: e.name,
+        kills,
+        unique: uniques > 0 ? tpl(t.text.recordsHuntUnique, { unique: uniques }) : "",
+      }),
+    );
+  }
+  // 深層の自己ベスト（T-43）：abyss.best / abyss.runs カウンタ
+  const abyssRuns = state.counters["abyss.runs"] ?? 0;
+  out(
+    abyssRuns === 0
+      ? t.text.recordsAbyssNone
+      : tpl(t.text.recordsAbyss, { best: state.counters["abyss.best"] ?? 0, runs: abyssRuns }),
+  );
   // 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る）
   chronicleLines(ctx.chronicle(), t).forEach(out);
   return state;

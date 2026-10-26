@@ -29,6 +29,8 @@ describe("playCli", () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
       "1", // 出自：流れてきた孤児
+      "1", // 運命の傾向：穏やかな世（既定）
+      "", // 誓約：なし
       ...threeDays([
         ["2", "y"],
         ["1", "n"],
@@ -51,7 +53,7 @@ describe("playCli", () => {
   it("セーブとロードで続きから遊べる", async () => {
     const savePath = tmpSave();
     // 1日目を遊んで寝る（自動セーブ）
-    const first = scriptedIo(["1", "1", "1", "", "5", "1", "y", "q"]);
+    const first = scriptedIo(["1", "1", "", "1", "1", "", "5", "1", "y", "q"]);
     const s1 = await playCli({ io: first.io, savePath, seed: SEED });
     expect(s1!.time.day).toBe(1);
 
@@ -70,6 +72,8 @@ describe("playCli", () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
       "1", // 出自
+      "1", // 傾向：穏やか
+      "", // 誓約：なし
       "2", // 仕事
       "1", // 《釘の束》
       "n", // 簡易判定
@@ -91,6 +95,8 @@ describe("playCli", () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
       "1", // 出自
+      "1", // 傾向：穏やか
+      "", // 誓約：なし
       "1",
       "1",
       "", // 《剣術》を推奨難度で
@@ -112,11 +118,40 @@ describe("playCli", () => {
   });
 });
 
+describe("T-45/T-46 運命の傾向・誓約", () => {
+  it("開始時に傾向と誓約を選べ、GameState に刻まれる", async () => {
+    const savePath = tmpSave();
+    const { io, output } = scriptedIo([
+      "1", // 出自
+      "2", // 運命の傾向：戦乱の世
+      "1,5", // 誓約：1番（硬鱗）と5番（無風）
+      "q",
+    ]);
+    const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
+    const text = output.join("\n");
+
+    expect(text).toContain("運命の傾向");
+    expect(text).toContain("戦乱の世");
+    expect(text).toContain("誓約");
+    expect(state!.tendency).toBe("war");
+    expect(state!.vows).toEqual(["vow.iron_hide", "vow.windless"]);
+    expect(state!.flags["vow.taken.vow.iron_hide"]).toBe(true);
+  });
+
+  it("空入力・EOF は穏やか＋誓約なしに倒れる（従来どおり）", async () => {
+    const savePath = tmpSave();
+    const { io } = scriptedIo(["1", "", "", "q"]);
+    const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
+    expect(state!.tendency).toBe("calm");
+    expect(state!.vows).toEqual([]);
+  });
+});
+
 describe("T-23 狩りメニュー（エリア別）", () => {
   it("エリア見出しつきで敵が列挙され、通し番号で選べる", async () => {
     const savePath = tmpSave();
     // 「3) 狩り」→ 一覧 → 「4) 追い剥ぎ」（旧街道側）で戦闘開始 → EOFで中断
-    const { io, output } = scriptedIo(["1", "3", "4"]); // 出自→狩り;
+    const { io, output } = scriptedIo(["1", "1", "", "3", "4"]); // 出自→傾向→誓約→狩り;
     const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
     const text = output.join("\n");
 
@@ -141,7 +176,7 @@ describe("T-20 街のプレイループ", () => {
       if (day === 3) lines.push("6", ""); // 目標と認定（目標の宣言を見る）
       lines.push("5", "1", "y"); // 寝る（安い宿・夕食あり）
     }
-    const { io, output } = scriptedIo(["1", ...lines, "q"]); // 出自→1週間;
+    const { io, output } = scriptedIo(["1", "1", "", ...lines, "q"]); // 出自→傾向→誓約→1週間;
     const state = await playCli({ io, savePath, seed: "town-week", delay: async () => {} });
     const text = output.join("\n");
 
@@ -161,6 +196,8 @@ describe("T-26 書店", () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
       "1", // 出自
+      "1", // 傾向：穏やか
+      "", // 誓約：なし
       "9", // 書店
       "5", // 《旧街道の獣と匪賊》45G → 所持金不足
       "9", // 書店
@@ -191,6 +228,8 @@ describe("T-38 年代記", () => {
     const chroniclePath = join(dir, "chronicle.json");
     const { io, output } = scriptedIo([
       "1", // 出自
+      "1", // 傾向：穏やか
+      "", // 誓約：なし
       "3", // 狩りに出る
       "5", // 脱走兵（最強）に挑む
       ...Array.from({ length: 40 }, () => "1"), // 攻撃連打（このシードでは敗北する）
@@ -231,6 +270,8 @@ describe("M2 新しい皮の仕事フロー", () => {
     const beats = balance.minigame.fishing.beats;
     const { io, output } = scriptedIo([
       "1", // 出自
+      "1", // 傾向：穏やか
+      "", // 誓約：なし
       "2", // 仕事
       String(idx), // 《荒れ川の大物》
       "y", // 手動で挑む
@@ -255,7 +296,7 @@ describe("M2 新しい皮の仕事フロー", () => {
     const cells = appraisalGame(balance.minigame.appraisal)
       .autoplay({ skill: 0, seed: SEED })
       .map((i) => `${i.x + 1},${i.y + 1}`);
-    const { io, output } = scriptedIo(["1", "2", String(idx), "y", ...cells, "q"]);
+    const { io, output } = scriptedIo(["1", "1", "", "2", String(idx), "y", ...cells, "q"]);
     const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
     const text = output.join("\n");
 
@@ -274,9 +315,13 @@ describe("T-40 引退と転生", () => {
     const chroniclePath = join(dir, "chronicle.json");
     const { io, output } = scriptedIo([
       "1", // 出自
+      "1", // 傾向：穏やか
+      "", // 誓約：なし
       "11", // 引退する
       "y", // 確認（1回だけ）
       "1", // 転生先の出自（称号も作品も無いので継承の選択肢は出ない）
+      "1", // 転生先の傾向：穏やか
+      "", // 転生先の誓約：なし
       "q",
     ]);
     const state = await playCli({
@@ -310,7 +355,7 @@ describe("T-40 引退と転生", () => {
     const dir = mkdtempSync(join(tmpdir(), "trace-retire-cancel-"));
     const savePath = join(dir, "save.json");
     const chroniclePath = join(dir, "chronicle.json");
-    const { io, output } = scriptedIo(["1", "11", "n", "q"]);
+    const { io, output } = scriptedIo(["1", "1", "", "11", "n", "q"]);
     const state = await playCli({
       io,
       savePath,
@@ -365,6 +410,8 @@ describe("T-40 引退と転生", () => {
       "1", // 記憶に残す称号：1番（title.saw_the_way）
       "1", // 遺物：1番（釘の束）
       "1", // 転生先の出自
+      "1", // 転生先の傾向：穏やか
+      "", // 転生先の誓約：なし
       "q",
     ]);
     const state = await playCli({
@@ -413,6 +460,8 @@ describe("T-40 引退と転生", () => {
       "1", // つづきから
       "4", // 休む（今日を終える。無料なので所持金不要）
       "1", // 転生先の出自
+      "1", // 転生先の傾向：穏やか
+      "", // 転生先の誓約：なし
       "q",
     ]);
     const state = await playCli({

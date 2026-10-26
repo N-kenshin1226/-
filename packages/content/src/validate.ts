@@ -19,6 +19,7 @@ import { originsFileSchema } from "./origins.schema.js";
 import { booksFileSchema } from "./books.schema.js";
 import { mentorsFileSchema } from "./mentors.schema.js";
 import { pinnaclesFileSchema } from "./pinnacles.schema.js";
+import { vowsFileSchema } from "./vows.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -60,6 +61,7 @@ check("origins.json", originsFileSchema);
 check("books.json", booksFileSchema);
 check("mentors.json", mentorsFileSchema);
 check("pinnacles.json", pinnaclesFileSchema);
+check("vows.json", vowsFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ
@@ -271,6 +273,52 @@ try {
   }
 } catch (e) {
   console.error(`✗ 頂点ルートの突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 誓約の突き合わせ：vow.title は titles.json に存在し、その称号の条件は
+// 「その誓約を積んだフラグ」（{flag: "vow.taken.<vow id>"}）を含むこと（T-46。
+// 条件は flags/counters から読める形にする —— GameState.vows は条件DSLからは見えない）
+try {
+  const titlesRaw = JSON.parse(readFileSync(join(root, "titles.json"), "utf8")) as {
+    titles?: { id?: string; condition?: unknown }[];
+  };
+  const vowsRaw = JSON.parse(readFileSync(join(root, "vows.json"), "utf8")) as {
+    vows?: { id?: string; title?: string }[];
+  };
+  const titleMap = new Map((titlesRaw.titles ?? []).map((t) => [t.id, t]));
+  const condHasFlag = (cond: unknown, flag: string): boolean => {
+    if (typeof cond !== "object" || cond === null) return false;
+    const c = cond as Record<string, unknown>;
+    if (c.flag === flag) return true;
+    for (const key of ["and", "or"] as const) {
+      const children = c[key];
+      if (Array.isArray(children) && children.some((x) => condHasFlag(x, flag))) return true;
+    }
+    // not の内側は「誓約を積んでいない」側の条件なので辿らない
+    return false;
+  };
+  const bad: string[] = [];
+  for (const v of vowsRaw.vows ?? []) {
+    const label = `vows.json ${v.id ?? "?"}`;
+    const def = titleMap.get(v.title);
+    if (def === undefined) {
+      bad.push(`${label}: 誓約称号 ${v.title} が titles.json に無い`);
+      continue;
+    }
+    const want = `vow.taken.${v.id}`;
+    if (!condHasFlag(def.condition, want)) {
+      bad.push(`${label}: ${v.title} の condition はフラグ ${want} を含むこと`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 誓約の称号が不正: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 誓約の称号（vows ↔ titles）");
+  }
+} catch (e) {
+  console.error(`✗ 誓約の突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

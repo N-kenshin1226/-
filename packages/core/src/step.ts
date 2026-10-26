@@ -1,6 +1,7 @@
 import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/index.js";
 import { evaluate, type Cond } from "./conditions/index.js";
 import { activeEffects, gainModifier, priceFactor, type Effect } from "./effects/index.js";
+import { worldFactor, worldMods, type TendencyDefs, type VowDef } from "./fate/index.js";
 import { subscribers, type ActionEvent } from "./events/index.js";
 import { ageBand, agingOnWake, type AgingConfig } from "./growth/aging.js";
 import {
@@ -74,6 +75,10 @@ export interface StepConfig {
   legacy?: { artifactGainFactor: number };
   /** 頂点ルート（06 §3A、T-41。content/pinnacles.json）。省略時は条件鎖を評価しない */
   pinnacles?: readonly PinnacleRouteDef[];
+  /** 運命の傾向の定義（06 §3C、T-45。balance.tendency）。省略時はすべて中立 */
+  tendency?: TendencyDefs;
+  /** 誓約の定義（06 §3C、T-46。content/vows.json）。省略時は誓約の効果なし */
+  vows?: readonly VowDef[];
 }
 
 export type Command =
@@ -112,6 +117,22 @@ export type Command =
       won: boolean;
       fled?: boolean;
       died?: boolean;
+      /** 強化版ユニークとの戦闘（T-44）。討伐時に kill.unique.<id>/total を数える */
+      unique?: boolean;
+    }
+  /**
+   * 深層ダンジョンのランの結果を世界に反映する（06 §3B、T-43）。
+   * ランの進行自体は abyss/ で行い、ここでは層ごとの撃破・到達深度・終わり方を記録する。
+   * 潜行1回につき1行動を消費する（層数によらない）
+   */
+  | {
+      type: "abyss";
+      /** ランの終わり方：逃走／灯り切れ／途中離脱／死亡 */
+      end: "fled" | "light" | "retreat" | "died";
+      /** クリアした層の敵（倒した順）。difficulty は強化後の挑戦差 */
+      kills?: readonly { enemyId: string; difficulty: number }[];
+      /** 未決着で終わった層の敵（逃走・死亡・灯り切れ）。失敗経験を入れる */
+      loss?: { enemyId: string; difficulty: number };
     }
   /** 打診を受けて立場・職業の認定を受ける（03 §1）。行動は消費しない */
   | { type: "acceptOffer"; id: string }
@@ -167,6 +188,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   let next = JSON.parse(JSON.stringify(state)) as GameState;
   const events: ActionEvent[] = [];
 
+  // 運命の傾向＋誓約（T-45/T-46）：この周に効いている世界修飾の合算。
+  // 傾向・誓約は step 中に変化しないので入力 state から一度だけ計算する
+  const fate = worldMods(state, cfg.tendency, cfg.vows);
+
   switch (command.type) {
     case "wait": {
       next.time = advanceTime(next.time, cfg.time);
@@ -209,6 +234,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         restDay,
         capFactor,
         statFactor: band?.statFactor,
+        // 傾向・誓約（T-45/T-46）：素質回復への修飾（例：飢饉・癒えにくい身体の誓いで半減）
+        potentialFactor: worldFactor(fate, "restPotentialFactor"),
       });
       next = bodyRes.state;
       report.lines.push(...bodyRes.lines);
@@ -219,7 +246,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       // 翌日の追い風を抽選して保持し、起床ログに含める
       const rng = restoreRng(next.rng);
-      const winds = rollTailwind(next, rng, cfg.tailwind);
+      let winds = rollTailwind(next, rng, cfg.tailwind);
+      // 誓約「追い風なし」（T-46）：tailwind 方向だけを落とす（逆風は残る）
+      if (fate.noTailwind) winds = winds.filter((w) => w.direction !== "tailwind");
       next.rng = rng.state();
       next.today = { ...next.today, winds };
       report.tailwinds = winds.map((w) => ({
@@ -227,9 +256,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         label: w.label,
         direction: w.direction,
       }));
-      // 宿代を払う（rest・自宅は無料）
+      // 宿代を払う（rest・自宅は無料）。傾向・誓約で変動する（T-45/T-46）
       if (!isRest) {
-        const cost = cfg.sleep.innCost?.[command.inn ?? "normal"] ?? 0;
+        const cost = Math.round(
+          (cfg.sleep.innCost?.[command.inn ?? "normal"] ?? 0) * worldFactor(fate, "innCostFactor"),
+        );
         next = {
           ...next,
           player: { ...next.player, money: Math.max(0, next.player.money - cost) },
@@ -370,11 +401,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (recorded.tierUp) {
         events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
       }
-      // 報酬が入る（注文の約定額があればそれ、無ければ市場価値。認定の値段変化を乗せる）
+      // 報酬が入る（注文の約定額があればそれ、無ければ市場価値。認定の値段変化と
+      // 傾向・誓約の報酬係数（T-45/T-46）を乗せる）
       const pay = Math.max(
         0,
         Math.round(
-          (command.rewardMoney ?? recorded.work.marketValue) * priceFactor(effects, command.kind),
+          (command.rewardMoney ?? recorded.work.marketValue) *
+            priceFactor(effects, command.kind) *
+            worldFactor(fate, "rewardFactor"),
         ),
       );
       next = {
@@ -415,7 +449,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             potential: skill.potential,
             fatigue: next.player.fatigue,
             wind: windFor(next, "combat", skillId),
-            modifiers: gainModifier(effects, "combat", skillId, command.enemyId),
+            modifiers:
+              gainModifier(effects, "combat", skillId, command.enemyId) *
+              worldFactor(fate, "combatGainFactor"),
             failed: !command.won,
           },
           cfg.gain,
@@ -444,10 +480,121 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (command.won) {
         const key = `kill.species.${command.enemyId}`;
         counters[key] = (counters[key] ?? 0) + 1;
+        // 強個体の討伐は別系統でも数える（T-44。図鑑・称号の条件用）
+        if (command.unique === true) {
+          const uKey = `kill.unique.${command.enemyId}`;
+          counters[uKey] = (counters[uKey] ?? 0) + 1;
+          counters["kill.unique.total"] = (counters["kill.unique.total"] ?? 0) + 1;
+          events.push({ type: "uniqueDefeated", enemyId: command.enemyId });
+        }
       }
       if (command.died) {
         counters["death.count"] = (counters["death.count"] ?? 0) + 1;
         // 教会蘇生：未定着経験の半分を失う。数値そのものは下がらない（03 §4）
+        const skills = { ...next.player.skills };
+        for (const id of Object.keys(skills)) {
+          const s = skills[id]!;
+          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+        }
+        next = { ...next, player: { ...next.player, skills } };
+        events.push({ type: "died" });
+      }
+      next = { ...next, counters };
+      break;
+    }
+    case "abyss": {
+      // 深層ダンジョン（T-43、06 §3B）：潜行1回＝1行動。層ごとの撃破に戦闘と同じ
+      // 経験を入れ、到達深度を counters（abyss.best 等）に記録する。
+      // GameState の形は変えないのでセーブバージョン据置
+      if (!canAct(next.time, cfg.time)) break;
+      const counters = { ...next.counters };
+      const sks = next.player.skills;
+      const effects = [
+        ...activeEffects(
+          next,
+          cfg.titles,
+          cfg.society.professions,
+          cfg.mentors?.mentors,
+          cfg.legacy?.artifactGainFactor,
+        ),
+        ...activeBookEffects(next, cfg.books),
+      ];
+      // 層ごとの戦闘を順に反映する。同じラン内での同種連戦も反復として数える
+      const inRun = new Map<string, number>();
+      const applyFight = (fight: { enemyId: string; difficulty: number }, won: boolean) => {
+        const repeats =
+          recentRepeats(next.actionLog, "combat", fight.enemyId, cfg.gain.noveltyWindow) +
+          (inRun.get(fight.enemyId) ?? 0);
+        for (const skillId of ["swordplay", "evasion"] as const) {
+          const skill = sks[skillId];
+          if (!skill) continue;
+          const { amount } = computeGain(
+            {
+              kind: "combat",
+              skill: skill.value,
+              delta: fight.difficulty - skill.value,
+              repeats,
+              potential: skill.potential,
+              fatigue: next.player.fatigue,
+              wind: windFor(next, "combat", skillId),
+              modifiers:
+                gainModifier(effects, "combat", skillId, fight.enemyId) *
+                worldFactor(fate, "combatGainFactor"),
+              failed: !won,
+            },
+            cfg.gain,
+          );
+          skill.pending += amount;
+          skill.lastUsedDay = next.time.day;
+          events.push({ type: "gainApplied", skill: skillId, amount });
+        }
+        inRun.set(fight.enemyId, (inRun.get(fight.enemyId) ?? 0) + 1);
+        // 行動ログの kind は "combat"（新規性・新聞の記事分類を共有）、variant で深層を区別
+        events.push({
+          type: "actionPerformed",
+          kind: "combat",
+          day: next.time.day,
+          target: fight.enemyId,
+          variant: "abyss",
+        });
+        events.push({
+          type: "combatEnded",
+          enemyId: fight.enemyId,
+          won,
+          fled: !won && command.end === "fled",
+        });
+        if (won) {
+          const key = `kill.species.${fight.enemyId}`;
+          counters[key] = (counters[key] ?? 0) + 1;
+        }
+      };
+      for (const k of command.kills ?? []) applyFight(k, true);
+      // 未決着の層（逃走・死亡・灯り切れで中断した戦闘）も失敗経験を入れる
+      if (command.loss !== undefined) applyFight(command.loss, false);
+
+      // 潜行自体：時間を1行動分だけ進め、負荷を積む
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "abyss", cfg.body);
+      events.push({ type: "actionPerformed", kind: "abyss", day: next.time.day });
+
+      // 到達深度の記録（自己ベストは counters で十分：D-34。年代記・記録画面はここを読む）
+      counters["abyss.runs"] = (counters["abyss.runs"] ?? 0) + 1;
+      counters["abyss.floors"] = (counters["abyss.floors"] ?? 0) + (command.kills?.length ?? 0);
+      const depth = command.kills?.length ?? 0;
+      const prevBest = counters["abyss.best"] ?? 0;
+      const newBest = depth > prevBest;
+      if (newBest) counters["abyss.best"] = depth;
+      events.push({
+        type: "abyssEnded",
+        end: command.end,
+        depth,
+        best: newBest ? depth : prevBest,
+        newBest,
+      });
+
+      if (command.end === "died") {
+        counters["death.count"] = (counters["death.count"] ?? 0) + 1;
+        // 教会蘇生：未定着経験の半分を失う。深層で死んでも扱いは戦闘死と同じ（03 §4）
         const skills = { ...next.player.skills };
         for (const id of Object.keys(skills)) {
           const s = skills[id]!;

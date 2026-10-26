@@ -68,7 +68,8 @@
       "wait": 1,
       "train": 12,
       "work": 10,
-      "combat": 20
+      "combat": 20,
+      "abyss": 24
     },
     "fatigueDefaultPerAction": 2,
     "fatigueRecover": 60,
@@ -83,6 +84,11 @@
         "spirit": 1
       },
       "combat": {
+        "strength": 2,
+        "endurance": 3,
+        "agility": 2
+      },
+      "abyss": {
         "strength": 2,
         "endurance": 3,
         "agility": 2
@@ -255,7 +261,14 @@
     "fleePerAgility": 0.02,
     "observeBonus": 20,
     "preciseObserve": 40,
-    "deathPendingFactor": 0.5
+    "deathPendingFactor": 0.5,
+    "unique": {
+      "afterKills": 3,
+      "hpFactor": 1.6,
+      "powerFactor": 1.5,
+      "challengeBonus": 10,
+      "agilityBonus": 2
+    }
   },
   "society": {
     "goalRewardFactor": 1.5
@@ -279,5 +292,29 @@
     "potentialMax": 15,
     "rememberedMax": 3,
     "artifactGainFactor": 1.05
+  },
+  "tendency": {
+    "calm": {},
+    "war": {
+      "enemyHpFactor": 1.15,
+      "enemyPowerFactor": 1.1,
+      "combatGainFactor": 1.25,
+      "innCostFactor": 0.9
+    },
+    "famine": {
+      "enemyPowerFactor": 0.9,
+      "combatGainFactor": 0.9,
+      "rewardFactor": 0.75,
+      "innCostFactor": 1.3,
+      "restPotentialFactor": 0.5
+    }
+  },
+  "abyss": {
+    "baseFactor": 1.0,
+    "growthPerFloor": 0.4,
+    "agilityPerFloor": 0.5,
+    "maxTurns": 20,
+    "poolBase": 16,
+    "poolGrowthPerFloor": 14
   }
 }

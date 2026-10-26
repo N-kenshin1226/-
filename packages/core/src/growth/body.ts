@@ -95,7 +95,7 @@ export function consolidateBody(
   state: GameState,
   quality: number,
   cfg: BodyConfig,
-  opts: { restDay: boolean; capFactor: number; statFactor?: number },
+  opts: { restDay: boolean; capFactor: number; statFactor?: number; potentialFactor?: number },
 ): BodyNightResult {
   const stats = { ...state.player.stats };
   const lines: WakeLine[] = [];
@@ -120,11 +120,12 @@ export function consolidateBody(
         id,
         {
           ...s,
-          // 回復上限はそのスキルの初期値（potentialCap）。念のためグローバル上限でも止める
+          // 回復上限はそのスキルの初期値（potentialCap）。念のためグローバル上限でも止める。
+          // potentialFactor は傾向・誓約（T-45/T-46）による回復量の修飾（省略時 1）
           potential: Math.min(
             s.potentialCap,
             cfg.potentialMax,
-            s.potential + cfg.restPotentialRecover,
+            s.potential + cfg.restPotentialRecover * (opts.potentialFactor ?? 1),
           ),
         },
       ]),

@@ -64,6 +64,8 @@ export interface CombatConfig {
   preciseObserve: number;
   /** 死亡時に失う未定着経験の割合（03 §4「50%」） */
   deathPendingFactor: number;
+  /** 強化版ユニーク（T-44）。省略時は強個体なし */
+  unique?: UniqueConfig;
 }
 
 export type CombatAction = "attack" | "defend" | "observe" | "flee";
@@ -329,4 +331,44 @@ export function combatResult(s: CombatState): CombatResult {
     hitsTaken: s.hitsTaken,
     ticks: s.tick,
   };
+}
+
+/** 強化版ユニーク（T-44、06 §3B）。balance.combat.unique に対応 */
+export interface UniqueConfig {
+  /** 強個体が解禁される同種の討伐数 */
+  afterKills: number;
+  /** HP・攻撃力の強化倍率 */
+  hpFactor: number;
+  powerFactor: number;
+  /** 挑戦差（gain）・敏捷の加算値 */
+  challengeBonus: number;
+  agilityBonus: number;
+}
+
+/**
+ * 敵の強化版を作る（再戦）。数値だけを強化し、行動パターンはそのまま。
+ * 表示名は呼び出し側がテンプレートで付ける（core は表示名を作らない）
+ */
+export function enhancedEnemy(def: EnemyDef, u: UniqueConfig): EnemyDef {
+  const scale = (m: EnemyMove): EnemyMove => ({
+    ...m,
+    power: Math.round(m.power * u.powerFactor),
+  });
+  return {
+    ...def,
+    hp: Math.round(def.hp * u.hpFactor),
+    challenge: def.challenge + u.challengeBonus,
+    agility: def.agility + u.agilityBonus,
+    attack: scale(def.attack),
+    moves: Object.fromEntries(Object.entries(def.moves).map(([k, m]) => [k, scale(m)])),
+  };
+}
+
+/** 強個体が狩り対象として解禁されているか（同種の討伐数で判定） */
+export function canFightUnique(
+  state: { counters: Record<string, number> },
+  enemyId: string,
+  u: UniqueConfig,
+): boolean {
+  return (state.counters[`kill.species.${enemyId}`] ?? 0) >= u.afterKills;
 }

@@ -109,3 +109,25 @@
 ### D-33: 前世の伝説は新聞の「昔語り」枠に混ざる最小版（T-42）
 - 出し方は「街の記録画面の年代記ビュー（T-38 済み）」に加えて、新聞の見出し候補に legend 行を追加（年代記が非空の世界でのみ）。{name}/{epithet} は年代記の最新人生から取り、二つ名IDは称号名に解決
 - 「どこかに出る」の実装として新聞を選んだ理由：毎朝目に入る・「世界が語り継ぐ」感触に合う・追加UIを作らず済む
+
+### D-34: 強個体は enemies.json に別定義せず、係数生成＋カウンタ解禁にする（T-44）
+- ユニークは `balance.combat.unique`（afterKills/hpFactor/powerFactor/challengeBonus/agilityBonus）1節で決まる係数生成。`enhancedEnemy` が数値だけを強化し、行動パターン・技・間隔は素の敵のまま —— 「プレイヤーが学習した敵の、強い個体」なのでパターンを維持する
+- 解禁・記録は GameState を増やさずカウンタで行う：解禁は `kill.species.<id> ≥ afterKills`、記録は `kill.unique.<id>` と `kill.unique.total`。セーブ v13 据置。討伐は `uniqueDefeated` イベントで通知する
+- 図鑑は専用状態を持たず、記録画面が kill.* カウンタから都度生成する派生ビュー（CLI・Web 共通テンプレート recordsHunt*）。コンプリート称号は `kill.unique.total`・全種 `kill.species.*` の条件DSLで既存の称号判定に乗せる
+
+### D-35: 深層は「ラン進行はUI層の AbyssRun・結果は abyss コマンドでまとめて反映・記録は counters」（T-43）【仮】
+- **ラン状態は GameState に入れない**：`AbyssRun`（層・灯り・撃破列・終わり方）は combat の `CombatState` と同じく一時状態として CLI/Web が持ち、終了時に `{type:"abyss"}` コマンドで step にまとめて渡す。GameState の形は変えないのでセーブバージョン据置（中断したランは消えるが、未完のランをセーブ間で持ち越す必然性は薄いと判断）
+- **記録は counters で足りる**：`abyss.best`（自己ベスト）・`abyss.runs`・`abyss.floors` の3キー。`abyssEnded` イベント（depth/best/newBest）を通知Aランク相当として発行し、best 更新を UI が1行で告げる
+- **潜行リソースは「灯り＝プレイヤー行動の残数」**：仕様の `maxTurns`/光源の両案に対し、行動数に寄せた（攻撃・防御・観察・逃走を消費＝「時間制限＋緊張」）。敵の攻撃や経過tickは灯りを減らさない。最後の灯りで倒しても層は刻む
+- **潜行自体は1行動**（層数によらず）：`advanceTime` は1回だけ。層ごとの撃破は actionLog に `kind:"combat", variant:"abyss"` で残し、新規性（recentRepeats）・新聞の記事分類を通常の狩りと共有する。ラン内の同種連戦も反復として数える（inRun マップで加算）
+- **敵の選出は runSeed × floor の決定論抽選**：`abyssRunSeed(world, runs)` = `"<seed>:abyss:<回目>"` をラン識別に使い、`createRng("<runSeed>:f<層>")` でプール抽選。世界RNGは消費しない（潜行しても日替わりイベント等の乱数列は変わらない）
+- **プールは挑戦差しきい値**：`challenge ≤ poolBase + poolGrowthPerFloor × (層−1)` の敵から抽選（浅い層に最強格は出ない）。強化は `baseFactor + growthPerFloor × (層−1)` を HP・技威力・挑戦差に、敏捷に `agilityPerFloor × (層−1)` を加算 —— パターンは素のまま（T-44 の enhancedEnemy と同じ「学習した敵の強化版」方針）
+- **死亡は戦闘死と同じ扱い**（教会蘇生・pending半減・died 発行→年代記は呼び出し側）。逃走・灯り切れの未決着層は `loss` として失敗経験を入れる
+- 負荷は `body` に `abyss` エントリを追加（潜行1回で combat より少し重い固定値）：層数に比例させると balance 表現が増えるため、長いランを割く分の緊張は灯り側に任せる簡素化
+
+### D-36: 傾向・誓約は共有の「世界修飾（WorldMods）」語彙に乗せ、係数は step/戦闘開始点で掛ける（T-45・T-46）
+- **傾向と誓約は同じ語彙**：敵HP・敵威力・狩り経験・仕事報酬・宿代・素質回復の6係数＋追い風抑制（`noTailwind`）の WorldMods。傾向は `balance.tendency`（3択、calm=中立の空）、誓約は `vows.json`（1誓約=1効果）に書き、core の `worldMods(state, defs, vows)` が掛け合わせるだけ。activeEffects に混ぜない —— これらは称号・職業の「プレイヤー由来効果」ではなく世界・周単位の修飾で、語彙も一致しないため
+- **1軸の傾向**：§3C「変数は1軸だけ」に従い、war は戦争軸（敵HP+15%・敵威力+10%・狩り経験+25%・宿-10%）、famine は生活軸（宿+30%・報酬-25%・素質回復半減・敵威力-10%）。calm は空＝従来どおり。未選択・旧セーブは calm に倒す（セーブ v13→v14）
+- **誓約は flags にも刻む**：`state.vows` に加えて `flags["vow.taken.<id>"]=true` を立て、誓約称号（titles.json。Bランク・simReachable:false）は `{flag} ∧ days.slept≥28`（一季節守り抜いた証）の条件DSLで既存の称号判定に乗せる —— GameState.vows は条件DSLから直接読めないため（セーブ v14→v15）
+- **係数の掛けどころは既存経路**：宿代・報酬・素質回復（consolidateBody の potentialFactor）・狩り経験（gain の M項）・追い風（抽選後に tailwind 方向だけ落とす。RNG消費は従来どおり）は step 内の係数点に。敵HP・威力は `withWorldMods` で EnemyDef を丸めてから startCombat/各turn に渡す（CLI の fightEnemy・Web の beginCombat/playCombatTurn の2点に注入。深層の敵も同じ経路で強くなる）
+- **宿代表示も同じ係数で**：CLI の宿選択肢・Web の innCost は表示用にも worldFactor で丸め、実際の支払い（step 内）と一致させる

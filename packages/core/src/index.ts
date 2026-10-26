@@ -40,6 +40,7 @@ export { recordWork, matchesWork } from "./ledger/index.js";
 export type { LedgerConfig, RecordedWork } from "./ledger/index.js";
 export { newGame, nextWorldSeed } from "./state/newGame.js";
 export type { NewGameConfig } from "./state/newGame.js";
+export { TENDENCY_IDS } from "./state/types.js";
 export type {
   ActionLogEntry,
   GameState,
@@ -47,6 +48,7 @@ export type {
   SkillId,
   SkillState,
   StatId,
+  TendencyId,
   TodayState,
   Work,
 } from "./state/types.js";
@@ -86,7 +88,9 @@ export type { FishingConfig, FishingResult } from "./minigame/index.js";
 export { appraisalGame } from "./minigame/index.js";
 export type { AppraisalConfig, AppraisalResult } from "./minigame/index.js";
 export {
+  canFightUnique,
   combatResult,
+  enhancedEnemy,
   playerCombatStats,
   startCombat,
   telegraphLines,
@@ -103,6 +107,8 @@ export type {
   EnemyPatternStep,
   Telegraph,
 } from "./combat/index.js";
+export { worldFactor, worldMods, withWorldMods } from "./fate/index.js";
+export type { TendencyDefs, VowDef, WorldMods } from "./fate/index.js";
 export type {
   MiniGame,
   MiniGameCtx,
@@ -164,3 +170,15 @@ export {
   mentorSession,
 } from "./mentors/index.js";
 export type { MentorDefLike, MentorsConfig, MentorSessionResult } from "./mentors/index.js";
+export {
+  abyssRunSeed,
+  endRun,
+  floorEnemy,
+  floorFactor,
+  floorPool,
+  killFloor,
+  scaleEnemy,
+  spendLight,
+  startRun,
+} from "./abyss/index.js";
+export type { AbyssConfig, AbyssEnd, AbyssKill, AbyssRun } from "./abyss/index.js";

@@ -24,6 +24,20 @@ export type ActionEvent =
   | { type: "tierUp"; kind: string; tier: number }
   /** 戦闘が終わった（03 §4） */
   | { type: "combatEnded"; enemyId: string; won: boolean; fled: boolean }
+  /** 強化版ユニークを討ち取った（T-44。図鑑・称号の根拠にもなる） */
+  | { type: "uniqueDefeated"; enemyId: string }
+  /**
+   * 深層ダンジョンのランが終わった（T-43、06 §3B。通知Aランク相当）。
+   * depth はクリアした層数、best は反映後の自己ベスト（counters["abyss.best"]）、
+   * newBest は今回の到達が自己ベストを更新したか
+   */
+  | {
+      type: "abyssEnded";
+      end: "fled" | "light" | "retreat" | "died";
+      depth: number;
+      best: number;
+      newBest: boolean;
+    }
   /** 死亡して教会で蘇生した。未定着経験の半分を失う */
   | { type: "died" }
   /**

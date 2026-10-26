@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "vows": [
+    {
+      "id": "vow.iron_hide",
+      "name": "硬鱗の誓い",
+      "desc": "すべての敵の体力が 25% 増える",
+      "mods": {
+        "enemyHpFactor": 1.25
+      },
+      "title": "title.vow_iron_hide"
+    },
+    {
+      "id": "vow.bare_purse",
+      "name": "空っぽの財布の誓い",
+      "desc": "仕事の報酬が 20% 減る",
+      "mods": { "rewardFactor": 0.8 },
+      "title": "title.vow_bare_purse"
+    },
+    {
+      "id": "vow.dear_bed",
+      "name": "高い床の誓い",
+      "desc": "宿代が 50% 高くなる",
+      "mods": { "innCostFactor": 1.5 },
+      "title": "title.vow_dear_bed"
+    },
+    {
+      "id": "vow.slow_mend",
+      "name": "癒えにくい身体の誓い",
+      "desc": "休養日の素質回復が半分になる",
+      "mods": { "restPotentialFactor": 0.5 },
+      "title": "title.vow_slow_mend"
+    },
+    {
+      "id": "vow.windless",
+      "name": "無風の誓い",
+      "desc": "追い風が吹かなくなる（逆風は吹く）",
+      "mods": { "noTailwind": true },
+      "title": "title.vow_windless"
+    }
+  ]
+}

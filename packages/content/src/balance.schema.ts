@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { worldModsSchema } from "./world-mods.schema.js";
 
 /**
  * balance.json のスキーマ。
@@ -200,6 +201,22 @@ export const balanceSchema = z
         observeBonus: z.number().nonnegative(),
         preciseObserve: z.number().nonnegative(),
         deathPendingFactor: z.number().min(0).max(1),
+        /**
+         * docs/06 §3B、T-44：強化版ユニーク（個体）との再戦。
+         * 同種を afterKills 体倒すと強個体が狩り対象に現れる
+         */
+        unique: z
+          .object({
+            /** 強個体が解禁される同種の討伐数 */
+            afterKills: z.number().int().positive(),
+            /** HP・攻撃力の強化倍率 */
+            hpFactor: z.number().min(1),
+            powerFactor: z.number().min(1),
+            /** 挑戦差（gain）・敏捷の加算値 */
+            challengeBonus: z.number().nonnegative(),
+            agilityBonus: z.number().nonnegative(),
+          })
+          .strict(),
       })
       .strict(),
     /** docs/03 §2 ミニゲーム。各エンジン・皮の係数 */
@@ -338,6 +355,17 @@ export const balanceSchema = z
         goalRewardFactor: z.number().positive().max(10),
       })
       .strict(),
+    /**
+     * docs/06 §3C、T-45：運命の傾向。周の開始時の3択で、それぞれ世界修飾
+     * （core/src/fate の WorldMods）を持つ。calm は中立＝空オブジェクト
+     */
+    tendency: z
+      .object({
+        calm: worldModsSchema,
+        war: worldModsSchema,
+        famine: worldModsSchema,
+      })
+      .strict(),
     /** 街の日替わりイベント（03 §6。特別注文など） */
     town: z
       .object({
@@ -366,6 +394,25 @@ export const balanceSchema = z
         capacityThreshold: z.number().positive(),
         /** 容量超過時の猶予の下限係数 */
         capacityGraceMinFactor: z.number().min(0).max(1),
+      })
+      .strict(),
+    /**
+     * docs/06_endgame.md §3B、T-43：無限深層ダンジョン。
+     * core/abyss の AbyssConfig に対応。数値インフレ防止のため成長は線形で小さく保つ
+     */
+    abyss: z
+      .object({
+        /** 1層目の強化倍率（HP・技威力・挑戦差に乗る） */
+        baseFactor: z.number().positive(),
+        /** 層ごとの倍率成長（floor 層 = baseFactor + growthPerFloor × (floor − 1)） */
+        growthPerFloor: z.number().nonnegative(),
+        /** 敵の敏捷の層ごとの加算（逃走の抵抗） */
+        agilityPerFloor: z.number().nonnegative(),
+        /** 潜行リソース（灯り）：ラン全体で使えるプレイヤー行動数 */
+        maxTurns: z.number().int().positive(),
+        /** 層の敵プールの挑戦差しきい値（これ以下から抽選。層ごとに上がる） */
+        poolBase: z.number().nonnegative(),
+        poolGrowthPerFloor: z.number().nonnegative(),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

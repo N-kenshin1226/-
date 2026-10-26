@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { legacyOf, type LegacyConfig } from "./index.js";
 import { newGame } from "../state/newGame.js";
-import { serialize, deserialize } from "../save/index.js";
+import { serialize, deserialize, SAVE_VERSION } from "../save/index.js";
 import type { GameState, Work } from "../state/types.js";
 
 const CFG: LegacyConfig = {
@@ -89,12 +89,12 @@ describe("legacyOf（T-39 継承の3項目）", () => {
     expect(fresh.legacy).toBeNull();
   });
 
-  it("セーブv12→v13 の移行で legacy=null が補われる", () => {
+  it("セーブv12の移行で legacy=null が補われ、最新バージョンまで進む", () => {
     const s = base();
     const v12 = { ...JSON.parse(serialize(s)), version: 12 } as Record<string, unknown>;
     delete v12["legacy"];
     const g = deserialize(JSON.stringify(v12));
-    expect(g.version).toBe(13);
+    expect(g.version).toBe(SAVE_VERSION);
     expect(g.legacy).toBeNull();
   });
 });

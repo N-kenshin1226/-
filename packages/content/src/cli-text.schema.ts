@@ -20,6 +20,10 @@ export const cliTextSchema = z
         huntAreas: z.record(z.string(), z.string()),
         /** 人生の終わり方（chronicle の cause）→ 表示名 */
         causeNames: z.record(z.string(), z.string()),
+        /** 運命の傾向（T-45。balance.tendency のキー）→ 表示名 */
+        tendencyNames: z.record(z.string(), z.string()),
+        /** 運命の傾向 → 選択肢の1行説明 */
+        tendencyDescs: z.record(z.string(), z.string()),
         /** 睡眠の質 → 表示語。q < upTo の最初の帯に入る */
         qualityBands: z.array(z.object({ upTo: z.number(), label: z.string() }).strict()).min(1),
       })
@@ -84,15 +88,29 @@ export const cliTextSchema = z
         /** エリア別の見出し行（{name} に表示名） */
         huntArea: z.string(),
         huntLine: z.string(),
+        /** 強個体の表示名（T-44。{name} は素の敵名） */
+        uniqueName: z.string(),
         combatStart: z.string(),
         combatStatus: z.string(),
         combatPrompt: z.string(),
         combatWon: z.string(),
+        /** 強個体討伐の知らせ（T-44。{name} は素の敵名） */
+        uniqueDefeated: z.string(),
         combatLost: z.string(),
         /** 老衰死（T-36。{age} にその朝の年齢） */
         deathByAge: z.string(),
         combatFled: z.string(),
         combatGain: z.string(),
+        /** 深層ダンジョン（T-43。{light}/{floor}/{depth}/{best}/{name} を差し込む） */
+        abyssStart: z.string(),
+        abyssFloor: z.string(),
+        abyssLight: z.string(),
+        abyssCleared: z.string(),
+        abyssDescendPrompt: z.string(),
+        abyssLightOut: z.string(),
+        abyssRetreat: z.string(),
+        abyssResult: z.string(),
+        abyssBest: z.string(),
         kehai: z.string(),
         titleSuppressed: z.string(),
         menuSleepOnly: z.string(),
@@ -129,6 +147,13 @@ export const cliTextSchema = z
         recordsLedgerEmpty: z.string(),
         recordsTitles: z.string(),
         recordsLore: z.string(),
+        /** 討伐図鑑（T-44。{name}/{kills}/{unique} を差し込む。unique は kill.unique.<id> の行） */
+        recordsHunt: z.string(),
+        recordsHuntLine: z.string(),
+        recordsHuntUnique: z.string(),
+        /** 深層の自己ベスト（T-43。{best}/{runs} を差し込む） */
+        recordsAbyss: z.string(),
+        recordsAbyssNone: z.string(),
         /** 年代記（T-38）：周回をまたぐ人生の一覧。開始時の件数・見出し・各頁の行・追記の告知 */
         chronicleLives: z.string(),
         chronicleHeader: z.string(),
@@ -156,6 +181,13 @@ export const cliTextSchema = z
         rebirthPotential: z.string(),
         rebirthOriginPrompt: z.string(),
         rebirthBorn: z.string(),
+        /** 運命の傾向・誓約の選択（T-45/T-46）：開始時の3択と難度修飾子の複数選択 */
+        tendencyPick: z.string(),
+        tendencyLine: z.string(),
+        tendencyChosen: z.string(),
+        vowPick: z.string(),
+        vowLine: z.string(),
+        vowChosen: z.string(),
         moneyPaid: z.string(),
         /** 書店（T-26）：店頭の見出し・一覧行・購入/読了/効果の各行 */
         bookShopHeader: z.string(),

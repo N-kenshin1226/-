@@ -10,7 +10,9 @@
         "gte": 25
       },
       "effect": {
-        "priceVs": { "smithing": 1.05 },
+        "priceVs": {
+          "smithing": 1.05
+        },
         "note": "鍛冶の仕事の信頼が少し上がる"
       },
       "message": "――称号《鍛冶見習い》を獲得しました。"
@@ -155,7 +157,9 @@
         "gte": 25
       },
       "effect": {
-        "priceVs": { "mining": 1.05 },
+        "priceVs": {
+          "mining": 1.05
+        },
         "note": "採掘の目利きが少し上がる"
       },
       "message": "――称号《採掘見習い》を獲得しました。"
@@ -388,6 +392,172 @@
         "note": "職人の頂点（頂点ルート T-41、pinnacles.json legendary_artisan の最終段）"
       },
       "message": "――称号《伝説の職人》を獲得しました。神器を遺した者の名です。"
+    },
+    {
+      "id": "title.unique_hunter",
+      "name": "強個体狩り",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "kill.unique.total",
+        "gte": 1
+      },
+      "effect": {
+        "gainVs": {
+          "combat": 1.05
+        },
+        "note": "際立つ個体と渡り合った経験が、以後の戦闘経験に乗る（T-44）"
+      },
+      "message": "――称号《強個体狩り》を獲得しました。際立つ個体を狩った者に。"
+    },
+    {
+      "id": "title.compendium",
+      "name": "百獣の記録者",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "counter": "kill.species.stray_dog",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.wolf",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.boar",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.bandit",
+            "gte": 1
+          },
+          {
+            "counter": "kill.species.deserter",
+            "gte": 1
+          }
+        ]
+      },
+      "effect": {
+        "gainVs": {
+          "combat": 1.1
+        },
+        "note": "全種を討伐した記録者の見識が、以後の戦闘経験に乗る（T-44）"
+      },
+      "message": "――称号《百獣の記録者》を獲得しました。この地方のすべての獣と賊が、あなたの記録に残った。"
+    },
+    {
+      "id": "title.vow_iron_hide",
+      "name": "剛鱗を破りし者",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.iron_hide"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "硬鱗の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《剛鱗を破りし者》を獲得しました。分厚い鱗の向こうに、勝利を見た者に。"
+    },
+    {
+      "id": "title.vow_bare_purse",
+      "name": "空っぽの財布とともに",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.bare_purse"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "空っぽの財布の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《空っぽの財布とともに》を獲得しました。薄い財布で生き抜いた者に。"
+    },
+    {
+      "id": "title.vow_dear_bed",
+      "name": "高い床に眠る者",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.dear_bed"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "高い床の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《高い床に眠る者》を獲得しました。高い寝床に甘んじた者に。"
+    },
+    {
+      "id": "title.vow_slow_mend",
+      "name": "癒えぬ身体の行者",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.slow_mend"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "癒えにくい身体の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《癒えぬ身体の行者》を獲得しました。癒えにくい身体で歩き続けた者に。"
+    },
+    {
+      "id": "title.vow_windless",
+      "name": "無風の旅人",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "and": [
+          {
+            "flag": "vow.taken.vow.windless"
+          },
+          {
+            "counter": "days.slept",
+            "gte": 28
+          }
+        ]
+      },
+      "effect": {
+        "note": "無風の誓いを一季節守り抜いた証"
+      },
+      "message": "――称号《無風の旅人》を獲得しました。追い風なき道を歩き通した者に。"
     }
   ]
 }

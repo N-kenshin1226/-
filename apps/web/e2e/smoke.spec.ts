@@ -54,6 +54,45 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
   await expect(page.getByTestId("status")).toContainText("3日");
 });
 
+test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）", async ({ page }) => {
+  await page.goto("/?seed=e2e");
+  await page.getByTestId("origin-wanderer").click();
+
+  await page.getByTestId("menu-abyss").click();
+  await expect(page.getByTestId("screen-abyss")).toBeVisible();
+  await page.getByTestId("abyss-dive").click();
+
+  // 第1層の敵を倒すまで攻撃する（逃走・敗北ならその時点でラン終了＝commit が出る）
+  for (let i = 0; i < 20; i++) {
+    if (
+      await page
+        .getByTestId("abyss-retreat")
+        .isVisible()
+        .catch(() => false)
+    )
+      break;
+    if (
+      await page
+        .getByTestId("abyss-commit")
+        .isVisible()
+        .catch(() => false)
+    )
+      break;
+    await page.getByTestId("combat-attack").click();
+  }
+  // 層をクリアした → 層の合間に引き返してランを閉じる
+  await expect(page.getByTestId("abyss-retreat")).toBeVisible();
+  await page.getByTestId("abyss-retreat").click();
+  await page.getByTestId("abyss-commit").click();
+  await expect(page.getByTestId("log")).toContainText("到達：第1層");
+  await expect(page.getByTestId("log")).toContainText("自己ベスト更新");
+
+  // 街の記録に深層の自己ベストが残る（counters 由来の派生表示）
+  await page.getByTestId("menu-records").click();
+  await expect(page.getByTestId("screen-records")).toContainText("深層：自己ベスト 第1層");
+  await page.screenshot({ path: "e2e/artifacts/trace-abyss.png", fullPage: true });
+});
+
 test("師匠画面が開ける（T-27。初期状態では入門条件未達）", async ({ page }) => {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();

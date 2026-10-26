@@ -61,9 +61,9 @@
 
 | ID | 票 | 依存 | 状態 | 内容 |
 |---|---|---|---|---|
-| T-43 | [T-43_abyss.md](T-43_abyss.md) | T-17, T-38 | pending | 無限深層ダンジョン（時間制限＋自己ベスト） |
-| T-44 | [T-44_uniques.md](T-44_uniques.md) | T-17, T-23 | pending | 強化版ユニーク再戦・図鑑 |
-| T-45 | [T-45_tendency.md](T-45_tendency.md) | T-40 | pending | 運命の傾向（開始時3択・1軸） |
-| T-46 | [T-46_vows.md](T-46_vows.md) | T-45 | pending | 誓約（難度修飾子5個＋称号） |
+| T-43 | [T-43_abyss.md](T-43_abyss.md) | T-17, T-38 | done | 無限深層ダンジョン（時間制限＋自己ベスト） |
+| T-44 | [T-44_uniques.md](T-44_uniques.md) | T-17, T-23 | done | 強化版ユニーク再戦・図鑑 |
+| T-45 | [T-45_tendency.md](T-45_tendency.md) | T-40 | done | 運命の傾向（開始時3択・1軸） |
+| T-46 | [T-46_vows.md](T-46_vows.md) | T-45 | done | 誓約（難度修飾子5個＋称号） |
 | T-47 | [T-47_rivals.md](T-47_rivals.md) | T-38 | pending | ライバル・ランキング（簡易版） |
 | T-48 | [T-48_heir.md](T-48_heir.md) | T-39, T-40 | pending | 子・弟子への継承延長（同じ世界） |

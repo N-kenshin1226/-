@@ -11,20 +11,26 @@ import {
   step,
   suggestGoals,
   telegraphLines,
+  type AbyssRun,
   type ActionEvent,
   type CombatAction,
   type GameState,
   type InnRank,
 } from "@trace/core";
-import { balance, pinnacles, titles, type EnemyJson } from "@trace/content";
+import { balance, enemies, pinnacles, titles, type EnemyJson } from "@trace/content";
 import {
+  abyssFloorEnemy,
   atomList,
   beginCombat,
   bioLines,
   bookList,
   cfg,
+  endRun,
   enemyAreas,
   eventLines,
+  killFloor,
+  newAbyssRun,
+  spendLight,
   innCost,
   innQuality,
   inns,
@@ -53,13 +59,17 @@ import {
   specialOrderOf,
   startMinigame,
   t,
+  tendencyIds,
   tickMinigame,
   tpl,
+  uniqueOf,
+  vowList,
   wakeLines,
   workName,
   type BoardState,
   type CombatState,
   type DealState,
+  type FateChoice,
   type MinigameKind,
   type Order,
   type SpecialOrder,
@@ -76,6 +86,8 @@ type Screen =
   | { name: "minigame"; kind: MinigameKind; order: Order }
   | { name: "hunt" }
   | { name: "combat"; enemy: EnemyJson }
+  /** 深層ダンジョン（T-43）：層を下る連戦。進行は AbyssRun が持つ */
+  | { name: "abyss" }
   | { name: "lore"; atomId?: string }
   | { name: "book" }
   | { name: "records" }
@@ -163,6 +175,54 @@ function Btn({
   );
 }
 
+/**
+ * 運命の傾向（T-45）と誓約（T-46）の選択 UI（06 §3C）。
+ * 新規開始画面・転生画面で共通。ルールは core、ここでは選んだ値を渡すだけ
+ */
+function FatePickers({ fate, setFate }: { fate: FateChoice; setFate: (f: FateChoice) => void }) {
+  const tendency = fate.tendency ?? "calm";
+  const pickedVows = fate.vows ?? [];
+  return (
+    <>
+      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.tendencyPick}</div>
+      <div data-testid="fate-tendency">
+        {tendencyIds.map((id) => (
+          <Btn
+            key={id}
+            testId={`tendency-${id}`}
+            primary={tendency === id}
+            onClick={() => setFate({ ...fate, tendency: id })}
+          >
+            {t.display.tendencyNames[id] ?? id}
+            <span style={css.dim}> ― {t.display.tendencyDescs[id] ?? ""}</span>
+          </Btn>
+        ))}
+      </div>
+      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.vowPick}</div>
+      <div data-testid="fate-vows">
+        {vowList.map((v) => (
+          <Btn
+            key={v.id}
+            testId={`vow-${v.id}`}
+            primary={pickedVows.includes(v.id)}
+            onClick={() =>
+              setFate({
+                ...fate,
+                vows: pickedVows.includes(v.id)
+                  ? pickedVows.filter((x) => x !== v.id)
+                  : [...pickedVows, v.id],
+              })
+            }
+          >
+            {v.name}
+            <span style={css.dim}> ― {v.desc}</span>
+          </Btn>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export function App() {
   const [state, setState] = useState<GameState | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -232,8 +292,11 @@ export function App() {
     [push],
   );
 
+  // 新規開始画面で選ぶ運命（T-45/T-46）：傾向と誓約。既定は穏やかな世＋誓約なし
+  const [fate, setFate] = useState<FateChoice>({ tendency: "calm", vows: [] });
+
   const startNew = (originId?: string) => {
-    const s = newSession(originId);
+    const s = newSession(originId, fate);
     saveGame(s);
     setState(s);
     setLog([t.text.banner, "", t.text.intro]);
@@ -263,20 +326,21 @@ export function App() {
     [push],
   );
 
-  /** 転生画面の確定（T-40）：選んだ記憶・遺物・出自で次の周を始める */
+  /** 転生画面の確定（T-40）：選んだ記憶・遺物・出自と運命で次の周を始める（T-45/T-46） */
   const born = useCallback(
     (
       prev: GameState,
       originId: string,
       rememberedTitles: string[],
       artifactId: string | undefined,
+      fate: FateChoice,
     ) => {
       const legacy = legacyOf(prev, balance.legacy, {
         titleDefs: cfg.titles,
         rememberedTitles,
         ...(artifactId !== undefined ? { artifactId } : {}),
       });
-      const next = nextLife(prev, originId, legacy);
+      const next = nextLife(prev, originId, legacy, fate);
       saveGame(next);
       stateRef.current = next;
       setState(next);
@@ -312,6 +376,7 @@ export function App() {
         <h1 style={{ color: theme.colors.accent }}>TRACE</h1>
         <p style={css.sys}>{t.text.intro}</p>
         {lives > 0 && <p style={css.sys}>{tpl(t.text.chronicleLives, { count: lives })}</p>}
+        <FatePickers fate={fate} setFate={setFate} />
         <p style={css.sys}>{t.text.originPick}</p>
         {originList.map((o) => (
           <Btn
@@ -430,6 +495,7 @@ function ScreenView(props: {
     originId: string,
     rememberedTitles: string[],
     artifactId: string | undefined,
+    fate: FateChoice,
   ) => void;
 }) {
   const { state, screen, setScreen, act, push, reset, onRetire, onBorn } = props;
@@ -461,7 +527,11 @@ function ScreenView(props: {
         />
       );
     case "hunt":
-      return <HuntScreen setScreen={setScreen} />;
+      return <HuntScreen state={state} setScreen={setScreen} />;
+    case "abyss":
+      return (
+        <AbyssScreen state={state} act={act} push={push} back={() => setScreen({ name: "menu" })} />
+      );
     case "combat":
       return (
         <CombatScreen
@@ -509,6 +579,8 @@ function MenuScreen({
     { label: "鍛錬", s: { name: "train" }, needAct: true, id: "train" },
     { label: "仕事", s: { name: "work" }, needAct: true, id: "work" },
     { label: "狩りに出る", s: { name: "hunt" }, needAct: true, id: "hunt" },
+    // 深層に潜る（T-43、06 §3B）：行動1つでランを開始する
+    { label: "深層に潜る", s: { name: "abyss" }, needAct: true, id: "abyss" },
     { label: "見聞録", s: { name: "lore" }, needAct: false, id: "lore" },
     { label: "書店", s: { name: "book" }, needAct: false, id: "book" },
     { label: "街の記録", s: { name: "records" }, needAct: false, id: "records" },
@@ -613,7 +685,7 @@ function SleepScreen({ state, act, back }: { state: GameState; act: Act; back: (
       <div>{t.text.innPick}</div>
       <div>
         {inns.map((inn) => {
-          const cost = innCost(inn);
+          const cost = innCost(inn, state);
           return (
             <Btn
               key={inn}
@@ -994,21 +1066,36 @@ function NegotiationView({ gs, onTick }: { gs: DealState; onTick: (s: DealState)
 }
 
 // ---- 狩り（CT戦闘） ----
-function HuntScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
+function HuntScreen({ state, setScreen }: { state: GameState; setScreen: (s: Screen) => void }) {
   return (
     <section style={css.panel} data-testid="screen-hunt">
       <div>{t.text.huntPick}</div>
       {enemyAreas.map(([area, group]) => (
         <div key={area}>
           <div style={css.dim}>{t.display.huntAreas[area] ?? area}</div>
-          {group.map((e) => (
-            <div key={e.id}>
-              <Btn testId={`enemy-${e.id}`} onClick={() => setScreen({ name: "combat", enemy: e })}>
-                {e.name}
-                <span style={css.dim}>（挑戦差 {e.challenge}）</span>
-              </Btn>
-            </div>
-          ))}
+          {group.map((e) => {
+            const ue = uniqueOf(state, e);
+            return (
+              <div key={e.id}>
+                <Btn
+                  testId={`enemy-${e.id}`}
+                  onClick={() => setScreen({ name: "combat", enemy: e })}
+                >
+                  {e.name}
+                  <span style={css.dim}>（挑戦差 {e.challenge}）</span>
+                </Btn>
+                {ue !== null && (
+                  <Btn
+                    testId={`enemy-${e.id}-unique`}
+                    onClick={() => setScreen({ name: "combat", enemy: ue })}
+                  >
+                    {ue.name}
+                    <span style={css.dim}>（挑戦差 {ue.challenge}）</span>
+                  </Btn>
+                )}
+              </div>
+            );
+          })}
         </div>
       ))}
       <Btn onClick={() => setScreen({ name: "menu" })}>戻る</Btn>
@@ -1058,6 +1145,8 @@ function CombatScreen({
       won: r.won,
       fled: r.fled,
       died: r.died,
+      // 強化版ユニークを倒したか（T-44）。enemy.id は素の種のまま
+      ...("uniqueVariant" in enemy && enemy.uniqueVariant ? { unique: true } : {}),
     });
     push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
     // 死亡時は伝記が生成される（06 §1。蘇生するが記録は残る）
@@ -1107,6 +1196,176 @@ function CombatScreen({
         </Btn>
       )}
       <Btn onClick={() => setScreen({ name: "menu" })}>あきらめる</Btn>
+    </section>
+  );
+}
+
+/**
+ * 深層ダンジョン（T-43、06 §3B）：層を下る連戦。
+ * ランの進行（層・灯り・撃破）は core/abyss の AbyssRun、戦闘UIは狩りと同じ枠組み。
+ * 終了時に step の abyss コマンドでまとめて世界に反映する
+ */
+function AbyssScreen({
+  state,
+  act,
+  push,
+  back,
+}: {
+  state: GameState;
+  act: Act;
+  push: (l: string | string[]) => void;
+  back: () => void;
+}) {
+  const [run, setRun] = useState<AbyssRun>(() => newAbyssRun(state));
+  const [cs, setCs] = useState<CombatState | null>(null);
+  /** 現在戦っている層の敵（撃破で run.floor が進んでも表示が変わらないよう保持する） */
+  const [enemy, setEnemy] = useState<EnemyJson | null>(null);
+  const [loss, setLoss] = useState<{ enemyId: string; difficulty: number } | null>(null);
+  const [printed, setPrinted] = useState(0);
+
+  // 戦闘ログは出た分だけ追記する
+  useEffect(() => {
+    if (cs === null) return;
+    const fresh = cs.log.slice(printed);
+    if (fresh.length > 0) {
+      push(fresh.map((e) => `\u3000${e.text}`));
+      setPrinted(cs.log.length);
+    }
+  }, [cs, printed, push]);
+
+  const endLine = (end: NonNullable<AbyssRun["end"]>) =>
+    end === "light"
+      ? t.text.abyssLightOut
+      : end === "retreat"
+        ? t.text.abyssRetreat
+        : end === "fled"
+          ? t.text.combatFled
+          : t.text.combatLost;
+
+  const dive = () => {
+    const e = abyssFloorEnemy(run);
+    push(tpl(t.text.abyssFloor, { floor: run.floor }));
+    push(tpl(t.text.combatStart, { name: e.name }));
+    setEnemy(e);
+    setCs(beginCombat(state, e));
+    setPrinted(0);
+  };
+
+  const doAction = (a: CombatAction) => {
+    if (cs === null || cs.done || run.done || enemy === null) return;
+    // 逃走判定の乱数はラン×層で分ける（同じ行動時刻の連戦で同じ結果にしない）
+    const next = playCombatTurn(cs, a, enemy, state, `${run.seed}:f${run.floor}`);
+    setCs(next);
+    const r = combatResult(next);
+    let cur = { ...run, kills: [...run.kills] };
+    if (r.won) {
+      // 最後の灯りで倒しても層は刻む（灯り切れはそのあとで閉じる）
+      cur = killFloor(cur, { enemyId: enemy.id, difficulty: enemy.challenge });
+    }
+    cur = spendLight(cur);
+    if (r.died) {
+      cur = endRun(cur, "died");
+      setLoss({ enemyId: enemy.id, difficulty: enemy.challenge });
+    } else if (r.fled) {
+      cur = endRun(cur, "fled");
+      setLoss({ enemyId: enemy.id, difficulty: enemy.challenge });
+    } else if (!r.won && cur.done) {
+      // 灯り切れで未決着のまま中断した層
+      setLoss({ enemyId: enemy.id, difficulty: enemy.challenge });
+    }
+    if (cur.done && cur.end !== null) push(endLine(cur.end));
+    setRun(cur);
+  };
+
+  /** 層の合間の引き返し（戦闘中の離脱は「逃げる」） */
+  const retreat = () => {
+    const cur = endRun(run, "retreat");
+    push(endLine("retreat"));
+    setRun(cur);
+  };
+
+  const commit = () => {
+    const end = run.end ?? "retreat";
+    act(
+      {
+        type: "abyss",
+        end,
+        kills: run.kills,
+        ...(loss !== null ? { loss } : {}),
+      },
+      {
+        format: (ev) => [
+          ...eventLines(ev),
+          // 深層での死も教会蘇生の扱いは同じ（03 §4）。伝記を残す
+          ...(end === "died" ? [...bioLines(state, "death"), t.text.chronicleRecorded] : []),
+        ],
+      },
+    );
+    back();
+  };
+
+  return (
+    <section style={css.panel} data-testid="screen-abyss">
+      <div>
+        {tpl(t.text.abyssFloor, { floor: run.floor })}
+        <span style={css.dim}> {tpl(t.text.abyssLight, { light: run.light })}</span>
+      </div>
+      {run.done ? (
+        <Btn primary testId="abyss-commit" onClick={commit}>
+          深層を出る
+        </Btn>
+      ) : cs === null || enemy === null ? (
+        <div>
+          <Btn primary testId="abyss-dive" onClick={dive}>
+            降りる
+          </Btn>
+          <Btn testId="abyss-retreat" onClick={retreat}>
+            引き返す
+          </Btn>
+        </div>
+      ) : (
+        <div>
+          {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
+            <div key={i} style={css.sys}>
+              {l}
+            </div>
+          ))}
+          <div style={css.dim}>
+            {tpl(t.text.combatStatus, {
+              playerHp: Math.max(0, cs.playerHp),
+              playerMax: cs.playerHpMax,
+              enemy: enemy.name,
+              enemyHp: Math.max(0, cs.enemyHp),
+            })}
+          </div>
+          {!cs.done ? (
+            <div>
+              {(
+                [
+                  ["attack", "攻撃"],
+                  ["defend", "防御"],
+                  ["observe", "観察"],
+                  ["flee", "逃げる"],
+                ] as const
+              ).map(([a, label]) => (
+                <Btn key={a} testId={`combat-${a}`} onClick={() => doAction(a)}>
+                  {label}
+                </Btn>
+              ))}
+            </div>
+          ) : cs.won ? (
+            <div>
+              <div style={css.sys}>{tpl(t.text.abyssCleared, { name: enemy.name })}</div>
+              <Btn primary testId="abyss-dive" onClick={dive}>
+                さらに降りる
+              </Btn>
+              <Btn testId="abyss-retreat" onClick={retreat}>
+                引き返す
+              </Btn>
+            </div>
+          ) : null}
+        </div>
+      )}
     </section>
   );
 }
@@ -1292,6 +1551,31 @@ function RecordsScreen({ state, back }: { state: GameState; back: () => void }) 
         {bioLines(state).map((l, i) => (
           <div key={i}>{l}</div>
         ))}
+      </div>
+      {/* 討伐図鑑（T-44）：kill.species.* / kill.unique.* カウンタから実績一覧 */}
+      <div style={{ marginTop: 12 }}>{t.text.recordsHunt}</div>
+      {enemies.enemies.map((e) => {
+        const kills = state.counters[`kill.species.${e.id}`] ?? 0;
+        const uniques = state.counters[`kill.unique.${e.id}`] ?? 0;
+        if (kills === 0) return null;
+        return (
+          <div key={e.id} style={css.dim}>
+            {tpl(t.text.recordsHuntLine, {
+              name: e.name,
+              kills,
+              unique: uniques > 0 ? tpl(t.text.recordsHuntUnique, { unique: uniques }) : "",
+            })}
+          </div>
+        );
+      })}
+      {/* 深層の自己ベスト（T-43）：abyss.best / abyss.runs カウンタ */}
+      <div style={{ marginTop: 8 }}>
+        {(state.counters["abyss.runs"] ?? 0) === 0
+          ? t.text.recordsAbyssNone
+          : tpl(t.text.recordsAbyss, {
+              best: state.counters["abyss.best"] ?? 0,
+              runs: state.counters["abyss.runs"] ?? 0,
+            })}
       </div>
       {/* 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る） */}
       <ChronicleView />
@@ -1577,6 +1861,7 @@ function RebirthScreen({
     originId: string,
     rememberedTitles: string[],
     artifactId: string | undefined,
+    fate: FateChoice,
   ) => void;
 }) {
   const { auto, topWorks } = useMemo(() => legacyDefaults(prev), [prev]);
@@ -1594,6 +1879,8 @@ function RebirthScreen({
   // 自動選択の遺物は品質最高の1件＝topWorks[0]（legacyOf と同じ順位付け）
   const [artifactId, setArtifactId] = useState<string | undefined>(topWorks[0]?.id);
   const [originId, setOriginId] = useState<string | null>(null);
+  // 生まれ変わる世の運命（T-45/T-46）：傾向は穏やか・誓約はなしが既定
+  const [fate, setFate] = useState<FateChoice>({ tendency: "calm", vows: [] });
   const toggleTitle = (id: string) =>
     setPickedTitles((ts) =>
       ts.includes(id)
@@ -1671,13 +1958,14 @@ function RebirthScreen({
           </Btn>
         ))}
       </div>
+      <FatePickers fate={fate} setFate={setFate} />
       <div style={{ marginTop: 12 }}>
         <Btn
           primary
           testId="rebirth-born"
           disabled={originId === null}
           onClick={() => {
-            if (originId !== null) onBorn(prev, originId, pickedTitles, artifactId);
+            if (originId !== null) onBorn(prev, originId, pickedTitles, artifactId, fate);
           }}
         >
           {t.text.rebirthBorn}

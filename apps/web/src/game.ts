@@ -3,12 +3,20 @@
  * ルールはすべて core、数値は content、ここでは画面遷移と表示用の整形だけを行う
  */
 import {
+  abyssRunSeed,
   activeBookEffects,
   activeEffects,
   appraisalGame,
   biographyMaterial,
   canAct,
+  canFightUnique,
   createRng,
+  endRun,
+  floorEnemy,
+  killFloor,
+  spendLight,
+  startRun,
+  enhancedEnemy,
   damageFactor,
   deserialize,
   deserializeChronicle,
@@ -35,7 +43,12 @@ import {
   combatResult,
   combatTurn,
   specialOrderOf as coreSpecialOrderOf,
+  TENDENCY_IDS,
   TemplateProvider,
+  withWorldMods,
+  worldFactor,
+  worldMods,
+  type AbyssRun,
   type ActionEvent,
   type BoardInput,
   type BoardState,
@@ -51,6 +64,7 @@ import {
   type MiniGameCtx,
   type NewGameConfig,
   type StepConfig,
+  type TendencyId,
   type TimingInput,
   type TimingState,
   type Work,
@@ -72,6 +86,7 @@ import {
   society,
   tailwinds,
   titles,
+  vows,
   type EnemyJson,
   type Order,
   type Origin,
@@ -131,7 +146,15 @@ export const cfg: StepConfig = {
   legacy: { artifactGainFactor: balance.legacy.artifactGainFactor },
   /** 頂点ルート（T-41。content/pinnacles.json の条件鎖） */
   pinnacles: pinnacles.pinnacles,
+  /** 運命の傾向・誓約（T-45/T-46。balance.tendency + vows.json の世界補正表） */
+  tendency: balance.tendency,
+  vows: vows.vows,
 };
+
+/** 運命の傾向の選択肢（T-45。UI で3択を出す用） */
+export const tendencyIds = TENDENCY_IDS;
+/** 誓約の定義一覧（T-46。UI で複数選択を出す用） */
+export const vowList = vows.vows;
 
 export const skillList = skills.skills;
 export const orderList = orders.orders;
@@ -241,8 +264,17 @@ export function saveChronicle(chronicle: Chronicle): void {
   localStorage.setItem(CHRONICLE_KEY, serializeChronicle(chronicle));
 }
 
+/**
+ * その周の運命の選び方（T-45/T-46。06 §3C）。
+ * tendency 省略時は calm（中立）、vows 省略時は誓約なし
+ */
+export interface FateChoice {
+  tendency?: TendencyId;
+  vows?: readonly string[];
+}
+
 /** 新規開始・転生で共通の newGame 初期値（出自は呼び出し側で選ぶ） */
-const gameInit = (origin: Origin, legacy?: Legacy): NewGameConfig => ({
+const gameInit = (origin: Origin, legacy?: Legacy, fate?: FateChoice): NewGameConfig => ({
   skillIds: skills.skills.map((s) => s.id),
   initialPotential: balance.player.initialPotential,
   origin,
@@ -251,23 +283,31 @@ const gameInit = (origin: Origin, legacy?: Legacy): NewGameConfig => ({
   initialStatValue: balance.player.initialStatValue,
   initialMoney: balance.player.initialMoney,
   ...(legacy !== undefined ? { legacy } : {}),
+  ...(fate?.tendency !== undefined ? { tendency: fate.tendency } : {}),
+  ...(fate?.vows !== undefined ? { vows: fate.vows } : {}),
 });
 
 /** 新規開始のシード。?seed= で固定できる（e2e・リプレイ用）。それ以外は一意に */
-export function newSession(originId?: string): GameState {
+export function newSession(originId?: string, fate?: FateChoice): GameState {
   const param = new URLSearchParams(window.location.search).get("seed");
   const seed = param ?? `web-${Math.random().toString(36).slice(2, 10)}`;
   const origin = origins.origins.find((o) => o.id === originId) ?? origins.origins[0]!;
-  return newGame(seed, t.text.playerName, gameInit(origin));
+  return newGame(seed, t.text.playerName, gameInit(origin, undefined, fate));
 }
 
 /**
  * 転生した周の開始（T-40。06 §1）：新しいシードの世界へ。
- * シードは環境変数・乱数ではなく前世の状態から決定論的に派生する
+ * シードは環境変数・乱数ではなく前世の状態から決定論的に派生する。
+ * 生まれ変わった世の傾向と新たな誓約は fate で選ぶ（T-45/T-46）
  */
-export function nextLife(prev: GameState, originId: string | undefined, legacy: Legacy): GameState {
+export function nextLife(
+  prev: GameState,
+  originId: string | undefined,
+  legacy: Legacy,
+  fate?: FateChoice,
+): GameState {
   const origin = origins.origins.find((o) => o.id === originId) ?? origins.origins[0]!;
-  return newGame(nextWorldSeed(prev), t.text.playerName, gameInit(origin, legacy));
+  return newGame(nextWorldSeed(prev), t.text.playerName, gameInit(origin, legacy, fate));
 }
 
 /**
@@ -344,6 +384,13 @@ export function eventLines(events: ActionEvent[]): string[] {
       }
       case "kehai":
         return [t.text.kehai];
+      // 強個体の討伐（T-44）：図鑑に刻んだ旨を1行出す
+      case "uniqueDefeated":
+        return [
+          tpl(t.text.uniqueDefeated, {
+            name: enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId,
+          }),
+        ];
       case "pinnacleStageReached": {
         // 頂点ルートの段（T-41）：通知文は pinnacles.json 側に書かれている
         const notice = pinnacles.pinnacles
@@ -385,6 +432,12 @@ export function eventLines(events: ActionEvent[]): string[] {
             name: canon.events.find((x) => x.id === e.id)?.name ?? e.id,
           }),
         ];
+      // 深層ダンジョンのラン結果（T-43）：到達深度と自己ベスト更新を1行ずつ出す
+      case "abyssEnded": {
+        const lines = [tpl(t.text.abyssResult, { depth: e.depth, best: e.best })];
+        if (e.newBest) lines.push(tpl(t.text.abyssBest, { best: e.best }));
+        return lines;
+      }
       case "moneyPaid":
         return [tpl(t.text.moneyPaid, { amount: e.amount })];
       // 老衰死（T-36）：起床ログに続いて表示する。老いの兆候（oldAgeSign）は
@@ -548,8 +601,27 @@ export const inns = ["cheap", "normal", "good"] as const;
 export function innQuality(inn: (typeof inns)[number], dinner: boolean): number {
   return sleepQuality(inn, dinner, balance.sleep);
 }
-export function innCost(inn: (typeof inns)[number]): number {
-  return balance.sleep.innCost?.[inn] ?? 0;
+export function innCost(inn: (typeof inns)[number], state?: GameState): number {
+  const base = balance.sleep.innCost?.[inn] ?? 0;
+  // 運命の傾向・誓約の世界補正（T-45/T-46：飢饉の世・高い宿の誓い）。実際の支払いは step 側
+  if (state === undefined) return base;
+  return Math.round(base * worldFactor(worldMods(state, cfg.tendency, cfg.vows), "innCostFactor"));
+}
+
+/**
+ * 強化版ユニーク（T-44、06 §3B）：同種を unique.afterKills 体倒すと現れる。
+ * 表示名は cli.json の uniqueName テンプレート。戦闘ルールの拡張は core の enhancedEnemy
+ */
+export type UniqueEnemy = EnemyJson & { uniqueVariant: true };
+export function uniqueOf(state: GameState, enemy: EnemyJson): UniqueEnemy | null {
+  const u = balance.combat.unique;
+  if (u === undefined || !canFightUnique(state, enemy.id, u)) return null;
+  return {
+    ...enemy,
+    ...enhancedEnemy(enemy, u),
+    name: tpl(t.text.uniqueName, { name: enemy.name }),
+    uniqueVariant: true,
+  };
 }
 
 /** その日の特別注文（街の出来事。判定は core/src/town、コンテンツはここで注入） */
@@ -690,6 +762,18 @@ function combatCtx(state: GameState): MiniGameCtx {
   };
 }
 
+/**
+ * 深層ダンジョン（T-43、06 §3B）：ランの開始とその層の敵。
+ * 敵列は run.seed × floor で決定論的。強化は core の floorEnemy が行う
+ */
+export function newAbyssRun(state: GameState): AbyssRun {
+  return startRun(abyssRunSeed(state.seed, state.counters["abyss.runs"] ?? 0), balance.abyss);
+}
+export function abyssFloorEnemy(run: AbyssRun): EnemyJson {
+  return floorEnemy(run.seed, run.floor, enemies.enemies, balance.abyss);
+}
+export { endRun, killFloor, spendLight };
+
 export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
   // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
   const fx = damageFactor(
@@ -705,7 +789,9 @@ export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
     ],
     enemy.id,
   );
-  return startCombat(toEnemyDef(enemy), cfg.combat, state.player, fx);
+  // 運命の傾向・誓約の世界補正（T-45/T-46。戦乱の世・強敵の誓で敵が強くなる）
+  const def = withWorldMods(toEnemyDef(enemy), worldMods(state, cfg.tendency, cfg.vows));
+  return startCombat(def, cfg.combat, state.player, fx);
 }
 
 export function playCombatTurn(
@@ -713,8 +799,13 @@ export function playCombatTurn(
   action: CombatAction,
   enemy: EnemyJson,
   state: GameState,
+  /** 逃走判定などの乱数源（深層はラン×層で別々に渡す。省略時は日付×行動） */
+  seed?: string,
 ): CombatState {
-  return combatTurn(cs, action, toEnemyDef(enemy), cfg.combat, combatCtx(state));
+  const ctx = combatCtx(state);
+  // beginCombat と同じ世界補正を敵に掛ける（T-45/T-46。ターン解決も同じ強さでないと不整合）
+  const def = withWorldMods(toEnemyDef(enemy), worldMods(state, cfg.tendency, cfg.vows));
+  return combatTurn(cs, action, def, cfg.combat, seed === undefined ? ctx : { ...ctx, seed });
 }
 
 export { combatResult, telegraphLines, suggestGoals, sleepQuality };
