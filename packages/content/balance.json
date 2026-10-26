@@ -15,7 +15,8 @@
   },
   "player": {
     "initialPotential": 100,
-    "initialStatValue": 10
+    "initialStatValue": 10,
+    "initialMoney": 40
   },
   "gain": {
     "base": {
@@ -53,7 +54,12 @@
     },
     "qualityMin": 0.6,
     "qualityMax": 1.8,
-    "potentialDecayPerPoint": 0.005
+    "potentialDecayPerPoint": 0.005,
+    "innCost": {
+      "cheap": 8,
+      "normal": 15,
+      "good": 30
+    }
   },
   "body": {
     "fatiguePerAction": {
@@ -185,5 +191,10 @@
   },
   "society": {
     "goalRewardFactor": 1.5
+  },
+  "town": {
+    "specialOrderChance": 0.4,
+    "specialOrderExpFactor": 1.5,
+    "specialOrderRewardFactor": 2
   }
 }

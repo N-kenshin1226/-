@@ -30,6 +30,8 @@ export interface SleepConfig {
   qualityMax: number;
   /** スキル値が 1 上がるごとの素質の減少率（§6：現在値の約1%） */
   potentialDecayPerPoint: number;
+  /** 宿代（G）。省略時は無料 */
+  innCost?: Record<InnRank, number>;
 }
 
 /** 睡眠の質 = 宿ランク係数 × 夕食係数（0.6〜1.2 にクランプ） */

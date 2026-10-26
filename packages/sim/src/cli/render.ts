@@ -35,7 +35,7 @@ export function statusLines(state: GameState, cfg: StepConfig, t: CliText): stri
       weekday: t.display.weekdayNames[d.weekday] ?? "?",
       timeOfDay: t.display.timeOfDayNames[d.timeOfDay] ?? "?",
       fatigue: Math.round(state.player.fatigue),
-      money: t.display.fixedMoney,
+      money: state.player.money,
     }),
   );
   const winds = state.today.winds.map(windLabel).join(" ／ ");
@@ -66,22 +66,26 @@ export function skillPickLines(
   ];
 }
 
-/** 宿の選択肢（質のプレビューつき） */
+/** 宿の選択肢（質・値段のプレビューつき。払えない宿は出さない） */
 export function innPickLines(
   t: CliText,
   qualityOf: (inn: "cheap" | "normal" | "good") => number,
-): string[] {
-  const inns = ["cheap", "normal", "good"] as const;
-  return [
-    t.text.innPick,
+  money: number,
+  costOf: (inn: "cheap" | "normal" | "good") => number,
+): { lines: string[]; affordable: ("cheap" | "normal" | "good")[] } {
+  const inns = (["cheap", "normal", "good"] as const).filter((i) => costOf(i) <= money);
+  const lines = [
+    inns.length > 0 ? t.text.innPick : t.text.innTooPoor,
     ...inns.map((inn, i) =>
       tpl(t.text.innLine, {
         index: i + 1,
         name: t.display.innNames[inn],
         quality: qualityLabel(qualityOf(inn), t),
+        cost: costOf(inn),
       }),
     ),
   ];
+  return { lines, affordable: [...inns] };
 }
 
 /**

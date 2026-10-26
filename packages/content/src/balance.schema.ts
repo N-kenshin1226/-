@@ -32,6 +32,8 @@ export const balanceSchema = z
       .object({
         initialPotential: z.number().positive(),
         initialStatValue: z.number().nonnegative(),
+        /** 初期所持金（G） */
+        initialMoney: z.number().nonnegative(),
       })
       .strict(),
     /** docs/02_growth_system.md §2。core/growth/gain.ts の GainConfig に対応 */
@@ -78,6 +80,14 @@ export const balanceSchema = z
         qualityMin: z.number().positive(),
         qualityMax: z.number().positive(),
         potentialDecayPerPoint: z.number().min(0).max(1),
+        /** 宿代（G）。各ランクの一泊の値段 */
+        innCost: z
+          .object({
+            cheap: z.number().nonnegative(),
+            normal: z.number().nonnegative(),
+            good: z.number().nonnegative(),
+          })
+          .strict(),
       })
       .strict(),
     /** docs/02_growth_system.md §5。core/growth/body.ts の BodyConfig に対応 */
@@ -221,6 +231,17 @@ export const balanceSchema = z
     society: z
       .object({
         goalRewardFactor: z.number().positive().max(10),
+      })
+      .strict(),
+    /** 街の日替わりイベント（03 §6。特別注文など） */
+    town: z
+      .object({
+        /** その日に特別注文が出る確率 */
+        specialOrderChance: z.number().min(0).max(1),
+        /** 特別注文の経験係数 */
+        specialOrderExpFactor: z.number().positive(),
+        /** 特別注文の報酬倍率 */
+        specialOrderRewardFactor: z.number().positive(),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

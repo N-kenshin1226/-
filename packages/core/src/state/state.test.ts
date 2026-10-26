@@ -215,3 +215,36 @@ describe("save", () => {
     expect(() => deserialize(JSON.stringify({ version: 99 }))).toThrow();
   });
 });
+
+describe("所持金（T-20：仕事の報酬と宿代）", () => {
+  it("仕事をすると報酬が入る（rewardMoney 指定なし→市場価値）", () => {
+    const g = newGame("m1", "t", { ...newGameCfg, initialMoney: 10 });
+    const r = step(g, { type: "work", kind: "smithing", quality: 50 }, cfg);
+    expect(r.state.player.money).toBeGreaterThan(10);
+    expect(
+      r.events.some((e) => e.type === "moneyPaid" && e.amount === r.state.player.money - 10),
+    ).toBe(true);
+  });
+
+  it("注文の rewardMoney があればそれが入る", () => {
+    const g = newGame("m2", "t", { ...newGameCfg, initialMoney: 0 });
+    const r = step(g, { type: "work", kind: "smithing", quality: 50, rewardMoney: 40 }, cfg);
+    expect(r.state.player.money).toBe(40);
+  });
+
+  it("宿は innCost を払う（rest・自宅は無料）", () => {
+    const g = newGame("m3", "t", { ...newGameCfg, initialMoney: 20 });
+    const costCfg: StepConfig = {
+      ...cfg,
+      sleep: { ...cfg.sleep, innCost: { cheap: 8, normal: 15, good: 30 } },
+    };
+    const r = step(g, { type: "sleep", inn: "normal", dinner: false }, costCfg);
+    expect(r.state.player.money).toBe(5);
+    // 所持金を超える宿代は 0 で止まる（CLI 側で選べないようにする）
+    const r2 = step(r.state, { type: "sleep", inn: "good", dinner: false }, costCfg);
+    expect(r2.state.player.money).toBe(0);
+    // rest は無料
+    const r3 = step(r2.state, { type: "rest" }, costCfg);
+    expect(r3.state.player.money).toBe(0);
+  });
+});

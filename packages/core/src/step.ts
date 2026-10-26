@@ -65,6 +65,8 @@ export type Command =
       flags?: string[];
       /** 簡易判定なら経験係数（03 §2「50%」）。手動は省略/1 */
       expFactor?: number;
+      /** 注文の報酬（G）。省略時は台帳の市場価値がそのまま入る */
+      rewardMoney?: number;
     }
   /**
    * 戦闘の結果を世界に反映する（03 §4）。戦闘の進行自体は combat/ で行い、
@@ -161,6 +163,15 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         label: w.label,
         direction: w.direction,
       }));
+      // 宿代を払う（rest・自宅は無料）
+      if (!isRest) {
+        const cost = cfg.sleep.innCost?.[command.inn ?? "normal"] ?? 0;
+        next = {
+          ...next,
+          player: { ...next.player, money: Math.max(0, next.player.money - cost) },
+        };
+      }
+
       next.time = sleepTime(next.time);
       next = resetDailyNotify(next); // 日付が変わると通知予算はリセット
       events.push({ type: "slept", from, to: next.time });
@@ -253,6 +264,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (recorded.tierUp) {
         events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
       }
+      // 報酬が入る（注文の約定額があればそれ、無ければ市場価値）
+      const pay = Math.max(0, command.rewardMoney ?? recorded.work.marketValue);
+      next = {
+        ...next,
+        player: { ...next.player, money: next.player.money + pay },
+      };
+      events.push({ type: "moneyPaid", amount: pay });
       break;
     }
     case "combat": {

@@ -1,7 +1,6 @@
 {
   "version": 1,
   "display": {
-    "fixedMoney": 50,
     "innNames": {
       "cheap": "安宿",
       "normal": "宿屋《麦穂亭》",
@@ -59,8 +58,8 @@
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
-    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  7) 見聞録を読む  q) 中断する",
-    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  q) 中断する",
+    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  7) 見聞録を読む  8) 街の記録  q) 中断する",
+    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  4) 街の記録  q) 中断する",
     "mustSleep": "――身体はもう動きません。今日はここまでです。",
     "promptChoice": "> ",
     "skillPick": "どの技能を鍛えますか",
@@ -69,7 +68,7 @@
     "trainResult": "《{name}》の訓練（難度 {difficulty}）―― 経験 +{amount}",
     "restDone": "――家で休みました。",
     "innPick": "どこに泊まりますか",
-    "innLine": "  {index}) {name}（質：{quality}）",
+    "innLine": "  {index}) {name}（質：{quality}、{cost}G）",
     "dinnerPrompt": "夕食を取りますか（y/N）",
     "overworkBecame": "――身体が限界を超えています。オーバーワークに陥りました。",
     "wake": {
@@ -135,6 +134,15 @@
     "loreNone": "まだ読めるものがない。",
     "loreRead": "──《{title}》\n  {text}",
     "factLearned": "――新たな事実が記録された：《{text}》",
-    "loreConnection": "――断片が繋がった。{name} の真相に近づいた気がする。"
+    "loreConnection": "――断片が繋がった。{name} の真相に近づいた気がする。",
+    "innTooPoor": "宿代が足りない。今夜は自宅で休むしかない。",
+    "specialOrder": "――工房に特別な注文が来ている。",
+    "recordsHeader": "── 街の記録 ──",
+    "recordsLedger": "作品台帳（{count}件）：",
+    "recordsLedgerLine": "  {i}) {name} 品質{quality} ティア{tier} 評価{value}G（{day}日目）",
+    "recordsLedgerEmpty": "  まだ作品はない。",
+    "recordsTitles": "称号：{titles}",
+    "recordsLore": "見聞録：事実 {facts}件、繋がった出来事 {conns}件",
+    "moneyPaid": "――報酬 {amount}G を受け取った。"
   }
 }

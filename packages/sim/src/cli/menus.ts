@@ -1,5 +1,5 @@
 import { step, suggestGoals, type ActionEvent, type GameState, type StepConfig } from "@trace/core";
-import { atoms, society, type CliText } from "@trace/content";
+import { atoms, society, titles, type CliText } from "@trace/content";
 import { tpl } from "./render.js";
 
 /**
@@ -120,4 +120,43 @@ export async function loreMenu(state: GameState, ctx: MenuCtx): Promise<GameStat
   outAll(applyTitles(res.events));
   save(res.state);
   return res.state;
+}
+
+/** 「8) 街の記録」：作品台帳・称号・見聞録の一覧を眺める（行動を消費しない） */
+export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
+  const { out, t } = ctx;
+  out(t.text.recordsHeader);
+  out(tpl(t.text.recordsLedger, { count: state.ledger.length }));
+  if (state.ledger.length === 0) {
+    out(t.text.recordsLedgerEmpty);
+  } else {
+    const recent = state.ledger.slice(-10);
+    recent.forEach((w, i) =>
+      out(
+        tpl(t.text.recordsLedgerLine, {
+          i: state.ledger.length - recent.length + i + 1,
+          name: w.order ?? w.kind,
+          quality: w.quality,
+          tier: w.tier,
+          value: w.marketValue,
+          day: w.day + 1,
+        }),
+      ),
+    );
+  }
+  const titleNames = state.titles.map(
+    (id) => `${titles.titles.find((x) => x.id === id)?.name ?? id}`,
+  );
+  out(
+    tpl(t.text.recordsTitles, {
+      titles: titleNames.length ? titleNames.join("、") : "（まだない）",
+    }),
+  );
+  out(
+    tpl(t.text.recordsLore, {
+      facts: state.lore.facts.length,
+      conns: state.lore.connections.length,
+    }),
+  );
+  return state;
 }

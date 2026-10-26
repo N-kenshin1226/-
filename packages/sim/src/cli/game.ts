@@ -18,7 +18,6 @@ import {
   type BoardState,
   type DealCard,
   type GameState,
-  type InnRank,
   type CombatAction,
   type StepConfig,
   type TimingInput,
@@ -45,7 +44,8 @@ import {
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
 import { innPickLines, skillPickLines, statusLines, tpl, wakeBlock } from "./render.js";
-import { loreMenu, societyMenu } from "./menus.js";
+import { loreMenu, recordsMenu, societyMenu } from "./menus.js";
+import { specialOrderOf, type SpecialOrder } from "./town.js";
 
 export interface PlayCliOptions {
   io: CliIo;
@@ -60,8 +60,6 @@ export interface PlayCliOptions {
   /** 語り層（07 §6。既定: TemplateProvider。LLM実装への差し替え口） */
   narrator?: NarrationProvider;
 }
-
-const INN_ORDER: readonly InnRank[] = ["cheap", "normal", "good"];
 
 function defaultSavePath(): string {
   return process.env.TRACE_SAVE_PATH ?? join(homedir(), ".trace", "save.json");
@@ -127,6 +125,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       skillIds: skillList.map((s) => s.id),
       initialPotential: balance.player.initialPotential,
       initialStatValue: balance.player.initialStatValue,
+      initialMoney: balance.player.initialMoney,
     });
   }
 
@@ -341,7 +340,18 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     }
 
     // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定）
-    const pick = canAction ? c : c === "1" ? "sleep" : c === "2" ? "rest" : c === "3" ? "6" : c;
+    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定, 4=街の記録）
+    const pick = canAction
+      ? c
+      : c === "1"
+        ? "sleep"
+        : c === "2"
+          ? "rest"
+          : c === "3"
+            ? "6"
+            : c === "4"
+              ? "8"
+              : c;
 
     if (pick === "1") {
       // ---- 訓練 ----
@@ -378,7 +388,10 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     } else if (pick === "2") {
       // ---- 仕事（注文を選び、手動 or 簡易判定） ----
       out(t.text.orderPick);
-      const orderList = orders.orders;
+      // 日替わりの特別注文（街の出来事。シード×日付で決定的に出る）
+      const special = specialOrderOf(state.seed, state.time.day);
+      if (special) out(t.text.specialOrder);
+      const orderList = special ? [...orders.orders, special] : orders.orders;
       orderList.forEach((o, i) =>
         out(
           tpl(t.text.orderLine, {
@@ -430,6 +443,10 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         out(t.text.workSimple);
       }
 
+      // 特別注文は経験係数が上乗せされる
+      if ("special" in order && order.special === true) {
+        expFactor = (expFactor ?? 1) * (order as SpecialOrder).expFactor;
+      }
       const res = step(
         state,
         {
@@ -440,6 +457,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           order: order.id,
           flags,
           expFactor,
+          rewardMoney: order.rewardMoney,
         },
         cfg,
       );
@@ -459,6 +477,10 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         }),
       );
       if (tierUp) out(tpl(t.text.workResultTier, { tier: tierUp.tier }));
+      const paid = res.events.find(
+        (e): e is Extract<ActionEvent, { type: "moneyPaid" }> => e.type === "moneyPaid",
+      );
+      if (paid) out(tpl(t.text.moneyPaid, { amount: paid.amount }));
       outAll(applyTitles(res.events));
     } else if (pick === "3") {
       // ---- 狩りに出る（周辺エリアで敵と戦う。03 §4） ----
@@ -554,10 +576,17 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     } else if (pick === "5" || pick === "sleep") {
       // ---- 寝る（宿・夕食を選ぶ） ----
       const withDinner = true;
-      outAll(innPickLines(t, (inn) => sleepQuality(inn, withDinner, cfg.sleep)));
+      const { lines: innLines, affordable } = innPickLines(
+        t,
+        (inn) => sleepQuality(inn, withDinner, cfg.sleep),
+        state.player.money,
+        (inn) => cfg.sleep.innCost?.[inn] ?? 0,
+      );
+      outAll(innLines);
+      if (affordable.length === 0) continue;
       const ii = await ask(t.text.promptChoice);
       if (ii === null) return state;
-      const inn = INN_ORDER[Number.parseInt(ii.trim(), 10) - 1];
+      const inn = affordable[Number.parseInt(ii.trim(), 10) - 1];
       if (!inn) {
         out(t.text.invalidInput);
         continue;
@@ -588,6 +617,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       const r = await loreMenu(state, menuCtx);
       if (r === null) return state;
       state = r;
+    } else if (pick === "8") {
+      // ---- 街の記録（台帳・称号・見聞録。行動は消費しない） ----
+      state = recordsMenu(state, menuCtx);
     } else {
       out(t.text.invalidInput);
     }

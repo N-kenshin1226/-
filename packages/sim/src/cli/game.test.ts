@@ -28,7 +28,7 @@ describe("playCli", () => {
     const { io, output } = scriptedIo([
       ...threeDays([
         ["2", "y"],
-        ["3", "n"],
+        ["1", "n"],
         ["1", "y"],
       ]),
       "q",
@@ -48,7 +48,7 @@ describe("playCli", () => {
   it("セーブとロードで続きから遊べる", async () => {
     const savePath = tmpSave();
     // 1日目を遊んで寝る（自動セーブ）
-    const first = scriptedIo(["1", "1", "", "5", "2", "y", "q"]);
+    const first = scriptedIo(["1", "1", "", "5", "1", "y", "q"]);
     const s1 = await playCli({ io: first.io, savePath, seed: SEED });
     expect(s1!.time.day).toBe(1);
 
@@ -104,5 +104,32 @@ describe("playCli", () => {
     expect(start).toBeGreaterThanOrEqual(0);
     expect(end).toBeGreaterThan(start);
     expect(text.slice(start, end + "━━━━━━━━━━━━━━━━━━━━━━".length)).toMatchSnapshot();
+  });
+});
+
+describe("T-20 街のプレイループ", () => {
+  it("1週間分を自動入力で通せる（仕事・見聞録・記録・認定が出る）", async () => {
+    const savePath = tmpSave();
+    const lines: string[] = [];
+    for (let day = 0; day < 7; day++) {
+      lines.push("2", "1", "n"); // 仕事：注文1を簡易判定で
+      lines.push("1", "1", ""); // 訓練
+      if (day === 1) lines.push("7", "1"); // 見聞録：最初のアトムを読む
+      if (day === 2) lines.push("8"); // 街の記録
+      if (day === 3) lines.push("6", ""); // 目標と認定（目標の宣言を見る）
+      lines.push("5", "1", "y"); // 寝る（安い宿・夕食あり）
+    }
+    const { io, output } = scriptedIo([...lines, "q"]);
+    const state = await playCli({ io, savePath, seed: "town-week", delay: async () => {} });
+    const text = output.join("\n");
+
+    expect(state!.time.day).toBe(7);
+    expect(state!.ledger.length).toBeGreaterThanOrEqual(7);
+    expect(state!.lore.read.length).toBeGreaterThanOrEqual(1);
+    // 報酬（釘15G）− 宿代（8G）で所持金が増える
+    expect(state!.player.money).toBe(40 + 7 * 7);
+    expect(text).toContain("街の記録");
+    expect(text).toContain("街の新聞");
+    expect(text).toContain("報酬");
   });
 });

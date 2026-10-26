@@ -46,6 +46,8 @@ export interface PlayerState {
   fatigue: number;
   /** オーバーワーク（02 §5：過負荷が連続すると発生。休養日で解除） */
   overwork: { streakDays: number; active: boolean };
+  /** 所持金。仕事の報酬が入り、宿代などに使う（03 §3） */
+  money: number;
 }
 
 /** 行動の記録（新規性・追い風の偏り判定などに使う直近N件） */

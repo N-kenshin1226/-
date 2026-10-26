@@ -6,8 +6,6 @@ export const cliTextSchema = z
     version: z.number().int(),
     display: z
       .object({
-        /** 所持金はM0では未実装。表示だけの固定値（T-11 判断ログ参照） */
-        fixedMoney: z.number().int().nonnegative(),
         innNames: z.object({ cheap: z.string(), normal: z.string(), good: z.string() }).strict(),
         /** rest（家で休む）の起床ログに出す場所名 */
         homeName: z.string(),
@@ -94,6 +92,15 @@ export const cliTextSchema = z
         restDone: z.string(),
         innPick: z.string(),
         innLine: z.string(),
+        innTooPoor: z.string(),
+        specialOrder: z.string(),
+        recordsHeader: z.string(),
+        recordsLedger: z.string(),
+        recordsLedgerLine: z.string(),
+        recordsLedgerEmpty: z.string(),
+        recordsTitles: z.string(),
+        recordsLore: z.string(),
+        moneyPaid: z.string(),
         dinnerPrompt: z.string(),
         overworkBecame: z.string(),
         wake: z

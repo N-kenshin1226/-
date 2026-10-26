@@ -12,6 +12,8 @@ export interface NewGameConfig {
   initialStatValue: number;
   /** 初期の立場（省略時は流れ者） */
   initialStanding?: string;
+  /** 初期所持金 */
+  initialMoney?: number;
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -43,6 +45,7 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       load,
       fatigue: 0,
       overwork: { streakDays: 0, active: false },
+      money: cfg.initialMoney ?? 0,
     },
     counters: {},
     flags: {},
