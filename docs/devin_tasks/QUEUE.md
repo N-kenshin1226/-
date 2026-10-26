@@ -32,6 +32,8 @@
 | T-18 | [T-18_notify.md](T-18_notify.md) | T-10 | done | 通知予算S/A/B・気配（Sは1日1回） |
 | T-19 | [T-19_society.md](T-19_society.md) | T-10, T-16 | done | 立場3段階×職業2・打診(A通知)・人生目標 |
 | T-19b | [T-19b_lore.md](T-19b_lore.md) | T-10 | done | アトム型・canon骨格・lore:check・見聞録（セーブv8） |
-| T-19c | [T-19c_narration.md](T-19c_narration.md) | T-16 | todo | NarrationProvider+Template |
+| T-19c | [T-19c_narration.md](T-19c_narration.md) | T-16 | done | NarrationProvider+Template（セーブv9経由のnarration状態） |
 | T-20 | [T-20_cli_town.md](T-20_cli_town.md) | T-13〜T-19 | done | 所持金・宿代・特別注文・街の記録（セーブv9） |
 | T-21 | [T-21_web_ui.md](T-21_web_ui.md) | T-20 | done | Web UI（M1。ブラウザで3日分プレイ可・e2e拡張） |
+| T-22 | [T-22_titles.md](T-22_titles.md) | T-18 | done | 称号20個（B習慣系〜S頂点） |
+| T-23 | [T-23_areas.md](T-23_areas.md) | T-17 | in_progress | 周辺2エリア＋敵追加（狩りの行き先） |

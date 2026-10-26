@@ -143,6 +143,215 @@
       },
       "message": "――称号《名工》を獲得しました。",
       "simReachable": false
+    },
+    {
+      "id": "title.miner_apprentice",
+      "name": "採掘見習い",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "skill": "mining",
+        "gte": 25
+      },
+      "effect": {
+        "note": "採掘の目利きが少し上がる（M2で接続）"
+      },
+      "message": "――称号《採掘見習い》を獲得しました。"
+    },
+    {
+      "id": "title.smooth_talker",
+      "name": "口が回る",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "skill": "eloquence",
+        "gte": 20
+      },
+      "effect": {
+        "note": "交渉で少し有利になる（M2で接続）"
+      },
+      "message": "――称号《口が回る》を獲得しました。"
+    },
+    {
+      "id": "title.moon_cycle",
+      "name": "ひと月を越えた",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "counter": "days.slept",
+        "gte": 28
+      },
+      "effect": {
+        "note": "街に居着いた印（M2で接続）"
+      },
+      "message": "――称号《ひと月を越えた》を獲得しました。"
+    },
+    {
+      "id": "title.unresting",
+      "name": "休み知らず",
+      "rank": "B",
+      "hidden": false,
+      "condition": {
+        "within": {
+          "days": 7,
+          "kind": "train",
+          "atLeast": 20
+        }
+      },
+      "effect": {
+        "note": "詰め込みの記録（M2で接続）"
+      },
+      "message": "――称号《休み知らず》を獲得しました。"
+    },
+    {
+      "id": "title.first_work",
+      "name": "初仕事",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "work": {
+          "count": {
+            "atLeast": 1
+          }
+        }
+      },
+      "effect": {
+        "note": "台帳の最初の1件（M2で接続）"
+      },
+      "message": "――称号《初仕事》を獲得しました。"
+    },
+    {
+      "id": "title.handyman",
+      "name": "手堅い働き手",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "work": {
+          "count": {
+            "atLeast": 10
+          }
+        }
+      },
+      "effect": {
+        "note": "台帳10件の信頼（M2で接続）"
+      },
+      "message": "――称号《手堅い働き手》を獲得しました。"
+    },
+    {
+      "id": "title.bookworm",
+      "name": "読書家",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "action.read",
+        "gte": 5
+      },
+      "effect": {
+        "note": "見聞を広げた印（M2で接続）"
+      },
+      "message": "――称号《読書家》を獲得しました。"
+    },
+    {
+      "id": "title.first_blood",
+      "name": "狼退治",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "kill.species.wolf",
+        "gte": 1
+      },
+      "effect": {
+        "note": "初めての戦果（M2で接続）"
+      },
+      "message": "――称号《狼退治》を獲得しました。"
+    },
+    {
+      "id": "title.wolf_hunter",
+      "name": "狼狩り",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "kill.species.wolf",
+        "gte": 20
+      },
+      "effect": {
+        "note": "周辺の脅威を減らした評価（M2で接続）"
+      },
+      "message": "――称号《狼狩り》を獲得しました。"
+    },
+    {
+      "id": "title.pan_jack",
+      "name": "なんでも屋",
+      "rank": "A",
+      "hidden": false,
+      "condition": {
+        "and": [
+          {
+            "skill": "swordplay",
+            "gte": 15
+          },
+          {
+            "skill": "evasion",
+            "gte": 15
+          },
+          {
+            "skill": "observation",
+            "gte": 15
+          },
+          {
+            "skill": "smithing",
+            "gte": 15
+          },
+          {
+            "skill": "mining",
+            "gte": 15
+          },
+          {
+            "skill": "eloquence",
+            "gte": 15
+          }
+        ]
+      },
+      "effect": {
+        "note": "幅広さの評価（M2で接続）"
+      },
+      "message": "――称号《なんでも屋》を獲得しました。"
+    },
+    {
+      "id": "title.town_face",
+      "name": "街の顔",
+      "rank": "A",
+      "hidden": false,
+      "condition": {
+        "counter": "days.slept",
+        "gte": 60
+      },
+      "effect": {
+        "note": "定住の評価（M2で接続）"
+      },
+      "message": "――称号《街の顔》を獲得しました。"
+    },
+    {
+      "id": "title.vein_reader",
+      "name": "鉱脈を読む者",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "work": {
+          "kind": "mining",
+          "tierGte": 5
+        }
+      },
+      "effect": {
+        "note": "採掘の頂（M2で接続）"
+      },
+      "message": "――称号《鉱脈を読む者》を獲得しました。世界がこの名を記録します。"
     }
   ]
 }
