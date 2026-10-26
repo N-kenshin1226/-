@@ -38,3 +38,6 @@ export type { VoiceLines, VoiceNpc, VoicesFile } from "./voices.schema.js";
 export { origins } from "./origins.js";
 export { originSchema, originsFileSchema } from "./origins.schema.js";
 export type { Origin, OriginsFile } from "./origins.schema.js";
+export { books } from "./books.js";
+export { bookSchema, booksFileSchema } from "./books.schema.js";
+export type { Book, BooksFile } from "./books.schema.js";

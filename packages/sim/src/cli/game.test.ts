@@ -156,6 +156,34 @@ describe("T-20 街のプレイループ", () => {
   });
 });
 
+describe("T-26 書店", () => {
+  it("書物を選んで買い、もう一度開くと読める（買うのは行動を使わない）", async () => {
+    const savePath = tmpSave();
+    const { io, output } = scriptedIo([
+      "1", // 出自
+      "9", // 書店
+      "5", // 《旧街道の獣と匪賊》45G → 所持金不足
+      "9", // 書店
+      "3", // 《山野の採集図鑑》25G を購入
+      "9", // 書店
+      "3", // 所持している3番を読む（1行動）
+      "q",
+    ]);
+    const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
+    const text = output.join("\n");
+
+    expect(text).toContain("古紙堂");
+    expect(text).toContain("所持金が足りない");
+    expect(text).toContain("《山野の採集図鑑》を買った");
+    expect(text).toContain("あと 5 日、身体に残る");
+    expect(state!.books.owned).toEqual(["book.field_almanac"]);
+    expect(state!.books.read).toEqual([{ id: "book.field_almanac", day: 0 }]);
+    expect(state!.player.money).toBe(40 - 25);
+    // 購入は行動を消費せず、読むと1行動消費する
+    expect(state!.time.action).toBe(1);
+  });
+});
+
 describe("M2 新しい皮の仕事フロー", () => {
   it("釣り注文を手動でこなす（タイミングの皮。即応答＝全アタリ命中で大物）", async () => {
     const savePath = tmpSave();

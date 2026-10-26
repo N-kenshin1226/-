@@ -126,6 +126,18 @@ export const cliTextSchema = z
         recordsTitles: z.string(),
         recordsLore: z.string(),
         moneyPaid: z.string(),
+        /** 書店（T-26）：店頭の見出し・一覧行・購入/読了/効果の各行 */
+        bookShopHeader: z.string(),
+        bookPick: z.string(),
+        bookLine: z.string(),
+        bookBought: z.string(),
+        bookTooPoor: z.string(),
+        bookRead: z.string(),
+        bookReadDone: z.string(),
+        bookRecovered: z.string(),
+        bookEffectDays: z.string(),
+        bookAlreadyRead: z.string(),
+        bookFlag: z.string(),
         dinnerPrompt: z.string(),
         overworkBecame: z.string(),
         wake: z
@@ -147,6 +159,7 @@ export const cliTextSchema = z
           })
           .strict(),
         titleGainedFallback: z.string(),
+        skillUnlocked: z.string(),
         quit: z.string(),
         invalidInput: z.string(),
         eof: z.string(),

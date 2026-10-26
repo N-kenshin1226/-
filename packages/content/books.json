@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "books": [
+    {
+      "id": "book.fencing_primer",
+      "name": "剣術指南・初編",
+      "desc": "型と足運びを図解した教本。読むとしばらく剣の理屈が身体に残る（剣術・回避の伸び 5日）",
+      "readText": "「剣は腕で振るものではない。足で運ぶものである」――見開きの図解が、寝ても覚めるまで頭に張りついた。",
+      "price": 30,
+      "effect": { "gainVs": { "swordplay": 1.2, "evasion": 1.1 } },
+      "durationDays": 5
+    },
+    {
+      "id": "book.forge_notebook",
+      "name": "鍛冶職人の手帖",
+      "desc": "温度の見極めと槌の入れ方が記された使い込まれた手帖（鍛冶の伸び 5日）",
+      "readText": "焼けた鉄の色は蜜、飴、苺の順で深くなる。欄外の走り書き「火を見るな、鉄を見ろ」が一番役に立った。",
+      "price": 35,
+      "effect": { "gainVs": { "smithing": 1.25 } },
+      "durationDays": 5
+    },
+    {
+      "id": "book.field_almanac",
+      "name": "山野の採集図鑑",
+      "desc": "鉱脈の見つけ方と魚の棲み処をまとめた野外の手引き（採掘・釣りの伸び 5日）",
+      "readText": "苔むす岩肌の割れ目、水の淀み、鳥が集まる岸。野外に「当たりの場所」はちゃんと書いてあった。",
+      "price": 25,
+      "effect": { "gainVs": { "mining": 1.2, "fishing": 1.15 } },
+      "durationDays": 5
+    },
+    {
+      "id": "book.quiet_mind",
+      "name": "静心の書",
+      "desc": "呼吸と姿勢を整える修行の書。読むと心が澄み、目と口の働きが戻る（観察・鑑定・弁舌の素質回復）",
+      "readText": "息を吐き切ると、視界のざらつきが一度に落ちる。心が澄むとは、余計な力が抜けることだと分かった。",
+      "price": 40,
+      "potentialRecover": { "observation": 12, "appraisal": 12, "eloquence": 12 }
+    },
+    {
+      "id": "book.old_highway",
+      "name": "旧街道の獣と匪賊",
+      "desc": "旧街道に出る獣と匪賊の生態を記した狩人の記録（追い剥ぎ・脱走兵への与ダメージ 7日）",
+      "readText": "追い剥ぎは右手の短刀より、左袖の第二撃で殺す。脱走兵の薙ぎ払いは、一度目を引いてから踏み込め。",
+      "price": 45,
+      "effect": { "damageVs": { "bandit": 1.1, "deserter": 1.05 } },
+      "durationDays": 7,
+      "flag": "knows.highway_beasts"
+    }
+  ]
+}

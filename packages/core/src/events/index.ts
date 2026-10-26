@@ -42,8 +42,17 @@ export type ActionEvent =
   | { type: "factLearned"; id: string }
   /** 出来事の事実が揃い、つながりの報酬（隠しフラグ）が立った */
   | { type: "loreConnection"; id: string; flag: string }
+  /** 派生スキルが解放された（02：派生。flags["skill.unlock.<id>"] が立つ） */
+  | { type: "skillUnlocked"; id: string }
   /** 仕事の報酬が入った（G） */
-  | { type: "moneyPaid"; amount: number };
+  | { type: "moneyPaid"; amount: number }
+  /** 書物を買った（T-26。行動は消費しない） */
+  | { type: "bookBought"; id: string }
+  /**
+   * 書物を読み終えた（T-26。行動1回消費）。
+   * recovered は実際に回復した素質（上限で削られた分を除く）。flag は今回立った知識フラグ
+   */
+  | { type: "bookRead"; id: string; recovered: { skill: string; amount: number }[]; flag?: string };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;

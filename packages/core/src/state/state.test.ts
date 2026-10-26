@@ -260,6 +260,16 @@ describe("save", () => {
     }
   });
 
+  it("version 10 のセーブは books を補って version 11 へ移行される", () => {
+    const g = newGame("seed-11", "移行4", newGameCfg);
+    const v10 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v10["version"] = 10;
+    delete v10["books"];
+    const restored = deserialize(JSON.stringify(v10));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.books).toEqual({ owned: [], read: [] });
+  });
+
   it("未知のバージョンは拒否する", () => {
     expect(() => deserialize(JSON.stringify({ version: 99 }))).toThrow();
   });

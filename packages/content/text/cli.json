@@ -65,8 +65,8 @@
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
-    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  7) 見聞録を読む  8) 街の記録  q) 中断する",
-    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  4) 街の記録  q) 中断する",
+    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  7) 見聞録を読む  8) 街の記録  9) 書店  q) 中断する",
+    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  4) 街の記録  5) 書店  q) 中断する",
     "mustSleep": "――身体はもう動きません。今日はここまでです。",
     "promptChoice": "> ",
     "skillPick": "どの技能を鍛えますか",
@@ -93,6 +93,7 @@
       "relearning": "――身体が覚えている。《{name}》の再習得が速い。"
     },
     "titleGainedFallback": "――称号《{name}》を獲得しました。",
+    "skillUnlocked": "――身体が理屈を掴んだ。《{name}》を鍛えられるようになった。",
     "quit": "――中断します。記録は眠りのあとに残ります。",
     "invalidInput": "――入力が読めません。番号か数値で答えてください。",
     "eof": "――入力が尽きました。終了します。",
@@ -168,6 +169,17 @@
     "recordsLedgerEmpty": "  まだ作品はない。",
     "recordsTitles": "称号：{titles}",
     "recordsLore": "見聞録：事実 {facts}件、繋がった出来事 {conns}件",
-    "moneyPaid": "――報酬 {amount}G を受け取った。"
+    "moneyPaid": "――報酬 {amount}G を受け取った。",
+    "bookShopHeader": "── 書店《古紙堂》（所持金 {money}G）",
+    "bookPick": "どの書物ですか（未所持は購入、所持は読む）",
+    "bookLine": "  {i}) {mark} 《{name}》 {price}G ― {desc}",
+    "bookBought": "――《{name}》を買った。",
+    "bookTooPoor": "――所持金が足りない。",
+    "bookRead": "──《{name}》\n  {text}",
+    "bookReadDone": "――《{name}》を読み終えた。",
+    "bookRecovered": "――《{skill}》の素質が戻った（+{amount}）。",
+    "bookEffectDays": "――この書物の教えはあと {days} 日、身体に残る。",
+    "bookAlreadyRead": "――この書物はすでに読み終えている。",
+    "bookFlag": "――新たな知識を得た。"
   }
 }

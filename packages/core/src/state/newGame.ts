@@ -88,5 +88,6 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       achievedGoals: [],
     },
     lore: { read: [], facts: [], connections: [] },
+    books: { owned: [], read: [] },
   };
 }

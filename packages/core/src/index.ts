@@ -109,3 +109,7 @@ export { TemplateProvider } from "./narration/index.js";
 export type { NarrationProvider, NarrationRequest, NarrationTemplates } from "./narration/index.js";
 export { specialOrderOf } from "./town/index.js";
 export type { OrderLike, SpecialOrderOf, SpecialOrderSpec } from "./town/index.js";
+export { isSkillUnlocked, unlockFlag, unlockSkills } from "./skills/index.js";
+export type { SkillUnlockDef } from "./skills/index.js";
+export { activeBookEffects, bookDaysLeft, buyBook, hasReadBook, readBook } from "./books/index.js";
+export type { BookDefLike, BooksConfig, BuyBookResult, ReadBookResult } from "./books/index.js";

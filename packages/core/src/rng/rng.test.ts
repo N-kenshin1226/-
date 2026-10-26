@@ -77,13 +77,13 @@ describe("rng", () => {
   it("int は両端を含む範囲に収まる（10万回）", () => {
     const r = createRng("int-range");
     const seen = new Set<number>();
+    let violations = 0;
     for (let i = 0; i < 100_000; i++) {
       const v = r.int(3, 7);
-      expect(v).toBeGreaterThanOrEqual(3);
-      expect(v).toBeLessThanOrEqual(7);
-      expect(Number.isInteger(v)).toBe(true);
+      if (v < 3 || v > 7 || !Number.isInteger(v)) violations++;
       seen.add(v);
     }
+    expect(violations).toBe(0);
     expect(seen.size).toBe(5);
   });
 

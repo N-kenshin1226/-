@@ -1,5 +1,13 @@
-import { step, suggestGoals, type ActionEvent, type GameState, type StepConfig } from "@trace/core";
-import { atoms, society, titles, type CliText } from "@trace/content";
+import {
+  bookDaysLeft,
+  canAct,
+  step,
+  suggestGoals,
+  type ActionEvent,
+  type GameState,
+  type StepConfig,
+} from "@trace/core";
+import { atoms, books, skills, society, titles, type CliText } from "@trace/content";
 import { tpl } from "./render.js";
 
 /**
@@ -117,6 +125,63 @@ export async function loreMenu(state: GameState, ctx: MenuCtx): Promise<GameStat
   }
   const res = step(state, { type: "readAtom", id: a.id }, cfg);
   out(tpl(t.text.loreRead, { title: a.title, text: a.text }));
+  outAll(applyTitles(res.events));
+  save(res.state);
+  return res.state;
+}
+
+/** 「9) 書店」：書物の購入と読書（T-26）。購入は行動を消費せず、読むには1行動使う */
+export async function booksMenu(state: GameState, ctx: MenuCtx): Promise<GameState | null> {
+  const { out, outAll, ask, cfg, t, save, applyTitles } = ctx;
+  const skillName = (id: string) => skills.skills.find((s) => s.id === id)?.name ?? id;
+  out(tpl(t.text.bookShopHeader, { money: state.player.money }));
+  for (let i = 0; i < books.books.length; i++) {
+    const b = books.books[i]!;
+    const read = state.books.read.some((r) => r.id === b.id);
+    const mark = read ? "読" : state.books.owned.includes(b.id) ? "持" : "―";
+    out(tpl(t.text.bookLine, { i: i + 1, mark, name: b.name, price: b.price, desc: b.desc }));
+    const daysLeft = bookDaysLeft(state, b);
+    if (daysLeft > 0) out(tpl(t.text.bookEffectDays, { days: daysLeft }));
+  }
+  out(t.text.bookPick);
+  const bi = await ask(t.text.promptChoice);
+  if (bi === null) return null;
+  const biN = Number.parseInt(bi.trim(), 10) - 1;
+  if (!(biN >= 0 && biN < books.books.length)) return state;
+  const b = books.books[biN]!;
+
+  if (state.books.read.some((r) => r.id === b.id)) {
+    out(t.text.bookAlreadyRead);
+    return state;
+  }
+  if (!state.books.owned.includes(b.id)) {
+    // 購入：行動は消費しない
+    if (state.player.money < b.price) {
+      out(t.text.bookTooPoor);
+      return state;
+    }
+    const res = step(state, { type: "buyBook", id: b.id }, cfg);
+    out(tpl(t.text.bookBought, { name: b.name }));
+    outAll(applyTitles(res.events));
+    save(res.state);
+    return res.state;
+  }
+  // 読む：行動を1回消費。行動残が無ければ今日は読めない
+  if (!canAct(state.time, cfg.time)) {
+    out(t.text.mustSleep);
+    return state;
+  }
+  const res = step(state, { type: "readBook", id: b.id }, cfg);
+  out(tpl(t.text.bookRead, { name: b.name, text: b.readText }));
+  const ev = res.events.find(
+    (e): e is Extract<ActionEvent, { type: "bookRead" }> => e.type === "bookRead",
+  );
+  for (const r of ev?.recovered ?? []) {
+    out(tpl(t.text.bookRecovered, { skill: skillName(r.skill), amount: r.amount }));
+  }
+  if (ev?.flag !== undefined) out(t.text.bookFlag);
+  const daysLeft = bookDaysLeft(res.state, b);
+  if (daysLeft > 0) out(tpl(t.text.bookEffectDays, { days: daysLeft }));
   outAll(applyTitles(res.events));
   save(res.state);
   return res.state;

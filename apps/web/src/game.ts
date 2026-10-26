@@ -3,6 +3,7 @@
  * ルールはすべて core、数値は content、ここでは画面遷移と表示用の整形だけを行う
  */
 import {
+  activeBookEffects,
   activeEffects,
   appraisalGame,
   canAct,
@@ -43,6 +44,7 @@ import {
 import {
   atoms,
   balance,
+  books,
   canon,
   cliText,
   enemies,
@@ -97,6 +99,8 @@ export const cfg: StepConfig = {
     effect: x.effect,
   })),
   skillNames: Object.fromEntries(skills.skills.map((s) => [s.id, s.name])),
+  skillUnlocks: skills.skills.flatMap((s) => (s.unlock ? [{ id: s.id, condition: s.unlock }] : [])),
+  books: { books: books.books, potentialMax: balance.body.potentialMax },
 };
 
 export const skillList = skills.skills;
@@ -106,6 +110,7 @@ export const enemyList = enemies.enemies;
 export const enemyAreas = enemiesByArea(enemies);
 export const atomList = atoms;
 export const societyDefs = society;
+export const bookList = books.books;
 export const narrator = new TemplateProvider(narration);
 
 const SAVE_KEY = "trace.save.v1";
@@ -172,6 +177,12 @@ export function eventLines(events: ActionEvent[]): string[] {
       }
       case "kehai":
         return [t.text.kehai];
+      case "skillUnlocked":
+        return [
+          tpl(t.text.skillUnlocked, {
+            name: skills.skills.find((s) => s.id === e.id)?.name ?? e.id,
+          }),
+        ];
       case "offerReceived":
         return [tpl(t.text.offerReceived, { name: offerName(e.id) })];
       case "offerAccepted":
@@ -202,6 +213,29 @@ export function eventLines(events: ActionEvent[]): string[] {
         ];
       case "moneyPaid":
         return [tpl(t.text.moneyPaid, { amount: e.amount })];
+      case "bookBought": {
+        const name = books.books.find((b) => b.id === e.id)?.name ?? e.id;
+        return [tpl(t.text.bookBought, { name })];
+      }
+      case "bookRead": {
+        const def = books.books.find((b) => b.id === e.id);
+        const name = def?.name ?? e.id;
+        const lines: string[] = [];
+        for (const r of e.recovered) {
+          lines.push(
+            tpl(t.text.bookRecovered, {
+              skill: skills.skills.find((s) => s.id === r.skill)?.name ?? r.skill,
+              amount: r.amount,
+            }),
+          );
+        }
+        if (e.flag !== undefined) lines.push(t.text.bookFlag);
+        if (def?.effect !== undefined && def.durationDays !== undefined) {
+          lines.push(tpl(t.text.bookEffectDays, { days: def.durationDays }));
+        }
+        if (lines.length === 0) lines.push(tpl(t.text.bookReadDone, { name }));
+        return lines;
+      }
       case "tierUp":
         return [tpl(t.text.workResultTier, { tier: e.tier })];
       default:
@@ -445,8 +479,14 @@ function combatCtx(state: GameState): MiniGameCtx {
 }
 
 export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
-  // 称号・認定職の与ダメージ効果（T-35。例《百狼斬り》の damageVs.wolf）
-  const fx = damageFactor(activeEffects(state, cfg.titles, cfg.society.professions), enemy.id);
+  // 称号・認定職・読了書物の与ダメージ効果（T-35・T-26。例《百狼斬り》の damageVs.wolf）
+  const fx = damageFactor(
+    [
+      ...activeEffects(state, cfg.titles, cfg.society.professions),
+      ...activeBookEffects(state, cfg.books),
+    ],
+    enemy.id,
+  );
   return startCombat(toEnemyDef(enemy), cfg.combat, state.player, fx);
 }
 

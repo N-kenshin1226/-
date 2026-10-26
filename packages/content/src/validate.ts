@@ -16,6 +16,7 @@ import { societyFileSchema } from "./society.schema.js";
 import { narrationSchema } from "./narration.schema.js";
 import { voicesFileSchema } from "./voices.schema.js";
 import { originsFileSchema } from "./origins.schema.js";
+import { booksFileSchema } from "./books.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -54,6 +55,7 @@ check("text/cli.json", cliTextSchema);
 check("text/narration.json", narrationSchema);
 check("voices.json", voicesFileSchema);
 check("origins.json", originsFileSchema);
+check("books.json", booksFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ
@@ -111,6 +113,58 @@ try {
   }
 } catch (e) {
   console.error(`✗ affinity キーの突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 書物のキー突き合わせ：potentialRecover/priceVs はスキルID、damageVs は敵ID、
+// gainVs はスキルID・敵ID・行動 kind（train/work/combat）のどれかに限る
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const enemiesRaw = JSON.parse(readFileSync(join(root, "enemies.json"), "utf8")) as {
+    enemies?: { id?: string }[];
+  };
+  const booksRaw = JSON.parse(readFileSync(join(root, "books.json"), "utf8")) as {
+    books?: {
+      id?: string;
+      potentialRecover?: Record<string, unknown>;
+      effect?: {
+        gainVs?: Record<string, unknown>;
+        damageVs?: Record<string, unknown>;
+        priceVs?: Record<string, unknown>;
+      };
+    }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const enemyIds = new Set((enemiesRaw.enemies ?? []).map((e) => e.id));
+  const kindIds = new Set(["train", "work", "combat"]);
+  const bad: string[] = [];
+  for (const b of booksRaw.books ?? []) {
+    const label = `books.json ${b.id ?? "?"}`;
+    for (const key of Object.keys(b.potentialRecover ?? {})) {
+      if (!skillIds.has(key)) bad.push(`${label}: 素質回復のスキル ${key}`);
+    }
+    for (const key of Object.keys(b.effect?.gainVs ?? {})) {
+      if (!skillIds.has(key) && !enemyIds.has(key) && !kindIds.has(key)) {
+        bad.push(`${label}: gainVs の対象 ${key}`);
+      }
+    }
+    for (const key of Object.keys(b.effect?.damageVs ?? {})) {
+      if (!enemyIds.has(key)) bad.push(`${label}: damageVs の敵 ${key}`);
+    }
+    for (const key of Object.keys(b.effect?.priceVs ?? {})) {
+      if (!skillIds.has(key)) bad.push(`${label}: priceVs の仕事 ${key}`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 書物のキーが未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 書物のキー（books ↔ skills/enemies）");
+  }
+} catch (e) {
+  console.error(`✗ 書物のキー突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

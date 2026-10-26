@@ -150,4 +150,11 @@ export interface GameState {
     /** 報酬を発掘済みの出来事ID（canon.events の reward 済み） */
     connections: string[];
   };
+  /** 書物（02 §8、T-26）。買って所持し、読むと効果が付く（v11〜） */
+  books: {
+    /** 所持している書物ID（books.json の id） */
+    owned: string[];
+    /** 読了済みの書物。day は読んだ日（期間効果の起算日） */
+    read: { id: string; day: number }[];
+  };
 }

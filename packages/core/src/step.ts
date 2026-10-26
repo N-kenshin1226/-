@@ -1,3 +1,4 @@
+import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/index.js";
 import { evaluate, type Cond } from "./conditions/index.js";
 import { activeEffects, gainModifier, priceFactor, type Effect } from "./effects/index.js";
 import { subscribers, type ActionEvent } from "./events/index.js";
@@ -15,9 +16,15 @@ import type { CombatConfig } from "./combat/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
 import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
 import { readAtom, type LoreConfig } from "./lore/index.js";
+import { unlockSkills } from "./skills/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
-import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
+import {
+  advance as advanceTime,
+  canAct,
+  sleep as sleepTime,
+  type TimeConfig,
+} from "./time/index.js";
 
 /**
  * step(state, command, cfg) → { state, events }
@@ -43,6 +50,10 @@ export interface StepConfig {
   lore: LoreConfig;
   /** 称号の定義（content/titles.json。core が必要とする最小形） */
   titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond; effect?: Effect }[];
+  /** 派生スキルの解放条件（skills.json の unlock を持つもの。02：派生） */
+  skillUnlocks?: readonly { id: string; condition: Cond }[];
+  /** 書物（02 §8、T-26。content/books.json と素質上限） */
+  books?: BooksConfig;
   /** 起床ログなどに出すスキル表示名（省略時はID） */
   skillNames?: Record<string, string>;
 }
@@ -91,7 +102,11 @@ export type Command =
   /** 人生目標を取り下げる（差し替え用） */
   | { type: "abandonGoal" }
   /** アトムを読む（見聞録。行動を1回消費する） */
-  | { type: "readAtom"; id: string };
+  | { type: "readAtom"; id: string }
+  /** 書物を買う（02 §8、T-26。行動は消費しない） */
+  | { type: "buyBook"; id: string }
+  /** 所持する書物を読む（行動を1回消費。素質回復・期間効果・知識フラグ） */
+  | { type: "readBook"; id: string };
 
 export interface StepResult {
   state: GameState;
@@ -205,8 +220,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           potential: skill.potential,
           fatigue: next.player.fatigue,
           wind: windFor(next, "train", command.skill),
+          // M 項：称号・認定職に加えて、読了した書物の期間効果（T-26）も積に入る
           modifiers: gainModifier(
-            activeEffects(next, cfg.titles, cfg.society.professions),
+            [
+              ...activeEffects(next, cfg.titles, cfg.society.professions),
+              ...activeBookEffects(next, cfg.books),
+            ],
             "train",
             command.skill,
           ),
@@ -245,8 +264,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const skill = next.player.skills[command.kind];
       const skillValue = skill?.value ?? 0;
       const repeats = recentRepeats(next.actionLog, "work", command.kind, cfg.gain.noveltyWindow);
-      // 称号・認定職の効果（T-35）：M 項の修正と報酬の値段変化
-      const effects = activeEffects(next, cfg.titles, cfg.society.professions);
+      // 称号・認定職・読了書物の効果（T-35・T-26）：M 項の修正と報酬の値段変化
+      const effects = [
+        ...activeEffects(next, cfg.titles, cfg.society.professions),
+        ...activeBookEffects(next, cfg.books),
+      ];
       const { amount } = computeGain(
         {
           kind: "work",
@@ -301,7 +323,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         command.enemyId,
         cfg.gain.noveltyWindow,
       );
-      const effects = activeEffects(next, cfg.titles, cfg.society.professions);
+      const effects = [
+        ...activeEffects(next, cfg.titles, cfg.society.professions),
+        ...activeBookEffects(next, cfg.books),
+      ];
       for (const skillId of ["swordplay", "evasion"] as const) {
         const skill = sks[skillId];
         if (!skill) continue;
@@ -403,6 +428,37 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       }
       break;
     }
+    case "buyBook": {
+      // 購入は行動を消費しない（書店への立ち寄り。認定の受諾と同じ扱い）
+      const res = buyBook(next, command.id, cfg.books);
+      if (!res.ok) break;
+      next = res.state;
+      events.push({ type: "bookBought", id: command.id });
+      break;
+    }
+    case "readBook": {
+      // 読むのは行動（1回消費）。未所持・読了済み・不明IDは時間だけ使わない。
+      // 行動残が無いときは読めない（期間効果を無料で得る抜け道を塞ぐ）
+      if (!canAct(next.time, cfg.time)) break;
+      const res = readBook(next, command.id, cfg.books);
+      if (!res.ok) break;
+      next = res.state;
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "read", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "read",
+        day: next.time.day,
+        target: command.id,
+      });
+      events.push({
+        type: "bookRead",
+        id: command.id,
+        recovered: res.recovered,
+        ...(res.flag !== undefined ? { flag: res.flag } : {}),
+      });
+      break;
+    }
   }
 
   // イベントを購読者に流して派生状態を更新し、行動ログを記録する
@@ -434,6 +490,18 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       }
     }
   }
+  // 派生スキルの解放判定（02：素スキルが育つと派生が開花。解放は flags に記録）
+  if (cfg.skillUnlocks) {
+    const u = unlockSkills(next, cfg.skillUnlocks, cfg.time);
+    next = u.state;
+    for (const id of u.unlocked) {
+      const event: ActionEvent = { type: "skillUnlocked", id };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
+  }
+
   // S候補への接近 → 条件を明かさず「気配」の一行（03 §6）
   const kehai = emitKehai(next, cfg.titles);
   next = kehai.state;

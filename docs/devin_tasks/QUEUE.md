@@ -39,9 +39,9 @@
 | T-23 | [T-23_areas.md](T-23_areas.md) | T-17 | done | 周辺2エリア（近郊の森/旧街道）＋敵5体 |
 | T-24 | [T-24_rust.md](T-24_rust.md) | T-06 | done | 錆：猶予14日→0.1/日低下・床peak×0.7・再習得3倍・脳容量 |
 | T-25 | [T-25_potential.md](T-25_potential.md) | T-08 | done | 素質の回復と出自（origins.json・potentialCap・セーブv10） |
-| T-26 | [T-26_books.md](T-26_books.md) | T-04 | pending | 書物（効果・読む行動・入手経路） |
+| T-26 | [T-26_books.md](T-26_books.md) | T-04 | done | 書物（効果・読む行動・入手経路） |
 | T-27 | [T-27_mentors.md](T-27_mentors.md) | T-19, T-33 | pending | 師匠（弟子入り・M項/素質/ヒント効果） |
-| T-28 | [T-28_derived_skills.md](T-28_derived_skills.md) | T-10 | pending | 派生スキル（祖スキル条件で解放） |
+| T-28 | [T-28_derived_skills.md](T-28_derived_skills.md) | T-10 | done | 派生スキル4種（unlock条件DSL・flags解放・skillUnlocked） |
 | T-29 | [T-29_skins.md](T-29_skins.md) | T-12 | done | ミニゲーム皮追加：演奏（タイミング） |
 | T-30 | [T-29_skins.md](T-29_skins.md) | T-12 | done | タイミング皮拡張：釣り |
 | T-31 | [T-29_skins.md](T-29_skins.md) | T-12 | done | 盤面皮拡張：鑑定 |
