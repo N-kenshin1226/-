@@ -1324,6 +1324,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       );
       if (report) {
         outAll(wakeBlock(report.report, applyTitles(res.events), t, skillNames, { atHome: true }));
+        // 朝の新聞（07 §6。家でも朝刊は届く —— 宿泊分岐と同じ）
+        outAll(newspaper(res.events));
       }
       if (res.events.some((e) => e.type === "deathByAge")) {
         // 老衰死（T-40・D-31）：教会蘇生せず、そのまま生涯の終わり → 転生へ
