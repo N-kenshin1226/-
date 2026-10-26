@@ -23,12 +23,20 @@ import {
   type StepConfig,
   type TimingInput,
 } from "@trace/core";
-import { startCombat, suggestGoals, telegraphLines } from "@trace/core";
+import {
+  createRng,
+  startCombat,
+  suggestGoals,
+  telegraphLines,
+  TemplateProvider,
+  type NarrationProvider,
+} from "@trace/core";
 import {
   atoms,
   balance,
   canon,
   cliText,
+  narration,
   enemies,
   orders,
   skills,
@@ -50,6 +58,8 @@ export interface PlayCliOptions {
   cfg?: StepConfig;
   /** ミニゲームの拍の待機（既定: 実時間。テストでは即時を渡す） */
   delay?: (ms: number) => Promise<void>;
+  /** 語り層（07 §6。既定: TemplateProvider。LLM実装への差し替え口） */
+  narrator?: NarrationProvider;
 }
 
 const INN_ORDER: readonly InnRank[] = ["cheap", "normal", "good"];
@@ -153,6 +163,41 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       return [];
     });
+
+  // 語り層（07 §6）：文章だけを返す。ゲーム結果は core が先に決めている
+  const narrator = opts.narrator ?? new TemplateProvider(narration);
+  const newspaper = (events: ActionEvent[]): string[] => {
+    const slept = events.find(
+      (e): e is Extract<ActionEvent, { type: "slept" }> => e.type === "slept",
+    );
+    const day = slept?.from.day ?? 0;
+    const deeds = state!.actionLog.filter((a) => a.day === day).map((a) => a.kind);
+    const title = events.find(
+      (e): e is Extract<ActionEvent, { type: "titleGained" }> =>
+        e.type === "titleGained" && !e.suppressed,
+    );
+    const offer = events.find(
+      (e): e is Extract<ActionEvent, { type: "offerReceived" }> => e.type === "offerReceived",
+    );
+    return narrator.narrate(
+      {
+        scene: "newspaper",
+        deeds,
+        ...(title
+          ? { newTitle: titles.titles.find((x) => x.id === title.id)?.name ?? title.id }
+          : {}),
+        ...(offer
+          ? {
+              newOffer:
+                society.standings.find((s) => s.id === offer.id)?.name ??
+                society.professions.find((p) => p.id === offer.id)?.name ??
+                offer.id,
+            }
+          : {}),
+      },
+      createRng(`${seed}:news:${day}`),
+    );
+  };
 
   const delay = opts.delay ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
 
@@ -516,7 +561,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         (e): e is Extract<ActionEvent, { type: "wakeReport" }> => e.type === "wakeReport",
       );
       if (report?.report.overwork.became) out(t.text.overworkBecame);
-      if (report) outAll(wakeBlock(report.report, applyTitles(res.events), t, skillNames));
+      if (report) {
+        outAll(wakeBlock(report.report, applyTitles(res.events), t, skillNames));
+        // 朝の新聞（07 §6：語り層の最初の呼び出し箇所）
+        outAll(newspaper(res.events));
+      }
       save(state);
       out(t.text.wake.saved);
     } else if (pick === "6") {

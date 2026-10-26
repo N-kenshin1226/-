@@ -28,3 +28,6 @@ export { atomSchema } from "./atom.schema.js";
 export type { Atom } from "./atom.schema.js";
 export { canonSchema } from "./canon.schema.js";
 export type { Canon } from "./canon.schema.js";
+export { narration } from "./narration.js";
+export { narrationSchema } from "./narration.schema.js";
+export type { NarrationText } from "./narration.schema.js";
