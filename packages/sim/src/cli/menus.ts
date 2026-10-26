@@ -5,10 +5,21 @@ import {
   step,
   suggestGoals,
   type ActionEvent,
+  type Chronicle,
   type GameState,
+  type NotableWork,
   type StepConfig,
 } from "@trace/core";
-import { atoms, books, mentors, skills, society, titles, type CliText } from "@trace/content";
+import {
+  atoms,
+  books,
+  mentors,
+  orders,
+  skills,
+  society,
+  titles,
+  type CliText,
+} from "@trace/content";
 import { tpl } from "./render.js";
 
 /**
@@ -26,6 +37,10 @@ export interface MenuCtx {
   save: (state: GameState) => void;
   /** イベント → 表示行（称号・気配・打診など） */
   applyTitles: (events: ActionEvent[]) => string[];
+  /** 伝記の表示行（T-37。cause 省略時は「いまの記録」の途中経過になる） */
+  bio?: (state: GameState, cause?: "retire" | "death") => string[];
+  /** 年代記を読む（T-38。周回をまたぐので state ではなく別領域から渡す） */
+  chronicle: () => Chronicle;
 }
 
 /** オファーIDから表示名を引く（立場・職業どちらもここに混ざる） */
@@ -332,5 +347,56 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
       conns: state.lore.connections.length,
     }),
   );
+  // ここまでの記録（T-37 伝記の途中経過プレビュー）
+  ctx.bio?.(state).forEach(out);
+  // 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る）
+  chronicleLines(ctx.chronicle(), t).forEach(out);
   return state;
+}
+
+/** 作品の表示名：注文名（特別注文は元の注文名）＞スキル名の順（game.ts の workName と同じ解決） */
+function notableWorkName(w: NotableWork): string {
+  const orderId = w.order?.split("#")[0];
+  return orderId
+    ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
+    : (skills.skills.find((s) => s.id === w.kind)?.name ?? w.kind);
+}
+
+/** 年代記の表示行（街の記録の末尾に出す） */
+function chronicleLines(chronicle: Chronicle, t: CliText): string[] {
+  const lines: string[] = [tpl(t.text.chronicleHeader, { count: chronicle.lives.length })];
+  if (chronicle.lives.length === 0) {
+    lines.push(t.text.chronicleEmpty);
+    return lines;
+  }
+  chronicle.lives.forEach((life, i) => {
+    const epithet = life.epithet
+      ? `《${titles.titles.find((x) => x.id === life.epithet)?.name ?? life.epithet}》`
+      : "";
+    lines.push(
+      tpl(t.text.chronicleLine, {
+        i: i + 1,
+        name: life.name,
+        epithet,
+        days: life.daysLived,
+        cause: t.display.causeNames[life.cause] ?? life.cause,
+      }),
+    );
+    const standing = society.standings.find((s) => s.id === life.standing)?.name ?? life.standing;
+    const profession =
+      life.profession === null
+        ? "―"
+        : (society.professions.find((p) => p.id === life.profession)?.name ?? life.profession);
+    lines.push(tpl(t.text.chronicleRole, { standing, profession }));
+    if (life.notableWorks.length > 0) {
+      lines.push(
+        tpl(t.text.chronicleWorks, {
+          works: life.notableWorks
+            .map((w) => `《${notableWorkName(w)}》品質${w.quality}`)
+            .join("、"),
+        }),
+      );
+    }
+  });
+  return lines;
 }

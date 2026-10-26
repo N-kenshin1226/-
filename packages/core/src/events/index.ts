@@ -26,6 +26,17 @@ export type ActionEvent =
   | { type: "combatEnded"; enemyId: string; won: boolean; fled: boolean }
   /** 死亡して教会で蘇生した。未定着経験の半分を失う */
   | { type: "died" }
+  /**
+   * 老いの兆候（T-36。起床サプライズの行としても出る）。
+   * stage: 1 = 弱い兆候（一度だけ）/ 2 = 強い兆候（間隔を置いて繰り返す）。age はその朝の年齢
+   */
+  | { type: "oldAgeSign"; stage: 1 | 2; age: number }
+  /**
+   * 老衰死（T-36。startAge + lifespanYears 歳に達した朝に一度だけ）。
+   * 転生フロー（T-40）が完成するまでは died と同じ処理（教会蘇生＝pending半減）で、
+   * 続けて died も発行する。年齢由来の死を died と区別するための別型
+   */
+  | { type: "deathByAge"; age: number }
   /** 気配：S候補に近づいた合図（条件は明かさない。03 §6） */
   | { type: "kehai" }
   /** 立場・職業の打診が来た（通知Aランク相当。03 §1） */

@@ -18,6 +18,8 @@ export const cliTextSchema = z
         statNames: z.record(z.string(), z.string()),
         /** 狩りの行き先（enemies.json の area）→ 表示名 */
         huntAreas: z.record(z.string(), z.string()),
+        /** 人生の終わり方（chronicle の cause）→ 表示名 */
+        causeNames: z.record(z.string(), z.string()),
         /** 睡眠の質 → 表示語。q < upTo の最初の帯に入る */
         qualityBands: z.array(z.object({ upTo: z.number(), label: z.string() }).strict()).min(1),
       })
@@ -87,6 +89,8 @@ export const cliTextSchema = z
         combatPrompt: z.string(),
         combatWon: z.string(),
         combatLost: z.string(),
+        /** 老衰死（T-36。{age} にその朝の年齢） */
+        deathByAge: z.string(),
         combatFled: z.string(),
         combatGain: z.string(),
         kehai: z.string(),
@@ -125,6 +129,14 @@ export const cliTextSchema = z
         recordsLedgerEmpty: z.string(),
         recordsTitles: z.string(),
         recordsLore: z.string(),
+        /** 年代記（T-38）：周回をまたぐ人生の一覧。開始時の件数・見出し・各頁の行・追記の告知 */
+        chronicleLives: z.string(),
+        chronicleHeader: z.string(),
+        chronicleEmpty: z.string(),
+        chronicleLine: z.string(),
+        chronicleRole: z.string(),
+        chronicleWorks: z.string(),
+        chronicleRecorded: z.string(),
         moneyPaid: z.string(),
         /** 書店（T-26）：店頭の見出し・一覧行・購入/読了/効果の各行 */
         bookShopHeader: z.string(),
@@ -170,6 +182,10 @@ export const cliTextSchema = z
             rusted: z.string(),
             /** peak未満の再習得が速い行（{name}） */
             relearning: z.string(),
+            /** 老いの兆候：弱い方（T-36。寿命経過が signWarnAt 超えの朝） */
+            agingWarn: z.string(),
+            /** 老いの兆候：強い方（signSevereAt 超え。間隔を置いて繰り返す） */
+            agingSevere: z.string(),
             saved: z.string(),
           })
           .strict(),

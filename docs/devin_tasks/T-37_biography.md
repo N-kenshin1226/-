@@ -1,4 +1,4 @@
-# T-37 伝記の自動生成 — pending
+# T-37 伝記の自動生成 — done
 
 仕様: `docs/06_endgame.md` §1（引退・死亡時に伝記を自動生成）、`docs/07_story.md`（語り）。
 

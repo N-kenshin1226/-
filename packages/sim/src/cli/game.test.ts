@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { appraisalGame } from "@trace/core";
+import { appraisalGame, deserializeChronicle } from "@trace/core";
 import { balance, orders } from "@trace/content";
 import { playCli } from "./game.js";
 import { scriptedIo } from "./io.js";
@@ -181,6 +181,45 @@ describe("T-26 書店", () => {
     expect(state!.player.money).toBe(40 - 25);
     // 購入は行動を消費せず、読むと1行動消費する
     expect(state!.time.action).toBe(1);
+  });
+});
+
+describe("T-38 年代記", () => {
+  it("戦死すると年代記に記録される。セーブとは別領域に残る", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-chron-test-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    const { io, output } = scriptedIo([
+      "1", // 出自
+      "3", // 狩りに出る
+      "5", // 脱走兵（最強）に挑む
+      ...Array.from({ length: 40 }, () => "1"), // 攻撃連打（このシードでは敗北する）
+      "q",
+    ]);
+    await playCli({ io, savePath, chroniclePath, seed: "chron-smoke", delay: async () => {} });
+    const text = output.join("\n");
+    expect(text).toContain("力尽きた");
+    expect(text).toContain("年代記に刻まれた");
+
+    // 年代記は別ファイルに残る（save.json とは別領域）
+    const chronicle = deserializeChronicle(readFileSync(chroniclePath, "utf8"));
+    expect(chronicle.lives).toHaveLength(1);
+    const life = chronicle.lives[0]!;
+    expect(life.cause).toBe("death");
+    expect(life.worldSeed).toBe("chron-smoke");
+    expect(life.name).toBe("旅人");
+    expect(life.biography).toBeTruthy(); // 伝記も一緒に刻まれる（T-37 → T-38 の連携）
+
+    // 再起動（別シードの新しい周）でも開始行に件数が出る＝周回をまたぐ
+    const again = scriptedIo(["2", "q"]);
+    await playCli({
+      io: again.io,
+      savePath,
+      chroniclePath,
+      seed: "another",
+      delay: async () => {},
+    });
+    expect(again.output.join("\n")).toContain("年代記には 1 人の人生が記録されている");
   });
 });
 

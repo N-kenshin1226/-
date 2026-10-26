@@ -6,16 +6,20 @@ import {
   activeBookEffects,
   activeEffects,
   appraisalGame,
+  biographyMaterial,
   canAct,
   createRng,
   damageFactor,
   deserialize,
+  deserializeChronicle,
+  emptyChronicle,
   fishingGame,
   miningGame,
   negotiationGame,
   newGame,
   performanceGame,
   serialize,
+  serializeChronicle,
   simpleJudgmentQuality,
   sleepQuality,
   smithingGame,
@@ -30,6 +34,7 @@ import {
   type ActionEvent,
   type BoardInput,
   type BoardState,
+  type Chronicle,
   type CombatAction,
   type CombatState,
   type DealInput,
@@ -40,6 +45,7 @@ import {
   type StepConfig,
   type TimingInput,
   type TimingState,
+  type Work,
 } from "@trace/core";
 import {
   atoms,
@@ -79,6 +85,14 @@ export const cfg: StepConfig = {
   },
   tailwind: { defs: tailwinds.tailwinds, ...balance.tailwind },
   body: balance.body,
+  /** 寿命・加齢（T-36）。文テンプレートは cli.json 由来（rust.texts と同じ注入） */
+  aging: {
+    ...balance.aging,
+    texts: {
+      warn: cliText.text.wake.agingWarn,
+      severe: cliText.text.wake.agingSevere,
+    },
+  },
   ledger: balance.ledger,
   combat: balance.combat,
   society: {
@@ -116,6 +130,66 @@ export const bookList = books.books;
 export const mentorList = mentors.mentors;
 export const narrator = new TemplateProvider(narration);
 
+/** 作品の表示名：注文名（特別注文は元の注文名）＞スキル名の順で解決する */
+export function workName(w: Pick<Work, "kind" | "order">): string {
+  const orderId = w.order?.split("#")[0];
+  return orderId
+    ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
+    : (skills.skills.find((s) => s.id === w.kind)?.name ?? w.kind);
+}
+
+/**
+ * 伝記（T-37）：素材は core（biographyMaterial）が摘み、表示名はここで解決する。
+ * cause 省略時は「いまの記録」の途中経過（引退・死亡の行を出さない）
+ */
+export function bioLines(state: GameState, cause?: "retire" | "death"): string[] {
+  const m = biographyMaterial(state);
+  const titleNames = m.titleIds
+    .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
+    .join("、");
+  const goalNames = m.achievedGoalIds
+    .map((id) => society.lifeGoals.find((g) => g.id === id)?.name ?? id)
+    .join("、");
+  return narrator.narrate(
+    {
+      scene: "biography",
+      name: m.name,
+      days: m.days,
+      deeds: m.deeds,
+      origin: origins.origins.find((o) => o.id === m.originId)?.name ?? m.originId,
+      standing: society.standings.find((s) => s.id === m.standingId)?.name ?? m.standingId,
+      ...(m.professionId !== null
+        ? {
+            profession:
+              society.professions.find((p) => p.id === m.professionId)?.name ?? m.professionId,
+          }
+        : {}),
+      ...(titleNames !== "" ? { titles: titleNames } : {}),
+      ...(goalNames !== "" ? { goals: goalNames } : {}),
+      ...(m.bestWork !== null
+        ? {
+            work: {
+              name: workName(m.bestWork),
+              quality: m.bestWork.quality,
+              tier: m.bestWork.tier,
+            },
+          }
+        : {}),
+      ...(m.peakSkill !== null
+        ? {
+            peakSkill: {
+              name: skills.skills.find((s) => s.id === m.peakSkill!.id)?.name ?? m.peakSkill.id,
+              value: Math.round(m.peakSkill.value * 10) / 10,
+            },
+          }
+        : {}),
+      ...(cause !== undefined ? { cause } : {}),
+    },
+    // 同じ死には同じ伝記（通算死亡数でシードを分ける）
+    createRng(`${state.seed}:bio:${m.days}:${m.deaths}`),
+  );
+}
+
 const SAVE_KEY = "trace.save.v1";
 
 export function loadGame(): GameState | null {
@@ -131,6 +205,21 @@ export function saveGame(state: GameState): void {
 }
 export function resetSave(): void {
   localStorage.removeItem(SAVE_KEY);
+}
+
+// 年代記（T-38。周回をまたぐのでセーブとは別キー・別バージョンで保存）
+const CHRONICLE_KEY = "trace.chronicle.v1";
+
+export function loadChronicle(): Chronicle {
+  try {
+    const raw = localStorage.getItem(CHRONICLE_KEY);
+    return raw ? deserializeChronicle(raw) : emptyChronicle();
+  } catch {
+    return emptyChronicle();
+  }
+}
+export function saveChronicle(chronicle: Chronicle): void {
+  localStorage.setItem(CHRONICLE_KEY, serializeChronicle(chronicle));
 }
 
 /** 新規開始のシード。?seed= で固定できる（e2e・リプレイ用）。それ以外は一意に */
@@ -216,6 +305,10 @@ export function eventLines(events: ActionEvent[]): string[] {
         ];
       case "moneyPaid":
         return [tpl(t.text.moneyPaid, { amount: e.amount })];
+      // 老衰死（T-36）：起床ログに続いて表示する。老いの兆候（oldAgeSign）は
+      // report.surprises に既出なのでここでは行を出さない
+      case "deathByAge":
+        return [tpl(t.text.deathByAge, { age: e.age })];
       case "bookBought": {
         const name = books.books.find((b) => b.id === e.id)?.name ?? e.id;
         return [tpl(t.text.bookBought, { name })];

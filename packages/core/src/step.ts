@@ -2,6 +2,7 @@ import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/
 import { evaluate, type Cond } from "./conditions/index.js";
 import { activeEffects, gainModifier, priceFactor, type Effect } from "./effects/index.js";
 import { subscribers, type ActionEvent } from "./events/index.js";
+import { ageBand, agingOnWake, type AgingConfig } from "./growth/aging.js";
 import {
   applyActionLoad,
   consolidateBody,
@@ -29,6 +30,7 @@ import type { GameState, SkillId } from "./state/types.js";
 import {
   advance as advanceTime,
   canAct,
+  describe as describeTime,
   sleep as sleepTime,
   type TimeConfig,
 } from "./time/index.js";
@@ -65,6 +67,8 @@ export interface StepConfig {
   mentors?: MentorsConfig;
   /** 起床ログなどに出すスキル表示名（省略時はID） */
   skillNames?: Record<string, string>;
+  /** 寿命・加齢（06 §1、T-36。balance.aging ＋ cli.json 由来の文）。省略時は加齢なし */
+  aging?: AgingConfig;
 }
 
 export type Command =
@@ -170,6 +174,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       next = { ...next, player: { ...next.player, overwork } };
       const capFactor = overwork.active ? cfg.body.overworkConsolidateFactor : 1;
 
+      // 年齢帯（T-36）：終わる日の年齢で係数が決まる（若いと基礎能力、高齢でスキルが伸びやすい）
+      const band = cfg.aging ? ageBand(describeTime(from, cfg.time).age, cfg.aging) : undefined;
+
       // 今日の行動が終わる前に未定着経験を定着させ、起床ログを作る
       const isRest = command.type === "rest";
       const { state: rested, report } = consolidateSleep(
@@ -179,6 +186,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         cfg.sleep,
         {
           capFactor,
+          skillFactor: band?.skillFactor,
           ...(isRest ? { qualityOverride: cfg.body.restQuality } : {}),
           names: cfg.skillNames,
         },
@@ -186,7 +194,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       next = rested;
 
       // 身体側の定着：負荷 → 基礎能力、疲労回復、休養日の素質回復
-      const bodyRes = consolidateBody(next, report.quality, cfg.body, { restDay, capFactor });
+      const bodyRes = consolidateBody(next, report.quality, cfg.body, {
+        restDay,
+        capFactor,
+        statFactor: band?.statFactor,
+      });
       next = bodyRes.state;
       report.lines.push(...bodyRes.lines);
       report.lines.sort((a, b) => a.delta - b.delta);
@@ -215,8 +227,19 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       next.time = sleepTime(next.time);
       next = resetDailyNotify(next); // 日付が変わると通知予算はリセット
+
+      // 加齢（T-36）：新しい朝の年齢で「老いの兆候」と老衰死を判定する（06 §1）
+      const agingEvents: ActionEvent[] = [];
+      if (cfg.aging) {
+        const aged = agingOnWake(next, cfg.aging, cfg.time, cfg.combat.deathPendingFactor);
+        next = aged.state;
+        if (aged.signLine !== null) report.surprises.push(aged.signLine);
+        agingEvents.push(...aged.events);
+      }
+
       events.push({ type: "slept", from, to: next.time });
       events.push({ type: "wakeReport", report });
+      events.push(...agingEvents);
       break;
     }
     case "train": {

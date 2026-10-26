@@ -44,7 +44,25 @@ export const narrationSchema = z
       })
       .strict(),
     loreDigest: z.object({ header: z.string(), line: z.string() }).strict(),
-    biography: z.object({ header: z.string(), line: z.string() }).strict(),
+    biography: z
+      .object({
+        header: z.string(),
+        summary: z.array(z.string()).min(1),
+        origin: z.array(z.string()).min(1),
+        work: z.array(z.string()).min(1),
+        titles: z.array(z.string()).min(1),
+        standing: z.array(z.string()).min(1),
+        goal: z.array(z.string()).min(1),
+        peak: z.array(z.string()).min(1),
+        cause: z
+          .object({
+            retire: z.array(z.string()).min(1),
+            death: z.array(z.string()).min(1),
+          })
+          .strict(),
+        closing: z.array(z.string()).min(1),
+      })
+      .strict(),
   })
   .strict();
 

@@ -73,3 +73,13 @@
 - `flag`（秘伝）は初回の稽古で永続的に立つ。ミニゲームのヒント解放の受け皿とし、エンジンへの配線は今後（条件DSLの flag で先に読める）
 - `GameState.mentor: {id, sinceDay} | null` を追加（弟子期間の表示用に sinceDay だけ持つ）。セーブ v11→v12 で追加（旧セーブは師匠なし）
 - 師匠NPCは canon figures の既存人物に割当（ガロ/フェン/ノラ/クム/エデル）＋ voices.json に口調差分を追加。`mentor.npc` ↔ canon.figures / voices.npcs の両方を validate で突合する
+
+### D-29: 寿命は「startAge + lifespanYears」に達した朝の老衰死（一生に1回）・兆候は2段階＋末期の定期繰り返し（T-36）
+- 仕様は「年齢上限または年齢で増える死亡確率」の2案を示す（06 §1、T-36 チケット）。仮実装は**年齢上限**を採用：`time.startAge + aging.lifespanYears` 歳に達した朝（sleep/rest 後）に老衰死。balance 初期値は lifespanYears=40（55歳＝day 4480）
+- 兆候は**起床サプライズ**（WakeReport.surprises）に出す選択（新聞 rumor 行より先に、決定論で実装しやすい方）。寿命経過（経過年/lifespanYears）が signWarnAt(0.7) を超えた朝に弱い兆候1回、signSevereAt(0.9) を超えた朝から強い兆候を signEveryDays(28日＝1季節) ごとに繰り返す
+- 発火の記録は GameState を変えず counters（`aging.signStage`＝最後に出した段階、`aging.signDay`＝最後に兆候を出した日、`death.oldAge`＝老衰死した日）に載せるため**セーブバージョン据置（v12）**
+- 老衰死は T-40 接続まで「died と同じ処理」（death.count 加算・pending 半減・died 発行）としつつ、死因を区別する `deathByAge` イベントを別発行（指示どおり `oldAgeSign`/`deathByAge` を分離）。寿命到達後は `death.oldAge` で一度だけに抑制（T-40 で生そのものが終わるまでの暫定措置。再発を許すと毎朝死ぬ）
+- 成長係数は「**終わる日**の年齢帯」で定着時に乗る：基礎能力は `consolidateBody` の statGainPerLoad 側に statFactor、スキルは `consolidateSleep` の定着量に skillFactor（pending の消費量・素質減衰・1晩上限は変えず、value の伸びだけが変わる）
+- **若い帯の skillFactor は 1.0**（未満にしない）：訓練シム（sim:growth/retention は最大365日＝15〜18歳で常に第1帯）の基準値を変えずに済む。「歳を取るとスキルが伸びやすい」は高齢帯の上振り（1.15/1.25）で表現。若い帯の statFactor は 1.25（シムは stats を測らないため無影響）
+- 通知ランク：老いの兆候は **A相当**（一生に数回＋末期は季節ごと。日次の通知予算には載せず、段階・間隔で自前に抑制）。老衰死は `died` と同格の構造イベント
+- `aging` は StepConfig の**任意**節（books/mentors と同じ扱い）：未指定なら係数1・兆候なし・老衰なしで従来どおり。テスト用の最小 cfg に aging を必須化しないため

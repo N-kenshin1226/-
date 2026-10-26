@@ -33,7 +33,26 @@ export interface NarrationTemplates {
     byStanding?: Record<string, { greet?: string[]; respect?: string[] }>;
   };
   loreDigest: { header: string; line: string };
-  biography: { header: string; line: string };
+  /** 伝記（T-37。引退・死亡時の複数行テキスト。各行は素材があるときだけ出る） */
+  biography: {
+    header: string;
+    /** {name}/{days}/{deeds} */
+    summary: string[];
+    /** {origin} */
+    origin: string[];
+    /** 代表作 {name}/{quality}/{tier} */
+    work: string[];
+    /** {titles}（称号名を読点で繋いだもの） */
+    titles: string[];
+    /** {standing}/{profession} */
+    standing: string[];
+    /** {goals}（達成した目標名を繋いだもの） */
+    goal: string[];
+    /** {skill}/{value} */
+    peak: string[];
+    cause: { retire: string[]; death: string[] };
+    closing: string[];
+  };
 }
 
 export type NarrationRequest =
@@ -54,8 +73,25 @@ export type NarrationRequest =
   | { scene: "npcWord"; name: string; deed?: string; standing?: string }
   /** 見聞録のまとめ */
   | { scene: "loreDigest"; facts: number; connected: number }
-  /** 伝記（引退・死亡時） */
-  | { scene: "biography"; name: string; days: number; deeds: number; titles: string };
+  /**
+   * 伝記（引退・死亡時、T-37）。素材が無い行は出ない。
+   * titles/goals は表示名を読点などで繋いだ文字列。cause 省略時は終わりの行を出さない
+   */
+  | {
+      scene: "biography";
+      name: string;
+      days: number;
+      deeds: number;
+      titles?: string;
+      origin?: string;
+      work?: { name: string; quality: number; tier: number };
+      standing?: string;
+      /** 職業の表示名。standing 行の末尾に続く（例: "職業は鍛冶師だった。"相当の断片はテンプレ側） */
+      profession?: string;
+      goals?: string;
+      peakSkill?: { name: string; value: number };
+      cause?: "retire" | "death";
+    };
 
 export interface NarrationProvider {
   /** 構造化データを文章にする。必ず同じ入力＋seed → 同じ出力（rngを使う） */
@@ -126,16 +162,48 @@ export class TemplateProvider implements NarrationProvider {
           t.loreDigest.header,
           tpl(t.loreDigest.line, { facts: req.facts, connected: req.connected }),
         ];
-      case "biography":
-        return [
-          t.biography.header,
-          tpl(t.biography.line, {
+      case "biography": {
+        const b = t.biography;
+        const lines: string[] = [
+          b.header,
+          tpl(this.pick(b.summary, rng), {
             name: req.name,
             days: req.days,
             deeds: req.deeds,
-            titles: req.titles,
           }),
         ];
+        if (req.origin !== undefined)
+          lines.push(tpl(this.pick(b.origin, rng), { origin: req.origin }));
+        if (req.work !== undefined)
+          lines.push(
+            tpl(this.pick(b.work, rng), {
+              name: req.work.name,
+              quality: req.work.quality,
+              tier: req.work.tier,
+            }),
+          );
+        if (req.titles !== undefined && req.titles !== "")
+          lines.push(tpl(this.pick(b.titles, rng), { titles: req.titles }));
+        if (req.standing !== undefined)
+          lines.push(
+            tpl(this.pick(b.standing, rng), {
+              standing: req.standing,
+              profession: req.profession !== undefined ? `職業は${req.profession}だった。` : "",
+            }),
+          );
+        if (req.goals !== undefined && req.goals !== "")
+          lines.push(tpl(this.pick(b.goal, rng), { goals: req.goals }));
+        if (req.peakSkill !== undefined)
+          lines.push(
+            tpl(this.pick(b.peak, rng), {
+              skill: req.peakSkill.name,
+              value: req.peakSkill.value,
+            }),
+          );
+        if (req.cause !== undefined) lines.push(this.pick(b.cause[req.cause], rng));
+        lines.push(this.pick(b.closing, rng));
+        return lines;
+      }
     }
   }
 }

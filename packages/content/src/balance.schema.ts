@@ -121,6 +121,43 @@ export const balanceSchema = z
         potentialMax: z.number().positive(),
       })
       .strict(),
+    /**
+     * docs/06_endgame.md §1、T-36：寿命・加齢。
+     * core/growth/aging.ts の AgingConfig に対応（起床サプライズの文は cli.json 由来で、
+     * rust.texts と同じく balance には含まれない）
+     */
+    aging: z
+      .object({
+        /** 年齢帯（age <= upToAge の最初の帯が適用される。昇順） */
+        bands: z
+          .array(
+            z
+              .object({
+                upToAge: z.number().positive(),
+                /** 基礎能力の定着係数（consolidateBody に乗る） */
+                statFactor: z.number().positive(),
+                /** スキルの定着係数（consolidateSleep に乗る） */
+                skillFactor: z.number().positive(),
+              })
+              .strict(),
+          )
+          .min(1)
+          .refine((b) => b.every((x, i) => i === 0 || x.upToAge > b[i - 1]!.upToAge), {
+            message: "aging.bands は upToAge の昇順で",
+          }),
+        /** 開始年齢（time.startAge）からの寿命（年）。この年数を生きた朝に老衰死 */
+        lifespanYears: z.number().positive(),
+        /** 寿命経過（経過年/lifespanYears）がこの割合を超えると弱い兆候 */
+        signWarnAt: z.number().min(0).max(1),
+        /** この割合を超えると強い兆候 */
+        signSevereAt: z.number().min(0).max(1),
+        /** 強い兆候を繰り返す間隔（日） */
+        signEveryDays: z.number().int().positive(),
+      })
+      .strict()
+      .refine((a) => a.signWarnAt <= a.signSevereAt, {
+        message: "aging.signWarnAt <= aging.signSevereAt が必要",
+      }),
     /** docs/03 §3 作品台帳。core/ledger の LedgerConfig に対応 */
     ledger: z
       .object({

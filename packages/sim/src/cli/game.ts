@@ -7,12 +7,16 @@ import {
   combatResult,
   combatTurn,
   deserialize,
+  deserializeChronicle,
+  emptyChronicle,
   fishingGame,
   miningGame,
   negotiationGame,
   newGame,
   performanceGame,
+  recordLife,
   serialize,
+  serializeChronicle,
   simpleJudgmentQuality,
   sleepQuality,
   smithingGame,
@@ -20,17 +24,21 @@ import {
   type ActionEvent,
   type BoardInput,
   type BoardState,
+  type Chronicle,
   type DealCard,
   type GameState,
   type CombatAction,
+  type LifeCause,
   type MiniGame,
   type StepConfig,
+  type StepResult,
   type TimingInput,
   type TimingState,
 } from "@trace/core";
 import {
   activeBookEffects,
   activeEffects,
+  biographyMaterial,
   createRng,
   damageFactor,
   isSkillUnlocked,
@@ -38,6 +46,7 @@ import {
   telegraphLines,
   TemplateProvider,
   type NarrationProvider,
+  type Work,
 } from "@trace/core";
 import {
   balance,
@@ -64,6 +73,8 @@ export interface PlayCliOptions {
   io: CliIo;
   /** 既定: ~/.trace/save.json（環境変数 TRACE_SAVE_PATH で上書き可） */
   savePath?: string;
+  /** 既定: ~/.trace/chronicle.json（環境変数 TRACE_CHRONICLE_PATH で上書き可）。年代記はセーブと別領域（T-38） */
+  chroniclePath?: string;
   /** 新規開始時のシード。既定: 環境変数 TRACE_SEED か "TRACE-M0" */
   seed?: string;
   /** テスト用に依存を差し替える口（既定: balance/content/stepConfig） */
@@ -76,6 +87,10 @@ export interface PlayCliOptions {
 
 function defaultSavePath(): string {
   return process.env.TRACE_SAVE_PATH ?? join(homedir(), ".trace", "save.json");
+}
+
+function defaultChroniclePath(): string {
+  return process.env.TRACE_CHRONICLE_PATH ?? join(homedir(), ".trace", "chronicle.json");
 }
 
 function titleMessage(id: string, t: typeof cliText): string {
@@ -114,9 +129,28 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     writeFileSync(savePath, serialize(state));
   };
 
+  // ---- 年代記（T-38。周回をまたぐのでセーブとは別領域・別バージョンのファイル） ----
+  const chroniclePath = opts.chroniclePath ?? defaultChroniclePath();
+  const loadChronicleFile = (): Chronicle => {
+    if (!existsSync(chroniclePath)) return emptyChronicle();
+    try {
+      return deserializeChronicle(readFileSync(chroniclePath, "utf8"));
+    } catch {
+      return emptyChronicle();
+    }
+  };
+  let chronicle = loadChronicleFile();
+  const saveChronicle = (c: Chronicle) => {
+    mkdirSync(dirname(chroniclePath), { recursive: true });
+    writeFileSync(chroniclePath, serializeChronicle(c));
+  };
+
   // ---- 開始：セーブがあれば続きから選べる ----
   out(t.text.banner);
   out(t.text.intro);
+  if (chronicle.lives.length > 0) {
+    out(tpl(t.text.chronicleLives, { count: chronicle.lives.length }));
+  }
   let state: GameState | null = null;
   const hasSave = existsSync(savePath);
   if (hasSave) {
@@ -191,11 +225,84 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         const name = canon.events.find((x) => x.id === e.id)?.name ?? e.id;
         return [tpl(t.text.loreConnection, { name })];
       }
+      // 老衰死（T-36）：起床ログのあとに1行出す。老いの兆候（oldAgeSign）は
+      // report.surprises に既出なのでここでは行を出さない
+      if (e.type === "deathByAge") return [tpl(t.text.deathByAge, { age: e.age })];
       return [];
     });
 
   // 語り層（07 §6）：文章だけを返す。ゲーム結果は core が先に決めている
   const narrator = opts.narrator ?? new TemplateProvider(narration);
+  /** 作品の表示名：注文名（特別注文は元の注文名）＞スキル名の順で解決する */
+  const workName = (w: Work): string => {
+    const orderId = w.order?.split("#")[0];
+    return orderId
+      ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
+      : (skillNames.get(w.kind) ?? w.kind);
+  };
+  /** 伝記（T-37）：素材は core が摘み、表示名はここで解決する。cause 省略時は閉じ行を出さない */
+  const bioLines = (st: GameState, cause?: "retire" | "death"): string[] => {
+    const m = biographyMaterial(st);
+    const titleNames = m.titleIds
+      .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
+      .join("、");
+    const goalNames = m.achievedGoalIds
+      .map((id) => society.lifeGoals.find((g) => g.id === id)?.name ?? id)
+      .join("、");
+    return narrator.narrate(
+      {
+        scene: "biography",
+        name: m.name,
+        days: m.days,
+        deeds: m.deeds,
+        origin: origins.origins.find((o) => o.id === m.originId)?.name ?? m.originId,
+        standing: society.standings.find((s) => s.id === m.standingId)?.name ?? m.standingId,
+        ...(m.professionId !== null
+          ? {
+              profession:
+                society.professions.find((p) => p.id === m.professionId)?.name ?? m.professionId,
+            }
+          : {}),
+        ...(titleNames !== "" ? { titles: titleNames } : {}),
+        ...(goalNames !== "" ? { goals: goalNames } : {}),
+        ...(m.bestWork !== null
+          ? {
+              work: {
+                name: workName(m.bestWork),
+                quality: m.bestWork.quality,
+                tier: m.bestWork.tier,
+              },
+            }
+          : {}),
+        ...(m.peakSkill !== null
+          ? {
+              peakSkill: {
+                name: skillNames.get(m.peakSkill.id) ?? m.peakSkill.id,
+                value: Math.round(m.peakSkill.value * 10) / 10,
+              },
+            }
+          : {}),
+        ...(cause !== undefined ? { cause } : {}),
+      },
+      // 同じ死には同じ伝記（通算死亡数でシードを分ける）
+      createRng(`${seed}:bio:${st.seed}:${m.days}:${m.deaths}`),
+    );
+  };
+
+  /** died イベントがあれば年代記に追記する（T-38 最小接続。引退・転生の本格配線は T-40） */
+  const noteDeath = (res: StepResult): boolean => {
+    if (!res.events.some((e) => e.type === "died")) return false;
+    // 老衰（T-36 の deathByAge）は死因として区別して残す
+    const cause: LifeCause = res.events.some((e) => e.type === "deathByAge") ? "oldAge" : "death";
+    chronicle = recordLife(chronicle, res.state, cause, {
+      titleDefs: cfg.titles,
+      // 表示した伝記と同じものを年代記にも残す（06 §1：伝記 → 年代記の順）
+      biography: bioLines(res.state, "death").join("\n"),
+    });
+    saveChronicle(chronicle);
+    return true;
+  };
+
   const newspaper = (events: ActionEvent[]): string[] => {
     const slept = events.find(
       (e): e is Extract<ActionEvent, { type: "slept" }> => e.type === "slept",
@@ -206,13 +313,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     // 表示名は注文名（特別注文は元の注文名）＞スキル名の順で解決する
     const works = state!.ledger
       .filter((w) => w.day === day)
-      .map((w) => {
-        const orderId = w.order?.split("#")[0];
-        const name = orderId
-          ? (orders.orders.find((o) => o.id === orderId)?.name ?? w.order ?? w.kind)
-          : (skillNames.get(w.kind) ?? w.kind);
-        return { name, quality: w.quality, tier: w.tier };
-      });
+      .map((w) => ({ name: workName(w), quality: w.quality, tier: w.tier }));
     const deaths = state!.counters["death.count"] ?? 0;
     const title = events.find(
       (e): e is Extract<ActionEvent, { type: "titleGained" }> =>
@@ -438,6 +539,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     t,
     save,
     applyTitles: (events: ActionEvent[]) => applyTitles(events),
+    bio: bioLines,
+    /** 現在の年代記（T-38。街の記録から眺める） */
+    chronicle: () => chronicle,
   };
 
   // ---- ループ ----
@@ -687,7 +791,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       state = res.state;
       if (r.won) out(tpl(t.text.combatWon, { name: enemy.name }));
       else if (r.fled) out(t.text.combatFled);
-      else out(t.text.combatLost);
+      else {
+        out(t.text.combatLost);
+        // 死亡時は伝記が生成される（06 §1。蘇生するが記録は残る）
+        if (r.died) {
+          outAll(bioLines(state, "death"));
+          // 伝記 → 年代記への記録（T-38。T-40 までは戦闘死のみ追記する最小接続）
+          if (noteDeath(res)) out(t.text.chronicleRecorded);
+        }
+      }
       for (const e of res.events) {
         if (e.type === "gainApplied" && e.amount > 0) {
           out(
@@ -710,6 +822,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       if (report) {
         outAll(wakeBlock(report.report, applyTitles(res.events), t, skillNames, { atHome: true }));
       }
+      if (noteDeath(res)) out(t.text.chronicleRecorded);
       save(state);
       out(t.text.wake.saved);
     } else if (pick === "5" || pick === "sleep") {
@@ -744,6 +857,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         // 朝の新聞（07 §6：語り層の最初の呼び出し箇所）
         outAll(newspaper(res.events));
       }
+      if (noteDeath(res)) out(t.text.chronicleRecorded);
       save(state);
       out(t.text.wake.saved);
     } else if (pick === "6") {

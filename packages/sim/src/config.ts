@@ -30,6 +30,14 @@ export function stepConfig(): StepConfig {
     },
     tailwind: { defs: tailwinds.tailwinds, ...balance.tailwind },
     body: balance.body,
+    /** 寿命・加齢（T-36）。文テンプレートは cli.json 由来（rust.texts と同じ注入） */
+    aging: {
+      ...balance.aging,
+      texts: {
+        warn: cliText.text.wake.agingWarn,
+        severe: cliText.text.wake.agingSevere,
+      },
+    },
     ledger: balance.ledger,
     combat: balance.combat,
     society: {

@@ -34,6 +34,7 @@ export function statusLines(state: GameState, cfg: StepConfig, t: CliText): stri
       day: d.dayOfSeason + 1,
       weekday: t.display.weekdayNames[d.weekday] ?? "?",
       timeOfDay: t.display.timeOfDayNames[d.timeOfDay] ?? "?",
+      age: d.age,
       fatigue: Math.round(state.player.fatigue),
       money: state.player.money,
     }),

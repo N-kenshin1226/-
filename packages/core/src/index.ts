@@ -24,6 +24,14 @@ export type {
 } from "./growth/consolidate.js";
 export { applyActionLoad, consolidateBody, updateOverwork } from "./growth/body.js";
 export type { BodyConfig, BodyNightResult } from "./growth/body.js";
+export {
+  ageBand,
+  agingOnWake,
+  agingSignStage,
+  lifespanProgress,
+  reachedLifespan,
+} from "./growth/aging.js";
+export type { AgeBand, AgingConfig, AgingWakeResult } from "./growth/aging.js";
 export { rollTailwind, windFor } from "./growth/tailwind.js";
 export type { RolledWind, TailwindConfig, TailwindDef, WindDirection } from "./growth/tailwind.js";
 export { step } from "./step.js";
@@ -45,6 +53,22 @@ export type {
 export { subscribers } from "./events/index.js";
 export type { ActionEvent, Subscriber } from "./events/index.js";
 export { deserialize, migrations, SAVE_VERSION, serialize } from "./save/index.js";
+export {
+  CHRONICLE_VERSION,
+  chronicleMigrations,
+  deserializeChronicle,
+  emptyChronicle,
+  lifeEntryOf,
+  recordLife,
+  serializeChronicle,
+} from "./chronicle/index.js";
+export type {
+  Chronicle,
+  ChronicleEntry,
+  LifeCause,
+  NotableWork,
+  RecordLifeOptions,
+} from "./chronicle/index.js";
 export { evaluate } from "./conditions/index.js";
 export type { Compare, Cond } from "./conditions/index.js";
 export { timingEngine, boardEngine, dealEngine } from "./minigame/index.js";
@@ -107,6 +131,8 @@ export { readAtom } from "./lore/index.js";
 export type { AtomDef, ConnectionDef, LoreConfig, ReadAtomResult } from "./lore/index.js";
 export { TemplateProvider } from "./narration/index.js";
 export type { NarrationProvider, NarrationRequest, NarrationTemplates } from "./narration/index.js";
+export { biographyMaterial } from "./biography/index.js";
+export type { BiographyMaterial } from "./biography/index.js";
 export { specialOrderOf } from "./town/index.js";
 export type { OrderLike, SpecialOrderOf, SpecialOrderSpec } from "./town/index.js";
 export { isSkillUnlocked, unlockFlag, unlockSkills } from "./skills/index.js";

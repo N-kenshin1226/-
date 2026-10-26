@@ -86,6 +86,8 @@ export interface ConsolidateResult {
 /**
  * 全スキルの pending を定着させる。pending は「1スキルごと」に上限を適用する。
  * opts.capFactor: オーバーワーク等で上限ごと下げる倍率（省略時 1）
+ * opts.skillFactor: 年齢帯（T-36）などによる定着量の倍率。消費する pending は
+ *   変わらず、value の伸びだけが倍率で変わる（省略時 1）
  * opts.qualityOverride: rest コマンドなど宿・夕食を通さない場合の質の直接指定
  * opts.names: 起床ログに出すスキル表示名（省略時はID）
  */
@@ -94,7 +96,12 @@ export function consolidateSleep(
   inn: InnRank,
   dinner: boolean,
   cfg: SleepConfig,
-  opts?: { capFactor?: number; qualityOverride?: number; names?: Record<string, string> },
+  opts?: {
+    capFactor?: number;
+    skillFactor?: number;
+    qualityOverride?: number;
+    names?: Record<string, string>;
+  },
 ): ConsolidateResult {
   const quality =
     opts?.qualityOverride !== undefined
@@ -157,6 +164,8 @@ export function consolidateSleep(
         }),
       );
     }
+    // 年齢帯のスキル係数（T-36）：pending の消費量は変えず、伸びだけが倍率で変わる
+    to = from + (to - from) * (opts?.skillFactor ?? 1);
     skills[id] = {
       ...prev0,
       value: to,

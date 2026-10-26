@@ -31,6 +31,11 @@
       "forest": "近郊の森",
       "highway": "旧街道"
     },
+    "causeNames": {
+      "death": "命を落とした",
+      "retire": "引退した",
+      "oldAge": "老衰した"
+    },
     "qualityBands": [
       {
         "upTo": 0.8,
@@ -61,7 +66,7 @@
     "originPick": "どんな生い立ちですか",
     "originLine": "  {index}) {name} ― {desc}",
     "originChosen": "――出自は《{name}》。素質が決まりました。",
-    "menuHeader": "── {year}年目 {season} {day}日（{weekday}） {timeOfDay} | 疲労 {fatigue} | 所持金 {money}G",
+    "menuHeader": "── {year}年目 {season} {day}日（{weekday}） {timeOfDay} | 年齢 {age}歳 | 疲労 {fatigue} | 所持金 {money}G",
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
@@ -90,7 +95,9 @@
       "restDayLine": "――よく休みました。素質が少し戻ります。",
       "saved": "――記録が残されました。",
       "rusted": "――《{name}》が錆びついている（-{loss}）",
-      "relearning": "――身体が覚えている。《{name}》の再習得が速い。"
+      "relearning": "――身体が覚えている。《{name}》の再習得が速い。",
+      "agingWarn": "――近ごろ、身体の奥に小さな軋みを覚える。老いの兆しが見え始めている。",
+      "agingSevere": "――身体が思うように動かない朝がある。老いは確かに進んでいる。"
     },
     "titleGainedFallback": "――称号《{name}》を獲得しました。",
     "skillUnlocked": "――身体が理屈を掴んだ。《{name}》を鍛えられるようになった。",
@@ -141,6 +148,7 @@
     "combatPrompt": "行動（1)攻撃 2)防御 3)観察 4)逃げる）",
     "combatWon": "――{name} を倒した。",
     "combatLost": "――力尽きた。……教会で目を覚ました。未定着の経験が半分失われた。",
+    "deathByAge": "――天命に達した（{age}歳）。……教会で目を覚ました。未定着の経験が半分失われた。",
     "combatFled": "――命だけは拾った。",
     "combatGain": "《{skill}》の経験 +{amount}",
     "kehai": "――何かが、噛み合いかけている。",
@@ -169,6 +177,13 @@
     "recordsLedgerEmpty": "  まだ作品はない。",
     "recordsTitles": "称号：{titles}",
     "recordsLore": "見聞録：事実 {facts}件、繋がった出来事 {conns}件",
+    "chronicleLives": "――年代記には {count} 人の人生が記録されている。",
+    "chronicleHeader": "年代記（{count}人の人生）：",
+    "chronicleEmpty": "  まだ誰の人生も刻まれていない。",
+    "chronicleLine": "  {i}) {name}{epithet} ― {days}日を生き、{cause}",
+    "chronicleRole": "      {standing}・{profession}",
+    "chronicleWorks": "      代表作：{works}",
+    "chronicleRecorded": "――この人生は年代記に刻まれた。",
     "moneyPaid": "――報酬 {amount}G を受け取った。",
     "bookShopHeader": "── 書店《古紙堂》（所持金 {money}G）",
     "bookPick": "どの書物ですか（未所持は購入、所持は読む）",

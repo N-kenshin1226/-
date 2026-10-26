@@ -7,6 +7,7 @@ import {
   createRng,
   describe,
   isSkillUnlocked,
+  recordLife,
   step,
   suggestGoals,
   telegraphLines,
@@ -15,10 +16,11 @@ import {
   type GameState,
   type InnRank,
 } from "@trace/core";
-import { balance, type EnemyJson } from "@trace/content";
+import { balance, titles, type EnemyJson } from "@trace/content";
 import {
   atomList,
   beginCombat,
+  bioLines,
   bookList,
   cfg,
   enemyAreas,
@@ -28,6 +30,7 @@ import {
   inns,
   isBoardKind,
   isTimingKind,
+  loadChronicle,
   loadGame,
   mentorList,
   minigameResult,
@@ -39,6 +42,7 @@ import {
   playCombatTurn,
   qualityLabel,
   resetSave,
+  saveChronicle,
   saveGame,
   simpleQuality,
   skillList,
@@ -49,6 +53,7 @@ import {
   tickMinigame,
   tpl,
   wakeLines,
+  workName,
   type BoardState,
   type CombatState,
   type DealState,
@@ -185,6 +190,18 @@ export function App() {
       const s = stateRef.current;
       if (!s) return;
       const res = step(s, command, cfg);
+      // 年代記への追記（T-38 最小接続。died が出たら別領域に記録する。本格配線は T-40）
+      if (res.events.some((e) => e.type === "died")) {
+        // 老衰（T-36 の deathByAge）は死因として区別して残す
+        const cause = res.events.some((e) => e.type === "deathByAge") ? "oldAge" : "death";
+        saveChronicle(
+          recordLife(loadChronicle(), res.state, cause, {
+            titleDefs: cfg.titles,
+            // 画面に出した伝記と同じものを残す（呼び出し前の state で生成）
+            biography: bioLines(s, "death").join("\n"),
+          }),
+        );
+      }
       const wake = wakeLines(res.state, res.events, opts?.atHome ?? false);
       push(wake.length > 0 ? wake : (opts?.format?.(res.events) ?? eventLines(res.events)));
       saveGame(res.state);
@@ -204,10 +221,13 @@ export function App() {
 
   if (!loaded) return null;
   if (!state) {
+    // 年代記はセーブとは別領域に残る（T-38。新しい周の始まりでも見える）
+    const lives = loadChronicle().lives.length;
     return (
       <main style={css.app} data-testid="app">
         <h1 style={{ color: theme.colors.accent }}>TRACE</h1>
         <p style={css.sys}>{t.text.intro}</p>
+        {lives > 0 && <p style={css.sys}>{tpl(t.text.chronicleLives, { count: lives })}</p>}
         <p style={css.sys}>{t.text.originPick}</p>
         {originList.map((o) => (
           <Btn
@@ -262,6 +282,7 @@ function StatusHeader({ state }: { state: GameState }) {
         day: d.dayOfSeason + 1,
         weekday: t.display.weekdayNames[d.weekday] ?? "?",
         timeOfDay: t.display.timeOfDayNames[d.timeOfDay] ?? "?",
+        age: d.age,
         fatigue: Math.round(state.player.fatigue),
         money: state.player.money,
       })}
@@ -940,6 +961,12 @@ function CombatScreen({
       died: r.died,
     });
     push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
+    // 死亡時は伝記が生成される（06 §1。蘇生するが記録は残る）
+    if (r.died) {
+      push(bioLines(state, "death"));
+      // 伝記 → 年代記への記録（T-38。実際の追記は act 内で died イベントを見て行う）
+      push(t.text.chronicleRecorded);
+    }
     setScreen({ name: "menu" });
   };
 
@@ -1161,8 +1188,62 @@ function RecordsScreen({ state, back }: { state: GameState; back: () => void }) 
           )
           .join("")}
       </div>
+      {/* ここまでの記録（T-37 伝記の途中経過プレビュー） */}
+      <div style={{ ...css.dim, marginTop: 12 }}>
+        {bioLines(state).map((l, i) => (
+          <div key={i}>{l}</div>
+        ))}
+      </div>
+      {/* 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る） */}
+      <ChronicleView />
       <Btn onClick={back}>戻る</Btn>
     </section>
+  );
+}
+
+/** 年代記の一覧（CLI の chronicleLines と同じ組み立て） */
+function ChronicleView() {
+  const chronicle = loadChronicle();
+  return (
+    <div style={{ marginTop: 12 }} data-testid="chronicle">
+      <div>{tpl(t.text.chronicleHeader, { count: chronicle.lives.length })}</div>
+      {chronicle.lives.length === 0 && <div style={css.dim}>{t.text.chronicleEmpty}</div>}
+      {chronicle.lives.map((life, i) => {
+        const epithet = life.epithet
+          ? `《${titles.titles.find((x) => x.id === life.epithet)?.name ?? life.epithet}》`
+          : "";
+        const standing =
+          societyDefs.standings.find((s) => s.id === life.standing)?.name ?? life.standing;
+        const profession =
+          life.profession === null
+            ? "―"
+            : (societyDefs.professions.find((p) => p.id === life.profession)?.name ??
+              life.profession);
+        return (
+          <div key={i} style={css.dim}>
+            <div>
+              {tpl(t.text.chronicleLine, {
+                i: i + 1,
+                name: life.name,
+                epithet,
+                days: life.daysLived,
+                cause: t.display.causeNames[life.cause] ?? life.cause,
+              })}
+            </div>
+            <div>{tpl(t.text.chronicleRole, { standing, profession })}</div>
+            {life.notableWorks.length > 0 && (
+              <div>
+                {tpl(t.text.chronicleWorks, {
+                  works: life.notableWorks
+                    .map((w) => `《${workName(w)}》品質${w.quality}`)
+                    .join("、"),
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

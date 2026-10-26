@@ -34,7 +34,18 @@ const text: NarrationTemplates = {
   loreDigest: { header: "── 見聞録 ──", line: "{facts}件の事実、{connected}つの繋がり。" },
   biography: {
     header: "── 記録 ──",
-    line: "{name} は {days}日生きた。{deeds}件の行動。{titles}",
+    summary: ["{name} は {days}日生きた。{deeds}件の行動。"],
+    origin: ["出自：{origin}。"],
+    work: ["代表作《{name}》品質{quality}・ティア{tier}。"],
+    titles: ["「{titles}」と呼ばれた。"],
+    standing: ["立場{standing}。{profession}"],
+    goal: ["目標「{goals}」を果たした。"],
+    peak: ["頂きは{skill}の{value}。"],
+    cause: {
+      retire: ["引退によって記録は閉じた。"],
+      death: ["死が記録を閉じた。"],
+    },
+    closing: ["この記録は年代記に残る。"],
   },
 };
 
@@ -143,6 +154,56 @@ describe("TemplateProvider（07 §6）", () => {
     );
     expect(bio[1]).toContain("旅人");
     expect(bio[1]).toContain("40日");
+    expect(bio.join("\n")).toContain("《狩人》");
+  });
+
+  it("伝記：素材がある行だけが出る（T-37）", () => {
+    const full = provider.narrate(
+      {
+        scene: "biography",
+        name: "名工",
+        days: 200,
+        deeds: 500,
+        origin: "職人の子",
+        work: { name: "名刀・朧", quality: 88, tier: 3 },
+        titles: "《名工》、《続ける者》",
+        standing: "市民",
+        profession: "鍛冶師",
+        goals: "最初の作品を作る",
+        peakSkill: { name: "鍛冶", value: 92.3 },
+        cause: "retire",
+      },
+      rng(),
+    );
+    const text = full.join("\n");
+    expect(full[0]).toBe("── 記録 ──");
+    expect(text).toContain("職人の子");
+    expect(text).toContain("名刀・朧");
+    expect(text).toContain("品質88");
+    expect(text).toContain("《名工》");
+    expect(text).toContain("市民");
+    expect(text).toContain("鍛冶師");
+    expect(text).toContain("最初の作品を作る");
+    expect(text).toContain("鍛冶");
+    expect(text).toContain("92.3");
+    expect(text).toContain("引退");
+    expect(text).toContain("年代記");
+
+    // 素材なし：summary＋closing だけの短い記録（死因も立場も出ない）
+    const bare = provider.narrate({ scene: "biography", name: "名無し", days: 3, deeds: 4 }, rng());
+    expect(bare).toHaveLength(3);
+    expect(bare[1]).toContain("名無し");
+    expect(bare[2]).toBe("この記録は年代記に残る。");
+
+    // 決定論：同じ素材＋同じシードで同じ伝記
+    const req = {
+      scene: "biography",
+      name: "x",
+      days: 9,
+      deeds: 9,
+      cause: "death",
+    } as const;
+    expect(provider.narrate(req, createRng("b"))).toEqual(provider.narrate(req, createRng("b")));
   });
 
   it("NPCの一言：立場で口調が変わる", () => {

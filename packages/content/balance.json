@@ -96,6 +96,18 @@
     "restPotentialRecover": 3,
     "potentialMax": 100
   },
+  "aging": {
+    "lifespanYears": 40,
+    "signWarnAt": 0.7,
+    "signSevereAt": 0.9,
+    "signEveryDays": 28,
+    "bands": [
+      { "upToAge": 24, "statFactor": 1.25, "skillFactor": 1.0 },
+      { "upToAge": 39, "statFactor": 1.0, "skillFactor": 1.0 },
+      { "upToAge": 54, "statFactor": 0.7, "skillFactor": 1.15 },
+      { "upToAge": 999, "statFactor": 0.45, "skillFactor": 1.25 }
+    ]
+  },
   "tailwind": {
     "tailwindFactor": 1.3,
     "headwindFactor": 0.8,
