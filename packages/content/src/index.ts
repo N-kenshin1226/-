@@ -11,3 +11,6 @@ export { condSchema } from "./conditions.schema.js";
 export { titles } from "./titles.js";
 export { titlesFileSchema } from "./titles.schema.js";
 export type { Title, TitlesFile } from "./titles.schema.js";
+export { cliText } from "./cli-text.js";
+export { cliTextSchema } from "./cli-text.schema.js";
+export type { CliText } from "./cli-text.schema.js";

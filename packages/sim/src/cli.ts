@@ -6,6 +6,8 @@
  */
 import { runGrowth } from "./sim-growth.js";
 import { runRetention } from "./sim-retention.js";
+import { playCli } from "./cli/game.js";
+import { stdioIo } from "./cli/io.js";
 
 const command = process.argv[2] ?? "";
 
@@ -16,6 +18,11 @@ switch (command) {
   case "sim:retention":
     process.exit(runRetention());
     break;
+  case "play:cli": {
+    const state = await playCli({ io: stdioIo() });
+    process.exit(state ? 0 : 1);
+    break;
+  }
   default:
     console.log(`[sim] ${command || "(コマンド未指定)"} は未実装です`);
     process.exit(command === "" ? 1 : 0);

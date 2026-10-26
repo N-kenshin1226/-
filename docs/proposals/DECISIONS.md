@@ -25,3 +25,8 @@
 | D-15 | 新規性帯の評価は「行動を変える方針」のボットに限定（simple を除外） | 同じ行動を繰り返す縮退方針で初体験が出ないのは設計どおりの応答であり、供給側の欠陥ではない | `thresholds.json` の `bands[].bots` と `notes` | 仮 |
 | D-16 | バランス調整：B(訓練)=3.6、良宿=1.5（qualityMax 1.8）、定着上限 3.0/合計1.7、素質減衰 0.005、逓減 base 170、訓練負荷 {str2,end2,dex2}・閾値25 | 主スキル 3h=36（帯25〜40）、方針差 1.19倍、簡易判定の経験効率 32% となる実測値に合わせた初回調整 | `balance.json` | 仮 |
 | D-17 | `sim:growth` / `sim:retention` は `pnpm check` の test と build の間に挟む | シミュレーションはコンテンツ検証の後・ビルド前が依存として自然 | `package.json` の `check` | 仮 |
+| D-18 | CLIの所持金は固定値50Gを表示するだけ（GameState に money はまだない） | チケットが「今は固定値」と明記。経済は M1 の作品台帳で実装 | `cli.json` の `display.fixedMoney` → GameState.player.money へ | 仮 |
+| D-19 | `rest` も起床ログを表示する（場所は「自宅」、質は restQuality 固定） | rest は内部的に睡眠処理を通るため。宿名を出すと誤解を招くので homeName で分岐 | `render.ts` の `wakeBlock(atHome)` | 仮 |
+| D-20 | セーブは眠ったときだけ `~/.trace/save.json` へ自動保存。中断(q)は日中の進行を保存しない | チケットの「寝るたびに自動保存」に忠実。日の途中の進行は捨てる（起床ログの手触り確認が目的の版） | `game.ts` の `save()` 呼び出し位置を変える | 仮 |
+| D-21 | 難度の推奨値は「現在値+10」（C項の最大点）。空入力で推奨を採用 | challengePoints の頂点が Δ=+10。プレイヤーが毎回計算しなくてよいガイド | `game.ts` の `recommended` 式 | 仮 |
+| D-22 | 行動を使い切った日は「寝る/休む/中断」だけのメニューに切替 | 残り0で訓練を選ばれても step が進まないため | `menuSleepOnly` の分岐 | 仮 |

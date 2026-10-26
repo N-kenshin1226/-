@@ -1,0 +1,74 @@
+import { z } from "zod";
+
+/** text/cli.json — CLI版の表示文テンプレート。{name} の {…} は描画側で置換する */
+export const cliTextSchema = z
+  .object({
+    version: z.number().int(),
+    display: z
+      .object({
+        /** 所持金はM0では未実装。表示だけの固定値（T-11 判断ログ参照） */
+        fixedMoney: z.number().int().nonnegative(),
+        innNames: z.object({ cheap: z.string(), normal: z.string(), good: z.string() }).strict(),
+        /** rest（家で休む）の起床ログに出す場所名 */
+        homeName: z.string(),
+        dinnerNames: z.object({ with: z.string(), without: z.string() }).strict(),
+        seasonNames: z.array(z.string()).length(4),
+        weekdayNames: z.array(z.string()).length(7),
+        timeOfDayNames: z
+          .object({ morning: z.string(), noon: z.string(), evening: z.string(), night: z.string() })
+          .strict(),
+        statNames: z.record(z.string(), z.string()),
+        /** 睡眠の質 → 表示語。q < upTo の最初の帯に入る */
+        qualityBands: z.array(z.object({ upTo: z.number(), label: z.string() }).strict()).min(1),
+      })
+      .strict(),
+    text: z
+      .object({
+        playerName: z.string(),
+        banner: z.string(),
+        intro: z.string(),
+        saveFound: z.string(),
+        choiceResume: z.string(),
+        choiceNew: z.string(),
+        saveBroken: z.string(),
+        menuHeader: z.string(),
+        menuWinds: z.string(),
+        menuNoWind: z.string(),
+        menuActionsLeft: z.string(),
+        menuActions: z.string(),
+        menuSleepOnly: z.string(),
+        mustSleep: z.string(),
+        promptChoice: z.string(),
+        skillPick: z.string(),
+        skillLine: z.string(),
+        difficultyPrompt: z.string(),
+        trainResult: z.string(),
+        restDone: z.string(),
+        innPick: z.string(),
+        innLine: z.string(),
+        dinnerPrompt: z.string(),
+        overworkBecame: z.string(),
+        wake: z
+          .object({
+            header: z.string(),
+            footer: z.string(),
+            qualityLine: z.string(),
+            skillLine: z.string(),
+            statJoiner: z.string(),
+            windsLine: z.string(),
+            windsNone: z.string(),
+            noChange: z.string(),
+            restDayLine: z.string(),
+            saved: z.string(),
+          })
+          .strict(),
+        titleGainedFallback: z.string(),
+        quit: z.string(),
+        invalidInput: z.string(),
+        eof: z.string(),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type CliText = z.infer<typeof cliTextSchema>;

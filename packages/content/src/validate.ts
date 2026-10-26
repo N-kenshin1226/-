@@ -9,6 +9,7 @@ import { balanceSchema } from "./balance.schema.js";
 import { skillsFileSchema } from "./skills.schema.js";
 import { tailwindsFileSchema } from "./tailwinds.schema.js";
 import { titlesFileSchema } from "./titles.schema.js";
+import { cliTextSchema } from "./cli-text.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -40,6 +41,7 @@ check("balance.json", balanceSchema);
 check("skills.json", skillsFileSchema);
 check("tailwinds.json", tailwindsFileSchema);
 check("titles.json", titlesFileSchema);
+check("text/cli.json", cliTextSchema);
 
 // 隠し要素ディレクトリは中身を検証しない（ネタバレ防止。docs/07_story.md §5）
 // hidden/ が空でなければ警告だけ出す

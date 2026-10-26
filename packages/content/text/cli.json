@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "display": {
+    "fixedMoney": 50,
+    "innNames": {
+      "cheap": "安宿",
+      "normal": "宿屋《麦穂亭》",
+      "good": "上宿《白帆亭》"
+    },
+    "homeName": "自宅",
+    "dinnerNames": {
+      "with": "シチュー",
+      "without": "夕食なし"
+    },
+    "seasonNames": ["春", "夏", "秋", "冬"],
+    "weekdayNames": ["日", "月", "火", "水", "木", "金", "土"],
+    "timeOfDayNames": {
+      "morning": "朝",
+      "noon": "昼",
+      "evening": "夕",
+      "night": "夜"
+    },
+    "statNames": {
+      "strength": "筋力",
+      "endurance": "持久",
+      "agility": "敏捷",
+      "dexterity": "器用",
+      "perception": "知覚",
+      "spirit": "精神"
+    },
+    "qualityBands": [
+      { "upTo": 0.8, "label": "悪い" },
+      { "upTo": 1.05, "label": "普通" },
+      { "upTo": 1.4, "label": "良好" },
+      { "upTo": 99, "label": "極上" }
+    ]
+  },
+  "text": {
+    "playerName": "旅人",
+    "banner": "―――――― TRACE（CLI・M0） ――――――",
+    "intro": "行動したことだけが強さになる。世界はそれを見ていて、記録し、語り継ぐ。",
+    "saveFound": "セーブを見つけました。",
+    "choiceResume": "  1) つづきから",
+    "choiceNew": "  2) はじめから",
+    "saveBroken": "――セーブが読めませんでした。はじめから始めます。",
+    "menuHeader": "── {year}年目 {season} {day}日（{weekday}） {timeOfDay} | 疲労 {fatigue} | 所持金 {money}G",
+    "menuWinds": "本日の追い風：{winds}",
+    "menuNoWind": "本日の追い風：とくになし",
+    "menuActionsLeft": "（残り行動 {left}/{max}）",
+    "menuActions": "  1) 訓練する  2) 休む（今日を終える）  3) 寝る（宿を選ぶ）  q) 中断する",
+    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  q) 中断する",
+    "mustSleep": "――身体はもう動きません。今日はここまでです。",
+    "promptChoice": "> ",
+    "skillPick": "どの技能を鍛えますか",
+    "skillLine": "  {index}) 《{name}》 {value}（+{pending}） 素質 {potential}%",
+    "difficultyPrompt": "難度を入力してください（推奨 {recommended}、空で推奨）",
+    "trainResult": "《{name}》の訓練（難度 {difficulty}）―― 経験 +{amount}",
+    "restDone": "――家で休みました。",
+    "innPick": "どこに泊まりますか",
+    "innLine": "  {index}) {name}（質：{quality}）",
+    "dinnerPrompt": "夕食を取りますか（y/N）",
+    "overworkBecame": "――身体が限界を超えています。オーバーワークに陥りました。",
+    "wake": {
+      "header": "━━━━━━━━━ 起床 ━━━━━━━━━",
+      "footer": "━━━━━━━━━━━━━━━━━━━━━━",
+      "qualityLine": "睡眠の質：{quality}（{inn}・{dinner}）",
+      "skillLine": "《{name}》  {from} → {to}  ▲{delta}",
+      "statJoiner": " ／ ",
+      "windsLine": "本日の追い風：{winds}",
+      "windsNone": "本日の追い風：とくになし",
+      "noChange": "――体は昨日と同じです。",
+      "restDayLine": "――よく休みました。素質が少し戻ります。",
+      "saved": "――記録が残されました。"
+    },
+    "titleGainedFallback": "――称号《{name}》を獲得しました。",
+    "quit": "――中断します。記録は眠りのあとに残ります。",
+    "invalidInput": "――入力が読めません。番号か数値で答えてください。",
+    "eof": "――入力が尽きました。終了します。"
+  }
+}
