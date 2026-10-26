@@ -10,3 +10,5 @@ export { smithingGame, simpleJudgmentQuality } from "./smithing.js";
 export type { SmithingConfig, SmithingResult } from "./smithing.js";
 export { miningGame } from "./mining.js";
 export type { MiningConfig, MiningResult } from "./mining.js";
+export { negotiationGame } from "./negotiation.js";
+export type { NegotiationConfig, NegotiationResult, NegotiationTopic } from "./negotiation.js";

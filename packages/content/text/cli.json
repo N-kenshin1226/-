@@ -101,6 +101,13 @@
     "miningOre": "鉱脈だ！（{ores}/{total}）",
     "miningHint": "空地。周囲{radius}マスに鉱脈は {n} 個。",
     "miningRock": "――岩に当たった。盤面は崩れた。",
-    "miningDone": "――鉱脈を掘り切った。"
+    "miningDone": "――鉱脈を掘り切った。",
+    "negoStart": "《{name}》 —— 口論です。手札から論点を1枚選んで出します。",
+    "negoHand": "手札：{cards}",
+    "negoPreview": "相手の次の論点：{preview}",
+    "negoHp": "（こちら {player} ／ あいて {opponent}）",
+    "negoPrompt": "出す札（番号）",
+    "negoWon": "――口論に勝った。",
+    "negoLost": "――口論に負けた。"
   }
 }

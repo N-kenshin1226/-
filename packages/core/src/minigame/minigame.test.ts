@@ -111,6 +111,7 @@ describe("駆け引きエンジン", () => {
     previewBase: 0,
     previewPerSkill: 0.1,
     counterFactor: 1.5,
+    counterBlockFactor: 0.4,
     hp: 12,
     deckSize: 8,
   };

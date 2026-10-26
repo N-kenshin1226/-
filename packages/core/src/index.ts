@@ -52,6 +52,8 @@ export { smithingGame, simpleJudgmentQuality } from "./minigame/index.js";
 export type { SmithingConfig, SmithingResult } from "./minigame/index.js";
 export { miningGame } from "./minigame/index.js";
 export type { MiningConfig, MiningResult } from "./minigame/index.js";
+export { negotiationGame } from "./minigame/index.js";
+export type { NegotiationConfig, NegotiationResult, NegotiationTopic } from "./minigame/index.js";
 export type {
   MiniGame,
   MiniGameCtx,

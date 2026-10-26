@@ -27,6 +27,8 @@ export interface DealConfig {
   previewPerSkill: number;
   /** 相性が取れたときの威力倍率 */
   counterFactor: number;
+  /** 相性が取れたラウンドに相手から受ける威力の逓減率（0 で完全防御） */
+  counterBlockFactor: number;
   /** 双方の耐久値 */
   hp: number;
   /** 山札の枚数（互いに） */
@@ -104,14 +106,18 @@ export function dealEngine(cfg: DealConfig): MiniGame<DealInput, DealState, Deal
       let playerHp = state.playerHp;
       let opponentHp = state.opponentHp;
       if (opponent) {
+        const countered = cfg.topics.find((t) => t.id === card.topic)?.beats === opponent.topic;
         opponentHp -= effective(card, opponent, cfg);
-        playerHp -= effective(opponent, card, cfg);
+        // 相性を取った側は反撃が届きにくい（読み合いを報いる）
+        playerHp -= countered
+          ? Math.round(opponent.power * cfg.counterBlockFactor)
+          : effective(opponent, card, cfg);
       } else {
         // 相手の手が尽きた：一方的に出せる
         opponentHp -= card.power;
       }
-      const done =
-        opponentHp <= 0 || playerHp <= 0 || (hand.length === 0 && opponentDeck.length === 0);
+      // 手札が尽きれば出せる札がないので終了（相手山札が残っていても）
+      const done = opponentHp <= 0 || playerHp <= 0 || hand.length === 0;
       return {
         ...state,
         hand,

@@ -5,6 +5,7 @@ import {
   canAct,
   deserialize,
   miningGame,
+  negotiationGame,
   newGame,
   serialize,
   simpleJudgmentQuality,
@@ -13,6 +14,7 @@ import {
   step,
   type ActionEvent,
   type BoardState,
+  type DealCard,
   type GameState,
   type InnRank,
   type StepConfig,
@@ -188,6 +190,43 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     return { quality: r.quality, flags: r.flags };
   };
 
+  /** 交渉（駆け引き）を手動で遊ぶ */
+  const playNegotiation = async (
+    order: Order,
+    st: GameState,
+  ): Promise<{ quality: number; flags: string[] } | null> => {
+    const cfg = balance.minigame.negotiation;
+    const mg = negotiationGame(cfg);
+    const topicName = (id: string) => cfg.topics.find((tp) => tp.id === id)?.name ?? id;
+    const cardLabel = (c: DealCard) => `${topicName(c.topic)}(力${c.power})`;
+    let s = mg.init({ skill: st.player.skills[order.kind]?.value ?? 0, seed: st.seed });
+    out(tpl(t.text.negoStart, { name: order.name }));
+    while (!s.done) {
+      out(
+        tpl(t.text.negoHand, {
+          cards: s.hand.map((c, i) => `${i + 1})${cardLabel(c)}`).join("  "),
+        }),
+      );
+      out(
+        tpl(t.text.negoPreview, {
+          preview: s.preview.length ? s.preview.map(cardLabel).join("、") : "―",
+        }),
+      );
+      out(tpl(t.text.negoHp, { player: s.playerHp, opponent: s.opponentHp }));
+      const line = await ask(t.text.negoPrompt);
+      if (line === null || line.trim().toLowerCase() === "q") return null;
+      const idx = Number.parseInt(line.trim(), 10) - 1;
+      if (!Number.isFinite(idx) || idx < 0 || idx >= s.hand.length) {
+        out(t.text.invalidInput);
+        continue;
+      }
+      s = mg.tick(s, { hand: idx });
+    }
+    const r = mg.result(s);
+    out(r.won ? t.text.negoWon : t.text.negoLost);
+    return { quality: r.quality, flags: r.flags };
+  };
+
   // ---- ループ ----
   for (;;) {
     outAll(statusLines(state, cfg, t));
@@ -274,6 +313,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         flags = r.flags;
       } else if (playManual && order.kind === "mining") {
         const r = await playMining(order, state);
+        if (r === null) return state;
+        quality = r.quality;
+        flags = r.flags;
+      } else if (playManual && order.kind === "eloquence") {
+        const r = await playNegotiation(order, state);
         if (r === null) return state;
         quality = r.quality;
         flags = r.flags;

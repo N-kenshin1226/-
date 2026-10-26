@@ -129,6 +129,35 @@
       "hintRadiusPerSkill": 0.04,
       "criticalFlag": "会心",
       "failFlag": "大崩れ"
+    },
+    "negotiation": {
+      "topics": [
+        {
+          "id": "price",
+          "name": "値段",
+          "beats": "quality"
+        },
+        {
+          "id": "deadline",
+          "name": "納期",
+          "beats": "price"
+        },
+        {
+          "id": "quality",
+          "name": "品質",
+          "beats": "deadline"
+        }
+      ],
+      "handSizeBase": 3,
+      "handSizePerSkill": 0.05,
+      "previewBase": 1,
+      "previewPerSkill": 0.03,
+      "counterFactor": 2,
+      "hp": 10,
+      "deckSize": 8,
+      "criticalFlag": "会心の口論",
+      "failFlag": "敗北",
+      "counterBlockFactor": 0.4
     }
   }
 }

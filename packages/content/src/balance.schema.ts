@@ -145,6 +145,31 @@ export const balanceSchema = z
               .strict(),
           })
           .strict(),
+        negotiation: z
+          .object({
+            topics: z
+              .array(
+                z
+                  .object({
+                    id: z.string().min(1),
+                    name: z.string().min(1),
+                    beats: z.string().min(1),
+                  })
+                  .strict(),
+              )
+              .min(2),
+            handSizeBase: z.number().int().positive(),
+            handSizePerSkill: z.number().nonnegative(),
+            previewBase: z.number().int().nonnegative(),
+            previewPerSkill: z.number().nonnegative(),
+            counterFactor: z.number().positive(),
+            counterBlockFactor: z.number().min(0).max(1),
+            hp: z.number().positive(),
+            deckSize: z.number().int().positive(),
+            criticalFlag: z.string().min(1),
+            failFlag: z.string().min(1),
+          })
+          .strict(),
         mining: z
           .object({
             width: z.number().int().positive(),
