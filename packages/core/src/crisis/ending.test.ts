@@ -69,7 +69,10 @@ const crisisCfg = (types: readonly CrisisTypeDef[]): CrisisConfig => ({
         } as unknown as CrisisConfig["involvement"]),
 });
 
-const CFG = crisisCfg(sample.crises);
+// 公開サンプルは複数の型を持つが、ここでは語り行を検証したい型（sample_mist）に絞る。
+// 型の抽選は重み付きなので、プールを1型にすることで結末・語り・場面idが決定的になる
+const MIST = sample.crises.find((c) => c.id === "crisis.sample_mist")!;
+const CFG = crisisCfg([MIST]);
 
 const TIME: TimeConfig = {
   actionsPerDay: 5,
@@ -151,10 +154,10 @@ describe("crisisEnding（終幕の素材）", () => {
   it("重い危機が全敗すると滅びの終幕になる（型は公開サンプル由来の重い派生）", () => {
     const heavy = crisisCfg([
       {
-        ...sample.crises[0]!,
+        ...MIST,
         id: "crisis.sample_mist_heavy",
         heavy: true,
-        finales: sample.crises[0]!.finales.map((f) => ({ ...f, required: 999999 })),
+        finales: MIST.finales.map((f) => ({ ...f, required: 999999 })),
       },
     ]);
     const s = endWorld("w04-ruin", heavy);
@@ -170,10 +173,10 @@ describe("crisisEnding（終幕の素材）", () => {
   it("語りrefの無い型には汎用の終幕が使われる", () => {
     const bare = crisisCfg([
       {
-        ...sample.crises[0]!,
+        ...MIST,
         id: "crisis.sample_mist_bare",
         narration: undefined,
-        finales: [{ ...sample.crises[0]!.finales[0]!, atBoundary: 1, required: 0 }],
+        finales: [{ ...MIST.finales[0]!, atBoundary: 1, required: 0 }],
       },
     ]);
     const s = endWorld("w04-bare", bare);
@@ -205,10 +208,10 @@ describe("crisisStageLine（新聞・噂の危機の記事）", () => {
     expect(crisisStageLine(s, CFG, TEXT, createRng("z"))).toBeNull();
     const heavy = crisisCfg([
       {
-        ...sample.crises[0]!,
+        ...MIST,
         id: "crisis.sample_mist_heavy2",
         heavy: true,
-        finales: sample.crises[0]!.finales.map((f) => ({ ...f, required: 999999 })),
+        finales: MIST.finales.map((f) => ({ ...f, required: 999999 })),
       },
     ]);
     const r = endWorld("w04-ruin2", heavy);
@@ -249,7 +252,7 @@ describe("crisisOfferSpeaker / crisisSceneHaze（打診の運び手・景色の�
     const s = freshWorld("w04-offer");
     const speaker = crisisOfferSpeaker(s, CFG, "finale.patrol");
     expect(speaker).not.toBeNull();
-    expect(sample.crises[0]!.factions.map((f) => f.name)).toContain(speaker);
+    expect(MIST.factions.map((f) => f.name)).toContain(speaker);
     expect(crisisOfferSpeaker(s, CFG, "finale.patrol")).toBe(speaker);
     expect(crisisOfferSpeaker(s, CFG, "finale.nonexistent")).toBeNull();
   });
@@ -264,10 +267,10 @@ describe("crisisOfferSpeaker / crisisSceneHaze（打診の運び手・景色の�
     expect(crisisSceneHaze(endWorld("w04-end"), CFG)).toBe(0);
     const heavy = crisisCfg([
       {
-        ...sample.crises[0]!,
+        ...MIST,
         id: "crisis.sample_mist_heavy3",
         heavy: true,
-        finales: sample.crises[0]!.finales.map((f) => ({ ...f, required: 999999 })),
+        finales: MIST.finales.map((f) => ({ ...f, required: 999999 })),
       },
     ]);
     expect(crisisSceneHaze(endWorld("w04-ruin3", heavy), heavy)).toBe(0.8);

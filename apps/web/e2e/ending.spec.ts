@@ -32,7 +32,11 @@ const saveNearEnding = (seed: string): string => {
     initialStatValue: 10,
     initialMoney: 100,
     crisis: {
-      types: (jsonAt("crises/sample.json") as { crises: unknown[] }).crises as never,
+      // 公開サンプルは複数の型を持つ。場面id・語りを固定したいので
+      // 抽選プールは霧の型に絞る（重み付き抽選の結果に左右されない）
+      types: (jsonAt("crises/sample.json") as { crises: { id: string }[] }).crises.filter(
+        (c) => c.id === "crisis.sample_mist",
+      ) as never,
       strongFields: crisisBalance.crisis.strongFields,
       weakFieldFactor: crisisBalance.crisis.weakFieldFactor,
     },
