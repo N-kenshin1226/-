@@ -274,6 +274,7 @@
     "recordsRivalLine": "　{rank}位　{name}{epithet}　名声{score}{you}",
     "recordsRivalEpithet": "《{epithet}》",
     "recordsRivalYou": "（あなた）",
-    "recordsRivalNote": "――名声は実績で伸びる。ライバルの噂は新聞にも載る。"
+    "recordsRivalNote": "――名声は実績で伸びる。ライバルの噂は新聞にも載る。",
+    "resetConfirm": "――この街での全ての記録を消します。よろしいですか"
   }
 }

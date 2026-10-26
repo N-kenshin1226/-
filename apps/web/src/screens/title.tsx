@@ -1,4 +1,7 @@
-/** 新規開始（タイトル）画面と運命の選択UI（X-2 で App.tsx から分離） */
+/**
+ * タイトル画面（UI-01）：夜明け前の街の情景にロゴ、運命（傾向・誓約）と出自を
+ * 一本のコマンド列で選ぶ。Enter で確定、誓約は Enter で重ね掛けする
+ */
 import {
   loadChronicle,
   originList,
@@ -8,61 +11,61 @@ import {
   vowList,
   type FateChoice,
 } from "../game.js";
+import {
+  CommandMenu,
+  HintBar,
+  Plate,
+  SceneBackground,
+  WorldFrame,
+  pos,
+  type MenuEntry,
+} from "../ui.js";
 import { theme } from "../theme.js";
-import { Btn, CardTitle, css } from "../ui.js";
 
-/**
- * 運命の傾向（T-45）と誓約（T-46）の選択 UI（06 §3C）。
- * 新規開始画面・転生画面で共通。ルールは core、ここでは選んだ値を渡すだけ
- */
-export function FatePickers({
-  fate,
-  setFate,
-}: {
-  fate: FateChoice;
-  setFate: (f: FateChoice) => void;
-}) {
+const W = theme.colors.world;
+
+/** 運命の傾向（T-45）の項目（誓約は vowEntries で別に作る） */
+export function tendencyEntries(fate: FateChoice, setFate: (f: FateChoice) => void): MenuEntry[] {
   const tendency = fate.tendency ?? "calm";
-  const pickedVows = fate.vows ?? [];
-  return (
-    <>
-      <CardTitle>{t.text.tendencyPick}</CardTitle>
-      <div data-testid="fate-tendency">
-        {tendencyIds.map((id) => (
-          <Btn
-            key={id}
-            testId={`tendency-${id}`}
-            sel={tendency === id}
-            onClick={() => setFate({ ...fate, tendency: id })}
-          >
-            {t.display.tendencyNames[id] ?? id}
-            <span style={css.dim}> ― {t.display.tendencyDescs[id] ?? ""}</span>
-          </Btn>
-        ))}
-      </div>
-      <CardTitle>{t.text.vowPick}</CardTitle>
-      <div data-testid="fate-vows">
-        {vowList.map((v) => (
-          <Btn
-            key={v.id}
-            testId={`vow-${v.id}`}
-            sel={pickedVows.includes(v.id)}
-            onClick={() =>
-              setFate({
-                ...fate,
-                vows: pickedVows.includes(v.id)
-                  ? pickedVows.filter((x) => x !== v.id)
-                  : [...pickedVows, v.id],
-              })
-            }
-          >
-            {v.name}
-            <span style={css.dim}> ― {v.desc}</span>
-          </Btn>
-        ))}
-      </div>
-    </>
-  );
+  return [
+    { kind: "header", text: "運命の傾向 ― この世の気配" },
+    ...tendencyIds.map((id) => ({
+      id: `tendency-${id}`,
+      label: t.display.tendencyNames[id] ?? id,
+      sub: tendency === id ? "◆" : "",
+      onPick: () => setFate({ ...fate, tendency: id }),
+    })),
+  ];
+}
+
+/** 誓約（T-46）の項目。Enter で◆を重ね掛けする */
+export function vowEntries(
+  fate: FateChoice,
+  setFate: (f: FateChoice) => void,
+  prefix = "vow",
+): MenuEntry[] {
+  const picked = fate.vows ?? [];
+  const toggle = (id: string) =>
+    setFate({
+      ...fate,
+      vows: picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id],
+    });
+  return [
+    { kind: "header", text: "誓約 ― 自ら課す縛り" },
+    ...vowList.map((v) => ({
+      id: `${prefix}-${v.id}`,
+      label: v.name,
+      sub: (
+        <>
+          <span style={{ color: theme.colors.world.dim, fontSize: 11, marginRight: 8 }}>
+            {v.desc}
+          </span>
+          {picked.includes(v.id) ? "◆" : ""}
+        </>
+      ),
+      onPick: () => toggle(v.id),
+    })),
+  ];
 }
 
 /** 新規開始画面：年代記の頁数・運命の選択・出自の選択（元 App の !state 分岐） */
@@ -77,42 +80,80 @@ export function TitleScreen({
 }) {
   // 年代記はセーブとは別領域に残る（T-38。新しい周の始まりでも見える）
   const lives = loadChronicle().lives.length;
+  const entries: MenuEntry[] = [
+    ...tendencyEntries(fate, setFate),
+    { kind: "divider" },
+    ...vowEntries(fate, setFate),
+    { kind: "divider" },
+    { kind: "header", text: "出自 ― あなたは何者だったか" },
+    ...originList.map((o) => ({
+      id: `origin-${o.id.replace("origin.", "")}`,
+      label: o.name,
+      sub: o.desc,
+      onPick: () => startNew(o.id),
+    })),
+  ];
   return (
-    <main style={css.app} data-testid="app">
-      <h1
-        style={{
-          color: theme.colors.navy,
-          fontSize: 44,
-          fontWeight: 900,
-          letterSpacing: "0.12em",
-          margin: "18px 0 6px",
-          textShadow: "0 2px 0 rgba(44,58,94,0.15)",
-        }}
-      >
-        TRACE
-      </h1>
-      <div style={{ ...css.panel, ...css.panelHero }} className="pop-in">
-        <p style={{ margin: "0 0 6px" }}>{t.text.intro}</p>
+    <div data-testid="app" className="scene">
+      <SceneBackground kind="night" />
+      {/* ロゴ：世界の名（Cinzel・大きく・字間広め） */}
+      <div style={{ ...pos({ left: 0, right: 0, top: 74 }), textAlign: "center" }}>
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: theme.font.en,
+            fontWeight: 700,
+            fontSize: 74,
+            letterSpacing: "0.34em",
+            color: W.hi,
+            textShadow: `0 0 34px rgba(232,199,127,.4), 0 3px 0 ${theme.colors.world.frameInner}`,
+            paddingLeft: "0.34em",
+          }}
+        >
+          TRACE
+        </h1>
+        <p
+          style={{
+            margin: "10px 0 0",
+            fontFamily: theme.font.mincho,
+            fontSize: 15,
+            color: W.dim,
+            letterSpacing: "0.2em",
+          }}
+        >
+          {t.text.intro}
+        </p>
         {lives > 0 && (
-          <p style={{ ...css.sys, margin: 0 }}>{tpl(t.text.chronicleLives, { count: lives })}</p>
+          <p
+            style={{
+              margin: "8px 0 0",
+              fontFamily: theme.font.sys,
+              fontSize: 12,
+              color: W.faint,
+            }}
+          >
+            {tpl(t.text.chronicleLives, { count: lives })}
+          </p>
         )}
       </div>
-      <section style={css.panel}>
-        <FatePickers fate={fate} setFate={setFate} />
-        <CardTitle>{t.text.originPick}</CardTitle>
-        {originList.map((o) => (
-          <div key={o.id} style={{ margin: "6px 0" }}>
-            <Btn
-              primary
-              testId={`origin-${o.id.replace("origin.", "")}`}
-              onClick={() => startNew(o.id)}
-            >
-              {o.name}
-              <span style={{ ...css.dim, fontWeight: 500 }}> ― {o.desc}</span>
-            </Btn>
-          </div>
-        ))}
-      </section>
-    </main>
+      {/* 運命と出自の選択窓 */}
+      <WorldFrame
+        style={{
+          ...pos({ left: 380, top: 236, width: 520, height: 416 }),
+          padding: "16px 6px 12px",
+        }}
+      >
+        <div className="scroll" style={{ height: "100%", overflowY: "auto", paddingRight: 4 }}>
+          <CommandMenu entries={entries} />
+        </div>
+      </WorldFrame>
+      <Plate style={pos({ left: 380, top: 214 })}>新しい生</Plate>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+        ]}
+      />
+    </div>
   );
 }

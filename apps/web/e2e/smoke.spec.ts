@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test("トップ画面に TRACE と表示される", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "TRACE" })).toBeVisible();
+  await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-home.png", fullPage: true });
 });
 
@@ -13,12 +14,15 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
   // 1日目：メニュー→鍛錬→仕事→寝る
   await expect(page.getByTestId("status")).toContainText("所持金");
   await expect(page.getByTestId("menu-train")).toBeVisible();
+  await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-menu.png", fullPage: true });
 
   await page.getByTestId("menu-train").click();
   await page.getByTestId("skill-smithing").click();
   await page.getByTestId("diff-10").click();
   await expect(page.getByTestId("log")).toContainText("未定着");
+  // 難度を選んだあとは「選び直す」で技能一覧へ戻り、そこから街へ戻る
+  await page.getByRole("button", { name: "選び直す" }).click();
   await page.getByRole("button", { name: "戻る" }).click();
 
   await page.getByTestId("menu-work").click();
@@ -28,8 +32,11 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
 
   await page.getByTestId("menu-sleep").click();
   await page.getByTestId("inn-cheap").click();
+  await expect(page.getByTestId("screen-wake")).toBeVisible();
   await expect(page.getByTestId("log")).toContainText("起床");
+  await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-wake.png", fullPage: true });
+  await page.getByTestId("wake-done").click();
 
   // 2日目：行動がリセットされている（寝ると翌日になる）
   await expect(page.getByTestId("status")).toContainText("残り行動 5/5");
@@ -51,6 +58,7 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
   // 3日目まで進める（安宿で寝る）
   await page.getByTestId("menu-sleep").click();
   await page.getByTestId("inn-cheap").click();
+  await page.getByTestId("wake-done").click();
   await expect(page.getByTestId("status")).toContainText("3日");
 });
 
@@ -90,6 +98,7 @@ test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）
   // 街の記録に深層の自己ベストが残る（counters 由来の派生表示）
   await page.getByTestId("menu-records").click();
   await expect(page.getByTestId("screen-records")).toContainText("深層：自己ベスト 第1層");
+  await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-abyss.png", fullPage: true });
 });
 
@@ -100,6 +109,7 @@ test("師匠画面が開ける（T-27。初期状態では入門条件未達）"
   await expect(page.getByTestId("screen-mentor")).toBeVisible();
   await expect(page.getByTestId("mentor-mentor.garo")).toContainText("ガロ");
   await expect(page.getByTestId("screen-mentor")).toContainText("まだ見込みなし");
+  await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-mentor.png", fullPage: true });
   await page.getByRole("button", { name: "戻る" }).click();
 });

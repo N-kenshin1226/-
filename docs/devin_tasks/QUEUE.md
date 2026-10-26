@@ -6,7 +6,7 @@
 
 | ID | 依頼文 | 依存 | 状態 | 備考 |
 |---|---|---|---|---|
-| UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | todo | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
+| UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
 | T-01 | [T-01_scaffold.md](T-01_scaffold.md) | ― | done | |
 | T-02 | [T-02_rng.md](T-02_rng.md) | T-01 | done | |
 | T-03 | [T-03_time.md](T-03_time.md) | T-01 | done | |
@@ -50,12 +50,12 @@
 | T-33 | [T-33_voices.md](T-33_voices.md) | T-19b | done | voices.json（NPC3人×立場の口調差分） |
 | T-34 | [T-34_life_goals.md](T-34_life_goals.md) | T-19 | done | 人生目標15件（society.offerカウンタ・simReachable・sim到達性ゲート） |
 | T-35 | [T-35_effects.md](T-35_effects.md) | T-19, T-22 | done | 称号・職業の効果をgain/報酬/与ダメージへ接続（effect語彙） |
-| T-36 | [T-36_aging.md](T-36_aging.md) | T-03 | pending | 寿命・加齢（年齢帯で伸び変化・老いの兆候・老衰死） |
+| T-36 | [T-36_aging.md](T-36_aging.md) | T-03 | done | 寿命・加齢（年齢帯で伸び変化・老いの兆候・老衰死） |
 | T-37 | [T-37_biography.md](T-37_biography.md) | T-19c | done | 伝記の自動生成（biography リクエスト種別） |
-| T-38 | [T-38_chronicle.md](T-38_chronicle.md) | T-04 | pending | 年代記（別領域・別バージョンの蓄積） |
+| T-38 | [T-38_chronicle.md](T-38_chronicle.md) | T-04 | done | 年代記（別領域・別バージョンの蓄積） |
 | T-39 | [T-39_legacy.md](T-39_legacy.md) | T-25 | done | 継承3項目（素質補正・称号・遺物）→newGame |
-| T-40 | [T-40_reincarnation.md](T-40_reincarnation.md) | T-36〜T-39 | pending | 引退・転生フロー（伝記→年代記→継承→新シード） |
-| T-41 | [T-41_pinnacle.md](T-41_pinnacle.md) | T-19 | pending | 頂点ルート2本（条件鎖＋エンディング） |
+| T-40 | [T-40_reincarnation.md](T-40_reincarnation.md) | T-36〜T-39 | done | 引退・転生フロー（伝記→年代記→継承→新シード） |
+| T-41 | [T-41_pinnacle.md](T-41_pinnacle.md) | T-19 | done | 頂点ルート2本（条件鎖＋エンディング） |
 | T-42 | [T-42_legend.md](T-42_legend.md) | T-38, T-40 | done | 前世の伝説最小版（年代記に名・二つ名） |
 
 ## M4（06_endgame.md §3、継続的追加）

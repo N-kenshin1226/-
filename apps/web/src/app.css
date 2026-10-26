@@ -1,37 +1,9 @@
-/* ══ TRACE UI（デザイン原本：パワプロ風ポップを年代記の紙に写し替え）══
-   - 背景: 羊皮紙→白のグラデ（世界の記録＝紙のイメージ）
-   - 色の意味を固定: 黄=主行動（1画面1つ）/ 白=サブ / 緑=良い変化 / 赤=危険 / 金=特別・称号・ユニーク
-   - 形: 大きめ角丸・濃紺の太枠・沈む立体ボタン・丸ゴシック・本文最小14px */
+/* ══ TRACE UI（UI-01：docs/design/ のデザイン原本準拠）══
+   値はすべて theme.ts → --t-* CSS 変数経由（ここに色値を書かない）。
+   画面は 1280×720 固定キャンバス（Stage）に載り、スクロールはしない */
+
 :root {
-  /* 色 */
-  --bg0: #f4e3c0; /* 羊皮紙（ページ上部） */
-  --bg1: #faf3e0; /* 羊皮紙→白のグラデ下端 */
-  --panel: #fffdf4; /* 通常カード（紙） */
-  --panel2: #f7f0dc; /* カード内の薄い面 */
-  --ink: #2b2620;
-  --ink2: #6b5f4c;
-  --navy: #2c3a5e; /* 枠線・見出しの濃い色（墨に近い濃紺） */
-  --line: #e2d5b8;
-  --accent: #c9a227; /* TRACE の金（称号・強調） */
-  --accent-dk: #8a6d14;
-  --accent2: #ffc21c; /* 主行動の黄 */
-  --yellow-dk: #e8a400;
-  --good: #1f9d55;
-  --bad: #d23b3b;
-  --gold: #c9930a;
-  --muted: #6b5f4c;
-  /* 通知・能力ランク色（原本の S〜G 表） */
-  --rank-S: #f56ea5;
-  --rank-A: #f50fd7;
-  --rank-B: #ff1441;
-  --rank-C: #ffa500;
-  --rank-D: #c3d21e;
-  --rank-E: #9acd32;
-  --rank-F: #50a5d2;
-  --rank-G: #666666;
-  /* 影（立体ボタン） */
-  --btn-shadow: 0 3px 0 var(--navy), 0 5px 10px rgba(44, 58, 94, 0.22);
-  --btn-shadow-active: 0 1px 0 var(--navy), 0 2px 4px rgba(44, 58, 94, 0.2);
+  color-scheme: dark;
 }
 
 *,
@@ -40,177 +12,565 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  font-family:
-    "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Hiragino Sans",
-    "Yu Gothic", "Meiryo", "Helvetica Neue", Arial, sans-serif;
-  background:
-    radial-gradient(900px 260px at 50% -60px, #fff6dd 0%, transparent 70%),
-    linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 45%, #fffdf4 100%);
-  background-attachment: fixed;
-  color: var(--ink);
-  min-height: 100vh;
+  background: #000;
+  overflow: hidden;
+  font-family: var(--t-font-sys);
+  color: var(--t-world-text);
   font-size: 15px;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── ボタン（沈む立体。メイン＝黄・サブ＝白。選択中＝琥珀）── */
-.tbtn {
-  display: inline-block;
-  padding: 0.55rem 1.2rem;
-  margin: 4px 8px 4px 0;
-  border-radius: 999px;
-  border: 2.5px solid var(--navy);
-  background: linear-gradient(180deg, #ffffff, #f4eee0);
-  color: var(--navy);
-  font-family: inherit;
-  font-size: 0.92rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    transform 0.12s,
-    filter 0.12s,
-    box-shadow 0.12s;
-  box-shadow: var(--btn-shadow);
+button {
+  font: inherit;
 }
-.tbtn:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
+
+/* ── 1280×720 ステージ ── */
+.stage-viewport {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
 }
-.tbtn:active {
-  transform: translateY(2px);
-  box-shadow: var(--btn-shadow-active);
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+  transform-origin: center;
+  color: var(--t-world-text);
 }
-.tbtn.primary {
-  background: linear-gradient(180deg, var(--accent2), var(--yellow-dk));
-  color: var(--navy);
+.scene {
+  position: absolute;
+  inset: 0;
 }
-.tbtn.sel {
-  border-color: var(--accent-dk);
-  background: #fff3cf;
+
+/* ── 3種類の窓 ── */
+/* 世界の窓（金）：コマンド・会話・HUD */
+.frame {
+  position: relative;
+  background: linear-gradient(180deg, var(--t-world-bg-top), var(--t-world-bg-bottom));
+  border: 1px solid var(--t-world-edge);
+  box-shadow: var(--t-frame-world);
+  color: var(--t-world-text);
 }
-.tbtn.gold {
-  border-color: var(--gold);
-  background: linear-gradient(180deg, #fff8e0, #ffe9b0);
-  color: var(--accent-dk);
+/* 加護の窓（銀青）：ステータス・起床ログ・システムの声 */
+.win {
+  position: relative;
+  background: linear-gradient(180deg, var(--t-bless-bg-top), var(--t-bless-bg-bottom));
+  border: 1px solid var(--t-bless-edge);
+  box-shadow: var(--t-frame-bless);
+  color: var(--t-bless-text);
 }
-.tbtn.danger {
-  background: linear-gradient(180deg, #ff8a9a, var(--bad));
-  color: #fff;
-  border-color: #8c1f1f;
+/* 紙：新聞・手紙・書物・見聞録 */
+.paper {
+  position: relative;
+  background: var(--t-paper-bg);
+  color: var(--t-paper-text);
+  font-family: var(--t-font-mincho);
   box-shadow:
-    0 3px 0 #8c1f1f,
-    0 5px 10px rgba(140, 31, 31, 0.25);
-}
-.tbtn.danger:active {
-  box-shadow: 0 1px 0 #8c1f1f;
-}
-.tbtn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
-.tbtn.big {
-  padding: 0.8rem 2rem;
-  font-size: 1.05rem;
+    0 24px 50px var(--t-paper-shadow),
+    inset 0 0 60px var(--t-paper-scorch),
+    inset 0 0 0 1px var(--t-paper-scorch);
 }
 
-/* ── カードの3段階: hero（主役・1画面1つ）/ 通常 / inset（補助の薄い面）── */
-.card-title {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: var(--navy);
-  margin: 0 0 0.6rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 2px solid var(--line);
+/* 角飾り（菱形=世界／円=加護） */
+.cnr {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  color: var(--t-world-light);
+}
+.win > .cnr {
+  width: 30px;
+  height: 30px;
+  color: var(--t-bless-light);
+}
+.cnr.tl {
+  top: -7px;
+  left: -7px;
+}
+.cnr.tr {
+  top: -7px;
+  right: -7px;
+  transform: scaleX(-1);
+}
+.cnr.bl {
+  bottom: -7px;
+  left: -7px;
+  transform: scaleY(-1);
+}
+.cnr.br {
+  bottom: -7px;
+  right: -7px;
+  transform: scale(-1, -1);
+}
+.win > .cnr.tl {
+  top: -8px;
+  left: -8px;
+}
+.win > .cnr.tr {
+  top: -8px;
+  right: -8px;
+}
+.win > .cnr.bl {
+  bottom: -8px;
+  left: -8px;
+}
+.win > .cnr.br {
+  bottom: -8px;
+  right: -8px;
+}
+
+/* ── コマンド（↑↓・Enter・マウス）── */
+.cmd {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  letter-spacing: 0.02em;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px 0 30px;
+  background: transparent;
+  border: 0;
+  color: var(--t-world-text);
+  font-family: var(--t-font-mincho);
+  font-size: 19px;
+  text-align: left;
+  position: relative;
+  cursor: pointer;
 }
-.card-title::before {
+.cmd.on {
+  background: linear-gradient(90deg, rgba(201, 164, 92, 0.28), rgba(201, 164, 92, 0));
+  color: var(--t-world-hi);
+}
+.cmd.on::before {
   content: "";
-  width: 0.55rem;
-  height: 1.05rem;
-  border-radius: 4px;
-  background: linear-gradient(180deg, var(--accent2), var(--yellow-dk));
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
-  flex-shrink: 0;
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  margin-top: -6px;
+  border-left: 9px solid var(--t-world-light);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
 }
-.card-title.gold::before {
-  background: linear-gradient(180deg, #ffe082, var(--gold));
+.cmd.danger {
+  color: var(--t-warn);
 }
-.card-title.red::before {
-  background: linear-gradient(180deg, #ff8a9a, var(--bad));
+.cmd.danger.on::before {
+  border-left-color: var(--t-warn);
 }
-.card-title.green::before {
-  background: linear-gradient(180deg, #4ade96, var(--good));
+/* 主行動と特別な項目は金（色の意味づけ：金＝主行動・特別） */
+.cmd.primary,
+.cmd.gold {
+  color: var(--t-special);
+}
+.cmd.b.primary,
+.cmd.b.gold {
+  color: #e8d9a8;
+}
+.cmd.off,
+.cmd:disabled {
+  color: #6f6858;
+  cursor: default;
+}
+.cmd:disabled .cmd-sub {
+  color: #5a5444;
+}
+.cmd-sub {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--t-world-dim);
+}
+.cmd.on > .cmd-sub {
+  color: var(--t-world-light);
+}
+/* 加護の窓の中の行（ステータス選択など） */
+.cmd.b {
+  color: var(--t-bless-text);
+}
+.cmd.b.on {
+  background: linear-gradient(90deg, rgba(143, 224, 239, 0.18), rgba(143, 224, 239, 0));
+  color: var(--t-bless-hi);
+}
+.cmd.b.on::before {
+  border-left-color: var(--t-bless-glow);
+}
+.cmd.b .cmd-sub {
+  color: var(--t-bless-dim);
+}
+/* 紙の上の行（本・記録の目次）：墨色 */
+.cmd.p {
+  color: var(--t-paper-text);
+  font-size: 17px;
+}
+.cmd.p.on {
+  background: linear-gradient(90deg, rgba(122, 60, 28, 0.2), rgba(122, 60, 28, 0));
+  color: var(--t-paper-head);
+}
+.cmd.p.on::before {
+  border-left-color: #7a3c1c;
+}
+.cmd.p .cmd-sub {
+  color: var(--t-paper-dim);
+}
+.cmd.p:disabled {
+  color: #9a8a72;
 }
 
-/* ── 採掘・鑑定の盤面セル ── */
+/* 欧文の小見出し（ACTION など） */
+.menu-head {
+  margin: 0 0 6px 16px;
+  font-family: var(--t-font-en);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--t-world-faint);
+}
+/* 区切りの細い帯 */
+.divider {
+  height: 1px;
+  margin: 8px 14px;
+  background: linear-gradient(90deg, transparent, #8c7034, transparent);
+}
+.divider.b {
+  background: linear-gradient(90deg, transparent, var(--t-bless-frame), transparent);
+}
+.divider.center {
+  margin: 0;
+  background: linear-gradient(90deg, transparent, var(--t-world-light), transparent);
+}
+
+/* ── 名札プレート（場所・話し手）── */
+.plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 18px;
+  background: linear-gradient(180deg, #3a2c14, #22190b);
+  border: 1px solid var(--t-world-frame);
+  box-shadow: inset 0 0 0 1px #120d05;
+  color: var(--t-world-hi);
+  font-family: var(--t-font-mincho);
+  letter-spacing: 0.18em;
+}
+
+/* ── キー表示と操作ガイド ── */
+.key {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 6px;
+  border: 1px solid #8c7a55;
+  border-radius: 3px;
+  background: #1a1712;
+  color: var(--t-world-hi);
+  font-family: var(--t-font-en);
+  font-size: 12px;
+  text-align: center;
+}
+.key.b {
+  border-color: #4f8796;
+  background: #0b1820;
+  color: #cdeff6;
+}
+.hints {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 13px;
+  color: #cfc2a2;
+}
+.hints .key {
+  margin-right: 6px;
+}
+
+/* ── ゲージ ── */
+/* 疲労の区切りゲージ（世界側） */
+.cell {
+  width: 14px;
+  height: 8px;
+  background: var(--t-cell-off);
+  border: 1px solid var(--t-cell-edge);
+  display: inline-block;
+}
+.cell.f {
+  background: var(--t-cell-on);
+  border-color: var(--t-cell-on-edge);
+}
+/* 起床ログの区切りゲージ（加護側：f=定着前 g=伸び分） */
+.seg {
+  width: 9px;
+  height: 7px;
+  background: var(--t-bless-cell-off);
+  border: 1px solid var(--t-bless-cell-edge);
+  display: inline-block;
+}
+.seg.f {
+  background: var(--t-bless-glow);
+  border-color: #c9f3fb;
+}
+.seg.g {
+  background: var(--t-grow);
+  border-color: #ffe2a3;
+}
+/* 熟練の細いバー（未定着分は半透明で重ねる） */
+.skbar {
+  height: 6px;
+  background: var(--t-bar-off);
+  border: 1px solid var(--t-cell-edge);
+  position: relative;
+}
+.skbar > .v {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #f3d48e, #b8873a);
+}
+.skbar > .p {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(243, 212, 142, 0.35);
+}
+.skbar.b {
+  background: var(--t-bless-cell-off);
+  border-color: var(--t-bless-cell-edge);
+}
+.skbar.b > .v {
+  background: var(--t-bless-glow);
+}
+.skbar.b > .p {
+  background: rgba(143, 224, 239, 0.3);
+}
+
+/* ── 追い風・逆風の札 ── */
+.windchip {
+  padding: 4px 12px;
+  font-family: var(--t-font-mincho);
+  font-size: 14px;
+  border: 1px solid;
+}
+.windchip.tail {
+  background: var(--t-chip-tail-bg);
+  border-color: var(--t-world-frame);
+  color: var(--t-world-hi);
+}
+.windchip.head {
+  background: var(--t-chip-head-bg);
+  border-color: var(--t-chip-head-edge);
+  color: var(--t-warn);
+}
+/* 状態チップ（ステータス行の右側） */
+.stchip {
+  padding: 3px 10px;
+  font-size: 12px;
+  border: 1px solid var(--t-bless-edge);
+  color: var(--t-bless-dim);
+  white-space: nowrap;
+}
+.stchip.gold {
+  border-color: var(--t-world-frame);
+  color: var(--t-grow);
+}
+.stchip.warn {
+  border-color: var(--t-chip-head-edge);
+  color: var(--t-warn);
+}
+
+/* ── ランクの紋章（盾形＋頭文字）── */
+.crest {
+  width: 40px;
+  height: 44px;
+  flex: none;
+}
+
+/* ── タブ（ステータス画面）── */
+.tab {
+  min-height: 40px;
+  padding: 0 22px;
+  border: 1px solid var(--t-bless-edge);
+  border-bottom: 0;
+  background: #0a1820;
+  color: var(--t-bless-dim);
+  font-family: var(--t-font-mincho);
+  font-size: 16px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+}
+.tab.on {
+  background: linear-gradient(180deg, #1b4452, #0c2230);
+  color: var(--t-bless-hi);
+  border-color: var(--t-bless-frame);
+}
+
+/* ── ステータスの技能行 ── */
+.srow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 92px 130px;
+  align-items: center;
+  gap: 14px;
+  height: 54px;
+  padding: 0 16px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #132a33;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.srow.on {
+  background: linear-gradient(90deg, rgba(143, 224, 239, 0.18), rgba(143, 224, 239, 0));
+  box-shadow: inset 3px 0 0 var(--t-bless-glow);
+}
+
+/* ── 盤面ミニゲームのセル（暗い世界の窓の中）── */
 .board-cell {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  border: 2px solid var(--navy);
-  background: linear-gradient(180deg, #ffffff, #eee6cf);
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 800;
+  border: 1px solid var(--t-world-edge);
+  background: #16141f;
+  color: var(--t-world-text);
+  font-family: var(--t-font-mincho);
+  font-size: 16px;
   cursor: pointer;
-  transition:
-    transform 0.1s,
-    filter 0.1s;
 }
 .board-cell:not(:disabled):hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
+  border-color: var(--t-world-light);
 }
 .board-cell.revealed {
-  background: var(--panel2);
-  border-color: var(--line);
-  box-shadow: inset 0 2px 4px rgba(44, 58, 94, 0.12);
+  background: var(--t-bar-off);
+  border-color: var(--t-cell-edge);
   cursor: default;
 }
 
-/* ── 画面切り替え・ポップの動き ── */
+/* ── 汎用の小ボタン（枠付きチップ型。大きな面倒見のよい帯は .cmd が担う）── */
+.chipbtn {
+  display: inline-block;
+  padding: 6px 16px;
+  border: 1px solid var(--t-world-edge);
+  background: rgba(24, 24, 38, 0.9);
+  color: var(--t-world-text);
+  font-family: var(--t-font-mincho);
+  font-size: 14px;
+  cursor: pointer;
+}
+.chipbtn:hover {
+  border-color: var(--t-world-light);
+}
+.chipbtn.on {
+  background: linear-gradient(90deg, rgba(201, 164, 92, 0.3), rgba(201, 164, 92, 0.1));
+  color: var(--t-world-hi);
+  border-color: var(--t-world-light);
+}
+.chipbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.chipbtn.danger {
+  border-color: var(--t-chip-head-edge);
+  color: var(--t-warn);
+}
+
+/* ── 世界初の通知（S）── */
+.notice-band {
+  background: linear-gradient(
+    90deg,
+    rgba(4, 5, 10, 0),
+    rgba(4, 5, 10, 0.88) 18%,
+    rgba(4, 5, 10, 0.88) 82%,
+    rgba(4, 5, 10, 0)
+  );
+}
+.notice-line {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--t-world-light), transparent);
+}
+.rw {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(20, 16, 8, 0.85);
+  border: 1px solid #8c7034;
+}
+
+/* ── スクロール（窓の内側に閉じ込める）── */
+.scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--t-world-edge) transparent;
+}
+.scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--t-world-edge);
+}
+.scroll.b::-webkit-scrollbar-thumb {
+  background: var(--t-bless-edge);
+}
+
+/* ── 画面切替の静かなフェード ── */
 @keyframes fadeSlide {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 .screen-fade {
-  animation: fadeSlide 0.18s ease-out;
+  animation: fadeSlide 0.25s ease-out;
 }
-@keyframes popIn {
+@keyframes noticeIn {
   0% {
-    transform: scale(0.9);
     opacity: 0;
+    transform: scaleY(0.6);
   }
-  70% {
-    transform: scale(1.04);
-  }
-  100% {
-    transform: scale(1);
+  60% {
     opacity: 1;
   }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
 }
-.pop-in {
-  animation: popIn 0.25s ease-out;
+.notice-in {
+  animation: noticeIn 0.4s ease-out;
+}
+@keyframes glowPulse {
+  0%,
+  100% {
+    text-shadow:
+      0 0 24px rgba(232, 199, 127, 0.55),
+      0 2px 0 #3a2a0e;
+  }
+  50% {
+    text-shadow:
+      0 0 40px rgba(232, 199, 127, 0.9),
+      0 2px 0 #3a2a0e;
+  }
+}
+.glow-pulse {
+  animation: glowPulse 2.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .screen-fade,
-  .pop-in {
+  .notice-in,
+  .glow-pulse {
     animation: none;
-  }
-  .tbtn,
-  .board-cell {
-    transition: none;
   }
 }

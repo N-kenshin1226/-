@@ -11,6 +11,8 @@ import {
   canAct,
   canFightUnique,
   createRng,
+  describe,
+  effectiveGraceDays,
   endRun,
   floorEnemy,
   killFloor,
@@ -32,6 +34,7 @@ import {
   reachedPinnacles,
   recordLife,
   rivalsOf,
+  rustedValue,
   serialize,
   serializeChronicle,
   simpleJudgmentQuality,
@@ -70,7 +73,9 @@ import {
   type TendencyId,
   type TimingInput,
   type TimingState,
+  type WindDirection,
   type Work,
+  type WakeReport,
 } from "@trace/core";
 import {
   atoms,
@@ -90,6 +95,7 @@ import {
   society,
   tailwinds,
   titles,
+  voices,
   vows,
   type EnemyJson,
   type Order,
@@ -841,3 +847,324 @@ export function playCombatTurn(
 export { combatResult, telegraphLines, suggestGoals, sleepQuality };
 export type { BoardState, CombatState, DealState, TimingState };
 export type { Order };
+
+/* ======== UI-01: 画面表示用ヘルパー（読み出しと整形だけ。ルールはcore） ======== */
+
+/** 日付の表示ラベル（「第2年 芽吹きの季 11日目」相当） */
+export function dateLabel(state: GameState): string {
+  const d = describe(state.time, cfg.time);
+  const season = t.display.seasonNames[d.season] ?? "";
+  return `${d.year + 1}年目 ${season}${d.dayOfSeason + 1}日目`;
+}
+
+/** あなたへの風（新聞のサイド枠・メニューの追い風表示用） */
+export function windChips(state: GameState): { direction: WindDirection; label: string }[] {
+  return state.today.winds.map((w) => ({ direction: w.direction, label: w.label }));
+}
+
+/** 技能の状態チップ（ステータスの技能行）：風＞錆＞平常の優先度で1個 */
+export function skillChip(
+  state: GameState,
+  skillId: string,
+): { tone: "gold" | "warn" | "plain"; text: string } {
+  const wind = state.today.winds.find((w) => w.target.kind === "skill" && w.target.id === skillId);
+  if (wind) {
+    return {
+      tone: wind.direction === "tailwind" ? "gold" : "warn",
+      text: `${wind.direction === "tailwind" ? "▲" : "▼"}${wind.label}`,
+    };
+  }
+  const st = state.player.skills[skillId];
+  const rust = cfg.sleep?.rust;
+  if (!st || !rust) return { tone: "plain", text: "―" };
+  const total = Object.values(state.player.skills).reduce((a, s) => a + s.value, 0);
+  const idle = state.time.day - st.lastUsedDay;
+  const grace = effectiveGraceDays(total, rust);
+  if (idle > grace && rustedValue(st.value, st.peak, idle, total, rust) < st.value) {
+    return { tone: "warn", text: "錆びている" };
+  }
+  const left = grace - idle;
+  // 猶予が近い技能だけ警告を出す表示上のしきい値（ルールではなく見た目の閾値）
+  const RUST_SOON_DAYS = 3;
+  if (left <= RUST_SOON_DAYS && st.value > 0) return { tone: "plain", text: `錆まで${left}日` };
+  return { tone: "plain", text: "―" };
+}
+
+/** 行動 kind の表示名（新聞の「昨日の記録」欄用） */
+function deedLabel(kind: string, target?: string): string {
+  switch (kind) {
+    case "train":
+      return `${skills.skills.find((s) => s.id === target)?.name ?? target ?? ""}の鍛錬`;
+    case "work":
+      return "仕事";
+    case "combat":
+      return `${enemies.enemies.find((e) => e.id === target)?.name ?? "魔物"}との戦い`;
+    case "abyss":
+      return "深層への潜行";
+    case "read":
+      return "読書";
+    case "wait":
+      return "休息";
+    default:
+      return kind;
+  }
+}
+
+/** 朝刊（News 画面・起床画面の「新聞を見る」用）。材料は前日の記録 */
+export interface NewsPack {
+  /** 何日目の出来事を載せた紙面か（-1 なら前日なし＝創刊前） */
+  day: number;
+  /** 第N号（発行日＝今日） */
+  issueDay: number;
+  dateLabel: string;
+  /** 一面の見出し（narrate newspaper の先頭行以外。header は紙の題字に置き換わる） */
+  lead: string;
+  /** 三栏「昨日の記録」の事実リスト */
+  record: string[];
+  /** 二栏の続報・噂（事実＋勘違い混じり） */
+  rumors: string[];
+  /** 街の声（voices.json の住人） */
+  voices: { name: string; role: string; text: string }[];
+  winds: { direction: WindDirection; label: string }[];
+  /** 号外級か（世界初・強個体・S級の出来事があった日） */
+  extra: boolean;
+}
+
+export function newsPack(state: GameState, events: readonly ActionEvent[] = []): NewsPack {
+  // 紙面は「今朝届いた朝刊」＝昨日までの記録を載せる（起床直後＝新しい日の朝）
+  const day = state.time.day - 1;
+  const rng = (tag: string) => createRng(`${state.seed}:news:${day}:${tag}`);
+  const deeds = state.actionLog.filter((a) => a.day === day).map((a) => a.kind);
+  const works = state.ledger
+    .filter((w) => w.day === day)
+    .map((w) => ({ name: workName(w), quality: w.quality, tier: w.tier }));
+  const deaths = state.counters["death.count"] ?? 0;
+  const lastLife = loadChronicle().lives.at(-1);
+  const prevLife =
+    lastLife === undefined
+      ? undefined
+      : {
+          name: lastLife.name,
+          epithet:
+            lastLife.epithet === undefined
+              ? undefined
+              : (titles.titles.find((x) => x.id === lastLife.epithet)?.name ?? lastLife.epithet),
+        };
+  const topRival = rivalsOf(state, rivals, balance.rivals).entries.find((e) => !e.isPlayer);
+  const req = {
+    deeds,
+    works,
+    deaths,
+    ...(prevLife !== undefined ? { prevLife } : {}),
+    ...(topRival !== undefined ? { rival: topRival } : {}),
+  };
+  const lead = narrator.narrate({ scene: "newspaper", ...req }, rng("lead"))[1] ?? "";
+  // 続報欄：別の言い回しをもう2本（同じ行が出たら1本減らす）
+  const rumors = [
+    ...narrator.narrate({ scene: "newspaper", ...req }, rng("r1")),
+    ...narrator.narrate({ scene: "newspaper", ...req }, rng("r2")),
+  ]
+    .slice(1)
+    .concat(narrator.narrate({ scene: "newspaper", ...req }, rng("r3"))[1] ?? "")
+    .filter((x, i, a) => x !== "" && x !== lead && a.indexOf(x) === i)
+    .slice(0, 2);
+
+  // 昨日の記録：行動種別ごとにまとめる
+  const grouped = new Map<string, number>();
+  for (const a of state.actionLog.filter((x) => x.day === day)) {
+    const key = deedLabel(a.kind, a.target);
+    grouped.set(key, (grouped.get(key) ?? 0) + 1);
+  }
+  const recordLines = [...grouped.entries()].map(([label, n]) =>
+    n > 1 ? `${label} ×${n}` : label,
+  );
+  for (const w of works) recordLines.push(`《${w.name}》を仕上げた`);
+
+  // 街の声：住人を2〜3人選び、話題があれば respect、無ければ greet
+  const deed = deeds.includes("combat") ? "狩り" : deeds.includes("work") ? "仕事" : undefined;
+  const npcRng = rng("npc");
+  const rest = [...voices.npcs];
+  const pool = [0, 1, 2].flatMap(() =>
+    rest.length > 0 ? [rest.splice(npcRng.int(0, rest.length - 1), 1)[0]!] : [],
+  );
+  const voiceLines = pool.map((npc) => {
+    const lr = npc.lines;
+    const standing = state.society.standing;
+    const by = lr.byStanding?.[standing];
+    const text =
+      deed !== undefined
+        ? tpl(
+            (by?.respect ?? lr.respect)[
+              rng(`v:${npc.id}`).int(0, (by?.respect ?? lr.respect).length - 1)
+            ]!,
+            {
+              name: state.player.name,
+              deed,
+            },
+          )
+        : tpl(
+            (by?.greet ?? lr.greet)[rng(`v:${npc.id}`).int(0, (by?.greet ?? lr.greet).length - 1)]!,
+            {
+              name: state.player.name,
+            },
+          );
+    return { name: npc.name, role: npc.role, text };
+  });
+
+  // 号外級：この朝に届く号外＝世界初の記録か強個体討伐が昨夜までに刻まれた日
+  const extra = events.some(
+    (e) =>
+      (e.type === "titleGained" && !e.suppressed && e.rank === "S") ||
+      e.type === "uniqueDefeated" ||
+      (e.type === "pinnacleStageReached" && e.rank === "S"),
+  );
+  return {
+    day,
+    issueDay: state.time.day,
+    dateLabel: dateLabel(state),
+    lead,
+    record: recordLines,
+    rumors,
+    voices: voiceLines,
+    winds: windChips(state),
+    extra,
+  };
+}
+
+/** メイン画面の会話窓：その日の街の住人の一言（日替わり・決定的） */
+export function townVoice(state: GameState): { name: string; role: string; text: string } {
+  const rng = createRng(`${state.seed}:voice:${state.time.day}`);
+  const deeds = state.actionLog.filter((a) => a.day === state.time.day - 1).map((a) => a.kind);
+  const deed = deeds.includes("combat")
+    ? "狩り"
+    : deeds.includes("work")
+      ? "仕事"
+      : deeds.includes("train")
+        ? "鍛錬"
+        : undefined;
+  const npc = rng.pick([...voices.npcs]);
+  const by = npc.lines.byStanding?.[state.society.standing];
+  const lines =
+    deed !== undefined ? (by?.respect ?? npc.lines.respect) : (by?.greet ?? npc.lines.greet);
+  const text = tpl(lines[rng.int(0, lines.length - 1)]!, {
+    name: state.player.name,
+    deed: deed ?? "",
+  });
+  return { name: npc.name, role: npc.role, text };
+}
+
+/** 下帯の「噂」（新聞の rumor 系を1本、日替わり・決定的） */
+export function townRumor(state: GameState): string {
+  const rng = createRng(`${state.seed}:rumor:${state.time.day}`);
+  const deeds = state.actionLog.filter((a) => a.day === state.time.day - 1).map((a) => a.kind);
+  const line = narrator.narrate({ scene: "newspaper", deeds, works: [], deaths: 0 }, rng)[1];
+  return `噂 ―「${line ?? "今日は静かだ"}」`;
+}
+
+/** 通知（UI-01：Notice見本）。Sは全画面・Aは光る窓。引数は1回の step のイベント列 */
+export interface Notice {
+  rank: "S" | "A";
+  /** 見出し（称号名など） */
+  title: string;
+  /** 副題 */
+  sub: string;
+  /** 報酬の行（称号・作品・見聞の断片など） */
+  rewards: { label: string; name: string; sub?: string }[];
+}
+
+export function noticesOf(events: ActionEvent[]): Notice[] {
+  const out: Notice[] = [];
+  for (const e of events) {
+    if (e.type === "titleGained" && !e.suppressed && e.rank === "S") {
+      const def = titles.titles.find((x) => x.id === e.id);
+      const rewards: Notice["rewards"] = [{ label: "称号", name: `《${def?.name ?? e.id}》` }];
+      // 同じ出来事で世界に刻まれたものを報酬欄に並べる
+      const facts = events.filter((x) => x.type === "factLearned").length;
+      if (facts > 0) rewards.push({ label: "見聞録", name: `新しい断片 ${facts}` });
+      const work = events.find(
+        (x): x is Extract<ActionEvent, { type: "workRecorded" }> => x.type === "workRecorded",
+      );
+      if (work) {
+        rewards.push({
+          label: "作品",
+          name: `《${workName(work.work)}》`,
+          sub: `品質${Math.round(work.work.quality)}`,
+        });
+      }
+      out.push({
+        rank: "S",
+        title: def?.name ?? e.id,
+        sub: "世界で初めての記録です",
+        rewards,
+      });
+    }
+    if (e.type === "uniqueDefeated") {
+      const name = enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId;
+      out.push({
+        rank: "A",
+        title: `《${name}》を討伐`,
+        sub: "強個体は図鑑に刻まれました",
+        rewards: [{ label: "図鑑", name: `《${name}》` }],
+      });
+    }
+    if (e.type === "pinnacleStageReached" && e.rank !== "B") {
+      const route = pinnacles.pinnacles.find((r) => r.id === e.route);
+      const stage = route?.stages.find((s) => s.id === e.stage);
+      out.push({
+        rank: e.rank === "S" ? "S" : "A",
+        title: stage?.name ?? e.stage,
+        sub: `${route?.name ?? e.route} ―― 頂点への段`,
+        rewards: [{ label: "頂点", name: `《${route?.name ?? e.route}》` }],
+      });
+    }
+    if (e.type === "goalAchieved") {
+      const name = society.lifeGoals.find((g) => g.id === e.id)?.name ?? e.id;
+      out.push({
+        rank: "A",
+        title: `人生目標《${name}》を達成`,
+        sub: "誓いは果たされました",
+        rewards: [{ label: "人生目標", name: `《${name}》` }],
+      });
+    }
+  }
+  return out;
+}
+
+/** 起床画面用の分解（WakeReport を見本の行構成に分ける） */
+export interface WakePack {
+  quality: string;
+  inn: string;
+  dinner: string;
+  /** 技能の変化行（名前・前→後・差分） */
+  skillLines: { name: string; from: number; to: number; delta: number }[];
+  statLines: { name: string; delta: number }[];
+  gifts: string[];
+  winds: { direction: WindDirection; label: string }[];
+  overwork: boolean;
+  restDay: boolean;
+  others: string[];
+}
+
+export function wakePack(report: WakeReport, events: ActionEvent[], atHome: boolean): WakePack {
+  return {
+    quality: qualityLabel(report.quality),
+    inn: atHome ? t.display.homeName : t.display.innNames[report.inn],
+    dinner: !atHome && report.dinner ? t.display.dinnerNames.with : t.display.dinnerNames.without,
+    skillLines: report.lines
+      .filter((l) => l.kind === "skill")
+      .map((l) => ({
+        name: skills.skills.find((s) => s.id === l.id)?.name ?? l.id,
+        from: l.from,
+        to: l.to,
+        delta: l.delta,
+      })),
+    statLines: report.lines
+      .filter((l) => l.kind === "stat")
+      .map((l) => ({ name: t.display.statNames[l.id] ?? l.id, delta: l.delta })),
+    gifts: report.surprises,
+    winds: report.tailwinds.map((x) => ({ direction: x.direction, label: x.label })),
+    overwork: report.overwork.active,
+    restDay: report.restDay,
+    others: eventLines(events),
+  };
+}

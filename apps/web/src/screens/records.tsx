@@ -1,4 +1,4 @@
-/** 記録・見聞系の画面：街の記録・年代記・見聞録（X-2 で App.tsx から分離） */
+/** 記録・見聞系の画面（UI-01：書かれた記録は「紙」の上に並べる） */
 import { canAct, createRng, rivalsOf, type GameState } from "@trace/core";
 import { balance, enemies, pinnacles, rivals, titles } from "@trace/content";
 import {
@@ -14,110 +14,163 @@ import {
   tpl,
   workName,
 } from "../game.js";
-import { Btn, CardTitle, css, type Act, type Screen } from "../ui.js";
+import {
+  CommandMenu,
+  HintBar,
+  Paper,
+  pos,
+  useHotkeys,
+  type Act,
+  type MenuEntry,
+  type Screen,
+} from "../ui.js";
 import { theme } from "../theme.js";
+
+const P = theme.colors.paper;
+
+/** 紙の節見出し（記録画面の章立て） */
+function PaperHead({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        margin: "18px 0 6px",
+        fontFamily: theme.font.mincho,
+        fontSize: 17,
+        fontWeight: 800,
+        color: P.head,
+        borderBottom: `1px solid ${P.line}`,
+        paddingBottom: 3,
+      }}
+    >
+      {children}
+    </p>
+  );
+}
 
 // ---- 街の記録 ----
 export function RecordsScreen({ state, back }: { state: GameState; back: () => void }) {
+  useHotkeys({ escape: back });
   return (
-    <section style={css.panel} data-testid="screen-records">
-      <CardTitle>{t.text.recordsHeader}</CardTitle>
-      <div>{tpl(t.text.recordsLedger, { count: state.ledger.length })}</div>
-      {state.ledger.length === 0 && <div style={css.dim}>{t.text.recordsLedgerEmpty}</div>}
-      {state.ledger.slice(-10).map((w, i) => (
-        <div key={w.id} style={css.dim}>
-          {tpl(t.text.recordsLedgerLine, {
-            i: i + 1,
-            name: skillList.find((s) => s.id === w.kind)?.name ?? w.kind,
-            quality: w.quality,
-            tier: w.tier,
-            value: w.marketValue,
-            day: w.day,
-          })}
-        </div>
-      ))}
-      <div style={{ marginTop: 8 }}>
-        {tpl(t.text.recordsTitles, {
-          titles:
-            state.titles
-              .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
-              .join("、") || "―",
-        })}
-      </div>
-      <div style={{ marginTop: 8 }}>
-        {tpl(t.text.recordsLore, {
-          facts: state.lore.facts.length,
-          conns: state.lore.connections.length,
-        })}
-      </div>
-      <div style={{ ...css.dim, marginTop: 4 }}>
-        {narrator
-          .narrate(
-            {
-              scene: "loreDigest",
+    <div data-testid="screen-records" className="scene">
+      <Paper
+        tilt={0.4}
+        style={{ ...pos({ left: 300, top: 60, width: 680, bottom: 60 }), padding: "24px 36px" }}
+      >
+        <p
+          style={{
+            margin: "0 0 4px",
+            textAlign: "center",
+            fontFamily: theme.font.mincho,
+            fontSize: 24,
+            fontWeight: 800,
+            letterSpacing: "0.24em",
+            color: P.head,
+          }}
+        >
+          {t.text.recordsHeader}
+        </p>
+        <div className="scroll" style={{ height: "88%", overflowY: "auto", fontSize: 15 }}>
+          <PaperHead>{tpl(t.text.recordsLedger, { count: state.ledger.length })}</PaperHead>
+          {state.ledger.length === 0 && (
+            <div style={{ color: P.dim }}>{t.text.recordsLedgerEmpty}</div>
+          )}
+          {state.ledger.slice(-10).map((w, i) => (
+            <div key={w.id} style={{ color: P.sub, padding: "2px 0" }}>
+              {tpl(t.text.recordsLedgerLine, {
+                i: i + 1,
+                name: skillList.find((s) => s.id === w.kind)?.name ?? w.kind,
+                quality: w.quality,
+                tier: w.tier,
+                value: w.marketValue,
+                day: w.day,
+              })}
+            </div>
+          ))}
+          <PaperHead>{t.text.recordsTitles.split("：")[0] ?? "称号"}</PaperHead>
+          <div style={{ color: P.text }}>
+            {state.titles
+              .map((id) => `《${titles.titles.find((x) => x.id === id)?.name ?? id}》`)
+              .join("　") || "――名付けられたものは、まだない。"}
+          </div>
+          <PaperHead>見聞</PaperHead>
+          <div style={{ color: P.sub }}>
+            {tpl(t.text.recordsLore, {
               facts: state.lore.facts.length,
-              connected: state.lore.connections.length,
-            },
-            createRng(`${state.seed}:loredigest`),
-          )
-          .join("")}
-      </div>
-      {/* ここまでの記録（T-37 伝記の途中経過プレビュー） */}
-      <div style={{ ...css.dim, marginTop: 12 }}>
-        {bioLines(state).map((l, i) => (
-          <div key={i}>{l}</div>
-        ))}
-      </div>
-      {/* 討伐図鑑（T-44）：kill.species.* / kill.unique.* カウンタから実績一覧 */}
-      <div style={{ marginTop: 12 }}>
-        <CardTitle>{t.text.recordsHunt}</CardTitle>
-      </div>
-      {enemies.enemies.map((e) => {
-        const kills = state.counters[`kill.species.${e.id}`] ?? 0;
-        const uniques = state.counters[`kill.unique.${e.id}`] ?? 0;
-        if (kills === 0) return null;
-        return (
-          <div key={e.id} style={css.dim}>
-            {tpl(t.text.recordsHuntLine, {
-              name: e.name,
-              kills,
-              unique: uniques > 0 ? tpl(t.text.recordsHuntUnique, { unique: uniques }) : "",
+              conns: state.lore.connections.length,
             })}
           </div>
-        );
-      })}
-      {/* 深層の自己ベスト（T-43）：abyss.best / abyss.runs カウンタ */}
-      <div style={{ marginTop: 8 }}>
-        {(state.counters["abyss.runs"] ?? 0) === 0
-          ? t.text.recordsAbyssNone
-          : tpl(t.text.recordsAbyss, {
-              best: state.counters["abyss.best"] ?? 0,
-              runs: state.counters["abyss.runs"] ?? 0,
-            })}
-      </div>
-      {/* ライバル・ランキング（T-47。派生値：state.rng は消費しない） */}
-      <div style={{ marginTop: 12 }} data-testid="records-rivals">
-        <CardTitle>{t.text.recordsRivals}</CardTitle>
-        {rivalsOf(state, rivals, balance.rivals).entries.map((e) => (
-          <div
-            key={e.rank}
-            style={e.isPlayer ? { fontWeight: 800, color: theme.colors.accentDark } : css.dim}
-          >
-            {tpl(t.text.recordsRivalLine, {
-              rank: e.rank,
-              name: e.name,
-              epithet: e.epithet ? tpl(t.text.recordsRivalEpithet, { epithet: e.epithet }) : "",
-              score: e.score,
-              you: e.isPlayer ? t.text.recordsRivalYou : "",
-            })}
+          <div style={{ color: P.dim, fontStyle: "italic" }}>
+            {narrator
+              .narrate(
+                {
+                  scene: "loreDigest",
+                  facts: state.lore.facts.length,
+                  connected: state.lore.connections.length,
+                },
+                createRng(`${state.seed}:loredigest`),
+              )
+              .join("")}
           </div>
-        ))}
-        <div style={css.dim}>{t.text.recordsRivalNote}</div>
-      </div>
-      {/* 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る） */}
-      <ChronicleView />
-      <Btn onClick={back}>戻る</Btn>
-    </section>
+          {/* ここまでの記録（T-37 伝記の途中経過プレビュー） */}
+          <PaperHead>これまでの記録</PaperHead>
+          {bioLines(state).map((l, i) => (
+            <div key={i} style={{ color: P.text, padding: "1px 0" }}>
+              {l}
+            </div>
+          ))}
+          {/* 討伐図鑑（T-44）：kill.species.* / kill.unique.* カウンタから実績一覧 */}
+          <PaperHead>{t.text.recordsHunt}</PaperHead>
+          {enemies.enemies.map((e) => {
+            const kills = state.counters[`kill.species.${e.id}`] ?? 0;
+            const uniques = state.counters[`kill.unique.${e.id}`] ?? 0;
+            if (kills === 0) return null;
+            return (
+              <div key={e.id} style={{ color: P.sub }}>
+                {tpl(t.text.recordsHuntLine, {
+                  name: e.name,
+                  kills,
+                  unique: uniques > 0 ? tpl(t.text.recordsHuntUnique, { unique: uniques }) : "",
+                })}
+              </div>
+            );
+          })}
+          {/* 深層の自己ベスト（T-43）：abyss.best / abyss.runs カウンタ */}
+          <PaperHead>深層</PaperHead>
+          <div style={{ color: P.text }}>
+            {(state.counters["abyss.runs"] ?? 0) === 0
+              ? t.text.recordsAbyssNone
+              : tpl(t.text.recordsAbyss, {
+                  best: state.counters["abyss.best"] ?? 0,
+                  runs: state.counters["abyss.runs"] ?? 0,
+                })}
+          </div>
+          {/* ライバル・ランキング（T-47。派生値：state.rng は消費しない） */}
+          <div data-testid="records-rivals">
+            <PaperHead>{t.text.recordsRivals}</PaperHead>
+            {rivalsOf(state, rivals, balance.rivals).entries.map((e) => (
+              <div
+                key={e.rank}
+                style={
+                  e.isPlayer ? { fontWeight: 800, color: P.head, fontSize: 16 } : { color: P.sub }
+                }
+              >
+                {tpl(t.text.recordsRivalLine, {
+                  rank: e.rank,
+                  name: e.name,
+                  epithet: e.epithet ? tpl(t.text.recordsRivalEpithet, { epithet: e.epithet }) : "",
+                  score: e.score,
+                  you: e.isPlayer ? t.text.recordsRivalYou : "",
+                })}
+              </div>
+            ))}
+            <div style={{ color: P.dim, fontSize: 13 }}>{t.text.recordsRivalNote}</div>
+          </div>
+          {/* 年代記（T-38。周回をまたぐ記録。セーブとは別領域に残る） */}
+          <ChronicleView />
+        </div>
+      </Paper>
+      <HintBar items={[["Esc", "戻る"]]} />
+    </div>
   );
 }
 
@@ -125,11 +178,9 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
 function ChronicleView() {
   const chronicle = loadChronicle();
   return (
-    <div style={{ marginTop: 12 }} data-testid="chronicle">
-      <CardTitle tone="gold">
-        {tpl(t.text.chronicleHeader, { count: chronicle.lives.length })}
-      </CardTitle>
-      {chronicle.lives.length === 0 && <div style={css.dim}>{t.text.chronicleEmpty}</div>}
+    <div data-testid="chronicle">
+      <PaperHead>{tpl(t.text.chronicleHeader, { count: chronicle.lives.length })}</PaperHead>
+      {chronicle.lives.length === 0 && <div style={{ color: P.dim }}>{t.text.chronicleEmpty}</div>}
       {chronicle.lives.map((life, i) => {
         const epithet = life.epithet
           ? `《${titles.titles.find((x) => x.id === life.epithet)?.name ?? life.epithet}》`
@@ -142,8 +193,15 @@ function ChronicleView() {
             : (societyDefs.professions.find((p) => p.id === life.profession)?.name ??
               life.profession);
         return (
-          <div key={i} style={css.dim}>
-            <div>
+          <div
+            key={i}
+            style={{
+              color: P.sub,
+              padding: "6px 0",
+              borderBottom: `1px dashed ${P.line}`,
+            }}
+          >
+            <div style={{ color: P.text, fontWeight: 700 }}>
               {tpl(t.text.chronicleLine, {
                 i: i + 1,
                 name: life.name,
@@ -179,7 +237,7 @@ function ChronicleView() {
   );
 }
 
-// ---- 見聞録 ----
+// ---- 見聞録（紙の目次。読むと頁が開く） ----
 export function LoreScreen({
   state,
   atomId,
@@ -195,58 +253,135 @@ export function LoreScreen({
   const canActNow = canAct(state.time, cfg.time);
   if (atom) {
     const read = state.lore.read.includes(atom.id);
+    const entries: MenuEntry[] = [
+      ...(!read
+        ? [
+            {
+              id: "lore-read",
+              label: "読む（1行動）",
+              primary: true,
+              disabled: !canActNow,
+              onPick: () => {
+                act(
+                  { type: "readAtom", id: atom.id },
+                  {
+                    format: (ev) => [
+                      tpl(t.text.loreRead, { title: atom.title, text: atom.text }),
+                      ...eventLines(ev.filter((e) => e.type !== "atomRead")),
+                    ],
+                  },
+                );
+              },
+            },
+          ]
+        : []),
+      {
+        id: "lore-list",
+        label: "一覧へ",
+        onPick: () => setScreen({ name: "lore" }),
+      },
+    ];
     return (
-      <section style={css.panel} data-testid="lore-atom">
-        <CardTitle tone="gold">《{atom.title}》</CardTitle>
-        <div style={css.dim}>（{atom.kind}）</div>
-        {read ? (
-          <div style={{ margin: "8px 0", whiteSpace: "pre-wrap" }}>{atom.text}</div>
-        ) : (
-          <div style={css.dim}>――まだ読んでいない。読むには1行動を使う。</div>
-        )}
-        {!read && (
-          <Btn
-            primary
-            testId="lore-read"
-            disabled={!canActNow}
-            onClick={() => {
-              act(
-                { type: "readAtom", id: atom.id },
-                {
-                  format: (ev) => [
-                    tpl(t.text.loreRead, { title: atom.title, text: atom.text }),
-                    ...eventLines(ev.filter((e) => e.type !== "atomRead")),
-                  ],
-                },
-              );
+      <div data-testid="lore-atom" className="scene">
+        <Paper
+          tilt={-0.5}
+          style={{ ...pos({ left: 320, top: 80, width: 640, bottom: 120 }), padding: "28px 40px" }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontFamily: theme.font.mincho,
+              fontSize: 24,
+              fontWeight: 800,
+              color: P.head,
+              borderBottom: `3px double ${P.text}`,
+              paddingBottom: 8,
             }}
           >
-            読む（1行動）
-          </Btn>
-        )}
-        <Btn onClick={() => setScreen({ name: "lore" })}>一覧へ</Btn>
-      </section>
+            《{atom.title}》
+            <span style={{ marginLeft: 12, fontSize: 13, fontWeight: 400, color: P.dim }}>
+              {atom.kind}
+            </span>
+          </p>
+          <div className="scroll" style={{ maxHeight: "62%", overflowY: "auto", marginTop: 12 }}>
+            {read ? (
+              <div style={{ whiteSpace: "pre-wrap", fontSize: 16, lineHeight: 2, color: P.text }}>
+                {atom.text}
+              </div>
+            ) : (
+              <div style={{ color: P.dim }}>――まだ読んでいない。読むには1行動を使う。</div>
+            )}
+          </div>
+          <div style={{ position: "absolute", left: 40, right: 40, bottom: 20 }}>
+            <CommandMenu paper entries={entries} onBack={() => setScreen({ name: "lore" })} />
+          </div>
+        </Paper>
+        <HintBar
+          items={[
+            ["↑↓", "選択"],
+            ["Enter", "決定"],
+            ["Esc", "一覧"],
+          ]}
+        />
+      </div>
     );
   }
+  const entries: MenuEntry[] = atomList.map((a) => ({
+    id: `atom-${a.id}`,
+    label: (
+      <>
+        <span style={{ marginRight: 10, color: P.dim }}>
+          {state.lore.read.includes(a.id) ? "読" : "・"}
+        </span>
+        {a.title}
+      </>
+    ),
+    sub: a.kind,
+    onPick: () => setScreen({ name: "lore", atomId: a.id }),
+  }));
   return (
-    <section style={css.panel} data-testid="screen-lore">
-      <CardTitle>
-        {tpl(t.text.loreListHeader, {
-          read: state.lore.read.length,
-          total: atomList.length,
-          facts: state.lore.facts.length,
-        })}
-      </CardTitle>
-      {atomList.length === 0 && <div style={css.dim}>{t.text.loreNone}</div>}
-      {atomList.map((a) => (
-        <div key={a.id}>
-          <Btn testId={`atom-${a.id}`} onClick={() => setScreen({ name: "lore", atomId: a.id })}>
-            {state.lore.read.includes(a.id) ? "📖" : "◻"} {a.title}
-            <span style={css.dim}>（{a.kind}）</span>
-          </Btn>
+    <div data-testid="screen-lore" className="scene">
+      <Paper
+        tilt={0.4}
+        style={{ ...pos({ left: 320, top: 80, width: 640, bottom: 80 }), padding: "24px 36px" }}
+      >
+        <p
+          style={{
+            margin: "0 0 10px",
+            fontFamily: theme.font.mincho,
+            fontSize: 22,
+            fontWeight: 800,
+            color: P.head,
+            borderBottom: `3px double ${P.text}`,
+            paddingBottom: 8,
+          }}
+        >
+          {tpl(t.text.loreListHeader, {
+            read: state.lore.read.length,
+            total: atomList.length,
+            facts: state.lore.facts.length,
+          })}
+        </p>
+        {atomList.length === 0 && <div style={{ color: P.dim }}>{t.text.loreNone}</div>}
+        <div className="scroll" style={{ height: "82%", overflowY: "auto" }}>
+          <CommandMenu
+            paper
+            entries={[
+              ...entries,
+              { kind: "divider" },
+              { id: "back", label: "戻る", onPick: () => setScreen({ name: "menu" }) },
+            ]}
+            onBack={() => setScreen({ name: "menu" })}
+          />
         </div>
-      ))}
-      <Btn onClick={() => setScreen({ name: "menu" })}>戻る</Btn>
-    </section>
+      </Paper>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "開く"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
   );
 }

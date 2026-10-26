@@ -16,6 +16,7 @@ test("街の記録にライバル・ランキングが出る（自分の行に�
   await expect(view).toContainText("（あなた）");
   // 二つ名は《》で包まれる
   await expect(view).toContainText("《");
+  await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-rivals.png", fullPage: true });
 });
 

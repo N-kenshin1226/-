@@ -1,30 +1,119 @@
 /**
- * デザイントークン（JS側で値が必要な箇所のみ。色・形の正本は app.css の :root 変数）。
- * ビジュアル方針はパワプロ風ポップ原本を年代記の紙に写し替えたもの：
- * 明るい羊皮紙背景・濃紺の太枠・大きめ角丸・沈む立体ボタン・色の意味固定。
+ * デザイントークン（UI-01）。正本は docs/design/README.md + html/*.html の値。
+ * ここに置いた値が唯一の定義で、app.css は CSS 変数（--t-*）を参照し、
+ * 変数の実値は main.tsx が applyThemeVars() でここから注入する。
+ * コンポーネントに色・余白・枠の値を直書きしない（決まりごと8）。
  */
 export const theme = {
-  colors: {
-    bg: "#faf3e0",
-    panel: "#fffdf4",
-    panel2: "#f7f0dc",
-    text: "#2b2620",
-    textDim: "#6b5f4c",
-    navy: "#2c3a5e",
-    accent: "#c9a227",
-    accentDark: "#8a6d14",
-    yellow: "#ffc21c",
-    good: "#1f9d55",
-    bad: "#d23b3b",
-    gold: "#c9930a",
-    system: "#4a5f8a",
-  },
+  /** 基準解像度（16:9 固定キャンバス） */
+  stage: { width: 1280, height: 720 },
   font: {
-    family:
-      '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", "Helvetica Neue", Arial, sans-serif',
-    mono: '"SF Mono", Menlo, monospace',
+    /** ロゴ・欧文見出し・数値 */
+    en: '"Cinzel", serif',
+    /** 地名・人名・台詞・地の文・新聞・コマンド名 */
+    mincho: '"Shippori Mincho B1", serif',
+    /** システムの声・ラベル・操作ガイド */
+    sys: '"Zen Kaku Gothic New", sans-serif',
   },
-  space: (n: number) => `${n * 8}px`,
+  colors: {
+    /** 世界の窓（金）: コマンド・会話・HUD */
+    world: {
+      bgTop: "rgba(24,24,38,.95)",
+      bgBottom: "rgba(11,11,19,.96)",
+      edge: "#5A4620",
+      frame: "#B8924A",
+      frameInner: "#3A2E16",
+      ink: "#0A0A10",
+      light: "#E8C77F",
+      text: "#E9E1CC",
+      dim: "#A99C80",
+      faint: "#B9A77C",
+      hi: "#FFF3CF",
+      shadow: "rgba(0,0,0,.65)",
+    },
+    /** 加護の窓（銀青）: ステータス・起床ログ・システムの声 */
+    bless: {
+      bgTop: "rgba(12,28,40,.96)",
+      bgBottom: "rgba(6,14,22,.97)",
+      edge: "#2C5866",
+      frame: "#8FC7D4",
+      frameInner: "#17323D",
+      ink: "#050A10",
+      light: "#BFE9F2",
+      glow: "#8FE0EF",
+      text: "#D7EEF3",
+      dim: "#8FB5BF",
+      faint: "#6FA5B2",
+      hi: "#F2FCFE",
+      cellOff: "#12303B",
+      cellEdge: "#23505E",
+    },
+    /** 紙: 新聞・手紙・書物・見聞録 */
+    paper: {
+      bg: "#EFE5CF",
+      text: "#2B241A",
+      head: "#8A3B22",
+      dim: "#6A5C45",
+      sub: "#4A3F2E",
+      line: "#B9A887",
+      scorch: "rgba(120,90,40,.35)",
+      shadow: "rgba(0,0,0,.6)",
+    },
+    /** 意味のある色 */
+    grow: "#F0C26A",
+    warn: "#F2B39A",
+    /** 危険・停滞・錆（珊瑚。warn より強い主張が要る場面） */
+    bad: "#E88B78",
+    /** 特別な記録・主行動（金） */
+    special: "#E8C77F",
+    /** 良い変化（冷たい緑。成長の金 grow とは別） */
+    good: "#9FD9A8",
+    goodSoft: "rgba(240,194,106,.16)",
+    chipTailBg: "rgba(40,30,10,.85)",
+    chipHeadBg: "rgba(40,16,12,.85)",
+    chipHeadEdge: "#9A5A44",
+    /** ゲージ・セル（世界側） */
+    cellOff: "#2B2A36",
+    cellEdge: "#4A4658",
+    cellOn: "#D9B26A",
+    cellOnEdge: "#F0D08E",
+    candleOff: "#6D6658",
+    barOff: "#1D1B26",
+    /** ステータスの項目色（伸び悩み等の注意） */
+    muted: "#5F8590",
+  },
+  /** 窓の重ね影（三重線＋落ち影） */
+  frame: {
+    world:
+      "inset 0 0 0 1px #0a0a10, inset 0 0 0 3px #b8924a, inset 0 0 0 4px #3a2e16, 0 10px 30px rgba(0,0,0,.65)",
+    bless:
+      "inset 0 0 0 1px #050a10, inset 0 0 0 3px #8fc7d4, inset 0 0 0 4px #17323d, 0 0 50px rgba(111,208,227,.18), 0 12px 40px rgba(0,0,0,.7)",
+  },
+  /** コマンド行の高さ（決まりごと: 44px 以上） */
+  cmdHeight: 44,
 } as const;
 
 export type Theme = typeof theme;
+
+/**
+ * theme.colors の全エントリを --t-* の CSS 変数として :root に注入する。
+ * app.css はこの変数だけを参照する（値の二重定義を防ぐ）
+ */
+export function applyThemeVars(): void {
+  const el = document.documentElement;
+  const kebab = (k: string) => k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+  const walk = (prefix: string, obj: Record<string, string>) => {
+    for (const [k, v] of Object.entries(obj)) {
+      el.style.setProperty(`--t-${prefix}${kebab(k)}`, v);
+    }
+  };
+  for (const [group, vals] of Object.entries(theme.colors)) {
+    if (typeof vals === "string") {
+      el.style.setProperty(`--t-${kebab(group)}`, vals);
+    } else {
+      walk(`${group}-`, vals as Record<string, string>);
+    }
+  }
+  for (const [k, v] of Object.entries(theme.font)) el.style.setProperty(`--t-font-${k}`, v);
+  for (const [k, v] of Object.entries(theme.frame)) el.style.setProperty(`--t-frame-${k}`, v);
+}

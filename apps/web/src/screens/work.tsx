@@ -1,4 +1,4 @@
-/** 仕事画面とミニゲーム（手動プレイ）の皮（X-2 で App.tsx から分離） */
+/** 仕事画面とミニゲーム（手動プレイ）の皮（UI-01：世界の窓＋コマンド列） */
 import { useEffect, useRef, useState } from "react";
 import type { ActionEvent, GameState } from "@trace/core";
 import { balance } from "@trace/content";
@@ -23,7 +23,19 @@ import {
   type TimingState,
 } from "../game.js";
 import { theme } from "../theme.js";
-import { Btn, CardTitle, css, type Act, type Push, type Screen } from "../ui.js";
+import {
+  CommandMenu,
+  HintBar,
+  Kicker,
+  WorldFrame,
+  pos,
+  type Act,
+  type MenuEntry,
+  type Push,
+  type Screen,
+} from "../ui.js";
+
+const W = theme.colors.world;
 
 /** 仕事結果の表示行（品質・フラグ・経験・報酬） */
 export function workResultLines(
@@ -81,33 +93,56 @@ export function WorkScreen({
 }) {
   const special = specialOrderOf(state.seed, state.time.day);
   const list: (Order | SpecialOrder)[] = special ? [...orderList, special] : orderList;
+  const entries: MenuEntry[] = [
+    ...(special ? [{ kind: "header" as const, text: t.text.specialOrder }] : []),
+    ...list.map((o) => {
+      const kind = skillList.find((s) => s.id === o.kind)?.name ?? o.kind;
+      const isSpecial = "special" in o && o.special === true;
+      return {
+        id: `order-${o.id}`,
+        label: o.name,
+        sub: `${kind}・目標${o.targetQuality}・${o.rewardMoney}G`,
+        gold: isSpecial,
+        onPick: () => setScreen({ name: "workMode", order: o }),
+      };
+    }),
+    { kind: "divider" },
+    { id: "back", label: "戻る", onPick: () => setScreen({ name: "menu" }) },
+  ];
   return (
-    <section style={css.panel} data-testid="screen-work">
-      <CardTitle>{t.text.orderPick}</CardTitle>
-      {special && <div style={{ ...css.accent }}>{t.text.specialOrder}</div>}
-      <div>
-        {list.map((o) => {
-          const kind = skillList.find((s) => s.id === o.kind)?.name ?? o.kind;
-          return (
-            <div key={o.id} style={{ margin: "4px 0" }}>
-              <Btn
-                testId={`order-${o.id}`}
-                onClick={() => setScreen({ name: "workMode", order: o })}
-              >
-                {o.name}
-                <span style={css.dim}>
-                  {" "}
-                  （{kind}・目標{o.targetQuality}・{o.rewardMoney}G）
-                </span>
-              </Btn>
-            </div>
-          );
-        })}
-      </div>
-      <Btn onClick={() => setScreen({ name: "menu" })}>戻る</Btn>
-    </section>
+    <div data-testid="screen-work" className="scene">
+      <WorldFrame
+        style={{ ...pos({ left: 28, top: 120, width: 600, bottom: 200 }), padding: "14px 4px" }}
+      >
+        <div style={{ margin: "2px 14px 10px" }}>
+          <Kicker text="WORK" />
+          <div
+            style={{
+              fontFamily: theme.font.mincho,
+              fontSize: 24,
+              fontWeight: 800,
+              color: W.hi,
+              marginTop: 2,
+            }}
+          >
+            {t.text.orderPick}
+          </div>
+        </div>
+        <div className="scroll" style={{ maxHeight: "78%", overflowY: "auto" }}>
+          <CommandMenu entries={entries} onBack={() => setScreen({ name: "menu" })} />
+        </div>
+      </WorldFrame>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
   );
 }
+
 export function WorkModeScreen({
   state,
   order,
@@ -142,23 +177,53 @@ export function WorkModeScreen({
     );
     setScreen({ name: "menu" });
   };
+  const entries: MenuEntry[] = [
+    {
+      id: "work-manual",
+      label: "自分でやる",
+      sub: "ミニゲーム",
+      primary: true,
+      onPick: () => setScreen({ name: "minigame", kind: kindToMinigame(order.kind), order }),
+    },
+    {
+      id: "work-simple",
+      label: "まかせる（簡易判定・経験半分）",
+      onPick: doSimple,
+    },
+    { kind: "divider" },
+    { id: "back", label: "戻る", onPick: () => setScreen({ name: "work" }) },
+  ];
   return (
-    <section style={css.panel} data-testid="screen-workmode">
-      <CardTitle>{order.name}</CardTitle>
-      <div style={css.dim}>{order.note}</div>
-      <div style={{ margin: "8px 0" }}>{t.text.workModePrompt}</div>
-      <Btn
-        primary
-        testId="work-manual"
-        onClick={() => setScreen({ name: "minigame", kind: kindToMinigame(order.kind), order })}
-      >
-        自分でやる
-      </Btn>
-      <Btn testId="work-simple" onClick={doSimple}>
-        まかせる（簡易判定・経験半分）
-      </Btn>
-      <Btn onClick={() => setScreen({ name: "work" })}>戻る</Btn>
-    </section>
+    <div data-testid="screen-workmode" className="scene">
+      <WorldFrame style={{ ...pos({ left: 300, top: 180, width: 680 }), padding: "16px 4px" }}>
+        <div style={{ margin: "2px 14px 4px" }}>
+          <Kicker text="ORDER" />
+          <div
+            style={{
+              fontFamily: theme.font.mincho,
+              fontSize: 24,
+              fontWeight: 800,
+              color: W.hi,
+              marginTop: 2,
+            }}
+          >
+            {order.name}
+          </div>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: W.dim }}>{order.note}</p>
+          <p style={{ margin: "8px 0 4px", fontSize: 14, color: W.text }}>
+            {t.text.workModePrompt}
+          </p>
+        </div>
+        <CommandMenu entries={entries} onBack={() => setScreen({ name: "work" })} />
+      </WorldFrame>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -216,25 +281,73 @@ export function MinigameScreen({
     setScreen({ name: "menu" });
   };
 
+  const entries: MenuEntry[] = [
+    ...(res.done
+      ? [
+          {
+            id: "minigame-commit",
+            label: "作品を納める",
+            primary: true,
+            onPick: commit,
+          } satisfies MenuEntry,
+        ]
+      : []),
+    { id: "minigame-quit", label: "やめる", onPick: () => setScreen({ name: "work" }) },
+  ];
+
   return (
-    <section style={css.panel} data-testid="minigame">
-      <CardTitle>{startLine}</CardTitle>
-      {isTimingKind(kind) && <TimingView kind={kind} gs={gs as TimingState} onTick={setGs} />}
-      {isBoardKind(kind) && <BoardView kind={kind} gs={gs as BoardState} onTick={setGs} />}
-      {kind === "negotiation" && <NegotiationView gs={gs as DealState} onTick={setGs} />}
-      {res.done && (
-        <div data-testid="minigame-done" style={{ marginTop: 8 }} className="pop-in">
-          <div style={{ fontWeight: 800, fontSize: 18, color: theme.colors.accentDark }}>
-            {res.detail}（品質 {res.quality}
-            {res.flags.length > 0 ? `・${res.flags.join("・")}` : ""}）
+    <div data-testid="minigame" className="scene">
+      <WorldFrame
+        style={{ ...pos({ left: 300, top: 130, width: 680, bottom: 200 }), padding: "16px 4px" }}
+      >
+        <div style={{ margin: "2px 14px 8px" }}>
+          <Kicker text="WORK" />
+          <div
+            style={{
+              fontFamily: theme.font.mincho,
+              fontSize: 22,
+              fontWeight: 800,
+              color: W.hi,
+              marginTop: 2,
+            }}
+          >
+            {startLine}
           </div>
-          <Btn primary testId="minigame-commit" onClick={commit}>
-            作品を納める
-          </Btn>
         </div>
-      )}
-      <Btn onClick={() => setScreen({ name: "work" })}>やめる</Btn>
-    </section>
+        <div style={{ margin: "0 16px" }}>
+          {isTimingKind(kind) && <TimingView kind={kind} gs={gs as TimingState} onTick={setGs} />}
+          {isBoardKind(kind) && <BoardView kind={kind} gs={gs as BoardState} onTick={setGs} />}
+          {kind === "negotiation" && <NegotiationView gs={gs as DealState} onTick={setGs} />}
+        </div>
+        {res.done && (
+          <div
+            data-testid="minigame-done"
+            style={{ margin: "8px 16px", padding: "8px 12px", border: `1px solid ${W.frame}` }}
+          >
+            <span
+              style={{
+                fontWeight: 800,
+                fontSize: 17,
+                color: theme.colors.special,
+                fontFamily: theme.font.mincho,
+              }}
+            >
+              {res.detail}（品質 {res.quality}
+              {res.flags.length > 0 ? `・${res.flags.join("・")}` : ""}）
+            </span>
+          </div>
+        )}
+        <CommandMenu entries={entries} onBack={() => setScreen({ name: "work" })} />
+      </WorldFrame>
+      <HintBar
+        items={[
+          ["Space", "打つ"],
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", "やめる"],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -271,8 +384,8 @@ function TimingView({
         ? t.text.fishingPress
         : "打つ";
   return (
-    <div style={{ marginTop: 8 }}>
-      <div style={css.dim}>
+    <div style={{ marginTop: 4 }}>
+      <div style={{ fontSize: 13, color: W.dim }}>
         {tpl(beatText, { n: gs.cursor + 1 })}（{gs.hits} 命中 / 判定窓 ±{Math.round(gs.halfWidth)}
         ms）
       </div>
@@ -283,24 +396,36 @@ function TimingView({
             style={{
               color:
                 i < gs.cursor
-                  ? theme.colors.gold
+                  ? theme.colors.special
                   : i === gs.cursor && near
                     ? theme.colors.good
-                    : theme.colors.textDim,
+                    : theme.colors.world.dim,
             }}
           >
             ●
           </span>
         ))}
       </div>
-      <Btn
-        primary
-        testId={`${kind}-hit`}
+      <button
+        type="button"
+        data-testid={`${kind}-hit`}
         disabled={gs.done}
         onClick={() => onTick(tickMinigame(kind, gs, { at: elapsed }) as TimingState)}
+        style={{
+          minHeight: 44,
+          padding: "0 34px",
+          border: `2px solid ${W.frame}`,
+          background: "linear-gradient(180deg, #2e2418, #191320)",
+          color: theme.colors.special,
+          fontFamily: theme.font.mincho,
+          fontSize: 20,
+          fontWeight: 800,
+          letterSpacing: "0.2em",
+          cursor: "pointer",
+        }}
       >
         {pressLabel}
-      </Btn>
+      </button>
     </div>
   );
 }
@@ -319,8 +444,8 @@ function BoardView({
   const hintText = kind === "appraisal" ? t.text.appraisalHint : t.text.miningHint;
   const foundNoun = kind === "appraisal" ? "真品" : "鉱石";
   return (
-    <div style={{ marginTop: 8 }}>
-      <div style={css.dim}>
+    <div style={{ marginTop: 4 }}>
+      <div style={{ fontSize: 13, color: W.dim }}>
         {gs.lastHint === null
           ? startText
           : tpl(hintText, { radius: gs.hintRadius, n: gs.lastHint })}
@@ -341,10 +466,10 @@ function BoardView({
           const mark = !c.revealed ? "？" : c.kind === "ore" ? "◆" : c.kind === "rock" ? "▲" : "・";
           const color =
             c.kind === "ore" && c.revealed
-              ? theme.colors.gold
+              ? theme.colors.special
               : c.kind === "rock" && c.revealed
                 ? theme.colors.bad
-                : theme.colors.textDim;
+                : theme.colors.world.dim;
           return (
             <button
               key={i}
@@ -367,26 +492,37 @@ function NegotiationView({ gs, onTick }: { gs: DealState; onTick: (s: DealState)
   const topicName = (id: string) =>
     balance.minigame.negotiation.topics.find((x) => x.id === id)?.name ?? id;
   return (
-    <div style={{ marginTop: 8 }} data-testid="nego">
-      <div style={css.dim}>
+    <div style={{ marginTop: 4 }} data-testid="nego">
+      <div style={{ fontSize: 13, color: W.dim }}>
         {tpl(t.text.negoHp, { player: gs.playerHp, opponent: gs.opponentHp })}（{gs.round}R）
       </div>
-      <div>
+      <div style={{ fontSize: 13, color: W.dim }}>
         {tpl(t.text.negoPreview, {
           preview: gs.preview.map((c) => `${topicName(c.topic)}${c.power}`).join(" / ") || "―",
         })}
       </div>
-      <div style={{ margin: "8px 0" }}>{t.text.negoPrompt}</div>
-      <div>
+      <div style={{ margin: "8px 0", color: W.text }}>{t.text.negoPrompt}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {gs.hand.map((c, i) => (
-          <Btn
+          <button
             key={i}
-            testId={`hand-${i}`}
+            type="button"
+            data-testid={`hand-${i}`}
             disabled={gs.done}
             onClick={() => onTick(tickMinigame("negotiation", gs, { hand: i }) as DealState)}
+            style={{
+              minHeight: 44,
+              padding: "0 16px",
+              border: `1px solid ${W.frame}`,
+              background: "rgba(24,24,38,.9)",
+              color: W.text,
+              fontFamily: theme.font.mincho,
+              fontSize: 15,
+              cursor: "pointer",
+            }}
           >
             {topicName(c.topic)} {c.power}
-          </Btn>
+          </button>
         ))}
       </div>
     </div>

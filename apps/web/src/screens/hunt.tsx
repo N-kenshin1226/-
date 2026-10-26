@@ -1,4 +1,4 @@
-/** 狩り（CT戦闘）と深層ダンジョン画面（X-2 で App.tsx から分離） */
+/** 狩り（CT戦闘）と深層ダンジョン画面（UI-01：世界の窓＋コマンド列で統一） */
 import { useEffect, useState } from "react";
 import {
   combatResult,
@@ -8,6 +8,7 @@ import {
   type GameState,
 } from "@trace/core";
 import type { EnemyJson } from "@trace/content";
+import { balance } from "@trace/content";
 import {
   abyssFloorEnemy,
   beginCombat,
@@ -25,8 +26,56 @@ import {
   uniqueOf,
   type CombatState,
 } from "../game.js";
-import { Btn, CardTitle, css, type Act, type Push, type Screen } from "../ui.js";
+import {
+  CellGauge,
+  CommandMenu,
+  HintBar,
+  Kicker,
+  WorldFrame,
+  pos,
+  type Act,
+  type MenuEntry,
+  type Push,
+  type Screen,
+} from "../ui.js";
 import { theme } from "../theme.js";
+
+const W = theme.colors.world;
+
+/** 戦闘窓の頭：敵名と体力ゲージ */
+function CombatStatus({ cs, enemyName }: { cs: CombatState; enemyName: string }) {
+  return (
+    <div style={{ margin: "0 16px 10px" }}>
+      <p
+        style={{
+          margin: "0 0 6px",
+          fontFamily: theme.font.mincho,
+          fontSize: 20,
+          fontWeight: 700,
+          color: theme.colors.bad,
+        }}
+      >
+        {enemyName}
+      </p>
+      <p
+        style={{
+          margin: 0,
+          fontFamily: theme.font.mincho,
+          fontSize: 17,
+          fontWeight: 700,
+          color: W.hi,
+        }}
+      >
+        {tpl(t.text.combatStatus, {
+          playerHp: Math.max(0, cs.playerHp),
+          playerMax: cs.playerHpMax,
+          enemy: enemyName,
+          enemyHp: Math.max(0, cs.enemyHp),
+        })}
+      </p>
+    </div>
+  );
+}
 
 // ---- 狩り（CT戦闘） ----
 export function HuntScreen({
@@ -36,41 +85,64 @@ export function HuntScreen({
   state: GameState;
   setScreen: (s: Screen) => void;
 }) {
+  const entries: MenuEntry[] = enemyAreas.flatMap(([area, group]): MenuEntry[] => [
+    { kind: "header", text: t.display.huntAreas[area] ?? area },
+    ...group.flatMap((e): MenuEntry[] => {
+      const ue = uniqueOf(state, e);
+      return [
+        {
+          id: `enemy-${e.id}`,
+          label: e.name,
+          sub: `挑戦差 ${e.challenge}`,
+          onPick: () => setScreen({ name: "combat", enemy: e }),
+        },
+        // 強個体は特別な相手（T-44）：金色の一行として別立て
+        ...(ue !== null
+          ? [
+              {
+                id: `enemy-${e.id}-unique`,
+                label: `《${ue.name}》`,
+                sub: `強個体・挑戦差 ${ue.challenge}`,
+                gold: true,
+                onPick: () => setScreen({ name: "combat", enemy: ue }),
+              } satisfies Extract<MenuEntry, { id: string }>,
+            ]
+          : []),
+      ];
+    }),
+  ]);
   return (
-    <section style={css.panel} data-testid="screen-hunt">
-      <CardTitle>{t.text.huntPick}</CardTitle>
-      {enemyAreas.map(([area, group]) => (
-        <div key={area} style={{ marginBottom: 8 }}>
-          <div style={{ ...css.dim, fontWeight: 700 }}>{t.display.huntAreas[area] ?? area}</div>
-          {group.map((e) => {
-            const ue = uniqueOf(state, e);
-            return (
-              <div key={e.id}>
-                <Btn
-                  testId={`enemy-${e.id}`}
-                  onClick={() => setScreen({ name: "combat", enemy: e })}
-                >
-                  {e.name}
-                  <span style={css.dim}>（挑戦差 {e.challenge}）</span>
-                </Btn>
-                {/* 強個体は特別な相手なので金枠（T-44） */}
-                {ue !== null && (
-                  <Btn
-                    gold
-                    testId={`enemy-${e.id}-unique`}
-                    onClick={() => setScreen({ name: "combat", enemy: ue })}
-                  >
-                    {ue.name}
-                    <span style={css.dim}>（挑戦差 {ue.challenge}）</span>
-                  </Btn>
-                )}
-              </div>
-            );
-          })}
+    <div data-testid="screen-hunt" className="scene">
+      <WorldFrame
+        style={{ ...pos({ left: 28, top: 120, width: 560, bottom: 200 }), padding: "14px 4px" }}
+      >
+        <div style={{ margin: "2px 14px 10px" }}>
+          <Kicker text="HUNT" />
+          <div
+            style={{ fontFamily: theme.font.mincho, fontSize: 24, fontWeight: 800, color: W.hi }}
+          >
+            {t.text.huntPick}
+          </div>
         </div>
-      ))}
-      <Btn onClick={() => setScreen({ name: "menu" })}>戻る</Btn>
-    </section>
+        <div className="scroll" style={{ maxHeight: "76%", overflowY: "auto" }}>
+          <CommandMenu
+            entries={[
+              ...entries,
+              { kind: "divider" },
+              { id: "back", label: "戻る", onPick: () => setScreen({ name: "menu" }) },
+            ]}
+            onBack={() => setScreen({ name: "menu" })}
+          />
+        </div>
+      </WorldFrame>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -129,48 +201,70 @@ export function CombatScreen({
     setScreen({ name: "menu" });
   };
 
+  // コマンド列は一本（キー入力が競合しないよう、戦闘中も確定後も同じ列を使う）
+  const entries: MenuEntry[] = !cs.done
+    ? [
+        ...(
+          [
+            ["attack", "攻撃"],
+            ["defend", "防御"],
+            ["observe", "観察"],
+            ["flee", "逃げる"],
+          ] as const
+        ).map(([a, label]): MenuEntry => ({
+          id: `combat-${a}`,
+          label,
+          onPick: () => doAction(a),
+        })),
+        { kind: "divider" },
+        {
+          id: "combat-giveup",
+          label: "あきらめる",
+          danger: true,
+          onPick: () => setScreen({ name: "menu" }),
+        },
+      ]
+    : [
+        {
+          id: "combat-finish",
+          label: cs.won ? "勝利を確定" : cs.fled ? "離脱した" : "結果を受け入れる",
+          primary: true,
+          onPick: finish,
+        },
+        { kind: "divider" },
+        {
+          id: "combat-giveup",
+          label: "あきらめる",
+          danger: true,
+          onPick: () => setScreen({ name: "menu" }),
+        },
+      ];
+
   return (
-    <section style={css.panel} data-testid="screen-combat">
-      <CardTitle tone="red">{enemy.name}</CardTitle>
-      <div>
-        {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
-          <div key={i} style={css.sys}>
-            {l}
-          </div>
-        ))}
-      </div>
-      <div style={{ fontWeight: 800, fontSize: 17, color: theme.colors.navy }}>
-        {tpl(t.text.combatStatus, {
-          playerHp: Math.max(0, cs.playerHp),
-          playerMax: cs.playerHpMax,
-          enemy: enemy.name,
-          enemyHp: Math.max(0, cs.enemyHp),
-        })}
-      </div>
-      {!cs.done ? (
-        <div>
-          {(
-            [
-              ["attack", "攻撃"],
-              ["defend", "防御"],
-              ["observe", "観察"],
-              ["flee", "逃げる"],
-            ] as const
-          ).map(([a, label]) => (
-            <Btn key={a} testId={`combat-${a}`} onClick={() => doAction(a)}>
-              {label}
-            </Btn>
-          ))}
+    <div data-testid="screen-combat" className="scene">
+      <WorldFrame
+        style={{ ...pos({ left: 340, top: 150, width: 600 }), padding: "16px 4px 12px" }}
+        corners={["tl", "tr", "bl", "br"]}
+      >
+        <div style={{ margin: "0 16px 8px" }}>
+          <Kicker text="COMBAT" />
         </div>
-      ) : (
-        <Btn primary testId="combat-finish" onClick={finish}>
-          {cs.won ? "勝利を確定" : cs.fled ? "離脱した" : "結果を受け入れる"}
-        </Btn>
-      )}
-      <Btn danger onClick={() => setScreen({ name: "menu" })}>
-        あきらめる
-      </Btn>
-    </section>
+        {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
+          <p key={i} style={{ margin: "0 16px 4px", fontSize: 13, color: theme.colors.special }}>
+            {l}
+          </p>
+        ))}
+        <CombatStatus cs={cs} enemyName={enemy.name} />
+        <CommandMenu entries={entries} onBack={() => setScreen({ name: "menu" })} />
+      </WorldFrame>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -278,71 +372,91 @@ export function AbyssScreen({
     back();
   };
 
+  const body: MenuEntry[] = run.done
+    ? [
+        {
+          id: "abyss-commit",
+          label: "深層を出る",
+          primary: true,
+          onPick: commit,
+        },
+      ]
+    : cs === null || enemy === null
+      ? [
+          { id: "abyss-dive", label: "降りる", primary: true, onPick: dive },
+          { id: "abyss-retreat", label: "引き返す", onPick: retreat },
+        ]
+      : cs.done && cs.won
+        ? [
+            { id: "abyss-dive", label: "さらに降りる", primary: true, onPick: dive },
+            { id: "abyss-retreat", label: "引き返す", onPick: retreat },
+          ]
+        : [];
+
   return (
-    <section style={css.panel} data-testid="screen-abyss">
-      <div style={{ fontWeight: 800, fontSize: 17, color: theme.colors.navy }}>
-        {tpl(t.text.abyssFloor, { floor: run.floor })}
-        <span style={{ ...css.dim, fontWeight: 500 }}>
-          {" "}
-          {tpl(t.text.abyssLight, { light: run.light })}
-        </span>
-      </div>
-      {run.done ? (
-        <Btn primary testId="abyss-commit" onClick={commit}>
-          深層を出る
-        </Btn>
-      ) : cs === null || enemy === null ? (
-        <div>
-          <Btn primary testId="abyss-dive" onClick={dive}>
-            降りる
-          </Btn>
-          <Btn testId="abyss-retreat" onClick={retreat}>
-            引き返す
-          </Btn>
+    <div data-testid="screen-abyss" className="scene">
+      <WorldFrame style={{ ...pos({ left: 340, top: 140, width: 600 }), padding: "16px 4px 12px" }}>
+        <div style={{ margin: "0 16px 10px", display: "flex", alignItems: "baseline", gap: 14 }}>
+          <span
+            style={{
+              fontFamily: theme.font.mincho,
+              fontSize: 22,
+              fontWeight: 800,
+              color: W.hi,
+            }}
+          >
+            {tpl(t.text.abyssFloor, { floor: run.floor })}
+          </span>
+          <span style={{ fontSize: 13, color: W.dim }}>
+            {tpl(t.text.abyssLight, { light: run.light })}
+          </span>
+          {/* 灯りの残量：セルゲージで（上限＝ランの初期灯り＝maxTurns） */}
+          <CellGauge value={Math.max(0, run.light)} max={balance.abyss.maxTurns} cells={10} />
         </div>
-      ) : (
-        <div>
-          {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
-            <div key={i} style={css.sys}>
-              {l}
-            </div>
-          ))}
-          <div style={{ fontWeight: 800, fontSize: 17, color: theme.colors.navy }}>
-            {tpl(t.text.combatStatus, {
-              playerHp: Math.max(0, cs.playerHp),
-              playerMax: cs.playerHpMax,
-              enemy: enemy.name,
-              enemyHp: Math.max(0, cs.enemyHp),
-            })}
-          </div>
-          {!cs.done ? (
-            <div>
-              {(
-                [
-                  ["attack", "攻撃"],
-                  ["defend", "防御"],
-                  ["observe", "観察"],
-                  ["flee", "逃げる"],
-                ] as const
-              ).map(([a, label]) => (
-                <Btn key={a} testId={`combat-${a}`} onClick={() => doAction(a)}>
-                  {label}
-                </Btn>
-              ))}
-            </div>
-          ) : cs.won ? (
-            <div>
-              <div style={css.sys}>{tpl(t.text.abyssCleared, { name: enemy.name })}</div>
-              <Btn primary testId="abyss-dive" onClick={dive}>
-                さらに降りる
-              </Btn>
-              <Btn testId="abyss-retreat" onClick={retreat}>
-                引き返す
-              </Btn>
-            </div>
-          ) : null}
-        </div>
-      )}
-    </section>
+        {cs !== null && enemy !== null && (
+          <>
+            {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
+              <p
+                key={i}
+                style={{ margin: "0 16px 4px", fontSize: 13, color: theme.colors.special }}
+              >
+                {l}
+              </p>
+            ))}
+            <CombatStatus cs={cs} enemyName={enemy.name} />
+            {cs.done && cs.won && (
+              <p style={{ margin: "0 16px 8px", fontSize: 13, color: theme.colors.special }}>
+                {tpl(t.text.abyssCleared, { name: enemy.name })}
+              </p>
+            )}
+          </>
+        )}
+        {!cs?.done && cs !== null ? (
+          <CommandMenu
+            entries={(
+              [
+                ["attack", "攻撃"],
+                ["defend", "防御"],
+                ["observe", "観察"],
+                ["flee", "逃げる"],
+              ] as const
+            ).map(([a, label]) => ({
+              id: `combat-${a}`,
+              label,
+              onPick: () => doAction(a),
+            }))}
+          />
+        ) : (
+          <CommandMenu entries={body} onBack={back} />
+        )}
+      </WorldFrame>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
   );
 }

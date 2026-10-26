@@ -174,6 +174,7 @@ export const cliTextSchema = z
         chronicleRecorded: z.string(),
         /** 引退・転生（T-40）：確認・継承の選択（記憶の称号／遺物）・新しい生の告知 */
         retireConfirm: z.string(),
+        resetConfirm: z.string(),
         retireCancelled: z.string(),
         legacyHeader: z.string(),
         legacyTitlesPrompt: z.string(),

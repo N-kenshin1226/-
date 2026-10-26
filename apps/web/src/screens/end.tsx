@@ -1,4 +1,7 @@
-/** 終了・継承系の画面：引退・生の継ぎ方・次代・転生（X-2 で App.tsx から分離） */
+/**
+ * 終了・継承系の画面（UI-01）：引退の確認は世界の窓、
+ * 生の継ぎ方・次代・転生は夜の情景に紙の伝記＋一本のコマンド列
+ */
 import { useMemo, useState } from "react";
 import { heirGenerationOf, heirKindOf, type GameState } from "@trace/core";
 import { balance, titles } from "@trace/content";
@@ -13,21 +16,143 @@ import {
   workName,
   type FateChoice,
 } from "../game.js";
-import { Btn, CardTitle, css } from "../ui.js";
-import { FatePickers } from "./title.js";
+import {
+  CommandMenu,
+  ConfirmWindow,
+  HintBar,
+  Paper,
+  WorldFrame,
+  pos,
+  type MenuEntry,
+} from "../ui.js";
+import { theme } from "../theme.js";
+import { tendencyEntries, vowEntries } from "./title.js";
+
+const P = theme.colors.paper;
+const W = theme.colors.world;
+
+/** 伝記の紙（継ぎ方・次代・転生の画面で終わった生を振り返る） */
+function BioPaper({ bio, testId }: { bio: readonly string[]; testId: string }) {
+  return (
+    <Paper
+      tilt={-0.6}
+      style={{ ...pos({ left: 120, top: 90, width: 460, bottom: 120 }), padding: "22px 30px" }}
+    >
+      <p
+        style={{
+          margin: "0 0 10px",
+          fontFamily: theme.font.mincho,
+          fontSize: 18,
+          fontWeight: 800,
+          color: P.head,
+          borderBottom: `3px double ${P.text}`,
+          paddingBottom: 6,
+        }}
+      >
+        終わった生の記録
+      </p>
+      <div
+        className="scroll"
+        data-testid={testId}
+        style={{ maxHeight: "84%", overflowY: "auto", fontSize: 15, color: P.text }}
+      >
+        {bio.map((l, i) => (
+          <div
+            key={i}
+            style={{
+              fontFamily: l.startsWith("――") || l.startsWith("━") ? theme.font.sys : undefined,
+              color: l.startsWith("――") ? P.dim : P.text,
+              padding: "1px 0",
+            }}
+          >
+            {l}
+          </div>
+        ))}
+      </div>
+    </Paper>
+  );
+}
+
+/** 継承系画面の選択窓（右側・縦に長いコマンド列） */
+function ChoiceWindow({
+  title,
+  entries,
+  width = 560,
+  left = 640,
+  notes,
+  testId,
+}: {
+  title: string;
+  entries: MenuEntry[];
+  width?: number;
+  left?: number;
+  /** 窓の上段の注記（継承できるものが無い時の案内など） */
+  notes?: readonly string[];
+  testId?: string;
+}) {
+  return (
+    <WorldFrame
+      testId={testId}
+      style={{ ...pos({ left, top: 90, width, bottom: 120 }), padding: "16px 4px" }}
+    >
+      <p
+        style={{
+          margin: "0 16px 10px",
+          fontFamily: theme.font.mincho,
+          fontSize: 20,
+          fontWeight: 800,
+          color: W.hi,
+        }}
+      >
+        {title}
+      </p>
+      {notes !== undefined && notes.length > 0 && (
+        <div style={{ margin: "0 16px 8px", fontSize: 13, color: W.dim }}>
+          {notes.map((n, i) => (
+            <div key={i}>{n}</div>
+          ))}
+        </div>
+      )}
+      <div className="scroll" style={{ maxHeight: "86%", overflowY: "auto" }}>
+        <CommandMenu entries={entries} />
+      </div>
+    </WorldFrame>
+  );
+}
 
 // ---- 引退（T-40。06 §1：いつでも選べる。確認は1回） ----
-export function RetireScreen({ onRetire }: { onRetire: (confirmed: boolean) => void }) {
+export function RetireScreen({
+  onRetire,
+  back,
+}: {
+  onRetire: (confirmed: boolean) => void;
+  back: () => void;
+}) {
   return (
-    <section style={css.panel} data-testid="screen-retire">
-      <CardTitle tone="red">{t.text.retireConfirm}</CardTitle>
-      <Btn primary testId="retire-yes" onClick={() => onRetire(true)}>
-        引退する
-      </Btn>
-      <Btn testId="retire-no" onClick={() => onRetire(false)}>
-        思いとどまる
-      </Btn>
-    </section>
+    <div data-testid="screen-retire" className="scene">
+      <div style={pos({ left: 340, top: 240, width: 600 })}>
+        <ConfirmWindow
+          title="引退"
+          body={t.text.retireConfirm}
+          yes="引退する"
+          no="思いとどまる"
+          yesId="retire-yes"
+          noId="retire-no"
+          onYes={() => onRetire(true)}
+          onNo={() => {
+            onRetire(false);
+            back();
+          }}
+        />
+      </div>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -46,18 +171,35 @@ export function SuccessionScreen({
   cause: "retire" | "oldAge";
   onChoose: (prev: GameState, cause: "retire" | "oldAge", way: "rebirth" | "heir") => void;
 }) {
+  const entries: MenuEntry[] = [
+    {
+      id: "succession-rebirth",
+      label: "新しい世界に転生する",
+      sub: "年代記に刻まれ、継承は大きい",
+      primary: true,
+      onPick: () => onChoose(prev, cause, "rebirth"),
+    },
+    {
+      id: "succession-heir",
+      label: "この世界で次代を継ぐ",
+      sub: "年代記には刻まず、継承は小さい",
+      onPick: () => onChoose(prev, cause, "heir"),
+    },
+  ];
   return (
-    <section style={css.panel} data-testid="screen-succession">
-      <CardTitle>{t.text.heirWayPick}</CardTitle>
-      <Btn primary testId="succession-rebirth" onClick={() => onChoose(prev, cause, "rebirth")}>
-        新しい世界に転生する
-        <span style={css.dim}> ― 年代記に刻まれ、継承は大きい</span>
-      </Btn>
-      <Btn testId="succession-heir" onClick={() => onChoose(prev, cause, "heir")}>
-        この世界で次代を継ぐ
-        <span style={css.dim}> ― 年代記には刻まず、継承は小さい</span>
-      </Btn>
-    </section>
+    <div data-testid="screen-succession" className="scene">
+      <BioPaper
+        testId="succession-bio"
+        bio={bioLines(prev, cause === "retire" ? "retire" : "death")}
+      />
+      <ChoiceWindow title={t.text.heirWayPick} entries={entries} />
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -82,65 +224,72 @@ export function HeirScreen({
   const [pickedVows, setPickedVows] = useState<string[]>([]);
   const toggleVow = (id: string) =>
     setPickedVows((vs) => (vs.includes(id) ? vs.filter((x) => x !== id) : [...vs, id]));
+  const entries: MenuEntry[] = [
+    { kind: "header", text: t.text.rebirthOriginPrompt },
+    ...originList.map((o) => ({
+      id: `heir-origin-${o.id.replace("origin.", "")}`,
+      label: o.name,
+      sub: (
+        <>
+          {o.desc}
+          {originId === o.id ? " ◆" : ""}
+        </>
+      ),
+      onPick: () => setOriginId(o.id),
+    })),
+    { kind: "divider" },
+    { kind: "header", text: t.text.vowPick },
+    ...vowList.map((v) => ({
+      id: `heir-vow-${v.id}`,
+      label: v.name,
+      sub: (
+        <>
+          {v.desc}
+          {pickedVows.includes(v.id) ? " ◆" : ""}
+        </>
+      ),
+      onPick: () => toggleVow(v.id),
+    })),
+    { kind: "divider" },
+    {
+      id: "heir-born",
+      label: t.text.rebirthBorn,
+      primary: true,
+      disabled: originId === null,
+      onPick: () => {
+        if (originId !== null) onBorn(prev, originId, pickedVows);
+      },
+    },
+  ];
   return (
-    <section style={css.panel} data-testid="screen-heir">
-      <div data-testid="heir-bio">
-        {bio.map((l, i) => (
-          <div key={i} style={l.startsWith("――") || l.startsWith("━") ? css.sys : {}}>
-            {l}
-          </div>
-        ))}
+    <div data-testid="screen-heir" className="scene">
+      <BioPaper testId="heir-bio" bio={bio} />
+      <div
+        style={{
+          ...pos({ left: 640, top: 56 }),
+          fontFamily: theme.font.sys,
+          fontSize: 13,
+          color: W.dim,
+        }}
+      >
+        <span data-testid="heir-kind">
+          {tpl(t.text.heirKindLine, {
+            kind: t.display.heirKindNames[kind] ?? kind,
+            gen: heirGenerationOf(prev) + 1,
+          })}
+        </span>{" "}
+        <span data-testid="heir-nochronicle" style={{ color: W.faint }}>
+          {t.text.heirNoChronicle}
+        </span>
       </div>
-      <div style={css.sys} data-testid="heir-kind">
-        {tpl(t.text.heirKindLine, {
-          kind: t.display.heirKindNames[kind] ?? kind,
-          gen: heirGenerationOf(prev) + 1,
-        })}
-      </div>
-      <div style={css.dim} data-testid="heir-nochronicle">
-        {t.text.heirNoChronicle}
-      </div>
-      <CardTitle>{t.text.rebirthOriginPrompt}</CardTitle>
-      <div>
-        {originList.map((o) => (
-          <Btn
-            key={o.id}
-            testId={`heir-origin-${o.id.replace("origin.", "")}`}
-            sel={originId === o.id}
-            onClick={() => setOriginId(o.id)}
-          >
-            {o.name}
-            <span style={css.dim}> ― {o.desc}</span>
-          </Btn>
-        ))}
-      </div>
-      <CardTitle>{t.text.vowPick}</CardTitle>
-      <div data-testid="heir-vows">
-        {vowList.map((v) => (
-          <Btn
-            key={v.id}
-            testId={`heir-vow-${v.id}`}
-            sel={pickedVows.includes(v.id)}
-            onClick={() => toggleVow(v.id)}
-          >
-            {v.name}
-            <span style={css.dim}> ― {v.desc}</span>
-          </Btn>
-        ))}
-      </div>
-      <div style={{ marginTop: 12 }}>
-        <Btn
-          primary
-          testId="heir-born"
-          disabled={originId === null}
-          onClick={() => {
-            if (originId !== null) onBorn(prev, originId, pickedVows);
-          }}
-        >
-          {t.text.rebirthBorn}
-        </Btn>
-      </div>
-    </section>
+      <ChoiceWindow title="次代の生を継ぐ" entries={entries} />
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定・重ね掛け"],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -187,90 +336,103 @@ export function RebirthScreen({
         ? ts.filter((x) => x !== id)
         : [...ts, id].slice(-balance.legacy.rememberedMax),
     );
+
+  const entries: MenuEntry[] = [
+    ...(prev.titles.length > 0
+      ? [
+          {
+            kind: "header" as const,
+            text: tpl(t.text.legacyTitlesPrompt, { max: balance.legacy.rememberedMax }),
+          },
+          ...prev.titles.map((id): MenuEntry => ({
+            id: `rebirth-title-${id}`,
+            label: titles.titles.find((x) => x.id === id)?.name ?? id,
+            sub: pickedTitles.includes(id) ? "◆ 記憶に残す" : "",
+            onPick: () => toggleTitle(id),
+          })),
+          { kind: "divider" as const },
+        ]
+      : []),
+    ...(topWorks.length > 0
+      ? [
+          { kind: "header" as const, text: t.text.legacyArtifactPrompt },
+          ...topWorks.map((w): MenuEntry => ({
+            id: `rebirth-artifact-${w.id}`,
+            label: `《${workName(w)}》`,
+            sub: (
+              <>
+                質{w.quality}・{w.day + 1}日目{artifactId === w.id ? " ◆" : ""}
+              </>
+            ),
+            onPick: () => setArtifactId((a) => (a === w.id ? undefined : w.id)),
+          })),
+          { kind: "divider" as const },
+        ]
+      : []),
+    { kind: "header", text: t.text.rebirthOriginPrompt },
+    ...originList.map((o): MenuEntry => ({
+      id: `rebirth-origin-${o.id.replace("origin.", "")}`,
+      label: o.name,
+      sub: (
+        <>
+          {o.desc}
+          {originId === o.id ? " ◆" : ""}
+        </>
+      ),
+      onPick: () => setOriginId(o.id),
+    })),
+    { kind: "divider" },
+    // 運命の傾向と誓約（タイトルと同じ項目を共有。接頭辞で testid を分ける）
+    ...tendencyEntries(fate, setFate),
+    ...vowEntries(fate, setFate, "rebirth-vow"),
+    { kind: "divider" },
+    {
+      id: "rebirth-born",
+      label: t.text.rebirthBorn,
+      primary: true,
+      disabled: originId === null,
+      onPick: () => {
+        if (originId !== null) onBorn(prev, originId, pickedTitles, artifactId, fate);
+      },
+    },
+  ];
+
   return (
-    <section style={css.panel} data-testid="screen-rebirth">
-      <div data-testid="rebirth-bio">
-        {bio.map((l, i) => (
-          <div key={i} style={l.startsWith("――") || l.startsWith("━") ? css.sys : {}}>
-            {l}
-          </div>
-        ))}
-      </div>
+    <div data-testid="screen-rebirth" className="scene">
+      <BioPaper testId="rebirth-bio" bio={bio} />
+      {/* 二つ名：年代記が選んだこの生の呼び名 */}
       {epithet !== undefined && (
-        <div style={css.sys} data-testid="rebirth-epithet">
+        <div
+          data-testid="rebirth-epithet"
+          style={{
+            ...pos({ left: 640, top: 56 }),
+            fontFamily: theme.font.mincho,
+            fontSize: 15,
+            color: theme.colors.special,
+          }}
+        >
           {tpl(t.text.rebirthEpithet, {
             name: titles.titles.find((x) => x.id === epithet)?.name ?? epithet,
           })}
         </div>
       )}
-      <CardTitle tone="gold">{t.text.legacyHeader}</CardTitle>
-      {prev.titles.length > 0 ? (
-        <div data-testid="rebirth-titles">
-          <div style={css.dim}>
-            {tpl(t.text.legacyTitlesPrompt, { max: balance.legacy.rememberedMax })}
-          </div>
-          {prev.titles.map((id) => (
-            <Btn
-              key={id}
-              testId={`rebirth-title-${id}`}
-              sel={pickedTitles.includes(id)}
-              onClick={() => toggleTitle(id)}
-            >
-              {titles.titles.find((x) => x.id === id)?.name ?? id}
-            </Btn>
-          ))}
-        </div>
-      ) : (
-        <div style={css.dim}>{t.text.legacyNoTitles}</div>
-      )}
-      {topWorks.length > 0 ? (
-        <div data-testid="rebirth-artifacts">
-          <div style={css.dim}>{t.text.legacyArtifactPrompt}</div>
-          {topWorks.map((w) => (
-            <Btn
-              key={w.id}
-              testId={`rebirth-artifact-${w.id}`}
-              sel={artifactId === w.id}
-              onClick={() => setArtifactId((a) => (a === w.id ? undefined : w.id))}
-            >
-              {workName(w)}
-              <span style={css.dim}>
-                {" "}
-                （質{w.quality}・{w.day + 1}日目）
-              </span>
-            </Btn>
-          ))}
-        </div>
-      ) : (
-        <div style={css.dim}>{t.text.legacyNoArtifact}</div>
-      )}
-      <CardTitle>{t.text.rebirthOriginPrompt}</CardTitle>
-      <div>
-        {originList.map((o) => (
-          <Btn
-            key={o.id}
-            testId={`rebirth-origin-${o.id.replace("origin.", "")}`}
-            sel={originId === o.id}
-            onClick={() => setOriginId(o.id)}
-          >
-            {o.name}
-            <span style={css.dim}> ― {o.desc}</span>
-          </Btn>
-        ))}
-      </div>
-      <FatePickers fate={fate} setFate={setFate} />
-      <div style={{ marginTop: 12 }}>
-        <Btn
-          primary
-          testId="rebirth-born"
-          disabled={originId === null}
-          onClick={() => {
-            if (originId !== null) onBorn(prev, originId, pickedTitles, artifactId, fate);
-          }}
-        >
-          {t.text.rebirthBorn}
-        </Btn>
-      </div>
-    </section>
+      <ChoiceWindow
+        title={t.text.legacyHeader}
+        entries={entries}
+        width={600}
+        left={620}
+        testId="rebirth-artifacts"
+        notes={[
+          ...(prev.titles.length === 0 ? [t.text.legacyNoTitles] : []),
+          ...(topWorks.length === 0 ? [t.text.legacyNoArtifact] : []),
+        ]}
+      />
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定・重ね掛け"],
+        ]}
+      />
+    </div>
   );
 }

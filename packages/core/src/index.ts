@@ -34,6 +34,8 @@ export {
 export type { AgeBand, AgingConfig, AgingWakeResult } from "./growth/aging.js";
 export { rollTailwind, windFor } from "./growth/tailwind.js";
 export type { RolledWind, TailwindConfig, TailwindDef, WindDirection } from "./growth/tailwind.js";
+// 錆の読み取り専用ヘルパー（UI-01。ステータス画面の「錆までN日」表示用）
+export { effectiveGraceDays, rustedValue } from "./growth/rust.js";
 export { step } from "./step.js";
 export type { Command, StepConfig, StepResult } from "./step.js";
 export { recordWork, matchesWork } from "./ledger/index.js";
