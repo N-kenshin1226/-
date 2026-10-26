@@ -26,13 +26,11 @@ import {
 import {
   createRng,
   startCombat,
-  suggestGoals,
   telegraphLines,
   TemplateProvider,
   type NarrationProvider,
 } from "@trace/core";
 import {
-  atoms,
   balance,
   canon,
   cliText,
@@ -47,6 +45,7 @@ import {
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
 import { innPickLines, skillPickLines, statusLines, tpl, wakeBlock } from "./render.js";
+import { loreMenu, societyMenu } from "./menus.js";
 
 export interface PlayCliOptions {
   io: CliIo;
@@ -315,6 +314,17 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     return { quality: r.quality, flags: r.flags };
   };
 
+  /** サブメニューに渡す共有コンテキスト（menus.ts） */
+  const menuCtx = {
+    out,
+    outAll,
+    ask,
+    cfg,
+    t,
+    save,
+    applyTitles: (events: ActionEvent[]) => applyTitles(events),
+  };
+
   // ---- ループ ----
   for (;;) {
     outAll(statusLines(state, cfg, t));
@@ -569,107 +579,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       save(state);
       out(t.text.wake.saved);
     } else if (pick === "6") {
-      // ---- 目標と認定（03 §1：立場×職業、人生目標の宣言） ----
-      const soc = state.society;
-      const standingName =
-        society.standings.find((s) => s.id === soc.standing)?.name ?? soc.standing;
-      const profName =
-        soc.profession === null
-          ? "なし"
-          : (society.professions.find((p) => p.id === soc.profession)?.name ?? soc.profession);
-      const goalName =
-        soc.goal === null
-          ? "なし"
-          : (society.lifeGoals.find((g) => g.id === soc.goal)?.name ?? soc.goal);
-      out(
-        tpl(t.text.societyHeader, {
-          standing: standingName,
-          profession: profName,
-          goal: goalName,
-        }),
-      );
-      // 打診の受諾
-      if (soc.pendingOffers.length === 0) {
-        out(t.text.societyNoOffers);
-      } else {
-        for (let i = 0; i < soc.pendingOffers.length; i++) {
-          const id = soc.pendingOffers[i]!;
-          const name =
-            society.standings.find((s) => s.id === id)?.name ??
-            society.professions.find((p) => p.id === id)?.name ??
-            id;
-          const kind = society.standings.some((s) => s.id === id) ? "立場" : "職業";
-          out(tpl(t.text.societyOfferLine, { i: i + 1, name, kind }));
-        }
-        const oi = await ask(t.text.promptChoice);
-        if (oi === null) return state;
-        const oiN = Number.parseInt(oi.trim(), 10) - 1;
-        if (oiN >= 0 && oiN < soc.pendingOffers.length) {
-          const id = soc.pendingOffers[oiN]!;
-          const res = step(state, { type: "acceptOffer", id }, cfg);
-          state = res.state;
-          const name =
-            society.standings.find((s) => s.id === id)?.name ??
-            society.professions.find((p) => p.id === id)?.name ??
-            id;
-          out(tpl(t.text.societyAccepted, { name }));
-          save(state);
-          continue;
-        }
-      }
-      // 人生目標の宣言（いま手が届きそうなもの3つを提示）
-      const suggestions = suggestGoals(state, cfg.society, 3);
-      out(t.text.societyGoalsHeader);
-      if (suggestions.length === 0) {
-        out(t.text.societyNoGoal);
-      } else {
-        for (let i = 0; i < suggestions.length; i++) {
-          out(tpl(t.text.societyGoalLine, { i: i + 1, name: suggestions[i]!.name }));
-        }
-        const gi = await ask(t.text.promptChoice);
-        if (gi === null) return state;
-        const giN = Number.parseInt(gi.trim(), 10) - 1;
-        if (giN >= 0 && giN < suggestions.length) {
-          const goal = suggestions[giN]!;
-          const res = step(state, { type: "declareGoal", id: goal.id }, cfg);
-          state = res.state;
-          out(tpl(t.text.societyDeclared, { name: goal.name }));
-          save(state);
-        }
-      }
+      // ---- 目標と認定（03 §1）→ menus.ts ----
+      const r = await societyMenu(state, menuCtx);
+      if (r === null) return state;
+      state = r;
     } else if (pick === "7" && canAction) {
-      // ---- 見聞録を読む（07 §3：アトムを読み、事実が繋がる） ----
-      out(
-        tpl(t.text.loreListHeader, {
-          read: state.lore.read.length,
-          total: atoms.length,
-          facts: state.lore.facts.length,
-        }),
-      );
-      if (atoms.length === 0) {
-        out(t.text.loreNone);
-      } else {
-        for (let i = 0; i < atoms.length; i++) {
-          const a = atoms[i]!;
-          const mark = state.lore.read.includes(a.id) ? "読" : "未";
-          out(tpl(t.text.loreLine, { i: i + 1, mark, title: a.title }));
-        }
-        const li = await ask(t.text.promptChoice);
-        if (li === null) return state;
-        const liN = Number.parseInt(li.trim(), 10) - 1;
-        if (liN >= 0 && liN < atoms.length) {
-          const a = atoms[liN]!;
-          if (state.lore.read.includes(a.id)) {
-            out(tpl(t.text.loreRead, { title: a.title, text: a.text }));
-            continue;
-          }
-          const res = step(state, { type: "readAtom", id: a.id }, cfg);
-          state = res.state;
-          out(tpl(t.text.loreRead, { title: a.title, text: a.text }));
-          outAll(applyTitles(res.events));
-          save(state);
-        }
-      }
+      // ---- 見聞録を読む（07 §3）→ menus.ts ----
+      const r = await loreMenu(state, menuCtx);
+      if (r === null) return state;
+      state = r;
     } else {
       out(t.text.invalidInput);
     }
