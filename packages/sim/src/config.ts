@@ -11,6 +11,7 @@ export function stepConfig(): StepConfig {
     tailwind: { defs: tailwinds.tailwinds, ...balance.tailwind },
     body: balance.body,
     ledger: balance.ledger,
+    combat: balance.combat,
     titles: titles.titles.map((t) => ({ id: t.id, rank: t.rank, condition: t.condition })),
   };
 }

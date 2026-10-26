@@ -21,7 +21,11 @@ export type ActionEvent =
   /** 作品台帳に記録された */
   | { type: "workRecorded"; work: Work }
   /** 作品のティアが更新された（自己ベスト。大きな成長のトリガー） */
-  | { type: "tierUp"; kind: string; tier: number };
+  | { type: "tierUp"; kind: string; tier: number }
+  /** 戦闘が終わった（03 §4） */
+  | { type: "combatEnded"; enemyId: string; won: boolean; fled: boolean }
+  /** 死亡して教会で蘇生した。未定着経験の半分を失う */
+  | { type: "died" };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;

@@ -10,6 +10,7 @@ import { consolidateSleep, type InnRank, type SleepConfig } from "./growth/conso
 import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
 import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js";
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
+import type { CombatConfig } from "./combat/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
@@ -30,6 +31,8 @@ export interface StepConfig {
   body: BodyConfig;
   /** 作品台帳（T-16。03 §3） */
   ledger: LedgerConfig;
+  /** 戦闘（03 §4。死亡時の経験損失に使う） */
+  combat: CombatConfig;
   /** 称号の定義（content/titles.json。core が必要とする最小形） */
   titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond }[];
 }
@@ -55,6 +58,19 @@ export type Command =
       flags?: string[];
       /** 簡易判定なら経験係数（03 §2「50%」）。手動は省略/1 */
       expFactor?: number;
+    }
+  /**
+   * 戦闘の結果を世界に反映する（03 §4）。戦闘の進行自体は combat/ で行い、
+   * ここでは勝敗を記録し経験を入れる。敵の強さは difficulty（challenge）で渡す
+   */
+  | {
+      type: "combat";
+      enemyId: string;
+      /** 敵の challenge（gain の挑戦差） */
+      difficulty: number;
+      won: boolean;
+      fled?: boolean;
+      died?: boolean;
     };
 
 export interface StepResult {
@@ -221,6 +237,70 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (recorded.tierUp) {
         events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
       }
+      break;
+    }
+    case "combat": {
+      // 戦闘も行動：剣術と回避に経験が入る（kind "combat" の B）
+      const sks = next.player.skills;
+      const repeats = recentRepeats(
+        next.actionLog,
+        "combat",
+        command.enemyId,
+        cfg.gain.noveltyWindow,
+      );
+      for (const skillId of ["swordplay", "evasion"] as const) {
+        const skill = sks[skillId];
+        if (!skill) continue;
+        const { amount } = computeGain(
+          {
+            kind: "combat",
+            skill: skill.value,
+            delta: command.difficulty - skill.value,
+            repeats,
+            potential: skill.potential,
+            fatigue: next.player.fatigue,
+            wind: windFor(next, "combat", skillId),
+            failed: !command.won,
+          },
+          cfg.gain,
+        );
+        skill.pending += amount;
+        skill.lastUsedDay = next.time.day;
+        events.push({ type: "gainApplied", skill: skillId, amount });
+      }
+
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "combat", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "combat",
+        day: next.time.day,
+        target: command.enemyId,
+      });
+      events.push({
+        type: "combatEnded",
+        enemyId: command.enemyId,
+        won: command.won,
+        fled: command.fled ?? false,
+      });
+      // 撃破数と死は年代記に残る（カウンタで条件DSL・称号が読める）
+      const counters = { ...next.counters };
+      if (command.won) {
+        const key = `kill.species.${command.enemyId}`;
+        counters[key] = (counters[key] ?? 0) + 1;
+      }
+      if (command.died) {
+        counters["death.count"] = (counters["death.count"] ?? 0) + 1;
+        // 教会蘇生：未定着経験の半分を失う。数値そのものは下がらない（03 §4）
+        const skills = { ...next.player.skills };
+        for (const id of Object.keys(skills)) {
+          const s = skills[id]!;
+          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+        }
+        next = { ...next, player: { ...next.player, skills } };
+        events.push({ type: "died" });
+      }
+      next = { ...next, counters };
       break;
     }
   }

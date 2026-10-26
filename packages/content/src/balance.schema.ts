@@ -117,6 +117,25 @@ export const balanceSchema = z
         tierUpBonusPending: z.number().nonnegative(),
       })
       .strict(),
+    /** docs/03 §4 戦闘。core/combat の CombatConfig に対応 */
+    combat: z
+      .object({
+        baseHp: z.number().positive(),
+        hpPerEndurance: z.number().nonnegative(),
+        attackBase: z.number().nonnegative(),
+        attackPerSwordplay: z.number().nonnegative(),
+        attackPerStrength: z.number().nonnegative(),
+        ctBase: z.number().positive(),
+        ctPerAgility: z.number().nonnegative(),
+        ctMin: z.number().positive(),
+        defendFactor: z.number().min(0).max(1),
+        fleeBase: z.number().min(0).max(1),
+        fleePerAgility: z.number().nonnegative(),
+        observeBonus: z.number().nonnegative(),
+        preciseObserve: z.number().nonnegative(),
+        deathPendingFactor: z.number().min(0).max(1),
+      })
+      .strict(),
     /** docs/03 §2 ミニゲーム。各エンジン・皮の係数 */
     minigame: z
       .object({

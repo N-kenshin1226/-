@@ -54,6 +54,24 @@ export { miningGame } from "./minigame/index.js";
 export type { MiningConfig, MiningResult } from "./minigame/index.js";
 export { negotiationGame } from "./minigame/index.js";
 export type { NegotiationConfig, NegotiationResult, NegotiationTopic } from "./minigame/index.js";
+export {
+  combatResult,
+  playerCombatStats,
+  startCombat,
+  telegraphLines,
+  turn as combatTurn,
+} from "./combat/index.js";
+export type {
+  CombatAction,
+  CombatConfig,
+  CombatEvent,
+  CombatResult,
+  CombatState,
+  EnemyDef,
+  EnemyMove,
+  EnemyPatternStep,
+  Telegraph,
+} from "./combat/index.js";
 export type {
   MiniGame,
   MiniGameCtx,

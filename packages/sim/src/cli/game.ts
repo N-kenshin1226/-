@@ -3,6 +3,8 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   canAct,
+  combatResult,
+  combatTurn,
   deserialize,
   miningGame,
   negotiationGame,
@@ -17,10 +19,12 @@ import {
   type DealCard,
   type GameState,
   type InnRank,
+  type CombatAction,
   type StepConfig,
   type TimingInput,
 } from "@trace/core";
-import { balance, cliText, orders, skills, titles, type Order } from "@trace/content";
+import { startCombat, telegraphLines } from "@trace/core";
+import { balance, cliText, enemies, orders, skills, titles, type Order } from "@trace/content";
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
 import { innPickLines, skillPickLines, statusLines, tpl, wakeBlock } from "./render.js";
@@ -362,7 +366,85 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       );
       if (tierUp) out(tpl(t.text.workResultTier, { tier: tierUp.tier }));
       outAll(applyTitles(res.events));
-    } else if (pick === "3" || pick === "rest") {
+    } else if (pick === "3") {
+      // ---- 狩りに出る（周辺エリアで敵と戦う。03 §4） ----
+      out(t.text.huntPick);
+      enemies.enemies.forEach((e, i) =>
+        out(tpl(t.text.huntLine, { index: i + 1, name: e.name, challenge: e.challenge })),
+      );
+      const ei = await ask(t.text.promptChoice);
+      if (ei === null) return state;
+      const enemy = enemies.enemies[Number.parseInt(ei.trim(), 10) - 1];
+      if (!enemy) {
+        out(t.text.invalidInput);
+        continue;
+      }
+      const combatCtx = {
+        skill: 0,
+        seed: `${state.seed}-combat-${state.counters["action.combat"] ?? 0}`,
+      };
+      let cs = startCombat(enemy, balance.combat, state.player);
+      out(tpl(t.text.combatStart, { name: enemy.name }));
+      let printed = 0;
+      while (!cs.done) {
+        outAll(telegraphLines(cs, enemy, balance.combat));
+        out(
+          tpl(t.text.combatStatus, {
+            playerHp: Math.max(0, cs.playerHp),
+            playerMax: cs.playerHpMax,
+            enemy: enemy.name,
+            enemyHp: Math.max(0, cs.enemyHp),
+          }),
+        );
+        const a = await ask(t.text.combatPrompt);
+        if (a === null) return state;
+        const act: CombatAction | null =
+          a.trim() === "1"
+            ? "attack"
+            : a.trim() === "2"
+              ? "defend"
+              : a.trim() === "3"
+                ? "observe"
+                : a.trim() === "4"
+                  ? "flee"
+                  : null;
+        if (!act) {
+          out(t.text.invalidInput);
+          continue;
+        }
+        cs = combatTurn(cs, act, enemy, balance.combat, combatCtx);
+        for (const e of cs.log.slice(printed)) out(`\u3000${e.text}`);
+        printed = cs.log.length;
+      }
+      const r = combatResult(cs);
+      const res = step(
+        state,
+        {
+          type: "combat",
+          enemyId: enemy.id,
+          difficulty: enemy.challenge,
+          won: r.won,
+          fled: r.fled,
+          died: r.died,
+        },
+        cfg,
+      );
+      state = res.state;
+      if (r.won) out(tpl(t.text.combatWon, { name: enemy.name }));
+      else if (r.fled) out(t.text.combatFled);
+      else out(t.text.combatLost);
+      for (const e of res.events) {
+        if (e.type === "gainApplied" && e.amount > 0) {
+          out(
+            tpl(t.text.combatGain, {
+              skill: skillNames.get(e.skill) ?? e.skill,
+              amount: e.amount.toFixed(1),
+            }),
+          );
+        }
+      }
+      outAll(applyTitles(res.events));
+    } else if (pick === "4" || pick === "rest") {
       // ---- 休む（自宅。その日を終える） ----
       out(t.text.restDone);
       const res = step(state, { type: "rest" }, cfg);
@@ -375,7 +457,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       save(state);
       out(t.text.wake.saved);
-    } else if (pick === "4" || pick === "sleep") {
+    } else if (pick === "5" || pick === "sleep") {
       // ---- 寝る（宿・夕食を選ぶ） ----
       const withDinner = true;
       outAll(innPickLines(t, (inn) => sleepQuality(inn, withDinner, cfg.sleep)));

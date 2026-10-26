@@ -1,0 +1,59 @@
+{
+  "enemies": [
+    {
+      "id": "wolf",
+      "name": "狼",
+      "hp": 30,
+      "intervalTicks": 10,
+      "challenge": 15,
+      "agility": 5,
+      "attack": {
+        "id": "bite",
+        "name": "咬みつき",
+        "power": 4
+      },
+      "moves": {
+        "pounce": {
+          "id": "pounce",
+          "name": "飛びかかり",
+          "power": 9
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "pounce",
+          "ticks": 8
+        }
+      ]
+    },
+    {
+      "id": "stray_dog",
+      "name": "野犬",
+      "hp": 10,
+      "intervalTicks": 14,
+      "challenge": 8,
+      "agility": 3,
+      "attack": {
+        "id": "snap",
+        "name": "噛みつき",
+        "power": 2
+      },
+      "moves": {},
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        }
+      ]
+    }
+  ]
+}

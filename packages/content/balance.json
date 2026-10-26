@@ -20,7 +20,8 @@
   "gain": {
     "base": {
       "train": 3.6,
-      "work": 2.5
+      "work": 2.5,
+      "combat": 4.0
     },
     "challengePoints": [
       [-20, 0.05],
@@ -58,7 +59,8 @@
     "fatiguePerAction": {
       "wait": 1,
       "train": 12,
-      "work": 10
+      "work": 10,
+      "combat": 20
     },
     "fatigueDefaultPerAction": 2,
     "fatigueRecover": 60,
@@ -71,6 +73,11 @@
       "work": {
         "dexterity": 2,
         "spirit": 1
+      },
+      "combat": {
+        "strength": 2,
+        "endurance": 3,
+        "agility": 2
       }
     },
     "statGainPerLoad": 0.05,
@@ -159,5 +166,21 @@
       "failFlag": "敗北",
       "counterBlockFactor": 0.4
     }
+  },
+  "combat": {
+    "baseHp": 30,
+    "hpPerEndurance": 2,
+    "attackBase": 5,
+    "attackPerSwordplay": 0.15,
+    "attackPerStrength": 0.2,
+    "ctBase": 12,
+    "ctPerAgility": 0.15,
+    "ctMin": 6,
+    "defendFactor": 0.5,
+    "fleeBase": 0.7,
+    "fleePerAgility": 0.02,
+    "observeBonus": 20,
+    "preciseObserve": 40,
+    "deathPendingFactor": 0.5
   }
 }

@@ -59,7 +59,7 @@
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
-    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 休む（今日を終える）  4) 寝る（宿を選ぶ）  q) 中断する",
+    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  q) 中断する",
     "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  q) 中断する",
     "mustSleep": "――身体はもう動きません。今日はここまでです。",
     "promptChoice": "> ",
@@ -108,6 +108,15 @@
     "negoHp": "（こちら {player} ／ あいて {opponent}）",
     "negoPrompt": "出す札（番号）",
     "negoWon": "――口論に勝った。",
-    "negoLost": "――口論に負けた。"
+    "negoLost": "――口論に負けた。",
+    "huntPick": "どの獲物を追いますか",
+    "huntLine": "  {index}) {name}（強さ {challenge}）",
+    "combatStart": "――{name} が立ちはだかった。",
+    "combatStatus": "（こちら {playerHp}/{playerMax} ／ {enemy} {enemyHp}）",
+    "combatPrompt": "行動（1)攻撃 2)防御 3)観察 4)逃げる）",
+    "combatWon": "――{name} を倒した。",
+    "combatLost": "――力尽きた。……教会で目を覚ました。未定着の経験が半分失われた。",
+    "combatFled": "――命だけは拾った。",
+    "combatGain": "《{skill}》の経験 +{amount}"
   }
 }

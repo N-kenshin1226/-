@@ -17,7 +17,7 @@ function threeDays(sleepChoices: [string, string][]): string[] {
   for (const [inn, dinner] of sleepChoices) {
     lines.push("1", "1", ""); // 訓練：スキル1・推奨難度
     lines.push("1", "2", ""); // 訓練：スキル2・推奨難度
-    lines.push("4", inn, dinner); // 寝る：宿・夕食
+    lines.push("5", inn, dinner); // 寝る：宿・夕食
   }
   return lines;
 }
@@ -48,7 +48,7 @@ describe("playCli", () => {
   it("セーブとロードで続きから遊べる", async () => {
     const savePath = tmpSave();
     // 1日目を遊んで寝る（自動セーブ）
-    const first = scriptedIo(["1", "1", "", "4", "2", "y", "q"]);
+    const first = scriptedIo(["1", "1", "", "5", "2", "y", "q"]);
     const s1 = await playCli({ io: first.io, savePath, seed: SEED });
     expect(s1!.time.day).toBe(1);
 
@@ -69,7 +69,7 @@ describe("playCli", () => {
       "2", // 仕事
       "1", // 《釘の束》
       "n", // 簡易判定
-      "4",
+      "5",
       "2",
       "y", // 寝る
       "q",
@@ -92,7 +92,7 @@ describe("playCli", () => {
       "1",
       "2",
       "", // 《回避》を推奨難度で
-      "4",
+      "5",
       "2",
       "y", // 宿屋《麦穂亭》・夕食あり
       "q",
