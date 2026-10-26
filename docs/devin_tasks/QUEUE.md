@@ -56,3 +56,14 @@
 | T-40 | [T-40_reincarnation.md](T-40_reincarnation.md) | T-36〜T-39 | pending | 引退・転生フロー（伝記→年代記→継承→新シード） |
 | T-41 | [T-41_pinnacle.md](T-41_pinnacle.md) | T-19 | pending | 頂点ルート2本（条件鎖＋エンディング） |
 | T-42 | [T-42_legend.md](T-42_legend.md) | T-38, T-40 | done | 前世の伝説最小版（年代記に名・二つ名） |
+
+## M4（06_endgame.md §3、継続的追加）
+
+| ID | 票 | 依存 | 状態 | 内容 |
+|---|---|---|---|---|
+| T-43 | [T-43_abyss.md](T-43_abyss.md) | T-17, T-38 | pending | 無限深層ダンジョン（時間制限＋自己ベスト） |
+| T-44 | [T-44_uniques.md](T-44_uniques.md) | T-17, T-23 | pending | 強化版ユニーク再戦・図鑑 |
+| T-45 | [T-45_tendency.md](T-45_tendency.md) | T-40 | pending | 運命の傾向（開始時3択・1軸） |
+| T-46 | [T-46_vows.md](T-46_vows.md) | T-45 | pending | 誓約（難度修飾子5個＋称号） |
+| T-47 | [T-47_rivals.md](T-47_rivals.md) | T-38 | pending | ライバル・ランキング（簡易版） |
+| T-48 | [T-48_heir.md](T-48_heir.md) | T-39, T-40 | pending | 子・弟子への継承延長（同じ世界） |
