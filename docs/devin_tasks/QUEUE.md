@@ -84,3 +84,4 @@
 | X-4 | [X-4_true_end.md](X-4_true_end.md) | T-41 | todo | **範囲変更**：大賢者ルートの追加だけ行う。真エンドの部分はやらない（W-01〜W-05 に置き換え） |
 | X-5 | [X-5_lost_legacy.md](X-5_lost_legacy.md) | T-39, T-40 | todo | 前世の技が次の世界に残る（失われた書物。年代記に代表技能を記録） |
 | X-7 | [X-7_stage_scaling.md](X-7_stage_scaling.md) | UI-01 | done | Stage の解像度スケーリング検証（e2e。UI-01 残り受け入れ） |
+| X-8 | [X-8_e2e_coverage.md](X-8_e2e_coverage.md) | UI-01 | todo | 未カバー画面の e2e 追加（能力・立場・書店・新聞・記録削除・家で休む） |
