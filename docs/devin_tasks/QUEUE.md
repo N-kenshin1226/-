@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
 | W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | done | 危機の筋書きと世界の備え（docs/08_world_crisis.md） |
-| W-02 | [W-02_touchpoints.md](W-02_touchpoints.md) | W-01 | todo | 接点（危機が日常に混ざる）と寄与 |
+| W-02 | [W-02_touchpoints.md](W-02_touchpoints.md) | W-01 | done | 接点（危機が日常に混ざる）と寄与 |
 | W-03 | [W-03_involvement.md](W-03_involvement.md) | W-02 | todo | 関与の段階と英雄への道 |
 | W-05 | [W-05_sim_crisis.md](W-05_sim_crisis.md) | W-03 | todo | 危機のバランスCIゲート |
 | W-04 | [W-04_endings_ui.md](W-04_endings_ui.md) | W-03, UI-01 | todo | 危機の見せ方と終幕の画面 |
