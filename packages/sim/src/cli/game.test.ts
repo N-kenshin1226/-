@@ -625,3 +625,81 @@ describe("T-48 子・弟子への継承延長（同じ世界）", () => {
     expect(existsSync(chroniclePath)).toBe(false);
   });
 });
+
+describe("X-5 失われた書物（前世の技が次の世界の書店に）", () => {
+  /** 指定した peak を持つ5日目の人生をセーブとして仕込む */
+  const seedLife = (savePath: string, peaks: Record<string, number>) => {
+    const life = newGame("lostbook-seed", "旅人", {
+      skillIds: skills.skills.map((s) => s.id),
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    for (const [id, peak] of Object.entries(peaks)) {
+      life.player.skills[id]!.peak = peak;
+    }
+    writeFileSync(savePath, serialize({ ...life, time: { day: 5, action: 1 } }));
+  };
+
+  /** 引退 → 転生 → 書店を開くまでの入力行 */
+  const rebirthToShop = [
+    "1", // つづきから
+    "11", // 引退する
+    "y", // 確認
+    "1", // 継ぎ方：新しい世界に転生する
+    "1", // 転生先の出自
+    "1", // 転生先の傾向：穏やか
+    "", // 転生先の誓約：なし
+    "9", // 書店
+  ];
+
+  it("前世の代表技能が閾値超なら、転生先の書店に「先達の手記」が並ぶ", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-lostbook-test-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    const th = balance.lostBooks.skillThreshold;
+    seedLife(savePath, { swordplay: th + 20, smithing: th - 1 });
+
+    const { io, output } = scriptedIo([...rebirthToShop, "6", "q"]); // 棚の6番＝剣術の手記
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: "lostbook-seed",
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+
+    // 転生時に flags["lostbook.swordplay"] が立ち、告知の1行が出る
+    expect(state!.flags["lostbook.swordplay"]).toBe(true);
+    expect(text).toContain("失われた手記を遺した");
+    // 書店の棚に剣術の手記が並ぶ（閾値未満の鍛冶の手記は出ない）
+    expect(text).toContain("剣鬼の手記");
+    expect(text).not.toContain("炉辺の遺稿");
+    // 棚にあるので選べる（値段は初期所持金を超えるので購入は足りない）
+    expect(text).toContain("所持金が足りない");
+  });
+
+  it("代表技能がすべて閾値未満なら、手記は棚に出ない", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-lostbook-under-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    const th = balance.lostBooks.skillThreshold;
+    seedLife(savePath, { swordplay: th - 1, smithing: th - 1 });
+
+    const { io, output } = scriptedIo([...rebirthToShop, "q"]);
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: "lostbook-seed",
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+
+    expect(state!.flags["lostbook.swordplay"]).toBeUndefined();
+    expect(text).not.toContain("失われた手記を遺した");
+    expect(text).not.toContain("剣鬼の手記");
+    // 棚は従来の5冊だけ
+    expect(text).toContain("山野の採集図鑑");
+  });
+});

@@ -672,7 +672,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     }
     case "buyBook": {
       // 購入は行動を消費しない（書店への立ち寄り。認定の受諾と同じ扱い）
-      const res = buyBook(next, command.id, cfg.books);
+      const res = buyBook(next, command.id, cfg.books, cfg.time);
       if (!res.ok) break;
       next = res.state;
       events.push({ type: "bookBought", id: command.id });

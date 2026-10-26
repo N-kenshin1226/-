@@ -1,5 +1,7 @@
+import { evaluate, type Cond } from "../conditions/index.js";
 import type { Effect } from "../effects/index.js";
 import type { GameState } from "../state/types.js";
+import type { TimeConfig } from "../time/index.js";
 
 /**
  * 書物（docs/02_growth_system.md §8・§6、T-26）。
@@ -27,6 +29,11 @@ export interface BookDefLike {
   potentialRecover?: Record<string, number>;
   /** 読了で立つ知識フラグ（条件DSLの flag で読める） */
   flag?: string;
+  /**
+   * 書店の棚に並ぶ条件（条件DSL。省略時は常に並ぶ）。
+   * 失われた書物（X-5）は {flag: "lostbook.<skillId>"} —— 転生時に立つ
+   */
+  condition?: Cond;
 }
 
 export interface BooksConfig {
@@ -34,6 +41,21 @@ export interface BooksConfig {
   books: readonly BookDefLike[];
   /** 素質回復のグローバル上限（balance.body.potentialMax を渡す） */
   potentialMax: number;
+}
+
+/**
+ * いま書店の棚に並ぶ書物（X-5）。condition の無い書物は常に並び、
+ * 条件付きの書物（失われた手記など）は evaluate で今の state から判定する。
+ * ジェネリックにしてあるので、表示名など BookDefLike 以上のフィールドを
+ * 持つ定義（content の Book）を渡しても型が保たれる
+ */
+export function shelfBooks<T extends BookDefLike>(
+  state: GameState,
+  cfg: { books: readonly T[] } | undefined,
+  time: TimeConfig,
+): T[] {
+  if (cfg === undefined) return [];
+  return cfg.books.filter((b) => b.condition === undefined || evaluate(b.condition, state, time));
 }
 
 /** 読了済みか */
@@ -71,10 +93,19 @@ export interface BuyBookResult {
   ok: boolean;
 }
 
-/** 書物を買う：所持金を払って所持に加える（行動は消費しない） */
-export function buyBook(state: GameState, id: string, cfg?: BooksConfig): BuyBookResult {
+/** 書物を買う：所持金を払って所持に加える（行動は消費しない）。
+ * 棚条件（condition）を満たさない書物は買えない —— 棚の一覧だけでなく購入側でも判定する */
+export function buyBook(
+  state: GameState,
+  id: string,
+  cfg: BooksConfig | undefined,
+  time: TimeConfig,
+): BuyBookResult {
   const def = cfg?.books.find((b) => b.id === id);
   if (def === undefined || state.player.money < def.price || state.books.owned.includes(id)) {
+    return { state, ok: false };
+  }
+  if (def.condition !== undefined && !evaluate(def.condition, state, time)) {
     return { state, ok: false };
   }
   return {

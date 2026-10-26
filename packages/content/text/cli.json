@@ -223,6 +223,7 @@
     "rebirthMemory": "――前世の記憶が滲んでいる：{titles}",
     "rebirthArtifact": "――前世の名品《{name}》が、この世界のどこかに現れたという。",
     "rebirthPotential": "――前世の頂きが素質を押し上げている：{skills}",
+    "rebirthLostBooks": "――前世の極みが、この世界の書店に失われた手記を遺した：{names}",
     "rebirthOriginPrompt": "── 新しい生の出自 ──",
     "rebirthBorn": "この生を始める",
     "heirWayPick": "――この生のあとを、どう継ぎますか",

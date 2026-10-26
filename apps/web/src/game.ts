@@ -299,7 +299,12 @@ export interface FateChoice {
 }
 
 /** 新規開始・転生で共通の newGame 初期値（出自は呼び出し側で選ぶ） */
-const gameInit = (origin: Origin, legacy?: Legacy, fate?: FateChoice): NewGameConfig => ({
+const gameInit = (
+  origin: Origin,
+  legacy?: Legacy,
+  fate?: FateChoice,
+  flags?: readonly string[],
+): NewGameConfig => ({
   skillIds: skills.skills.map((s) => s.id),
   initialPotential: balance.player.initialPotential,
   origin,
@@ -310,6 +315,7 @@ const gameInit = (origin: Origin, legacy?: Legacy, fate?: FateChoice): NewGameCo
   ...(legacy !== undefined ? { legacy } : {}),
   ...(fate?.tendency !== undefined ? { tendency: fate.tendency } : {}),
   ...(fate?.vows !== undefined ? { vows: fate.vows } : {}),
+  ...(flags !== undefined && flags.length > 0 ? { flags } : {}),
   // 世界の危機（W-01）：この世界の危機をシードから抽選する
   ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
 });
@@ -332,9 +338,10 @@ export function nextLife(
   originId: string | undefined,
   legacy: Legacy,
   fate?: FateChoice,
+  flags?: readonly string[],
 ): GameState {
   const origin = origins.origins.find((o) => o.id === originId) ?? origins.origins[0]!;
-  return newGame(nextWorldSeed(prev), t.text.playerName, gameInit(origin, legacy, fate));
+  return newGame(nextWorldSeed(prev), t.text.playerName, gameInit(origin, legacy, fate, flags));
 }
 
 /**

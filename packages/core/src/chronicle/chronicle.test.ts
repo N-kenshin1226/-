@@ -96,6 +96,53 @@ describe("年代記エントリの変換（lifeEntryOf）", () => {
     expect(lifeEntryOf(rich(), "death").pinnacles).toBeUndefined();
     expect(lifeEntryOf(rich(), "death", { pinnacles: [] }).pinnacles).toBeUndefined();
   });
+
+  it("代表技能（X-5）：最高到達値 peak の上位を載せる。技能を持たない生では省略", () => {
+    const life = {
+      ...rich(),
+      player: {
+        ...rich().player,
+        skills: {
+          // value（現在値）ではなく peak（最高到達値）を見る
+          swordplay: { ...rich().player.skills["swordplay"]!, value: 10, peak: 80 },
+          smithing: { ...rich().player.skills["smithing"]!, value: 55, peak: 55 },
+          mining: {
+            value: 0,
+            peak: 0,
+            pending: 0,
+            potential: 100,
+            potentialCap: 100,
+            lastUsedDay: 0,
+          },
+        },
+      },
+    };
+    const e = lifeEntryOf(life, "retire");
+    expect(e.peakSkills).toEqual([
+      { id: "swordplay", value: 80 }, // peak 80 > smithing 55。value 10 には惑わされない
+      { id: "smithing", value: 55 },
+    ]);
+    // peak が 0 の技能は載せない
+    expect(lifeEntryOf(base(), "retire").peakSkills).toBeUndefined();
+  });
+
+  it("代表技能は maxSkills 件まで。同値はスキルID順で決定論的に揃う", () => {
+    const skills = Object.fromEntries(
+      ["b_skill", "a_skill", "c_skill"].map((id) => [
+        id,
+        { value: 50, peak: 50, pending: 0, potential: 100, potentialCap: 100, lastUsedDay: 0 },
+      ]),
+    );
+    const life = { ...base(), player: { ...base().player, skills } };
+    // 同 peak なら ID 昇順。maxSkills で頭から切る
+    expect(lifeEntryOf(life, "retire").peakSkills).toEqual([
+      { id: "a_skill", value: 50 },
+      { id: "b_skill", value: 50 },
+      { id: "c_skill", value: 50 },
+    ]);
+    expect(lifeEntryOf(life, "retire", { maxSkills: 2 }).peakSkills).toHaveLength(2);
+    expect(lifeEntryOf(life, "retire", { maxSkills: 0 }).peakSkills).toBeUndefined();
+  });
 });
 
 describe("recordLife", () => {
@@ -162,11 +209,28 @@ describe("バージョン移行", () => {
     expect(migrated.lives).toEqual(lives);
   });
 
-  it("v1 の年代記は v2 へ移行される（頂点記録の追加・T-41）", () => {
+  it("v1 の年代記は最新版へ移行される（v2 頂点記録・T-41 経由）", () => {
     const lives = [{ name: "旧世代", cause: "retire", worldSeed: "w1", daysLived: 30 }];
     const migrated = deserializeChronicle(JSON.stringify({ version: 1, lives }));
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(CHRONICLE_VERSION);
     expect(migrated.lives).toEqual(lives); // pinnacles は任意フィールド。埋めない
+  });
+
+  it("v2 の年代記は v3 へ移行される（代表技能 peakSkills の追加・X-5）", () => {
+    // v2 時代の頁には peakSkills が無い。任意フィールドなので埋めるものはない
+    const lives = [
+      {
+        name: "古の剣士",
+        cause: "death",
+        worldSeed: "w2",
+        daysLived: 120,
+        pinnacles: ["sword_saint"],
+      },
+    ];
+    const migrated = deserializeChronicle(JSON.stringify({ version: 2, lives }));
+    expect(migrated.version).toBe(3);
+    expect(migrated.lives).toEqual(lives); // 頁はそのまま。peakSkills は旧頁には無い
+    expect(migrated.lives[0]!.peakSkills).toBeUndefined();
   });
 
   it("version が無い・未来・配列でない lives はエラー", () => {

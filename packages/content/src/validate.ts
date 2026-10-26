@@ -139,6 +139,7 @@ try {
     books?: {
       id?: string;
       potentialRecover?: Record<string, unknown>;
+      condition?: { flag?: string };
       effect?: {
         gainVs?: Record<string, unknown>;
         damageVs?: Record<string, unknown>;
@@ -146,6 +147,11 @@ try {
       };
     }[];
   };
+  const lostBooksCfg = (
+    JSON.parse(readFileSync(join(root, "balance.json"), "utf8")) as {
+      lostBooks?: { flagPrefix?: string };
+    }
+  ).lostBooks;
   const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
   const enemyIds = new Set((enemiesRaw.enemies ?? []).map((e) => e.id));
   const kindIds = new Set(["train", "work", "combat"]);
@@ -165,6 +171,14 @@ try {
     }
     for (const key of Object.keys(b.effect?.priceVs ?? {})) {
       if (!skillIds.has(key)) bad.push(`${label}: priceVs の仕事 ${key}`);
+    }
+    // 失われた書物（X-5）：棚条件の lostbook.<skillId> は skills.json の id に限る
+    const flag = b.condition?.flag;
+    const prefix = lostBooksCfg?.flagPrefix;
+    if (flag !== undefined && prefix !== undefined && flag.startsWith(prefix)) {
+      if (!skillIds.has(flag.slice(prefix.length))) {
+        bad.push(`${label}: 棚条件フラグ ${flag} の技能が未定義`);
+      }
     }
   }
   if (bad.length > 0) {

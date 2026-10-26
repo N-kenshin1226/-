@@ -8,6 +8,8 @@ import {
   describe,
   heirGenerationOf,
   legacyOf,
+  lostBookFlags,
+  lostBookSkillId,
   step,
   type ActionEvent,
   type GameState,
@@ -19,6 +21,7 @@ import {
   eventLines,
   heirLife,
   legacyArtifactName,
+  loadChronicle,
   loadGame,
   newSession,
   nextLife,
@@ -266,7 +269,10 @@ export function App() {
         rememberedTitles,
         ...(artifactId !== undefined ? { artifactId } : {}),
       });
-      const next = nextLife(prev, originId, legacy, fate);
+      // 失われた書物（X-5、06 §2）：直前の人生（chronicle の最新の頁）の代表技能が
+      // 閾値超なら、その技能の「先達の手記」が次の世界の書店に並ぶ（flags に刻む）
+      const lostFlags = lostBookFlags(loadChronicle(), balance.lostBooks, prev.seed);
+      const next = nextLife(prev, originId, legacy, fate, lostFlags);
       saveGame(next);
       stateRef.current = next;
       setState(next);
@@ -286,6 +292,15 @@ export function App() {
       }
       if (legacy.artifact !== null) {
         lines.push(tpl(t.text.rebirthArtifact, { name: legacyArtifactName(legacy.artifact) }));
+      }
+      if (lostFlags.length > 0) {
+        const names = lostFlags
+          .map((f) => {
+            const id = lostBookSkillId(f, balance.lostBooks);
+            return id !== null ? (skillList.find((sk) => sk.id === id)?.name ?? id) : f;
+          })
+          .join("、");
+        lines.push(tpl(t.text.rebirthLostBooks, { names }));
       }
       push(lines);
       setScreen({ name: "menu" });

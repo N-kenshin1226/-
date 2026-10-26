@@ -297,6 +297,11 @@
     "potentialFactor": 0.05,
     "potentialMax": 10
   },
+  "lostBooks": {
+    "skillThreshold": 60,
+    "maxBooks": 3,
+    "flagPrefix": "lostbook."
+  },
   "tendency": {
     "calm": {},
     "war": {

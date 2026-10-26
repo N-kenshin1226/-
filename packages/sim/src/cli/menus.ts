@@ -4,6 +4,7 @@ import {
   canApprentice,
   crisisTypeOf,
   rivalsOf,
+  shelfBooks,
   step,
   suggestGoals,
   type ActionEvent,
@@ -154,13 +155,15 @@ export async function loreMenu(state: GameState, ctx: MenuCtx): Promise<GameStat
   return res.state;
 }
 
-/** 「9) 書店」：書物の購入と読書（T-26）。購入は行動を消費せず、読むには1行動使う */
+/** 「9) 書店」：書物の購入と読書（T-26）。購入は行動を消費せず、読むには1行動使う。
+ *  棚に並ぶのは条件を満たす書物だけ（X-5：失われた手記は転生フラグが立つと現れる） */
 export async function booksMenu(state: GameState, ctx: MenuCtx): Promise<GameState | null> {
   const { out, outAll, ask, cfg, t, save, applyTitles } = ctx;
   const skillName = (id: string) => skills.skills.find((s) => s.id === id)?.name ?? id;
+  const shelf = shelfBooks(state, { books: books.books }, cfg.time);
   out(tpl(t.text.bookShopHeader, { money: state.player.money }));
-  for (let i = 0; i < books.books.length; i++) {
-    const b = books.books[i]!;
+  for (let i = 0; i < shelf.length; i++) {
+    const b = shelf[i]!;
     const read = state.books.read.some((r) => r.id === b.id);
     const mark = read ? "読" : state.books.owned.includes(b.id) ? "持" : "―";
     out(tpl(t.text.bookLine, { i: i + 1, mark, name: b.name, price: b.price, desc: b.desc }));
@@ -171,8 +174,8 @@ export async function booksMenu(state: GameState, ctx: MenuCtx): Promise<GameSta
   const bi = await ask(t.text.promptChoice);
   if (bi === null) return null;
   const biN = Number.parseInt(bi.trim(), 10) - 1;
-  if (!(biN >= 0 && biN < books.books.length)) return state;
-  const b = books.books[biN]!;
+  if (!(biN >= 0 && biN < shelf.length)) return state;
+  const b = shelf[biN]!;
 
   if (state.books.read.some((r) => r.id === b.id)) {
     out(t.text.bookAlreadyRead);
