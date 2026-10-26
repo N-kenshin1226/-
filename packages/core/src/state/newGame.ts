@@ -48,6 +48,12 @@ export interface NewGameConfig {
    * （誓約称号の条件が flags/counters から読めるようにするため）
    */
   vows?: readonly string[];
+  /**
+   * 周の開始時に立てる任意フラグ（X-5、06 §2）。
+   * 失われた書物の "lostbook.<skillId>" など、前世由来で次の世界に残る刻印。
+   * GameState の形は変えず flags だけで表現する
+   */
+  flags?: readonly string[];
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -106,6 +112,8 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       ...(cfg.legacy?.rememberedTitles ?? []).map((id) => [`memory.title.${id}`, true] as const),
       // 積んだ誓約のフラグ（T-46。誓約称号の条件DSLが読む）
       ...(cfg.vows ?? []).map((id) => [`vow.taken.${id}`, true] as const),
+      // 前世由来の刻印など任意の開始フラグ（X-5。失われた書物の棚条件が読む）
+      ...(cfg.flags ?? []).map((f) => [f, true] as const),
     ]),
     actionLog: [],
     today: { winds: [], loads: 0 },

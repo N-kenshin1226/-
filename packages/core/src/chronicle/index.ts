@@ -8,7 +8,7 @@ import type { GameState } from "../state/types.js";
  */
 
 /** 年代記スキーマのバージョン（save/ の SAVE_VERSION とは別系統） */
-export const CHRONICLE_VERSION = 2;
+export const CHRONICLE_VERSION = 3;
 
 /** 人生の終わり方 */
 export type LifeCause = "death" | "retire" | "oldAge";
@@ -47,6 +47,13 @@ export interface ChronicleEntry {
   cause: LifeCause;
   /** 頂点に至ったルートID（T-41。pinnacles.json の id。無ければ省略） */
   pinnacles?: string[];
+  /**
+   * その人生の代表技能（X-5、06 §2）：最高到達値（peak）の上位。
+   * value はその生が辿り着いた高さ（錆びて下がった現在値ではなく peak）。
+   * 失われた書物（lostbooks/）がこの記録を読んで次の世界の書店に手記を出す。
+   * 技能を持たない生では省略（v3〜）
+   */
+  peakSkills?: readonly { id: string; value: number }[];
   /** 伝記本文（T-37 の語り層が差し込む。無ければ省略） */
   biography?: string;
   /** この人生を過ごした世界のシード */
@@ -75,10 +82,14 @@ export interface RecordLifeOptions {
   pinnacles?: string[];
   /** 代表作の最大件数（既定 3） */
   maxWorks?: number;
+  /** 代表技能の最大件数（既定 3。X-5） */
+  maxSkills?: number;
 }
 
 /** 代表作の既定件数 */
 const DEFAULT_MAX_WORKS = 3;
+/** 代表技能の既定件数 */
+const DEFAULT_MAX_SKILLS = 3;
 
 const RANK_ORDER: Record<"S" | "A" | "B", number> = { S: 0, A: 1, B: 2 };
 
@@ -122,6 +133,13 @@ export function lifeEntryOf(
       ...(w.order !== undefined ? { order: w.order } : {}),
     }));
   const epithet = opts?.epithet ?? pickEpithet(state.titles, opts?.titleDefs);
+  // 代表技能（X-5）：最高到達値の上位。同値はスキルID順で決定論的に揃える
+  const maxSkills = opts?.maxSkills ?? DEFAULT_MAX_SKILLS;
+  const peakSkills = Object.entries(state.player.skills)
+    .map(([id, s]) => ({ id, value: s.peak }))
+    .filter((s) => s.value > 0)
+    .sort((a, b) => b.value - a.value || a.id.localeCompare(b.id))
+    .slice(0, Math.max(0, maxSkills));
   return {
     name: state.player.name,
     ...(epithet !== undefined ? { epithet } : {}),
@@ -135,6 +153,7 @@ export function lifeEntryOf(
     ...(opts?.pinnacles !== undefined && opts.pinnacles.length > 0
       ? { pinnacles: [...opts.pinnacles] }
       : {}),
+    ...(peakSkills.length > 0 ? { peakSkills } : {}),
     ...(opts?.biography !== undefined ? { biography: opts.biography } : {}),
     worldSeed: state.seed,
   };
@@ -180,6 +199,8 @@ export const chronicleMigrations: Record<
   }),
   /** 1 → 2: 頂点ルートの記録（T-41）を追加。追加入力の任意フィールドなので埋めるものはない */
   1: (old) => ({ ...old, version: 2 }),
+  /** 2 → 3: 代表技能 peakSkills（X-5）を追加。任意フィールドなので埋めるものはない */
+  2: (old) => ({ ...old, version: 3 }),
 };
 
 export function serializeChronicle(chronicle: Chronicle): string {

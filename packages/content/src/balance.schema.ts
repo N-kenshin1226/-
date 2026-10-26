@@ -188,6 +188,21 @@ export const balanceSchema = z
         potentialMax: z.number().nonnegative(),
       })
       .strict(),
+    /**
+     * docs/06_endgame.md §2、X-5：失われた書物。core/lostbooks の LostBookConfig に対応。
+     * 転生で別世界に生まれたとき、前世の代表技能が閾値以上ならその技能の
+     * 「先達の手記」が次の世界の書店に並ぶ（flags["lostbook.<skillId>"] で表現）
+     */
+    lostBooks: z
+      .object({
+        /** 手記が現れる代表技能の閾値（chronicle の peakSkills.value がこの値以上） */
+        skillThreshold: z.number().nonnegative(),
+        /** 1周に現れる手記の最大数（peakSkills 上位から） */
+        maxBooks: z.number().int().nonnegative(),
+        /** 棚条件が読むフラグの接頭辞（flag = flagPrefix + スキルID） */
+        flagPrefix: z.string().min(1),
+      })
+      .strict(),
     /** docs/03 §3 作品台帳。core/ledger の LedgerConfig に対応 */
     ledger: z
       .object({

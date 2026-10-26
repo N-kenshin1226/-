@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { condSchema } from "./conditions.schema.js";
 import { effectSchema } from "./effects.schema.js";
 
 /**
@@ -27,6 +28,11 @@ export const bookSchema = z
     potentialRecover: z.record(z.string().min(1), z.number().positive()).optional(),
     /** 読了で立つ知識フラグ（条件DSLの flag で読める） */
     flag: z.string().min(1).optional(),
+    /**
+     * 書店の棚に並ぶ条件（条件DSL。省略時は常に並ぶ）。
+     * 失われた書物（X-5）は {flag: "lostbook.<skillId>"} —— 転生時に立つ
+     */
+    condition: condSchema.optional(),
   })
   .strict()
   .refine(
