@@ -113,6 +113,65 @@
           }
         }
       ]
+    },
+    {
+      "id": "great_sage",
+      "name": "大賢者",
+      "desc": "禁書と世界の真理。読み、鑑み、禁じられた一冊の先で世界の成り立ちを知る道",
+      "title": "title.great_sage",
+      "stages": [
+        {
+          "id": "voracity",
+          "name": "読書の虫",
+          "rank": "B",
+          "notice": "――頂点への段《読書の虫》に至りました。頁をめくる手が、もう止まりません。",
+          "condition": {
+            "and": [
+              { "counter": "action.read", "gte": 4 },
+              { "skill": "observation", "gte": 20 }
+            ]
+          }
+        },
+        {
+          "id": "discerning",
+          "name": "鑑定の眼",
+          "rank": "A",
+          "notice": "――頂点への段《鑑定の眼》に至りました。真贋を見抜く名が、街に伝わります。",
+          "condition": {
+            "and": [
+              { "skill": "appraisal", "gte": 45 },
+              { "work": { "kind": "appraisal", "tierGte": 3 } },
+              { "counter": "action.read", "gte": 7 }
+            ]
+          }
+        },
+        {
+          "id": "forbidden",
+          "name": "禁書の探索",
+          "rank": "A",
+          "notice": "――頂点への段《禁書の探索》に至りました。封じられた一冊の気配を捉えます。",
+          "condition": {
+            "and": [
+              { "flag": "found.taboo_codex" },
+              { "skill": "appraisal", "gte": 65 },
+              { "skill": "eloquence", "gte": 50 }
+            ]
+          }
+        },
+        {
+          "id": "apex",
+          "name": "世界の真理",
+          "rank": "S",
+          "notice": "――頂点《大賢者》に至りました。世界の真理は、あなたの内にあります。",
+          "condition": {
+            "and": [
+              { "flag": "knows.world_truth" },
+              { "skill": "appraisal", "gte": 90 },
+              { "skill": "observation", "gte": 75 }
+            ]
+          }
+        }
+      ]
     }
   ]
 }

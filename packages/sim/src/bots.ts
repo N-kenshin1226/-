@@ -270,6 +270,29 @@ function requiredStats(cond: Cond): { id: StatId; min: number }[] {
   return [];
 }
 
+/** 条件木から「立てる側」の flag 条件を拾う（and/or を潜る。eq:false は立てない条件なので除外） */
+function requiredFlags(cond: Cond): string[] {
+  if ("flag" in cond) return cond.eq === false ? [] : [cond.flag];
+  if ("and" in cond) return cond.and.flatMap(requiredFlags);
+  if ("or" in cond) return requiredFlags(cond.or[0]!);
+  return [];
+}
+
+/** 条件木から action.read カウンタの必要回数を拾う（複数ある場合は最大値） */
+function requiredReadCount(cond: Cond): number | null {
+  if ("counter" in cond && cond.counter === "action.read") {
+    return cond.gte ?? cond.eq ?? null;
+  }
+  if ("and" in cond) {
+    const ns = cond.and
+      .map(requiredReadCount)
+      .filter((n): n is number => n !== null && n !== undefined);
+    return ns.length > 0 ? Math.max(...ns) : null;
+  }
+  if ("or" in cond) return requiredReadCount(cond.or[0]!);
+  return null;
+}
+
 /**
  * 訓練対象にできるスキル。目標が未解放の派生スキルなら、解放条件の不足分
  * （素スキル）に落とす。stat 条件しか残らない場合は手が出せないので null
@@ -290,6 +313,75 @@ function trainableTarget(g: GameState, skillId: string, ctx: BotCtx): string | n
 function workQualityEstimate(g: GameState, kind: string): number {
   const skill = g.player.skills[kind]?.value ?? 0;
   return Math.min(100, Math.round((20 + skill * 0.9) * 10) / 10);
+}
+
+/** 書物代を稼ぐための仕事（いちばん値の高い品を作れるスキルで） */
+function earnMoneyForBook(g: GameState, ctx: BotCtx): Command {
+  const kind = unlockedSkills(g, ctx).reduce((a, b) =>
+    g.player.skills[a]!.value >= g.player.skills[b]!.value ? a : b,
+  );
+  return {
+    type: "work",
+    kind,
+    quality: workQualityEstimate(g, kind),
+    difficulty: workQualityEstimate(g, kind),
+  };
+}
+
+/**
+ * 読む系の条件（知識フラグ・読了数）を進める次の一手（X-4 大賢者ルート対応）。
+ * 解決は安い順：アトム（行動のみ）→ つながり用のアトム → 所持書物 → 購入。
+ * 書物代が足りなければ仕事で稼ぐ。出所の分からない旗には手を出さない。
+ */
+function planReading(g: GameState, ctx: BotCtx, cond: Cond): Command | null {
+  const books = ctx.cfg.books?.books ?? [];
+  const readBooks = new Set(g.books.read.map((r) => r.id));
+
+  for (const flag of requiredFlags(cond)) {
+    if (g.flags[flag] === true) continue;
+    // アトムの unlock フラグ（読むだけで立つ）
+    const atom = ctx.cfg.lore.atoms.find(
+      (a) => a.unlock?.flag === flag && !g.lore.read.includes(a.id),
+    );
+    if (atom !== undefined) return { type: "readAtom", id: atom.id };
+    // つながりの報酬フラグ：不足している事実を明かす未読アトムを順に読む
+    const conn = ctx.cfg.lore.connections.find(
+      (c) => c.flag === flag && !g.lore.connections.includes(c.eventId),
+    );
+    if (conn !== undefined) {
+      const known = new Set(g.lore.facts);
+      const missing = conn.facts.filter((f) => !known.has(f));
+      const next = ctx.cfg.lore.atoms.find(
+        (a) => !g.lore.read.includes(a.id) && a.reveals.some((f) => missing.includes(f)),
+      );
+      if (next !== undefined) return { type: "readAtom", id: next.id };
+      continue;
+    }
+    // 書物の知識フラグ：買って読む。金が足りなければ稼ぐ
+    const book = books.find((b) => b.flag === flag);
+    if (book !== undefined) {
+      if (readBooks.has(book.id)) continue; // 読了済みなら旗は立っているはず（立っていなければ進めない）
+      if (g.books.owned.includes(book.id)) return { type: "readBook", id: book.id };
+      if (g.player.money >= book.price) return { type: "buyBook", id: book.id };
+      return earnMoneyForBook(g, ctx);
+    }
+  }
+
+  // action.read カウンタ：アトム → 所持書物 → 買える書物 の順
+  const reads = requiredReadCount(cond);
+  if (reads !== null && (g.counters["action.read"] ?? 0) < reads) {
+    const atom = ctx.cfg.lore.atoms.find((a) => !g.lore.read.includes(a.id));
+    if (atom !== undefined) return { type: "readAtom", id: atom.id };
+    const owned = books.find((b) => g.books.owned.includes(b.id) && !readBooks.has(b.id));
+    if (owned !== undefined) return { type: "readBook", id: owned.id };
+    const unread = books.filter((b) => !readBooks.has(b.id));
+    const affordable = unread
+      .filter((b) => b.price <= g.player.money)
+      .sort((a, b) => a.price - b.price)[0];
+    if (affordable !== undefined) return { type: "buyBook", id: affordable.id };
+    if (unread.length > 0) return earnMoneyForBook(g, ctx);
+  }
+  return null;
 }
 
 /**
@@ -360,6 +452,10 @@ export function makePinnacleBot(
       if (offer !== undefined && g.society.pendingOffers.includes(offer)) {
         return { type: "acceptOffer", id: offer };
       }
+
+      // 読む系の条件（知識フラグ・読了数）：アトムや書物を読み、足りなければ稼ぐ
+      const readCmd = planReading(g, ctx, cond);
+      if (readCmd !== null) return readCmd;
 
       // スキル条件：最も足りないものを鍛える（未解放なら解放条件の側へ落とす）
       const skillNeed = requiredSkills(cond)
