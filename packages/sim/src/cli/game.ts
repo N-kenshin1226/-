@@ -10,9 +10,12 @@ import {
   deserializeChronicle,
   emptyChronicle,
   fishingGame,
+  hasLifeRecord,
+  legacyOf,
   miningGame,
   negotiationGame,
   newGame,
+  nextWorldSeed,
   performanceGame,
   recordLife,
   serialize,
@@ -28,6 +31,7 @@ import {
   type DealCard,
   type GameState,
   type CombatAction,
+  type Legacy,
   type LifeCause,
   type MiniGame,
   type StepConfig,
@@ -42,6 +46,7 @@ import {
   createRng,
   damageFactor,
   isSkillUnlocked,
+  reachedPinnacles,
   startCombat,
   telegraphLines,
   TemplateProvider,
@@ -57,11 +62,13 @@ import {
   enemiesByArea,
   orders,
   origins,
+  pinnacles,
   skills,
   society,
   titles,
   type EnemyJson,
   type Order,
+  type Origin,
 } from "@trace/content";
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
@@ -167,8 +174,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
     }
   }
-  if (!state) {
-    // 出自を選ぶ（素質の初期値 80〜130 に幅が出る。02：出自）
+  /** 出自を選ぶ（新規・転生の両方で使う）。EOF は先頭の出自に倒す */
+  const pickOrigin = async (): Promise<Origin> => {
     out(t.text.originPick);
     origins.origins.forEach((o, i) =>
       out(tpl(t.text.originLine, { index: i + 1, name: o.name, desc: o.desc })),
@@ -180,7 +187,12 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     );
     const origin = origins.origins[oi]!;
     out(tpl(t.text.originChosen, { name: origin.name }));
-    state = newGame(seed, t.text.playerName, {
+    return origin;
+  };
+
+  /** 新しい周の GameState を作る（新規・転生で共通の初期値） */
+  const startLife = (seed2: string, origin: Origin, legacy?: Legacy): GameState =>
+    newGame(seed2, t.text.playerName, {
       skillIds: skillList.map((s) => s.id),
       initialPotential: balance.player.initialPotential,
       origin,
@@ -188,7 +200,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       potentialInitMax: balance.player.potentialInitMax,
       initialStatValue: balance.player.initialStatValue,
       initialMoney: balance.player.initialMoney,
+      ...(legacy !== undefined ? { legacy } : {}),
     });
+
+  /** 称号ID → 表示名 */
+  const titleName = (id: string): string => titles.titles.find((x) => x.id === id)?.name ?? id;
+
+  if (!state) {
+    // 出自を選ぶ（素質の初期値 80〜130 に幅が出る。02：出自）
+    state = startLife(seed, await pickOrigin());
   }
 
   /** 称号獲得・気配の表示行（S予算超過の称号は折りたたみ表現） */
@@ -202,6 +222,13 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         return [titleMessage(e.id, t)];
       }
       if (e.type === "kehai") return [t.text.kehai];
+      // 頂点ルートの段（T-41）：通知文は pinnacles.json 側に書かれている
+      if (e.type === "pinnacleStageReached") {
+        const notice = pinnacles.pinnacles
+          .find((r) => r.id === e.route)
+          ?.stages.find((s) => s.id === e.stage)?.notice;
+        return [notice ?? `――頂点への段《${e.stage}》に至りました。`];
+      }
       if (e.type === "skillUnlocked") {
         const name = skillNames.get(e.id) ?? e.id;
         return [tpl(t.text.skillUnlocked, { name })];
@@ -242,12 +269,16 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
   };
   /** 伝記（T-37）：素材は core が摘み、表示名はここで解決する。cause 省略時は閉じ行を出さない */
   const bioLines = (st: GameState, cause?: "retire" | "death"): string[] => {
-    const m = biographyMaterial(st);
+    const m = biographyMaterial(st, cfg.pinnacles);
     const titleNames = m.titleIds
       .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
       .join("、");
     const goalNames = m.achievedGoalIds
       .map((id) => society.lifeGoals.find((g) => g.id === id)?.name ?? id)
+      .join("、");
+    // 頂点ルート名（T-41）：達成したルートの表示名を繋ぐ
+    const pinnacleNames = m.pinnacleIds
+      .map((id) => pinnacles.pinnacles.find((r) => r.id === id)?.name ?? id)
       .join("、");
     return narrator.narrate(
       {
@@ -282,6 +313,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
               },
             }
           : {}),
+        ...(pinnacleNames !== "" ? { pinnacle: pinnacleNames } : {}),
         ...(cause !== undefined ? { cause } : {}),
       },
       // 同じ死には同じ伝記（通算死亡数でシードを分ける）
@@ -289,13 +321,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     );
   };
 
-  /** died イベントがあれば年代記に追記する（T-38 最小接続。引退・転生の本格配線は T-40） */
+  /** died イベントがあれば年代記に追記する（戦闘死＝蘇生する死。老衰死・引退は reincarnate 側で刻む。T-40） */
   const noteDeath = (res: StepResult): boolean => {
     if (!res.events.some((e) => e.type === "died")) return false;
     // 老衰（T-36 の deathByAge）は死因として区別して残す
     const cause: LifeCause = res.events.some((e) => e.type === "deathByAge") ? "oldAge" : "death";
     chronicle = recordLife(chronicle, res.state, cause, {
       titleDefs: cfg.titles,
+      // 頂点に至ったルートの記録（T-41。伝記とは別に構造化して残す）
+      pinnacles: reachedPinnacles(res.state, cfg.pinnacles ?? []),
       // 表示した伝記と同じものを年代記にも残す（06 §1：伝記 → 年代記の順）
       biography: bioLines(res.state, "death").join("\n"),
     });
@@ -315,6 +349,18 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       .filter((w) => w.day === day)
       .map((w) => ({ name: workName(w), quality: w.quality, tier: w.tier }));
     const deaths = state!.counters["death.count"] ?? 0;
+    // 前世の伝説（T-42）：年代記が非空なら最新の人生の名・二つ名が噂に混ざる
+    const lastLife = chronicle.lives[chronicle.lives.length - 1];
+    const prevLife =
+      lastLife === undefined
+        ? undefined
+        : {
+            name: lastLife.name,
+            epithet:
+              lastLife.epithet === undefined
+                ? undefined
+                : (titles.titles.find((x) => x.id === lastLife.epithet)?.name ?? lastLife.epithet),
+          };
     const title = events.find(
       (e): e is Extract<ActionEvent, { type: "titleGained" }> =>
         e.type === "titleGained" && !e.suppressed,
@@ -328,6 +374,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         deeds,
         works,
         deaths,
+        ...(prevLife !== undefined ? { prevLife } : {}),
         ...(title
           ? { newTitle: titles.titles.find((x) => x.id === title.id)?.name ?? title.id }
           : {}),
@@ -544,8 +591,123 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     chronicle: () => chronicle,
   };
 
+  /** 遺物の表示名（name は注文IDかスキルIDなので表示名に解決する） */
+  const artifactName = (a: { name: string; kind: string }): string =>
+    orders.orders.find((o) => o.id === a.name.split("#")[0])?.name ??
+    skillNames.get(a.name) ??
+    skillNames.get(a.kind) ??
+    a.name;
+
+  /**
+   * 一生の終わり（06 §1「伝記 → 年代記 → 継承 → 転生」。T-40）。
+   * cause は retire（引退）か oldAge（老衰）。戦闘死は蘇生するのでここには来ない。
+   * 戻り値は新しい周の GameState（旧セーブはそのまま新しい周に置き換わる）。
+   * 途中の入力が尽きても自動選択に倒し、必ず新しい周を返す
+   */
+  const reincarnate = async (st: GameState, cause: "retire" | "oldAge"): Promise<GameState> => {
+    // 伝記（語り層の cause 語彙は retire/death だけ。老衰は death に倒す）
+    const bio = bioLines(st, cause === "retire" ? "retire" : "death");
+    outAll(bio);
+
+    // 年代記に1頁。同じ一生の重複記録は書かない（中断→再生で同じ終わりが再び来ても安全）
+    if (!hasLifeRecord(chronicle, st, cause)) {
+      chronicle = recordLife(chronicle, st, cause, {
+        titleDefs: cfg.titles,
+        // 頂点に至ったルートの記録（T-41。伝記とは別に構造化して残す）
+        pinnacles: reachedPinnacles(st, cfg.pinnacles ?? []),
+        // 表示した伝記と同じものを年代記にも残す（06 §1：伝記 → 年代記の順）
+        biography: bio.join("\n"),
+      });
+      saveChronicle(chronicle);
+    }
+    out(t.text.chronicleRecorded);
+    // 二つ名は記録時に自動で選ばれている（最上位ランクのうち最後に得たもの）。
+    // この一生の頁から読む（冪等スキップ済みでも確実に同じ頁を見る）
+    const epithet = [...chronicle.lives]
+      .reverse()
+      .find((l) => l.worldSeed === st.seed && l.cause === cause)?.epithet;
+    if (epithet !== undefined) out(tpl(t.text.rebirthEpithet, { name: titleName(epithet) }));
+
+    // 継承（06 §2）：「前世の記憶」の称号と遺物1個を選ぶ。空/EOF は自動選択に倒す
+    out(t.text.legacyHeader);
+    let rememberedTitles: string[] | undefined;
+    if (st.titles.length === 0) {
+      out(t.text.legacyNoTitles);
+    } else {
+      out(tpl(t.text.legacyTitlesPrompt, { max: balance.legacy.rememberedMax }));
+      st.titles.forEach((id, i) =>
+        out(tpl(t.text.legacyTitleLine, { i: i + 1, name: titleName(id) })),
+      );
+      const ti = await ask(t.text.promptChoice);
+      if (ti !== null && ti.trim() !== "") {
+        rememberedTitles = [
+          ...new Set(
+            ti
+              .split(/[、,\s]+/)
+              .map((s) => Number.parseInt(s, 10) - 1)
+              .filter((i) => i >= 0 && i < st.titles.length)
+              .map((i) => st.titles[i]!),
+          ),
+        ].slice(0, balance.legacy.rememberedMax);
+      }
+    }
+    let artifactId: string | undefined;
+    if (st.ledger.length === 0) {
+      out(t.text.legacyNoArtifact);
+    } else {
+      // 候補は品質上位から5件（自動選択と同じ順位付け）
+      const top = [...st.ledger]
+        .sort((a, b) => b.quality - a.quality || b.tier - a.tier || a.day - b.day)
+        .slice(0, 5);
+      out(t.text.legacyArtifactPrompt);
+      top.forEach((w, i) =>
+        out(
+          tpl(t.text.legacyArtifactLine, {
+            i: i + 1,
+            name: workName(w),
+            quality: w.quality,
+            tier: w.tier,
+            day: w.day + 1,
+          }),
+        ),
+      );
+      const ai = await ask(t.text.promptChoice);
+      if (ai !== null && ai.trim() !== "") {
+        const n = Number.parseInt(ai.trim(), 10) - 1;
+        if (n >= 0 && n < top.length) artifactId = top[n]!.id;
+      }
+    }
+    const legacy = legacyOf(st, balance.legacy, {
+      titleDefs: cfg.titles,
+      ...(rememberedTitles !== undefined ? { rememberedTitles } : {}),
+      ...(artifactId !== undefined ? { artifactId } : {}),
+    });
+
+    // 転生：新しいシードの世界へ（旧セーブは新しい周に置き換わる）
+    const next = startLife(nextWorldSeed(st), await pickOrigin(), legacy);
+    save(next);
+    out(t.text.rebirthStart);
+    const bonus = Object.entries(legacy.potentialBonus)
+      .map(([id, v]) => `《${skillNames.get(id) ?? id}》+${v}`)
+      .join("、");
+    if (bonus !== "") out(tpl(t.text.rebirthPotential, { skills: bonus }));
+    if (legacy.rememberedTitles.length > 0) {
+      out(tpl(t.text.rebirthMemory, { titles: legacy.rememberedTitles.map(titleName).join("、") }));
+    }
+    if (legacy.artifact !== null) {
+      out(tpl(t.text.rebirthArtifact, { name: artifactName(legacy.artifact) }));
+    }
+    return next;
+  };
+
   // ---- ループ ----
   for (;;) {
+    // 老衰したまま残ったセーブは転生フローから再開する（T-40・D-31。
+    // T-40 以前に死んだセーブもここで年代記に刻んでから新しい周へ）
+    if (state.counters["death.oldAge"] !== undefined) {
+      state = await reincarnate(state, "oldAge");
+      continue;
+    }
     outAll(statusLines(state, cfg, t));
 
     const canAction = canAct(state.time, cfg.time);
@@ -559,7 +721,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       return state;
     }
 
-    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定, 4=街の記録, 5=書店, 6=師匠）
+    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定, 4=街の記録, 5=書店, 6=師匠, 7=引退）
     const pick = canAction
       ? c
       : c === "1"
@@ -574,7 +736,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
                 ? "9"
                 : c === "6"
                   ? "10"
-                  : c;
+                  : c === "7"
+                    ? "11"
+                    : c;
 
     if (pick === "1") {
       // ---- 訓練（派生スキルは解放済みだけ出す）----
@@ -822,6 +986,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       if (report) {
         outAll(wakeBlock(report.report, applyTitles(res.events), t, skillNames, { atHome: true }));
       }
+      if (res.events.some((e) => e.type === "deathByAge")) {
+        // 老衰死（T-40・D-31）：教会蘇生せず、そのまま生涯の終わり → 転生へ
+        state = await reincarnate(state, "oldAge");
+        continue;
+      }
       if (noteDeath(res)) out(t.text.chronicleRecorded);
       save(state);
       out(t.text.wake.saved);
@@ -857,6 +1026,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         // 朝の新聞（07 §6：語り層の最初の呼び出し箇所）
         outAll(newspaper(res.events));
       }
+      if (res.events.some((e) => e.type === "deathByAge")) {
+        // 老衰死（T-40・D-31）：教会蘇生せず、そのまま生涯の終わり → 転生へ
+        state = await reincarnate(state, "oldAge");
+        continue;
+      }
       if (noteDeath(res)) out(t.text.chronicleRecorded);
       save(state);
       out(t.text.wake.saved);
@@ -883,6 +1057,16 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       const r = await mentorMenu(state, menuCtx);
       if (r === null) return state;
       state = r;
+    } else if (pick === "11") {
+      // ---- 引退（06 §1・T-40）：いつでも選べる。確認は1回 ----
+      const conf = await ask(t.text.retireConfirm);
+      if (conf === null) return state;
+      if (conf.trim().toLowerCase() === "y") {
+        const res = step(state, { type: "retire" }, cfg);
+        state = await reincarnate(res.state, "retire");
+      } else {
+        out(t.text.retireCancelled);
+      }
     } else {
       out(t.text.invalidInput);
     }

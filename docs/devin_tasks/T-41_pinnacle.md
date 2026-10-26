@@ -1,4 +1,4 @@
-# T-41 頂点ルート2本 — pending
+# T-41 頂点ルート2本 — done
 
 仕様: `docs/06_endgame.md` §3A（M3は2ルート。全部で6案: 英雄/剣聖/商王/領主/大賢者/伝説の職人）。
 
@@ -8,5 +8,13 @@
 - バランス：到達までの日数を sim で確認
 
 ## 受け入れ基準
-- [ ] 2ルートが条件鎖として定義され、段階通知が出る
-- [ ] 頂点達成が伝記に残る
+- [x] 2ルートが条件鎖として定義され、段階通知が出る
+- [x] 頂点達成が伝記に残る
+
+## 実装メモ（2026-10-23）
+- 選んだ2本: `sword_saint`（剣聖・戦闘系：撃破カウンタ＋剣術/回避/居合）と `legendary_artisan`（伝説の職人・製作系：台帳ティア＋鍛冶スキル＋鍛冶認定）。`packages/content/pinnacles.json`
+- 段は `flags["pinnacle.<route>.<stage>"]` に刻むだけなので GameState 不変（セーブ v13 据置）。頂点称号（S）は「最終段フラグ」を条件に持つ title が既存の称号判定で授かる（validate.ts で称号↔最終段フラグを突合）
+- `pinnacleStageReached` イベント（段の rank 付き）。最終段（S）は通知文＋称号Sの2行が出る。S段への接近は「気配」（notify.kehai に段フラグキー、1日1回）
+- 伝記：narration の `biography.pinnacle` 節＋ `{pinnacle}` 行（CLI/web でルート名に解決）。年代記：`ChronicleEntry.pinnacles`（任意フィールド、CHRONICLE_VERSION 1→2）
+- sim:growth に専用ボットで「到達までの日数」を報告（剣聖 約148日・伝説の職人 約44日。常勝近似の楽観値、ゲートなし）
+- エンディング画面は未実装（T-40 の転生フロー側で対応。頂点達成は記録に残るまで）

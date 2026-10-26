@@ -102,10 +102,26 @@
     "signSevereAt": 0.9,
     "signEveryDays": 28,
     "bands": [
-      { "upToAge": 24, "statFactor": 1.25, "skillFactor": 1.0 },
-      { "upToAge": 39, "statFactor": 1.0, "skillFactor": 1.0 },
-      { "upToAge": 54, "statFactor": 0.7, "skillFactor": 1.15 },
-      { "upToAge": 999, "statFactor": 0.45, "skillFactor": 1.25 }
+      {
+        "upToAge": 24,
+        "statFactor": 1.25,
+        "skillFactor": 1.0
+      },
+      {
+        "upToAge": 39,
+        "statFactor": 1.0,
+        "skillFactor": 1.0
+      },
+      {
+        "upToAge": 54,
+        "statFactor": 0.7,
+        "skillFactor": 1.15
+      },
+      {
+        "upToAge": 999,
+        "statFactor": 0.45,
+        "skillFactor": 1.25
+      }
     ]
   },
   "tailwind": {
@@ -257,5 +273,11 @@
     "relearnFactor": 3,
     "capacityThreshold": 300,
     "capacityGraceMinFactor": 0.25
+  },
+  "legacy": {
+    "potentialFactor": 0.1,
+    "potentialMax": 15,
+    "rememberedMax": 3,
+    "artifactGainFactor": 1.05
   }
 }

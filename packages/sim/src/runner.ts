@@ -101,6 +101,9 @@ export function runBot(
       if (e.type === "titleGained") {
         titlesEarned.push(e.id);
         pushFirst(`title:${e.id}`, `称号 ${e.id}`);
+      } else if (e.type === "pinnacleStageReached") {
+        // 頂点ルートの段（T-41。「到達までの日数」目安を firsts から読む）
+        pushFirst(`pinnacle:${e.route}.${e.stage}`, `頂点 ${e.route}.${e.stage}`);
       } else if (e.type === "wakeReport") {
         for (const w of e.report.tailwinds) pushFirst(`wind:${w.id}`, `追い風 ${w.label}`);
         if (e.report.restDay) pushFirst("restDay", "休養日");

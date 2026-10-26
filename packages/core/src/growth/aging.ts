@@ -10,9 +10,10 @@ import { describe, type TimeConfig } from "../time/index.js";
  * - 「老いの兆候」は起床サプライズ（WakeReport.surprises）に出す。
  *   寿命の経過割合（経過年/lifespanYears）が signWarnAt を超えると弱い兆候（1回）、
  *   signSevereAt を超えると強い兆候（signEveryDays ごとに繰り返す）
- * - startAge + lifespanYears 歳に達した朝に老衰死する（仮実装：died と同じ処理＝
- *   教会蘇生で pending 半減。転生フローへの接続は T-40。deathByAge イベントは
- *   died と別型にしておく）
+ * - startAge + lifespanYears 歳に達した朝に老衰死する。内部処理は died と同じ
+ *   （death.count 加算・pending 半減・died 併発）だが、deathByAge イベントを別型で
+ *   発行するので呼び出し側が区別できる。T-40 以降、CLI/Web はこのイベントを見て
+ *   「教会蘇生せず転生フロー」に分岐する（D-31）
  * - 「出した兆候の段階」と「老衰死済みか」は GameState を変えず
  *   counters（aging.signStage / aging.signDay / death.oldAge）に記録する
  *
@@ -76,7 +77,7 @@ export interface AgingWakeResult {
   signLine: string | null;
   /**
    * 発行する出来事（slept / wakeReport のあとに、この順で流す）。
-   * oldAgeSign → deathByAge → died（老衰死は died と同じ処理の暫定措置）
+   * oldAgeSign → deathByAge → died（deathByAge を見た呼び出し側は転生へ分岐する。D-31）
    */
   events: (
     | { type: "oldAgeSign"; stage: 1 | 2; age: number }
@@ -119,7 +120,8 @@ export function agingOnWake(
     events.push({ type: "oldAgeSign", stage: 2, age });
   }
 
-  // 老衰死：寿命に達した朝に一度だけ（暫定措置：died と同じ処理＋died 発行。T-40 で転生へ）
+  // 老衰死：寿命に達した朝に一度だけ（内部は died と同じ清算＋died 併発。
+  // 蘇生ではなく転生への分岐は呼び出し側が deathByAge を見て行う。T-40・D-31）
   if (reachedLifespan(age, timeCfg.startAge, cfg) && counters["death.oldAge"] === undefined) {
     counters["death.oldAge"] = state.time.day;
     counters["death.count"] = (counters["death.count"] ?? 0) + 1;

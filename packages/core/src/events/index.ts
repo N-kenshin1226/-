@@ -33,12 +33,24 @@ export type ActionEvent =
   | { type: "oldAgeSign"; stage: 1 | 2; age: number }
   /**
    * 老衰死（T-36。startAge + lifespanYears 歳に達した朝に一度だけ）。
-   * 転生フロー（T-40）が完成するまでは died と同じ処理（教会蘇生＝pending半減）で、
-   * 続けて died も発行する。年齢由来の死を died と区別するための別型
+   * 内部的には died と同じ処理（pending半減）を行い、続けて died も発行するが、
+   * 呼び出し側（T-40）はこのイベントを見て「蘇生せず転生フローへ」に分岐する（D-31）。
+   * 年齢由来の死を戦闘死と区別するための別型
    */
   | { type: "deathByAge"; age: number }
+  /**
+   * 引退（T-40。06 §1「引退はいつでも選べる」）。
+   * 行動を消費せず state も変えず、生涯の終わりを告げるだけ。
+   * 伝記・年代記への記録・継承・転生の処理は呼び出し側が行う
+   */
+  | { type: "retired" }
   /** 気配：S候補に近づいた合図（条件は明かさない。03 §6） */
   | { type: "kehai" }
+  /**
+   * 頂点ルートの段に達した（06 §3A、T-41）。
+   * route/stage は pinnacles.json の id。rank はその段の通知ランク（最終段は S）
+   */
+  | { type: "pinnacleStageReached"; route: string; stage: string; rank: "S" | "A" | "B" }
   /** 立場・職業の打診が来た（通知Aランク相当。03 §1） */
   | { type: "offerReceived"; kind: "standing" | "profession"; id: string }
   /** 打診を受けて認定された */

@@ -21,6 +21,8 @@ export const narrationSchema = z
             death: z.array(z.string()).min(1),
             /** 勘違い系の見出し（03 §5。事実と少しズレた噂） */
             rumor: z.array(z.string()).min(1),
+            /** 前世の伝説（06 §2、T-42。{name}/{epithet} を差し込む。年代記が非空の世界でだけ混ざる） */
+            legend: z.array(z.string()).min(1),
           })
           .strict(),
       })
@@ -54,6 +56,8 @@ export const narrationSchema = z
         standing: z.array(z.string()).min(1),
         goal: z.array(z.string()).min(1),
         peak: z.array(z.string()).min(1),
+        /** 頂点記述（T-41。{pinnacle} を差し込む） */
+        pinnacle: z.array(z.string()).min(1),
         cause: z
           .object({
             retire: z.array(z.string()).min(1),

@@ -1,14 +1,18 @@
 import {
   activeEffects,
   computeGain,
+  evaluate,
   gainModifier,
   isSkillUnlocked,
+  nextStage,
   recentRepeats,
   windFor,
   type Command,
   type Cond,
   type GameState,
+  type PinnacleRouteDef,
   type Rng,
+  type StatId,
   type StepConfig,
 } from "@trace/core";
 
@@ -215,6 +219,173 @@ export function makeSeekerBot(titles: readonly { id: string; condition: Cond }[]
           : { id: unlocked[0]!, min: 100 };
       const skill = g.player.skills[target.id] ? target.id : unlocked[0]!;
       return { type: "train", skill, difficulty: bestDifficulty(g, skill) };
+    },
+    endDay: () => ({ type: "sleep", inn: "good", dinner: true }),
+  };
+}
+
+// ---- 頂点ルート（T-41）：条件鎖から「次に必要なもの」を拾うボット ----
+
+/** 条件木から kill.species.<敵> カウンタ条件を拾う（and/or を潜る。or は最初の枝に賭ける） */
+function requiredKills(cond: Cond): { id: string; n: number }[] {
+  if ("counter" in cond && cond.counter.startsWith("kill.species.")) {
+    return [{ id: cond.counter.slice("kill.species.".length), n: cond.gte ?? cond.eq ?? 1 }];
+  }
+  if ("and" in cond) return cond.and.flatMap(requiredKills);
+  if ("or" in cond) return requiredKills(cond.or[0]!);
+  return [];
+}
+
+/** 条件木から society.offer.<id> カウンタ条件を拾う（認定の受諾が必要な段） */
+function requiredOffers(cond: Cond): string[] {
+  if ("counter" in cond && cond.counter.startsWith("society.offer.")) {
+    return [cond.counter.slice("society.offer.".length)];
+  }
+  if ("and" in cond) return cond.and.flatMap(requiredOffers);
+  if ("or" in cond) return requiredOffers(cond.or[0]!);
+  return [];
+}
+
+/** 条件木から work 条件を拾う */
+function requiredWorks(cond: Cond): Extract<Cond, { work: unknown }>["work"][] {
+  if ("work" in cond) return [cond.work];
+  if ("and" in cond) return cond.and.flatMap(requiredWorks);
+  if ("or" in cond) return requiredWorks(cond.or[0]!);
+  return [];
+}
+
+/** 条件木から within 条件を拾う */
+function requiredWithin(cond: Cond): Extract<Cond, { within: unknown }>["within"][] {
+  if ("within" in cond) return [cond.within];
+  if ("and" in cond) return cond.and.flatMap(requiredWithin);
+  if ("or" in cond) return requiredWithin(cond.or[0]!);
+  return [];
+}
+
+/** 条件木から stat 条件を拾う */
+function requiredStats(cond: Cond): { id: StatId; min: number }[] {
+  if ("stat" in cond) return cond.gte !== undefined ? [{ id: cond.stat, min: cond.gte }] : [];
+  if ("and" in cond) return cond.and.flatMap(requiredStats);
+  if ("or" in cond) return requiredStats(cond.or[0]!);
+  return [];
+}
+
+/**
+ * 訓練対象にできるスキル。目標が未解放の派生スキルなら、解放条件の不足分
+ * （素スキル）に落とす。stat 条件しか残らない場合は手が出せないので null
+ */
+function trainableTarget(g: GameState, skillId: string, ctx: BotCtx): string | null {
+  const unlock = (ctx.cfg.skillUnlocks ?? []).find((u) => u.id === skillId);
+  if (!unlock || isSkillUnlocked(g, unlock)) return skillId;
+  const needs = requiredSkills(unlock.condition!).filter(
+    (r) => (g.player.skills[r.id]?.value ?? 0) < r.min,
+  );
+  if (needs.length === 0) return null;
+  return needs.reduce((a, b) =>
+    g.player.skills[a.id]!.value / a.min <= g.player.skills[b.id]!.value / b.min ? a : b,
+  ).id;
+}
+
+/** 仕事の見込み品質（手動プレイの近似：スキルに比例。台帳ティアはこれで積む） */
+function workQualityEstimate(g: GameState, kind: string): number {
+  const skill = g.player.skills[kind]?.value ?? 0;
+  return Math.min(100, Math.round((20 + skill * 0.9) * 10) / 10);
+}
+
+/**
+ * 頂点ルート到達シム用のボット（T-41。sim:growth の「到達までの日数」目安）。
+ * ルートの次の未達成段を見て、撃破 → 連戦 → 台帳 → 認定受諾 → スキル → 基礎能力
+ * の順に必要な行動を返す。戦闘は常勝・仕事は見込み品質で近似した楽観値。
+ */
+export function makePinnacleBot(
+  route: PinnacleRouteDef,
+  enemies: readonly { id: string; challenge: number }[],
+): Bot {
+  const weakest = enemies.reduce(
+    (a, b) => (a.challenge <= b.challenge ? a : b),
+    enemies[0] ?? { id: "wolf", challenge: 15 },
+  );
+  return {
+    id: `pinnacle:${route.id}`,
+    act(g, ctx) {
+      if (g.player.overwork.active || g.player.overwork.streakDays >= 2) {
+        return { type: "rest" };
+      }
+      if (actionsToday(g) >= 4 && willOverload(g, ctx, 1)) {
+        return { type: "sleep", inn: "good", dinner: true };
+      }
+      // 認定の打診が溜まっていれば受ける（受諾は行動を消費しない）
+      if (g.society.pendingOffers.length > 0) {
+        return { type: "acceptOffer", id: g.society.pendingOffers[0]! };
+      }
+      const stage = nextStage(g, route);
+      if (stage === null) return { type: "rest" }; // 完走済み
+      const cond = stage.condition;
+
+      // 撃破条件：未達の敵へ出る（シムでは常勝とみなす）
+      const kill = requiredKills(cond).find((k) => (g.counters[`kill.species.${k.id}`] ?? 0) < k.n);
+      if (kill) {
+        const e = enemies.find((x) => x.id === kill.id);
+        return { type: "combat", enemyId: kill.id, difficulty: e?.challenge ?? 20, won: true };
+      }
+
+      // 連戦（within combat）条件：未達なら最弱の敵へ詰め込む
+      const streak = requiredWithin(cond).find(
+        (w) => w.kind === "combat" && !evaluate({ within: w }, g, ctx.cfg.time),
+      );
+      if (streak) {
+        return {
+          type: "combat",
+          enemyId: streak.target ?? weakest.id,
+          difficulty: weakest.challenge,
+          won: true,
+        };
+      }
+
+      // 台帳条件：未達の kind で仕事（品質は見込み値）
+      const work = requiredWorks(cond).find((w) => !evaluate({ work: w }, g, ctx.cfg.time));
+      if (work) {
+        const kind = work.kind ?? "smithing";
+        return {
+          type: "work",
+          kind,
+          quality: workQualityEstimate(g, kind),
+          difficulty: workQualityEstimate(g, kind),
+        };
+      }
+
+      // 認定（society.offer）条件：打診待ちでなければ、あとは条件を満たす方向へ進むだけ
+      // （打診は次の step で届く。その間は訓練を続ける）
+      const offer = requiredOffers(cond).find((o) => (g.counters[`society.offer.${o}`] ?? 0) < 1);
+      if (offer !== undefined && g.society.pendingOffers.includes(offer)) {
+        return { type: "acceptOffer", id: offer };
+      }
+
+      // スキル条件：最も足りないものを鍛える（未解放なら解放条件の側へ落とす）
+      const skillNeed = requiredSkills(cond)
+        .filter((r) => (g.player.skills[r.id]?.value ?? 0) < r.min)
+        .reduce<{ id: string; min: number } | null>(
+          (a, b) =>
+            a === null ||
+            g.player.skills[a.id]!.value / a.min > g.player.skills[b.id]!.value / b.min
+              ? b
+              : a,
+          null,
+        );
+      if (skillNeed) {
+        const target = trainableTarget(g, skillNeed.id, ctx) ?? unlockedSkills(g, ctx)[0]!;
+        return { type: "train", skill: target, difficulty: bestDifficulty(g, target) };
+      }
+
+      // 基礎能力条件：負荷を積むため訓練を続ける（伸びは睡眠の定着任せ）
+      const statNeed = requiredStats(cond).find((r) => g.player.stats[r.id] < r.min);
+      if (statNeed) {
+        const skill = unlockedSkills(g, ctx)[0]!;
+        return { type: "train", skill, difficulty: bestDifficulty(g, skill) };
+      }
+
+      // 条件が残るが手が出せない（time/flag 系）→ 待機
+      return { type: "wait" };
     },
     endDay: () => ({ type: "sleep", inn: "good", dinner: true }),
   };

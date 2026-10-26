@@ -1,0 +1,275 @@
+import { describe, expect, it } from "vitest";
+import { newGame } from "../state/newGame.js";
+import type { GameState } from "../state/types.js";
+import { step, type StepConfig } from "../step.js";
+import type { TimeConfig } from "../time/index.js";
+import {
+  checkPinnacles,
+  nextStage,
+  pinnacleFlag,
+  pinnacleReached,
+  reachedPinnacles,
+  routeProgress,
+  type PinnacleRouteDef,
+} from "./index.js";
+
+const time: TimeConfig = {
+  actionsPerDay: 5,
+  timeOfDay: ["morning", "morning", "noon", "evening", "night"],
+  daysPerWeek: 7,
+  daysPerSeason: 28,
+  seasonsPerYear: 4,
+  moonCycleDays: 28,
+  moonPhaseWindowDays: 1,
+  startAge: 15,
+};
+
+const route: PinnacleRouteDef = {
+  id: "test_route",
+  name: "試しの頂",
+  desc: "テスト用の条件鎖",
+  title: "title.test_apex",
+  stages: [
+    {
+      id: "first",
+      name: "一段目",
+      rank: "B",
+      notice: "――頂点への段《一段目》に至りました。",
+      condition: { counter: "kill.species.wolf", gte: 2 },
+    },
+    {
+      id: "second",
+      name: "二段目",
+      rank: "A",
+      notice: "――頂点への段《二段目》に至りました。",
+      condition: { skill: "swordplay", gte: 50 },
+    },
+    {
+      id: "apex",
+      name: "頂点",
+      rank: "S",
+      notice: "――頂点《試しの頂》に至りました。",
+      condition: { counter: "kill.species.wolf", gte: 10 },
+    },
+  ],
+};
+
+const mk = (): GameState =>
+  newGame("seed", "名無し", {
+    skillIds: ["swordplay", "smithing"],
+    initialPotential: 100,
+    initialStatValue: 10,
+  });
+
+describe("頂点ルートの進行（checkPinnacles / nextStage）", () => {
+  it("次の段だけを評価し、達成するとフラグを刻む", () => {
+    let s = mk();
+    s = { ...s, counters: { "kill.species.wolf": 3 } };
+    const r = checkPinnacles(s, [route], time);
+    expect(r.reached.map((x) => x.stage.id)).toEqual(["first"]);
+    expect(r.state.flags[pinnacleFlag("test_route", "first")]).toBe(true);
+    // 1ステップに各ルート最大1段。second はまだ未評価
+    expect(r.state.flags[pinnacleFlag("test_route", "second")]).toBeUndefined();
+    expect(nextStage(r.state, route)?.id).toBe("second");
+    expect(pinnacleReached(r.state, route)).toBe(false);
+  });
+
+  it("前段を越えるまで後段は見ない（順序性）", () => {
+    // 2段目・最終段の条件を先に満たしていても、1段目が未達なら first しか進まない
+    let s = mk();
+    s = {
+      ...s,
+      counters: { "kill.species.wolf": 99 },
+      player: {
+        ...s.player,
+        skills: {
+          ...s.player.skills,
+          swordplay: { ...s.player.skills.swordplay!, value: 60 },
+        },
+      },
+    };
+    const r1 = checkPinnacles(s, [route], time);
+    expect(r1.reached.map((x) => x.stage.id)).toEqual(["first"]);
+    const r2 = checkPinnacles(r1.state, [route], time);
+    expect(r2.reached.map((x) => x.stage.id)).toEqual(["second"]);
+    const r3 = checkPinnacles(r2.state, [route], time);
+    expect(r3.reached.map((x) => x.stage.id)).toEqual(["apex"]);
+    expect(pinnacleReached(r3.state, route)).toBe(true);
+    expect(reachedPinnacles(r3.state, [route])).toEqual(["test_route"]);
+    expect(routeProgress(r3.state, route)).toEqual({ done: 3, total: 3, complete: true });
+  });
+
+  it("条件が足りなければ進まず、state は変わらない", () => {
+    const s = mk();
+    const r = checkPinnacles(s, [route], time);
+    expect(r.reached).toEqual([]);
+    expect(r.state).toBe(s); // 参照もそのまま
+    expect(nextStage(s, route)?.id).toBe("first");
+    expect(routeProgress(s, route)).toEqual({ done: 0, total: 3, complete: false });
+  });
+
+  it("S段に8割近づくと気配を立てる（条件は明かさない・1日1回まで）", () => {
+    // 前2段は達成済みにして apex（S）を次段にする
+    let s = mk();
+    s = {
+      ...s,
+      flags: {
+        [pinnacleFlag("test_route", "first")]: true,
+        [pinnacleFlag("test_route", "second")]: true,
+      },
+      counters: { "kill.species.wolf": 8 }, // 10 の 8 割
+    };
+    const r = checkPinnacles(s, [route], time);
+    expect(r.kehai).toEqual([pinnacleFlag("test_route", "apex")]);
+    expect(r.state.notify.kehai).toContain(pinnacleFlag("test_route", "apex"));
+    // 同日2回目は出ない
+    expect(checkPinnacles(r.state, [route], time).kehai).toEqual([]);
+  });
+});
+
+// ---- step() への配線：段のイベントと頂点称号 ----
+
+const cfg: StepConfig = {
+  time,
+  actionLogMax: 5,
+  gain: {
+    base: { train: 1.0 },
+    challengePoints: [
+      [-20, 0.05],
+      [0, 1.0],
+      [10, 1.6],
+      [30, 0],
+    ],
+    challengeTrainCap: 0.6,
+    noveltyK: 1.0,
+    noveltyWindow: 10,
+    failMultiplier: 0.6,
+    modifierCap: 2.5,
+    diminishBase: 110,
+    diminishExponent: 1.5,
+    fatigueScale: 0.8,
+  },
+  sleep: {
+    nightlyCapPerSkill: 8.0,
+    nightlyCapTotal: 999,
+    carryoverRatio: 0.5,
+    innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
+    dinnerFactors: { withDinner: 1.1, noDinner: 0.85 },
+    qualityMin: 0.6,
+    qualityMax: 1.2,
+    potentialDecayPerPoint: 0.01,
+  },
+  tailwind: {
+    defs: [],
+    tailwindFactor: 1.3,
+    headwindFactor: 0.8,
+    recentDays: 3,
+    headwindBiasK: 1.5,
+    tailwindBoostK: 0.5,
+    drawMin: 1,
+    drawMax: 2,
+  },
+  ledger: {
+    basePricePerQuality: 2,
+    marketWindowDays: 7,
+    marketDecayPerWork: 0.9,
+    tierUpBonusPending: 8,
+  },
+  combat: {
+    baseHp: 30,
+    hpPerEndurance: 2,
+    attackBase: 5,
+    attackPerSwordplay: 0.15,
+    attackPerStrength: 0.2,
+    ctBase: 12,
+    ctPerAgility: 0.15,
+    ctMin: 6,
+    defendFactor: 0.5,
+    fleeBase: 0.7,
+    fleePerAgility: 0.02,
+    observeBonus: 20,
+    preciseObserve: 40,
+    deathPendingFactor: 0.5,
+  },
+  body: {
+    fatiguePerAction: { wait: 1, train: 6 },
+    fatigueDefaultPerAction: 2,
+    fatigueRecover: 60,
+    statLoadPerAction: { train: { strength: 2, endurance: 2, dexterity: 1 } },
+    statGainPerLoad: 0.05,
+    overloadThreshold: 15,
+    overworkStreakDays: 3,
+    overworkConsolidateFactor: 0.5,
+    restQuality: 0.9,
+    restPotentialRecover: 3,
+    potentialMax: 100,
+  },
+  society: { standings: [], professions: [], lifeGoals: [], goalRewardFactor: 1 },
+  lore: { atoms: [], connections: [] },
+  titles: [
+    {
+      id: "title.test_apex",
+      rank: "S",
+      // 頂点称号は「最終段のフラグ」を条件にする（titles.json と同じ構造）
+      condition: { flag: "pinnacle.test_route.apex" },
+    },
+  ],
+  pinnacles: [route],
+};
+
+describe("step() の頂点ルート統合（T-41）", () => {
+  it("段に達すると pinnacleStageReached イベントが出てランクを持つ", () => {
+    let s = mk();
+    s = { ...s, counters: { "kill.species.wolf": 3 } };
+    const r = step(s, { type: "wait" }, cfg);
+    const ev = r.events.find((e) => e.type === "pinnacleStageReached");
+    expect(ev).toEqual({
+      type: "pinnacleStageReached",
+      route: "test_route",
+      stage: "first",
+      rank: "B",
+    });
+    expect(r.state.flags["pinnacle.test_route.first"]).toBe(true);
+    expect(r.state.titles).toEqual([]);
+  });
+
+  it("最終段に達すると頂点称号（S）が授かる", () => {
+    let s = mk();
+    s = {
+      ...s,
+      counters: { "kill.species.wolf": 99 },
+      flags: {
+        "pinnacle.test_route.first": true,
+        "pinnacle.test_route.second": true,
+      },
+      player: {
+        ...s.player,
+        skills: {
+          ...s.player.skills,
+          swordplay: { ...s.player.skills.swordplay!, value: 60 },
+        },
+      },
+    };
+    const r = step(s, { type: "wait" }, cfg);
+    expect(r.events).toContainEqual({
+      type: "pinnacleStageReached",
+      route: "test_route",
+      stage: "apex",
+      rank: "S",
+    });
+    // 頂点称号は既存の称号判定が最終段フラグを拾って授ける
+    expect(r.events).toContainEqual({ type: "titleGained", id: "title.test_apex", rank: "S" });
+    expect(r.state.titles).toContain("title.test_apex");
+    expect(pinnacleReached(r.state, route)).toBe(true);
+    expect(reachedPinnacles(r.state, [route])).toEqual(["test_route"]);
+  });
+
+  it("pinnacles を渡さなければ条件鎖は評価しない", () => {
+    const { pinnacles: _omit, ...noP } = cfg;
+    let s = mk();
+    s = { ...s, counters: { "kill.species.wolf": 3 } };
+    const r = step(s, { type: "wait" }, noP);
+    expect(r.events.find((e) => e.type === "pinnacleStageReached")).toBeUndefined();
+    expect(r.state.flags["pinnacle.test_route.first"]).toBeUndefined();
+  });
+});

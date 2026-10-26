@@ -24,6 +24,8 @@ export interface NarrationTemplates {
       death: string[];
       /** 勘違い系の見出し（docs/03 §5。事実と少しズレた噂。行動・平穏の日に混ざる） */
       rumor: string[];
+      /** 前世の伝説（06 §2、T-42。年代記が非空の世界でだけ混ざる。{name}/{epithet} を差し込む） */
+      legend: string[];
     };
   };
   npcWord: {
@@ -50,6 +52,8 @@ export interface NarrationTemplates {
     goal: string[];
     /** {skill}/{value} */
     peak: string[];
+    /** {pinnacle}（T-41。頂点に至ったルート名を差し込む頂点記述の行） */
+    pinnacle: string[];
     cause: { retire: string[]; death: string[] };
     closing: string[];
   };
@@ -68,6 +72,8 @@ export type NarrationRequest =
       works?: readonly { name: string; quality: number; tier: number }[];
       /** 死亡の通算回数。>0 なら物騒な見出しが候補に混ざる */
       deaths?: number;
+      /** 前世（T-42）：年代記の最新の人生。あれば伝説行が候補に混ざる */
+      prevLife?: { name: string; epithet?: string };
     }
   /** NPCの一言。deed は直近の話題（例: 狩り・仕事）、standing は立場ID（口調が変わる） */
   | { scene: "npcWord"; name: string; deed?: string; standing?: string }
@@ -90,6 +96,8 @@ export type NarrationRequest =
       profession?: string;
       goals?: string;
       peakSkill?: { name: string; value: number };
+      /** 頂点に至ったルート名（T-41。複数ある場合は呼び出し側で繋げる） */
+      pinnacle?: string;
       cause?: "retire" | "death";
     };
 
@@ -142,7 +150,19 @@ export class TemplateProvider implements NarrationProvider {
           // 事実分類と競合させる（混ざる確率は各分類の配列量で自然に決まる）。
           // 死亡歴がある日は物騒な見出しも候補に混ざる
           if ((req.deaths ?? 0) > 0) vars = { deaths: req.deaths ?? 0 };
-          pool = [...factual, this.pick(L.rumor, rng), ...((req.deaths ?? 0) > 0 ? L.death : [])];
+          // 前世の伝説（T-42）：年代記が非空の世界では名・二つ名が噂に混ざる
+          const legends = (req.prevLife !== undefined ? L.legend : []).map((l) =>
+            tpl(l, {
+              name: req.prevLife?.name ?? "",
+              epithet: req.prevLife?.epithet ?? "名もなき者",
+            }),
+          );
+          pool = [
+            ...factual,
+            this.pick(L.rumor, rng),
+            ...((req.deaths ?? 0) > 0 ? L.death : []),
+            ...legends,
+          ];
         }
         return [t.newspaper.header, tpl(this.pick(pool, rng), vars)];
       }
@@ -200,6 +220,9 @@ export class TemplateProvider implements NarrationProvider {
               value: req.peakSkill.value,
             }),
           );
+        // 頂点記述（T-41）：事実の行の最後・終わりの行の手前に置く（生涯のクライマックス）
+        if (req.pinnacle !== undefined && req.pinnacle !== "")
+          lines.push(tpl(this.pick(b.pinnacle, rng), { pinnacle: req.pinnacle }));
         if (req.cause !== undefined) lines.push(this.pick(b.cause[req.cause], rng));
         lines.push(this.pick(b.closing, rng));
         return lines;

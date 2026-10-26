@@ -1,6 +1,7 @@
 import { createRng } from "../rng/index.js";
 import { STAT_IDS, type GameState, type PlayerState, type SkillState } from "./types.js";
 import { SAVE_VERSION } from "../save/index.js";
+import type { Legacy } from "../legacy/index.js";
 
 /** balance.json から必要な初期値だけを受け取る */
 export interface NewGameConfig {
@@ -23,6 +24,13 @@ export interface NewGameConfig {
   initialStanding?: string;
   /** 初期所持金 */
   initialMoney?: number;
+  /**
+   * 前世からの継承（T-39、06 §2）。転生した周にだけ渡す。
+   * potentialBonus は各スキルの素質と上限を底上げし、
+   * rememberedTitles は「前世の記憶」として称号を保持、
+   * artifact はこの世界に名品として現れる
+   */
+  legacy?: Legacy;
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -43,6 +51,8 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
         ),
       );
     }
+    // 前世の頂きが素質を少し底上げする（上限は legacyOf 側で適用済み）
+    potential += cfg.legacy?.potentialBonus[id] ?? 0;
     const s: SkillState = {
       value: 0,
       peak: 0,
@@ -74,10 +84,12 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       money: cfg.initialMoney ?? 0,
     },
     counters: {},
-    flags: {},
+    flags: Object.fromEntries(
+      (cfg.legacy?.rememberedTitles ?? []).map((id) => [`memory.title.${id}`, true]),
+    ),
     actionLog: [],
     today: { winds: [], loads: 0 },
-    titles: [],
+    titles: [...(cfg.legacy?.rememberedTitles ?? [])],
     ledger: [],
     notify: { day: 0, sToday: false, kehai: [] },
     society: {
@@ -90,5 +102,21 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     lore: { read: [], facts: [], connections: [] },
     books: { owned: [], read: [] },
     mentor: null,
+    legacy: cfg.legacy
+      ? {
+          rememberedTitles: [...cfg.legacy.rememberedTitles],
+          artifact: cfg.legacy.artifact ? { ...cfg.legacy.artifact } : null,
+        }
+      : null,
   };
+}
+
+/**
+ * 転生先の世界シード（06 §1「新しいシードの世界へ」。T-40）。
+ * 環境変数や実時間乱数ではなく、終わった人生の状態から決定論的に導く：
+ * 同じ終わり方（同じ state）からは同じ次の世界が生まれ、生きた日数を混ぜるので
+ * 同じ親シードでも別の日に終われば別の世界に分かれる
+ */
+export function nextWorldSeed(state: GameState): string {
+  return `${state.seed}:next:${state.time.day}`;
 }

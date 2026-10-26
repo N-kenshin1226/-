@@ -1,9 +1,9 @@
-import { mkdtempSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { appraisalGame, deserializeChronicle } from "@trace/core";
-import { balance, orders } from "@trace/content";
+import { appraisalGame, deserializeChronicle, newGame, serialize } from "@trace/core";
+import { balance, orders, skills } from "@trace/content";
 import { playCli } from "./game.js";
 import { scriptedIo } from "./io.js";
 
@@ -264,5 +264,180 @@ describe("M2 新しい皮の仕事フロー", () => {
     expect(state!.ledger).toHaveLength(1);
     expect(state!.ledger[0]!.kind).toBe("appraisal");
     expect(state!.ledger[0]!.flags).toContain("真贋看破");
+  });
+});
+
+describe("T-40 引退と転生", () => {
+  it("引退すると伝記 → 年代記 → 転生へ進み、新しい世界が始まる", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-reinc-test-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    const { io, output } = scriptedIo([
+      "1", // 出自
+      "11", // 引退する
+      "y", // 確認（1回だけ）
+      "1", // 転生先の出自（称号も作品も無いので継承の選択肢は出ない）
+      "q",
+    ]);
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: "reinc-smoke",
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+
+    expect(text).toContain("引退しますか");
+    expect(text).toContain("年代記に刻まれた");
+    expect(text).toContain("新しい世界で、新しい生が始まる");
+
+    // 年代記に retire の1頁（世界のシードは終わった生のもの）
+    const chronicle = deserializeChronicle(readFileSync(chroniclePath, "utf8"));
+    expect(chronicle.lives).toHaveLength(1);
+    expect(chronicle.lives[0]!.cause).toBe("retire");
+    expect(chronicle.lives[0]!.worldSeed).toBe("reinc-smoke");
+    expect(chronicle.lives[0]!.biography).toBeTruthy();
+
+    // セーブは新しい周に置き換わる。シードは決定論的に派生（seed:next:生きた日数）
+    expect(state!.seed).toBe("reinc-smoke:next:0");
+    const saved = JSON.parse(readFileSync(savePath, "utf8")) as { seed: string };
+    expect(saved.seed).toBe("reinc-smoke:next:0");
+    expect(state!.time.day).toBe(0);
+  });
+
+  it("引退をやめれば何も起きない（確認は1回）", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-retire-cancel-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    const { io, output } = scriptedIo(["1", "11", "n", "q"]);
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: SEED,
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+    expect(text).toContain("引退は思いとどまった");
+    expect(text).not.toContain("新しい世界で");
+    expect(state!.seed).toBe(SEED);
+    expect(state!.time.day).toBe(0);
+    // 年代記には何も書かれない
+    expect(existsSync(chroniclePath)).toBe(false);
+  });
+
+  it("称号と遺物を選んで継承し、次の周に持ち込める", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-reinc-pick-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    // 称号2つ・作品1つを持つ5日目の人生をセーブとして仕込む
+    const life = newGame("inherit-seed", "旅人", {
+      skillIds: skills.skills.map((s) => s.id),
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    const seeded = {
+      ...life,
+      titles: ["title.saw_the_way", "title.master_smith"],
+      ledger: [
+        {
+          id: "w1",
+          kind: "smithing",
+          maker: "旅人",
+          quality: 70,
+          tier: 2,
+          order: "order.nail",
+          flags: [],
+          day: 3,
+          worldSeed: "inherit-seed",
+          marketValue: 140,
+        },
+      ],
+      time: { day: 5, action: 1 },
+    };
+    writeFileSync(savePath, serialize(seeded));
+
+    const { io, output } = scriptedIo([
+      "1", // つづきから
+      "11", // 引退する
+      "y", // 確認
+      "1", // 記憶に残す称号：1番（title.saw_the_way）
+      "1", // 遺物：1番（釘の束）
+      "1", // 転生先の出自
+      "q",
+    ]);
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: "inherit-seed",
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+
+    expect(text).toContain("前世の記憶に残す称号");
+    expect(text).toContain("遺物にする作品");
+    expect(text).toContain("前世の名品《釘の束》");
+    expect(text).toContain("前世の記憶が滲んでいる");
+
+    // 年代記には選んだ称号も含めて1頁
+    const chronicle = deserializeChronicle(readFileSync(chroniclePath, "utf8"));
+    expect(chronicle.lives).toHaveLength(1);
+    expect(chronicle.lives[0]!.cause).toBe("retire");
+    expect(chronicle.lives[0]!.epithet).toBe("title.master_smith"); // Sランク優先
+    // 二つ名の表示も出る
+    expect(text).toContain("年代記には《名工》の名が刻まれた");
+
+    // 継承した周：記憶の称号は保持され、遺物は legacy に載る
+    expect(state!.seed).toBe("inherit-seed:next:5");
+    expect(state!.titles).toEqual(["title.saw_the_way"]);
+    expect(state!.flags["memory.title.title.saw_the_way"]).toBe(true);
+    expect(state!.legacy?.artifact).toMatchObject({ name: "order.nail", kind: "smithing" });
+  });
+
+  it("老衰死は教会蘇生せず、そのまま転生する（06 §1・D-31）", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "trace-oldage-test-"));
+    const savePath = join(dir, "save.json");
+    const chroniclePath = join(dir, "chronicle.json");
+    // 寿命40年・開始15歳 → 55歳＝4480日目の朝に老衰死。直前の夜から寝る
+    const life = newGame("oldage-seed", "旅人", {
+      skillIds: skills.skills.map((s) => s.id),
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    const seeded = { ...life, time: { day: 4479, action: 4 } };
+    writeFileSync(savePath, serialize(seeded));
+
+    const { io, output } = scriptedIo([
+      "1", // つづきから
+      "4", // 休む（今日を終える。無料なので所持金不要）
+      "1", // 転生先の出自
+      "q",
+    ]);
+    const state = await playCli({
+      io,
+      savePath,
+      chroniclePath,
+      seed: "oldage-seed",
+      delay: async () => {},
+    });
+    const text = output.join("\n");
+
+    expect(text).toContain("天命に達した");
+    // 教会蘇生の文は出ない（老衰だけは蘇生しない。06 §1）
+    expect(text).not.toContain("教会で目を覚ました");
+    expect(text).toContain("年代記に刻まれた");
+    expect(text).toContain("新しい世界で、新しい生が始まる");
+
+    const chronicle = deserializeChronicle(readFileSync(chroniclePath, "utf8"));
+    expect(chronicle.lives).toHaveLength(1);
+    expect(chronicle.lives[0]!.cause).toBe("oldAge");
+    expect(chronicle.lives[0]!.worldSeed).toBe("oldage-seed");
+
+    // 新しい世界は終わった日から決定論的に派生する
+    expect(state!.seed).toBe("oldage-seed:next:4480");
+    expect(state!.time.day).toBe(0);
+    expect(state!.counters["death.oldAge"]).toBeUndefined();
   });
 });

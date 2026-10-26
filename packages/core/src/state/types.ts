@@ -167,4 +167,14 @@ export interface GameState {
     /** 弟子入りした日（期間の表示用） */
     sinceDay: number;
   } | null;
+  /**
+   * 前世からの継承（T-39、docs/06 §2）。転生した周だけ設定される（v13〜）。
+   * 素質補正は newGame 時点で potentialCap に焼き込まれるのでここには残さない
+   */
+  legacy: {
+    /** 「前世の記憶」として保持した称号ID（titles にも入っている） */
+    rememberedTitles: string[];
+    /** 遺物：前世の台帳から選んだ名品（この世界に現れている） */
+    artifact: { name: string; kind: string; quality: number; tier: number } | null;
+  } | null;
 }

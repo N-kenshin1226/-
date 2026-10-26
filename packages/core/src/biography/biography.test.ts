@@ -70,4 +70,53 @@ describe("biographyMaterial（T-37 伝記の素材）", () => {
     expect(m.titleIds).toEqual(["title.x", "title.y"]);
     expect(m.achievedGoalIds).toEqual(["goal.first_work"]);
   });
+
+  it("頂点に至ったルートIDを摘む（T-41。ルートを渡したときだけ）", () => {
+    const routes = [
+      {
+        id: "sword_saint",
+        name: "剣聖",
+        desc: "d",
+        title: "title.sword_saint",
+        stages: [
+          {
+            id: "a",
+            name: "段",
+            rank: "A" as const,
+            notice: "n",
+            condition: { flag: "x" },
+          },
+          {
+            id: "apex",
+            name: "頂",
+            rank: "S" as const,
+            notice: "n",
+            condition: { flag: "y" },
+          },
+        ],
+      },
+      {
+        id: "legendary_artisan",
+        name: "伝説の職人",
+        desc: "d",
+        title: "title.legendary_artisan",
+        stages: [
+          {
+            id: "apex",
+            name: "頂",
+            rank: "S" as const,
+            notice: "n",
+            condition: { flag: "z" },
+          },
+        ],
+      },
+    ];
+    const s = state();
+    // 剣聖の最終段だけ立っている
+    s.flags = { "pinnacle.sword_saint.apex": true };
+    const m = biographyMaterial(s, routes);
+    expect(m.pinnacleIds).toEqual(["sword_saint"]);
+    // ルートを渡さなければ空
+    expect(biographyMaterial(s).pinnacleIds).toEqual([]);
+  });
 });

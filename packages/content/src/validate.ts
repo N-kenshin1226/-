@@ -18,6 +18,7 @@ import { voicesFileSchema } from "./voices.schema.js";
 import { originsFileSchema } from "./origins.schema.js";
 import { booksFileSchema } from "./books.schema.js";
 import { mentorsFileSchema } from "./mentors.schema.js";
+import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -58,6 +59,7 @@ check("voices.json", voicesFileSchema);
 check("origins.json", originsFileSchema);
 check("books.json", booksFileSchema);
 check("mentors.json", mentorsFileSchema);
+check("pinnacles.json", pinnaclesFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ
@@ -233,6 +235,42 @@ try {
   }
 } catch (e) {
   console.error(`✗ 師匠のキー突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 頂点ルートの突き合わせ：route.title は titles.json に存在し、その称号の
+// condition は「最終段のフラグ」（{flag: "pinnacle.<route>.<最終段id>"}）と一致すること。
+// 条件鎖は pinnacles.json にだけ書き、称号側は旗を見るだけ —— 二重管理を避けるための構造
+try {
+  const titlesRaw = JSON.parse(readFileSync(join(root, "titles.json"), "utf8")) as {
+    titles?: { id?: string; condition?: { flag?: string } }[];
+  };
+  const pinnaclesRaw = JSON.parse(readFileSync(join(root, "pinnacles.json"), "utf8")) as {
+    pinnacles?: { id?: string; title?: string; stages?: { id?: string }[] }[];
+  };
+  const titleMap = new Map((titlesRaw.titles ?? []).map((t) => [t.id, t]));
+  const bad: string[] = [];
+  for (const r of pinnaclesRaw.pinnacles ?? []) {
+    const label = `pinnacles.json ${r.id ?? "?"}`;
+    const def = titleMap.get(r.title);
+    if (def === undefined) {
+      bad.push(`${label}: 頂点称号 ${r.title} が titles.json に無い`);
+      continue;
+    }
+    const lastId = r.stages?.[r.stages.length - 1]?.id;
+    const want = `pinnacle.${r.id}.${lastId}`;
+    if (def.condition?.flag !== want) {
+      bad.push(`${label}: ${r.title} の condition は {flag: "${want}"} にすること`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 頂点ルートの称号が不正: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 頂点ルートの称号（pinnacles ↔ titles）");
+  }
+} catch (e) {
+  console.error(`✗ 頂点ルートの突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

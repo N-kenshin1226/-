@@ -30,6 +30,9 @@ export function rankOf(
       return "B";
     case "kehai":
       return "A";
+    case "pinnacleStageReached":
+      // 段ごとの指定ランク（06 §3A。中間段はB/A、頂点はS）
+      return event.rank;
     default:
       return null; // slept / wakeReport / gainApplied / actionPerformed
   }

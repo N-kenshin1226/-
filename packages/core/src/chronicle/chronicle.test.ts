@@ -6,6 +6,7 @@ import {
   CHRONICLE_VERSION,
   deserializeChronicle,
   emptyChronicle,
+  hasLifeRecord,
   lifeEntryOf,
   recordLife,
   serializeChronicle,
@@ -87,6 +88,14 @@ describe("年代記エントリの変換（lifeEntryOf）", () => {
     expect(e.biography).toBe("鍛冶師として生きた。");
     expect(e.notableWorks).toHaveLength(1);
   });
+
+  it("頂点に至ったルートID（T-41）を載せられる。無ければ省略", () => {
+    const e = lifeEntryOf(rich(), "death", { pinnacles: ["sword_saint"] });
+    expect(e.pinnacles).toEqual(["sword_saint"]);
+    // 空・未指定は省略される
+    expect(lifeEntryOf(rich(), "death").pinnacles).toBeUndefined();
+    expect(lifeEntryOf(rich(), "death", { pinnacles: [] }).pinnacles).toBeUndefined();
+  });
 });
 
 describe("recordLife", () => {
@@ -98,6 +107,29 @@ describe("recordLife", () => {
     const c2 = recordLife(c1, base(), "retire");
     expect(c2.lives).toHaveLength(2);
     expect(c2.lives[0]).not.toBe(c2.lives[1]);
+  });
+});
+
+describe("hasLifeRecord（T-40：同じ一生の重複刻印を防ぐ）", () => {
+  it("同じ世界・終わり方・日数・名の頁があれば true", () => {
+    const life = rich(); // world-a・42日目・旅人
+    const c = recordLife(emptyChronicle(), life, "death");
+    expect(hasLifeRecord(c, life, "death")).toBe(true);
+    // 終わり方が違えば別の頁
+    expect(hasLifeRecord(c, life, "retire")).toBe(false);
+    // 別の日・別の世界・別の名も別の頁
+    expect(hasLifeRecord(c, { ...life, time: { ...life.time, day: 40 } }, "death")).toBe(false);
+    expect(hasLifeRecord(c, { ...life, seed: "world-b" }, "death")).toBe(false);
+    expect(hasLifeRecord(c, { ...life, player: { ...life.player, name: "別人" } }, "death")).toBe(
+      false,
+    );
+  });
+
+  it("転生フローの再入で同じ頁を二度書かない（冪等）", () => {
+    const life = base();
+    let c = recordLife(emptyChronicle(), life, "oldAge");
+    if (!hasLifeRecord(c, life, "oldAge")) c = recordLife(c, life, "oldAge");
+    expect(c.lives).toHaveLength(1);
   });
 });
 
@@ -119,15 +151,22 @@ describe("年代記の読み書き", () => {
 });
 
 describe("バージョン移行", () => {
-  it("v0 の年代記は v1 へ移行される（lives 欠損は空に）", () => {
+  it("v0 の年代記は最新版へ移行される（lives 欠損は空に）", () => {
     const migrated = deserializeChronicle(JSON.stringify({ version: 0 }));
-    expect(migrated).toEqual({ version: 1, lives: [] });
+    expect(migrated).toEqual({ version: CHRONICLE_VERSION, lives: [] });
   });
 
   it("v0 の lives はそのまま引き継がれる", () => {
     const lives = [{ name: "古の英雄", cause: "death", worldSeed: "old", daysLived: 99 }];
     const migrated = deserializeChronicle(JSON.stringify({ version: 0, lives }));
     expect(migrated.lives).toEqual(lives);
+  });
+
+  it("v1 の年代記は v2 へ移行される（頂点記録の追加・T-41）", () => {
+    const lives = [{ name: "旧世代", cause: "retire", worldSeed: "w1", daysLived: 30 }];
+    const migrated = deserializeChronicle(JSON.stringify({ version: 1, lives }));
+    expect(migrated.version).toBe(2);
+    expect(migrated.lives).toEqual(lives); // pinnacles は任意フィールド。埋めない
   });
 
   it("version が無い・未来・配列でない lives はエラー", () => {

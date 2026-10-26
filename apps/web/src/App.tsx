@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   bookDaysLeft,
   canAct,
@@ -7,7 +7,7 @@ import {
   createRng,
   describe,
   isSkillUnlocked,
-  recordLife,
+  legacyOf,
   step,
   suggestGoals,
   telegraphLines,
@@ -16,7 +16,7 @@ import {
   type GameState,
   type InnRank,
 } from "@trace/core";
-import { balance, titles, type EnemyJson } from "@trace/content";
+import { balance, pinnacles, titles, type EnemyJson } from "@trace/content";
 import {
   atomList,
   beginCombat,
@@ -30,19 +30,22 @@ import {
   inns,
   isBoardKind,
   isTimingKind,
+  legacyArtifactName,
+  legacyDefaults,
   loadChronicle,
   loadGame,
   mentorList,
   minigameResult,
   narrator,
   newSession,
+  nextLife,
   originList,
   offerName,
   orderList,
   playCombatTurn,
   qualityLabel,
+  recordLifeEnd,
   resetSave,
-  saveChronicle,
   saveGame,
   simpleQuality,
   skillList,
@@ -78,7 +81,11 @@ type Screen =
   | { name: "records" }
   | { name: "society" }
   | { name: "mentor" }
-  | { name: "status" };
+  | { name: "status" }
+  /** 引退の確認（T-40） */
+  | { name: "retire" }
+  /** 一生の終わり画面（T-40）：伝記＋継承の選択＋新しい生の出自 */
+  | { name: "rebirth"; prev: GameState; cause: "retire" | "oldAge" };
 
 const css = {
   app: {
@@ -164,7 +171,16 @@ export function App() {
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setState(loadGame());
+    const g = loadGame();
+    // 老衰したまま残ったセーブは転生画面から再開する（T-40。戦闘死は蘇生済みなので
+    // death.count ではなく老衰死の刻印 death.oldAge で判定する）
+    if (g !== null && g.counters["death.oldAge"] !== undefined) {
+      // 頁がまだならここで刻む（T-40 以前に死んだセーブも救う。recordLifeEnd は冪等）
+      const bio = bioLines(g, "death");
+      recordLifeEnd(g, "oldAge", bio.join("\n"));
+      setScreen({ name: "rebirth", prev: g, cause: "oldAge" });
+    }
+    setState(g);
     setLoaded(true);
   }, []);
 
@@ -190,17 +206,22 @@ export function App() {
       const s = stateRef.current;
       if (!s) return;
       const res = step(s, command, cfg);
-      // 年代記への追記（T-38 最小接続。died が出たら別領域に記録する。本格配線は T-40）
+      if (res.events.some((e) => e.type === "deathByAge")) {
+        // 老衰死（T-40・D-31）：教会蘇生はしない。起床ログ＋伝記を表示し、
+        // 年代記に1頁刻んで（冪等）転生画面へ。このままでは遊び続けられない
+        const bio = bioLines(res.state, "death");
+        recordLifeEnd(res.state, "oldAge", bio.join("\n"));
+        const wake = wakeLines(res.state, res.events, opts?.atHome ?? false);
+        push([...wake, ...bio]);
+        saveGame(res.state);
+        stateRef.current = res.state;
+        setState(res.state);
+        setScreen({ name: "rebirth", prev: res.state, cause: "oldAge" });
+        return;
+      }
+      // 年代記への追記（T-38。戦闘死＝教会で蘇生する死。老衰死は上で転生へ回す）
       if (res.events.some((e) => e.type === "died")) {
-        // 老衰（T-36 の deathByAge）は死因として区別して残す
-        const cause = res.events.some((e) => e.type === "deathByAge") ? "oldAge" : "death";
-        saveChronicle(
-          recordLife(loadChronicle(), res.state, cause, {
-            titleDefs: cfg.titles,
-            // 画面に出した伝記と同じものを残す（呼び出し前の state で生成）
-            biography: bioLines(s, "death").join("\n"),
-          }),
-        );
+        recordLifeEnd(res.state, "death", bioLines(res.state, "death").join("\n"));
       }
       const wake = wakeLines(res.state, res.events, opts?.atHome ?? false);
       push(wake.length > 0 ? wake : (opts?.format?.(res.events) ?? eventLines(res.events)));
@@ -218,6 +239,69 @@ export function App() {
     setLog([t.text.banner, "", t.text.intro]);
     setScreen({ name: "menu" });
   };
+
+  /** 引退の確認に応答する（T-40。06 §1：引退はいつでも選べる。確認は1回） */
+  const retire = useCallback(
+    (confirmed: boolean) => {
+      if (!confirmed) {
+        push(t.text.retireCancelled);
+        setScreen({ name: "menu" });
+        return;
+      }
+      const s = stateRef.current;
+      if (!s) return;
+      const res = step(s, { type: "retire" }, cfg);
+      // 伝記を開き、年代記に1頁刻む（冪等）。継承の選択は転生画面で
+      const bio = bioLines(res.state, "retire");
+      recordLifeEnd(res.state, "retire", bio.join("\n"));
+      push(bio);
+      saveGame(res.state);
+      stateRef.current = res.state;
+      setState(res.state);
+      setScreen({ name: "rebirth", prev: res.state, cause: "retire" });
+    },
+    [push],
+  );
+
+  /** 転生画面の確定（T-40）：選んだ記憶・遺物・出自で次の周を始める */
+  const born = useCallback(
+    (
+      prev: GameState,
+      originId: string,
+      rememberedTitles: string[],
+      artifactId: string | undefined,
+    ) => {
+      const legacy = legacyOf(prev, balance.legacy, {
+        titleDefs: cfg.titles,
+        rememberedTitles,
+        ...(artifactId !== undefined ? { artifactId } : {}),
+      });
+      const next = nextLife(prev, originId, legacy);
+      saveGame(next);
+      stateRef.current = next;
+      setState(next);
+      const lines = [t.text.rebirthStart];
+      const bonus = Object.entries(legacy.potentialBonus)
+        .map(([id, v]) => `《${skillList.find((sk) => sk.id === id)?.name ?? id}》+${v}`)
+        .join("、");
+      if (bonus !== "") lines.push(tpl(t.text.rebirthPotential, { skills: bonus }));
+      if (legacy.rememberedTitles.length > 0) {
+        lines.push(
+          tpl(t.text.rebirthMemory, {
+            titles: legacy.rememberedTitles
+              .map((id) => titles.titles.find((x) => x.id === id)?.name ?? id)
+              .join("、"),
+          }),
+        );
+      }
+      if (legacy.artifact !== null) {
+        lines.push(tpl(t.text.rebirthArtifact, { name: legacyArtifactName(legacy.artifact) }));
+      }
+      push(lines);
+      setScreen({ name: "menu" });
+    },
+    [push],
+  );
 
   if (!loaded) return null;
   if (!state) {
@@ -253,6 +337,8 @@ export function App() {
         act={act}
         push={push}
         reset={() => setState(null)}
+        onRetire={retire}
+        onBorn={born}
       />
       <section
         style={{ ...css.panel, ...css.log }}
@@ -338,8 +424,15 @@ function ScreenView(props: {
   act: Act;
   push: (l: string | string[]) => void;
   reset: () => void;
+  onRetire: (confirmed: boolean) => void;
+  onBorn: (
+    prev: GameState,
+    originId: string,
+    rememberedTitles: string[],
+    artifactId: string | undefined,
+  ) => void;
 }) {
-  const { state, screen, setScreen, act, push, reset } = props;
+  const { state, screen, setScreen, act, push, reset, onRetire, onBorn } = props;
   switch (screen.name) {
     case "train":
       return <TrainScreen state={state} act={act} back={() => setScreen({ name: "menu" })} />;
@@ -391,6 +484,10 @@ function ScreenView(props: {
       return <MentorScreen state={state} act={act} back={() => setScreen({ name: "menu" })} />;
     case "status":
       return <StatusScreen state={state} back={() => setScreen({ name: "menu" })} />;
+    case "retire":
+      return <RetireScreen onRetire={onRetire} />;
+    case "rebirth":
+      return <RebirthScreen prev={screen.prev} cause={screen.cause} onBorn={onBorn} />;
     default:
       return <MenuScreen state={state} setScreen={setScreen} act={act} reset={reset} />;
   }
@@ -418,6 +515,8 @@ function MenuScreen({
     { label: "立場・目標", s: { name: "society" }, needAct: false, id: "society" },
     { label: "師匠", s: { name: "mentor" }, needAct: false, id: "mentor" },
     { label: "能力", s: { name: "status" }, needAct: false, id: "status" },
+    // 引退（T-40）：いつでも選べて行動は消費しない
+    { label: "引退する", s: { name: "retire" }, needAct: false, id: "retire" },
   ];
   return (
     <section style={css.panel} data-testid="menu">
@@ -1240,6 +1339,16 @@ function ChronicleView() {
                 })}
               </div>
             )}
+            {/* 頂点に至ったルート（T-41）：年代記の頁に刻む */}
+            {life.pinnacles !== undefined && life.pinnacles.length > 0 && (
+              <div>
+                {tpl(t.text.chroniclePinnacle, {
+                  pinnacles: life.pinnacles
+                    .map((id) => pinnacles.pinnacles.find((r) => r.id === id)?.name ?? id)
+                    .join("、"),
+                })}
+              </div>
+            )}
           </div>
         );
       })}
@@ -1432,6 +1541,148 @@ function StatusScreen({ state, back }: { state: GameState; back: () => void }) {
         称号：{state.titles.length === 0 ? "―" : state.titles.join("、")}
       </div>
       <Btn onClick={back}>戻る</Btn>
+    </section>
+  );
+}
+
+// ---- 引退（T-40。06 §1：いつでも選べる。確認は1回） ----
+function RetireScreen({ onRetire }: { onRetire: (confirmed: boolean) => void }) {
+  return (
+    <section style={css.panel} data-testid="screen-retire">
+      <div style={{ marginBottom: 8 }}>{t.text.retireConfirm}</div>
+      <Btn primary testId="retire-yes" onClick={() => onRetire(true)}>
+        引退する
+      </Btn>
+      <Btn testId="retire-no" onClick={() => onRetire(false)}>
+        思いとどまる
+      </Btn>
+    </section>
+  );
+}
+
+// ---- 転生（T-40。06 §1「伝記→年代記→継承→転生」） ----
+/**
+ * 一生の終わり画面：伝記・二つ名（年代記から）・継承の選択・新しい生の出自。
+ * 記憶の称号は rememberedMax まで、遺物は台帳の上位から1個。初期値は自動選択と同じ
+ */
+function RebirthScreen({
+  prev,
+  cause,
+  onBorn,
+}: {
+  prev: GameState;
+  cause: "retire" | "oldAge";
+  onBorn: (
+    prev: GameState,
+    originId: string,
+    rememberedTitles: string[],
+    artifactId: string | undefined,
+  ) => void;
+}) {
+  const { auto, topWorks } = useMemo(() => legacyDefaults(prev), [prev]);
+  const bio = useMemo(() => bioLines(prev, cause === "retire" ? "retire" : "death"), [prev, cause]);
+  // 二つ名は年代記に刻まれた頁から読む（recordLife が自動で選んでいる）。
+  // この一生の頁を探す（末尾とは限らない：別の生が後に刻まれている場合もある）
+  const epithet = useMemo(
+    () =>
+      [...loadChronicle().lives]
+        .reverse()
+        .find((l) => l.worldSeed === prev.seed && l.cause === cause)?.epithet,
+    [prev, cause],
+  );
+  const [pickedTitles, setPickedTitles] = useState<string[]>(auto.rememberedTitles);
+  // 自動選択の遺物は品質最高の1件＝topWorks[0]（legacyOf と同じ順位付け）
+  const [artifactId, setArtifactId] = useState<string | undefined>(topWorks[0]?.id);
+  const [originId, setOriginId] = useState<string | null>(null);
+  const toggleTitle = (id: string) =>
+    setPickedTitles((ts) =>
+      ts.includes(id)
+        ? ts.filter((x) => x !== id)
+        : [...ts, id].slice(-balance.legacy.rememberedMax),
+    );
+  return (
+    <section style={css.panel} data-testid="screen-rebirth">
+      <div data-testid="rebirth-bio">
+        {bio.map((l, i) => (
+          <div key={i} style={l.startsWith("――") || l.startsWith("━") ? css.sys : {}}>
+            {l}
+          </div>
+        ))}
+      </div>
+      {epithet !== undefined && (
+        <div style={css.sys} data-testid="rebirth-epithet">
+          {tpl(t.text.rebirthEpithet, {
+            name: titles.titles.find((x) => x.id === epithet)?.name ?? epithet,
+          })}
+        </div>
+      )}
+      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.legacyHeader}</div>
+      {prev.titles.length > 0 ? (
+        <div data-testid="rebirth-titles">
+          <div style={css.dim}>
+            {tpl(t.text.legacyTitlesPrompt, { max: balance.legacy.rememberedMax })}
+          </div>
+          {prev.titles.map((id) => (
+            <Btn
+              key={id}
+              testId={`rebirth-title-${id}`}
+              primary={pickedTitles.includes(id)}
+              onClick={() => toggleTitle(id)}
+            >
+              {titles.titles.find((x) => x.id === id)?.name ?? id}
+            </Btn>
+          ))}
+        </div>
+      ) : (
+        <div style={css.dim}>{t.text.legacyNoTitles}</div>
+      )}
+      {topWorks.length > 0 ? (
+        <div data-testid="rebirth-artifacts">
+          <div style={css.dim}>{t.text.legacyArtifactPrompt}</div>
+          {topWorks.map((w) => (
+            <Btn
+              key={w.id}
+              testId={`rebirth-artifact-${w.id}`}
+              primary={artifactId === w.id}
+              onClick={() => setArtifactId((a) => (a === w.id ? undefined : w.id))}
+            >
+              {workName(w)}
+              <span style={css.dim}>
+                {" "}
+                （質{w.quality}・{w.day + 1}日目）
+              </span>
+            </Btn>
+          ))}
+        </div>
+      ) : (
+        <div style={css.dim}>{t.text.legacyNoArtifact}</div>
+      )}
+      <div style={{ ...css.accent, marginTop: 8 }}>{t.text.rebirthOriginPrompt}</div>
+      <div>
+        {originList.map((o) => (
+          <Btn
+            key={o.id}
+            testId={`rebirth-origin-${o.id.replace("origin.", "")}`}
+            primary={originId === o.id}
+            onClick={() => setOriginId(o.id)}
+          >
+            {o.name}
+            <span style={css.dim}> ― {o.desc}</span>
+          </Btn>
+        ))}
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Btn
+          primary
+          testId="rebirth-born"
+          disabled={originId === null}
+          onClick={() => {
+            if (originId !== null) onBorn(prev, originId, pickedTitles, artifactId);
+          }}
+        >
+          {t.text.rebirthBorn}
+        </Btn>
+      </div>
     </section>
   );
 }

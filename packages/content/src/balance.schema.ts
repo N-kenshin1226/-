@@ -158,6 +158,22 @@ export const balanceSchema = z
       .refine((a) => a.signWarnAt <= a.signSevereAt, {
         message: "aging.signWarnAt <= aging.signSevereAt が必要",
       }),
+    /**
+     * docs/06_endgame.md §2、T-39：継承。core/legacy の LegacyConfig に対応。
+     * 数値インフレ防止のため係数は小さく上限を持つ
+     */
+    legacy: z
+      .object({
+        /** 前世の peak → 次周素質% の変換係数（例 0.1 = peak100 で +10） */
+        potentialFactor: z.number().min(0),
+        /** スキルごとの素質上乗せ上限（%） */
+        potentialMax: z.number().nonnegative(),
+        /** 「前世の記憶」として持てる称号の上限数 */
+        rememberedMax: z.number().int().nonnegative(),
+        /** 遺物が持つ gainVs 係数（例 1.05 = 同系統の経験+5%） */
+        artifactGainFactor: z.number().min(1),
+      })
+      .strict(),
     /** docs/03 §3 作品台帳。core/ledger の LedgerConfig に対応 */
     ledger: z
       .object({

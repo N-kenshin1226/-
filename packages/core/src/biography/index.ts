@@ -1,4 +1,5 @@
 import type { GameState, Work } from "../state/types.js";
+import { reachedPinnacles, type PinnacleRouteDef } from "../pinnacle/index.js";
 
 /**
  * 伝記の素材（T-37、docs/06_endgame.md §1）。
@@ -22,9 +23,14 @@ export interface BiographyMaterial {
   peakSkill: { id: string; value: number } | null;
   /** 死亡回数（蘇生込みの通算） */
   deaths: number;
+  /** 頂点に至ったルートID（T-41。routes を渡したときだけ摘む） */
+  pinnacleIds: string[];
 }
 
-export function biographyMaterial(state: GameState): BiographyMaterial {
+export function biographyMaterial(
+  state: GameState,
+  pinnacleRoutes?: readonly PinnacleRouteDef[],
+): BiographyMaterial {
   const bestWork = state.ledger.reduce<Work | null>(
     (best, w) =>
       best === null || w.tier > best.tier || (w.tier === best.tier && w.quality > best.quality)
@@ -48,5 +54,6 @@ export function biographyMaterial(state: GameState): BiographyMaterial {
     bestWork,
     peakSkill,
     deaths: state.counters["death.count"] ?? 0,
+    pinnacleIds: pinnacleRoutes !== undefined ? reachedPinnacles(state, pinnacleRoutes) : [],
   };
 }

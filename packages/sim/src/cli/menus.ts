@@ -15,6 +15,7 @@ import {
   books,
   mentors,
   orders,
+  pinnacles,
   skills,
   society,
   titles,
@@ -393,6 +394,16 @@ function chronicleLines(chronicle: Chronicle, t: CliText): string[] {
         tpl(t.text.chronicleWorks, {
           works: life.notableWorks
             .map((w) => `《${notableWorkName(w)}》品質${w.quality}`)
+            .join("、"),
+        }),
+      );
+    }
+    // 頂点に至ったルート（T-41）：年代記の頁に刻む
+    if (life.pinnacles !== undefined && life.pinnacles.length > 0) {
+      lines.push(
+        tpl(t.text.chroniclePinnacle, {
+          pinnacles: life.pinnacles
+            .map((id) => pinnacles.pinnacles.find((r) => r.id === id)?.name ?? id)
             .join("、"),
         }),
       );

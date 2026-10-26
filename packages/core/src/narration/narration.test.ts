@@ -16,6 +16,7 @@ const text: NarrationTemplates = {
       work: ["《{name}》（品質{quality}・ティア{tier}）が話題だ。"],
       death: ["{deaths}度目の死の噂がある。"],
       rumor: ["風の噂：実は王族だという。", "風の噂：空を飛ぶ者を見た。"],
+      legend: ["昔語り：{name}という者がいたという。{epithet}と呼ばれたらしい。"],
     },
   },
   npcWord: {
@@ -41,6 +42,7 @@ const text: NarrationTemplates = {
     standing: ["立場{standing}。{profession}"],
     goal: ["目標「{goals}」を果たした。"],
     peak: ["頂きは{skill}の{value}。"],
+    pinnacle: ["頂点《{pinnacle}》に至った。"],
     cause: {
       retire: ["引退によって記録は閉じた。"],
       death: ["死が記録を閉じた。"],
@@ -111,6 +113,28 @@ describe("TemplateProvider（07 §6）", () => {
     }
   });
 
+  it("新聞：前世があれば伝説行が混ざる（T-42）。なければ出ない", () => {
+    const prevLife = { name: "先代", epithet: "《百狼斬り》" };
+    const expected = "昔語り：先代という者がいたという。《百狼斬り》と呼ばれたらしい。";
+    let sawLegend = false;
+    for (let i = 0; i < 40 && !sawLegend; i++) {
+      const line = provider.narrate(
+        { scene: "newspaper", deeds: ["work"], prevLife },
+        createRng(`l:${i}`),
+      )[1]!;
+      if (line === expected) sawLegend = true;
+    }
+    expect(sawLegend).toBe(true);
+    // 年代記が空の世界（prevLife なし）では伝説行は出ない
+    for (let i = 0; i < 10; i++) {
+      const line = provider.narrate(
+        { scene: "newspaper", deeds: ["work"] },
+        createRng(`l:${i}`),
+      )[1]!;
+      expect(line).not.toContain("昔語り");
+    }
+  });
+
   it("新聞：勘違い系の見出しが一定確率で混ざる", () => {
     let sawRumor = false;
     let sawFactual = false;
@@ -171,6 +195,7 @@ describe("TemplateProvider（07 §6）", () => {
         profession: "鍛冶師",
         goals: "最初の作品を作る",
         peakSkill: { name: "鍛冶", value: 92.3 },
+        pinnacle: "伝説の職人",
         cause: "retire",
       },
       rng(),
@@ -186,6 +211,8 @@ describe("TemplateProvider（07 §6）", () => {
     expect(text).toContain("最初の作品を作る");
     expect(text).toContain("鍛冶");
     expect(text).toContain("92.3");
+    // 頂点記述（T-41）：事実の行の最後・終わりの行の手前に置く
+    expect(text).toContain("頂点《伝説の職人》に至った");
     expect(text).toContain("引退");
     expect(text).toContain("年代記");
 

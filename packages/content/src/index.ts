@@ -44,3 +44,10 @@ export type { Book, BooksFile } from "./books.schema.js";
 export { mentors } from "./mentors.js";
 export { mentorSchema, mentorsFileSchema } from "./mentors.schema.js";
 export type { Mentor, MentorsFile } from "./mentors.schema.js";
+export { pinnacles } from "./pinnacles.js";
+export {
+  pinnacleRouteSchema,
+  pinnacleStageSchema,
+  pinnaclesFileSchema,
+} from "./pinnacles.schema.js";
+export type { PinnacleRoute, PinnacleStage, PinnaclesFile } from "./pinnacles.schema.js";

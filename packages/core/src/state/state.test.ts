@@ -206,6 +206,24 @@ describe("step", () => {
     expect(g.actionLog.at(-1)?.kind).toBe("wait");
     expect(g.actionLog[0]?.day).toBeGreaterThan(0);
   });
+
+  it("引退は行動を消費せず retired イベントだけを返す（T-40。06 §1）", () => {
+    const g = newGame("seed-retire", "引退", newGameCfg);
+    const r = step(g, { type: "retire" }, cfg);
+    // 生涯の終わりを告げる出来事だけ。時も状態も進めない
+    // （伝記・年代記・継承・転生は呼び出し側が行い、新しい周は newGame で作る）
+    expect(r.events).toEqual([{ type: "retired" }]);
+    expect(r.state).toEqual(g);
+  });
+
+  it("行動残が0でも引退できる（いつでも選べる）", () => {
+    let g = newGame("seed-retire2", "引退", newGameCfg);
+    for (let i = 0; i < 5; i++) g = step(g, { type: "wait" }, cfg).state;
+    expect(g.time.action).toBe(5);
+    const r = step(g, { type: "retire" }, cfg);
+    expect(r.events).toEqual([{ type: "retired" }]);
+    expect(r.state).toEqual(g);
+  });
 });
 
 describe("save", () => {

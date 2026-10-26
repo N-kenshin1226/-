@@ -15,6 +15,7 @@ import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import type { CombatConfig } from "./combat/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
+import { checkPinnacles, type PinnacleRouteDef } from "./pinnacle/index.js";
 import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
 import { readAtom, type LoreConfig } from "./lore/index.js";
 import {
@@ -69,6 +70,10 @@ export interface StepConfig {
   skillNames?: Record<string, string>;
   /** 寿命・加齢（06 §1、T-36。balance.aging ＋ cli.json 由来の文）。省略時は加齢なし */
   aging?: AgingConfig;
+  /** 継承（06 §2、T-39。balance.legacy）。遺物の gainVs 係数を渡す */
+  legacy?: { artifactGainFactor: number };
+  /** 頂点ルート（06 §3A、T-41。content/pinnacles.json）。省略時は条件鎖を評価しない */
+  pinnacles?: readonly PinnacleRouteDef[];
 }
 
 export type Command =
@@ -129,7 +134,13 @@ export type Command =
    * M項には弟子期間の師匠効果が乗る。稽古ごとに担当スキルの素質が回復し、
    * 初回は秘伝フラグが立つ
    */
-  | { type: "trainWithMentor"; difficulty: number };
+  | { type: "trainWithMentor"; difficulty: number }
+  /**
+   * 引退する（06 §1、T-40）。いつでも選べて行動は消費しない。
+   * state は変えず `retired` イベントだけを返す —— 伝記・年代記・継承・転生は
+   * 呼び出し側が行う（転生は newGame で別の GameState に切り替わるため）
+   */
+  | { type: "retire" };
 
 export interface StepResult {
   state: GameState;
@@ -270,7 +281,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           // M 項：称号・認定職・師匠（T-27）に加えて、読了した書物の期間効果（T-26）も積に入る
           modifiers: gainModifier(
             [
-              ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
+              ...activeEffects(
+                next,
+                cfg.titles,
+                cfg.society.professions,
+                cfg.mentors?.mentors,
+                cfg.legacy?.artifactGainFactor,
+              ),
               ...activeBookEffects(next, cfg.books),
             ],
             "train",
@@ -313,7 +330,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const repeats = recentRepeats(next.actionLog, "work", command.kind, cfg.gain.noveltyWindow);
       // 称号・認定職・師匠・読了書物の効果（T-35・T-27・T-26）：M 項の修正と報酬の値段変化
       const effects = [
-        ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
+        ...activeEffects(
+          next,
+          cfg.titles,
+          cfg.society.professions,
+          cfg.mentors?.mentors,
+          cfg.legacy?.artifactGainFactor,
+        ),
         ...activeBookEffects(next, cfg.books),
       ];
       const { amount } = computeGain(
@@ -371,7 +394,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         cfg.gain.noveltyWindow,
       );
       const effects = [
-        ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
+        ...activeEffects(
+          next,
+          cfg.titles,
+          cfg.society.professions,
+          cfg.mentors?.mentors,
+          cfg.legacy?.artifactGainFactor,
+        ),
         ...activeBookEffects(next, cfg.books),
       ];
       for (const skillId of ["swordplay", "evasion"] as const) {
@@ -550,7 +579,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           // M 項：称号・認定職・師匠の弟子期間効果・読了書物（T-35・T-27・T-26）
           modifiers: gainModifier(
             [
-              ...activeEffects(next, cfg.titles, cfg.society.professions, cfg.mentors?.mentors),
+              ...activeEffects(
+                next,
+                cfg.titles,
+                cfg.society.professions,
+                cfg.mentors?.mentors,
+                cfg.legacy?.artifactGainFactor,
+              ),
               ...activeBookEffects(next, cfg.books),
             ],
             "train",
@@ -586,6 +621,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       });
       break;
     }
+    case "retire": {
+      // 引退：行動を消費せず状態も変えない。生涯の終わりを告げる出来事だけを発行し、
+      // 伝記・年代記への記録・継承・転生は呼び出し側の仕事（T-40。06 §1）
+      events.push({ type: "retired" });
+      break;
+    }
   }
 
   // イベントを購読者に流して派生状態を更新し、行動ログを記録する
@@ -597,6 +638,28 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // 称号の判定（購読者がカウンタを更新した後の state で評価。
   // 1ステップに複数取れてよいが、同じ称号は二度取らない）
   const titleEvents: ActionEvent[] = [];
+
+  // 頂点ルートの条件鎖（06 §3A、T-41）：各ルートの次の未達成段だけを見る。
+  // 段の達成は flags["pinnacle.<route>.<stage>"] に刻み、最終段（S）の頂点称号は
+  // そのフラグを条件に持つ既存の称号判定がこの直後に拾う（二重管理を避ける）
+  if (cfg.pinnacles) {
+    const prog = checkPinnacles(next, cfg.pinnacles, cfg.time);
+    next = prog.state;
+    for (const r of prog.reached) {
+      const event: ActionEvent = {
+        type: "pinnacleStageReached",
+        route: r.route.id,
+        stage: r.stage.id,
+        rank: r.stage.rank,
+      };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
+    // 頂点（Sランク段）への接近は「気配」として出す（記録は checkPinnacles 側で済み）
+    for (const _ of prog.kehai) titleEvents.push({ type: "kehai" });
+  }
+
   for (const def of cfg.titles) {
     if (next.titles.includes(def.id)) continue;
     if (evaluate(def.condition, next, cfg.time)) {

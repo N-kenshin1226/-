@@ -1,9 +1,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { skills, society, titles } from "@trace/content";
+import { enemies, pinnacles, skills, society, titles } from "@trace/content";
 import { evaluate } from "@trace/core";
-import { makeSeekerBot, metricBots } from "./bots.js";
+import { makePinnacleBot, makeSeekerBot, metricBots } from "./bots.js";
 import { simClock, stepConfig } from "./config.js";
 import { atMinutes, runBot, type RunResult } from "./runner.js";
 import { thresholds } from "./thresholds.js";
@@ -152,6 +152,25 @@ export function runGrowth(): number {
   if (goalExcluded.length > 0) {
     notes.push(
       `目標の到達性の対象外（戦闘・仕事・打診・読了など訓練で満たせない条件）: ${goalExcluded.join(", ")}`,
+    );
+  }
+
+  // 頂点ルート「到達までの日数」の目安（T-41。06 §3A のバランス確認）。
+  // 専用ボット（条件鎖を読んで撃破→連戦→台帳→訓練をこなす）を seeker と同じ日数で回す。
+  // 戦闘は常勝・仕事は見込み品質で近似した楽観値なので、ゲートではなく報告のみ
+  for (const route of pinnacles.pinnacles) {
+    const bot = makePinnacleBot(route, enemies.enemies);
+    const r = runBot(bot, t.titleReachabilityDays, `pinnacle:${route.id}`, cfg, clock, skillIds);
+    const dayOf = (minutes: number) =>
+      r.days.find((d) => d.minutes >= minutes)?.day ?? r.days.at(-1)?.day ?? "?";
+    const stageDays = route.stages.map((s) => {
+      const f = r.firsts.find((x) => x.key === `pinnacle:${route.id}.${s.id}`);
+      return `${s.name}=${f !== undefined ? `${dayOf(f.minutes)}日目` : "未到達"}`;
+    });
+    const apex = route.stages[route.stages.length - 1]!;
+    const apexF = r.firsts.find((x) => x.key === `pinnacle:${route.id}.${apex.id}`);
+    notes.push(
+      `頂点「${route.name}」: ${stageDays.join(" / ")}${apexF === undefined ? "（期間内に未達）" : ""}`,
     );
   }
 

@@ -59,6 +59,8 @@ export function activeEffects(
   titles: readonly EffectBearer[],
   professions: readonly EffectBearer[],
   mentors?: readonly EffectBearer[],
+  /** 遺物の gainVs 係数（balance.legacy.artifactGainFactor。T-39） */
+  artifactGainFactor?: number,
 ): Effect[] {
   const owned = new Set(state.titles);
   const list: Effect[] = [];
@@ -72,6 +74,11 @@ export function activeEffects(
   if (mentors !== undefined && state.mentor !== null) {
     const m = mentors.find((x) => x.id === state.mentor!.id);
     if (m?.effect !== undefined) list.push(m.effect);
+  }
+  // 遺物（T-39）：前世の名品が同系統の経験を小さく押し上げる
+  const artifact = state.legacy?.artifact;
+  if (artifact !== null && artifact !== undefined && artifactGainFactor !== undefined) {
+    list.push({ gainVs: { [artifact.kind]: artifactGainFactor } });
   }
   return list;
 }

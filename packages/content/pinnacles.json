@@ -1,0 +1,118 @@
+{
+  "pinnacles": [
+    {
+      "id": "sword_saint",
+      "name": "剣聖",
+      "desc": "武の頂点。連戦の末に奥義を極め、剣聖と呼ばれるまでの道",
+      "title": "title.sword_saint",
+      "stages": [
+        {
+          "id": "tempered",
+          "name": "鍛錬の証",
+          "rank": "B",
+          "notice": "――頂点への段《鍛錬の証》に至りました。剣筋に覚悟が宿ります。",
+          "condition": {
+            "and": [
+              { "counter": "kill.species.wolf", "gte": 10 },
+              { "skill": "swordplay", "gte": 30 }
+            ]
+          }
+        },
+        {
+          "id": "renzan",
+          "name": "連戦の刻",
+          "rank": "A",
+          "notice": "――頂点への段《連戦の刻》に至りました。街道の名がこの剣と結ばれます。",
+          "condition": {
+            "and": [
+              { "within": { "days": 7, "kind": "combat", "atLeast": 15 } },
+              { "counter": "kill.species.bandit", "gte": 10 },
+              { "skill": "swordplay", "gte": 55 },
+              { "skill": "evasion", "gte": 40 }
+            ]
+          }
+        },
+        {
+          "id": "ougi",
+          "name": "奥義会得",
+          "rank": "A",
+          "notice": "――頂点への段《奥義会得》に至りました。居合の冴えが別格です。",
+          "condition": {
+            "and": [
+              { "skill": "iaijutsu", "gte": 50 },
+              { "counter": "kill.species.deserter", "gte": 15 }
+            ]
+          }
+        },
+        {
+          "id": "apex",
+          "name": "剣の頂点",
+          "rank": "S",
+          "notice": "――頂点《剣聖》に至りました。この剣は生涯の証です。",
+          "condition": {
+            "and": [
+              { "skill": "swordplay", "gte": 90 },
+              { "counter": "kill.species.deserter", "gte": 30 }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "legendary_artisan",
+      "name": "伝説の職人",
+      "desc": "神器の製作。自己ベストを超え続けた先に、世に残る一振りを遺す道",
+      "title": "title.legendary_artisan",
+      "stages": [
+        {
+          "id": "hands",
+          "name": "槌の冴え",
+          "rank": "B",
+          "notice": "――頂点への段《槌の冴え》に至りました。打ち方に芯が通います。",
+          "condition": {
+            "and": [
+              { "skill": "smithing", "gte": 30 },
+              { "work": { "kind": "smithing", "count": { "atLeast": 5 } } }
+            ]
+          }
+        },
+        {
+          "id": "licensed",
+          "name": "認定の名工",
+          "rank": "A",
+          "notice": "――頂点への段《認定の名工》に至りました。街がこの腕を認めます。",
+          "condition": {
+            "and": [
+              { "counter": "society.offer.smith", "gte": 1 },
+              { "work": { "kind": "smithing", "tierGte": 4 } }
+            ]
+          }
+        },
+        {
+          "id": "masterwork",
+          "name": "傑作の系譜",
+          "rank": "A",
+          "notice": "――頂点への段《傑作の系譜》に至りました。自己ベストはまだ先を指します。",
+          "condition": {
+            "and": [
+              { "skill": "smithing", "gte": 70 },
+              { "work": { "kind": "smithing", "tierGte": 6 } }
+            ]
+          }
+        },
+        {
+          "id": "apex",
+          "name": "神器の誕生",
+          "rank": "S",
+          "notice": "――頂点《伝説の職人》に至りました。世に神器を遺します。",
+          "condition": {
+            "and": [
+              { "skill": "smithing", "gte": 90 },
+              { "work": { "kind": "smithing", "tierGte": 8 } }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

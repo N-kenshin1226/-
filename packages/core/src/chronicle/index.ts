@@ -8,7 +8,7 @@ import type { GameState } from "../state/types.js";
  */
 
 /** 年代記スキーマのバージョン（save/ の SAVE_VERSION とは別系統） */
-export const CHRONICLE_VERSION = 1;
+export const CHRONICLE_VERSION = 2;
 
 /** 人生の終わり方 */
 export type LifeCause = "death" | "retire" | "oldAge";
@@ -45,6 +45,8 @@ export interface ChronicleEntry {
   notableWorks: NotableWork[];
   /** 終わり方（引退・死亡・老衰） */
   cause: LifeCause;
+  /** 頂点に至ったルートID（T-41。pinnacles.json の id。無ければ省略） */
+  pinnacles?: string[];
   /** 伝記本文（T-37 の語り層が差し込む。無ければ省略） */
   biography?: string;
   /** この人生を過ごした世界のシード */
@@ -69,6 +71,8 @@ export interface RecordLifeOptions {
   titleDefs?: readonly { id: string; rank: "S" | "A" | "B" }[];
   /** 伝記本文（T-37 の語り層が差し込む。省略可） */
   biography?: string;
+  /** 頂点に至ったルートID（T-41。呼び出し側が reachedPinnacles で求める。省略可） */
+  pinnacles?: string[];
   /** 代表作の最大件数（既定 3） */
   maxWorks?: number;
 }
@@ -128,6 +132,9 @@ export function lifeEntryOf(
     achievedGoals: [...state.society.achievedGoals],
     notableWorks,
     cause,
+    ...(opts?.pinnacles !== undefined && opts.pinnacles.length > 0
+      ? { pinnacles: [...opts.pinnacles] }
+      : {}),
     ...(opts?.biography !== undefined ? { biography: opts.biography } : {}),
     worldSeed: state.seed,
   };
@@ -146,6 +153,21 @@ export function recordLife(
   return { ...chronicle, lives: [...chronicle.lives, lifeEntryOf(state, cause, opts)] };
 }
 
+/**
+ * 同じ一生がすでに刻まれているか（T-40）。世界・終わり方・生きた日数・名の4つが
+ * 一致したら同一の生涯とみなす。転生フローで recordLife を呼ぶ前にこの判定を挟むと、
+ * 中断・再読み込みで同じ死を再生しても年代記に重複した頁が立たない（冪等）
+ */
+export function hasLifeRecord(chronicle: Chronicle, state: GameState, cause: LifeCause): boolean {
+  return chronicle.lives.some(
+    (l) =>
+      l.worldSeed === state.seed &&
+      l.cause === cause &&
+      l.daysLived === state.time.day + 1 &&
+      l.name === state.player.name,
+  );
+}
+
 /** chronicleMigrations[n] はバージョン n のデータを n+1 へ変換する（save/ と同じ仕組み） */
 export const chronicleMigrations: Record<
   number,
@@ -156,6 +178,8 @@ export const chronicleMigrations: Record<
     version: 1,
     lives: Array.isArray(old.lives) ? old.lives : [],
   }),
+  /** 1 → 2: 頂点ルートの記録（T-41）を追加。追加入力の任意フィールドなので埋めるものはない */
+  1: (old) => ({ ...old, version: 2 }),
 };
 
 export function serializeChronicle(chronicle: Chronicle): string {

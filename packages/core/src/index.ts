@@ -38,7 +38,7 @@ export { step } from "./step.js";
 export type { Command, StepConfig, StepResult } from "./step.js";
 export { recordWork, matchesWork } from "./ledger/index.js";
 export type { LedgerConfig, RecordedWork } from "./ledger/index.js";
-export { newGame } from "./state/newGame.js";
+export { newGame, nextWorldSeed } from "./state/newGame.js";
 export type { NewGameConfig } from "./state/newGame.js";
 export type {
   ActionLogEntry,
@@ -58,6 +58,7 @@ export {
   chronicleMigrations,
   deserializeChronicle,
   emptyChronicle,
+  hasLifeRecord,
   lifeEntryOf,
   recordLife,
   serializeChronicle,
@@ -133,6 +134,22 @@ export { TemplateProvider } from "./narration/index.js";
 export type { NarrationProvider, NarrationRequest, NarrationTemplates } from "./narration/index.js";
 export { biographyMaterial } from "./biography/index.js";
 export type { BiographyMaterial } from "./biography/index.js";
+export { legacyOf } from "./legacy/index.js";
+export type { Legacy, LegacyArtifact, LegacyConfig, LegacyPick } from "./legacy/index.js";
+export {
+  checkPinnacles,
+  nextStage,
+  pinnacleFlag,
+  pinnacleReached,
+  reachedPinnacles,
+  routeProgress,
+} from "./pinnacle/index.js";
+export type {
+  PinnacleCheck,
+  PinnacleRouteDef,
+  PinnacleStageDef,
+  PinnacleStageReached,
+} from "./pinnacle/index.js";
 export { specialOrderOf } from "./town/index.js";
 export type { OrderLike, SpecialOrderOf, SpecialOrderSpec } from "./town/index.js";
 export { isSkillUnlocked, unlockFlag, unlockSkills } from "./skills/index.js";

@@ -5,6 +5,7 @@ import {
   canon,
   cliText,
   mentors,
+  pinnacles,
   skills,
   society,
   tailwinds,
@@ -39,6 +40,8 @@ export function stepConfig(): StepConfig {
       },
     },
     ledger: balance.ledger,
+    /** 継承（T-39）。遺物の gainVs 係数 */
+    legacy: { artifactGainFactor: balance.legacy.artifactGainFactor },
     combat: balance.combat,
     society: {
       standings: society.standings,
@@ -58,6 +61,8 @@ export function stepConfig(): StepConfig {
     ),
     books: { books: books.books, potentialMax: balance.body.potentialMax },
     mentors: { mentors: mentors.mentors, potentialMax: balance.body.potentialMax },
+    /** 頂点ルート（T-41。content/pinnacles.json の条件鎖） */
+    pinnacles: pinnacles.pinnacles,
     lore: {
       atoms: atoms.map((a) => ({ id: a.id, reveals: a.reveals, unlock: a.unlock })),
       connections: canon.events
