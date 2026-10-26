@@ -4,11 +4,12 @@ import { titles } from "./titles.js";
 import { titlesFileSchema } from "./titles.schema.js";
 
 describe("titles.json", () => {
-  it("スキーマを通り、サンプル5件", () => {
-    expect(titles.titles).toHaveLength(5);
+  it("スキーマを通り、S/A/B が揃っている", () => {
+    expect(titles.titles.length).toBeGreaterThanOrEqual(5);
     const ranks = titles.titles.map((t) => t.rank);
-    expect(ranks.filter((r) => r === "B")).toHaveLength(4);
-    expect(ranks.filter((r) => r === "A")).toHaveLength(1);
+    expect(ranks.filter((r) => r === "B").length).toBeGreaterThanOrEqual(4);
+    expect(ranks.filter((r) => r === "A").length).toBeGreaterThanOrEqual(1);
+    expect(ranks.filter((r) => r === "S").length).toBeGreaterThanOrEqual(1);
     expect(titles.titles.every((t) => !t.hidden)).toBe(true);
   });
 

@@ -10,6 +10,8 @@ export const titleSchema = z
     rank: z.enum(["S", "A", "B"]),
     /** 隠し称号は true。サンプルはすべて false（隠し要素は hidden/ 側） */
     hidden: z.boolean(),
+    /** 成長シミュレーションの到達性検査の対象か。訓練系ボットでは到達できない条件（戦闘・台帳など）なら false */
+    simReachable: z.boolean().optional(),
     condition: condSchema,
     /** 効果（M1 で gain の M 項へ接続。今はデータとして保持するだけ） */
     effect: z.record(z.string(), z.unknown()),

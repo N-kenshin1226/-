@@ -66,6 +66,8 @@ export const cliTextSchema = z
         combatLost: z.string(),
         combatFled: z.string(),
         combatGain: z.string(),
+        kehai: z.string(),
+        titleSuppressed: z.string(),
         menuSleepOnly: z.string(),
         mustSleep: z.string(),
         promptChoice: z.string(),

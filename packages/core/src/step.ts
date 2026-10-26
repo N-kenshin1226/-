@@ -11,6 +11,7 @@ import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
 import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js";
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import type { CombatConfig } from "./combat/index.js";
+import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
@@ -147,6 +148,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         direction: w.direction,
       }));
       next.time = sleepTime(next.time);
+      next = resetDailyNotify(next); // 日付が変わると通知予算はリセット
       events.push({ type: "slept", from, to: next.time });
       events.push({ type: "wakeReport", report });
       break;
@@ -319,8 +321,25 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     if (evaluate(def.condition, next, cfg.time)) {
       next = { ...next, titles: [...next.titles, def.id] };
       titleEvents.push({ type: "titleGained", id: def.id, rank: def.rank });
+      // 通知予算：Sは1日1回。超過したSは抑制フラグで格下げ表示にする
+      if (def.rank === "S") {
+        const r = consumeS(next);
+        next = r.state;
+        if (!r.allowed) {
+          titleEvents[titleEvents.length - 1] = {
+            type: "titleGained",
+            id: def.id,
+            rank: def.rank,
+            suppressed: true,
+          };
+        }
+      }
     }
   }
+  // S候補への接近 → 条件を明かさず「気配」の一行（03 §6）
+  const kehai = emitKehai(next, cfg.titles);
+  next = kehai.state;
+  for (const _ of kehai.fired) titleEvents.push({ type: "kehai" });
   for (const event of titleEvents) {
     for (const sub of subscribers) next = sub(next, event);
     next = recordAction(next, event, cfg.actionLogMax);

@@ -114,4 +114,12 @@ export interface GameState {
   titles: string[];
   /** 作品台帳（03 §3）。古い順 */
   ledger: Work[];
+  /** 通知予算（03 §6）。日付が変わるとリセット */
+  notify: {
+    day: number;
+    /** 今日すでにS通知を出したか */
+    sToday: boolean;
+    /** 今日すでに「気配」を出した称号ID */
+    kehai: string[];
+  };
 }

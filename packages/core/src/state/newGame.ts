@@ -48,5 +48,6 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     today: { winds: [], loads: 0 },
     titles: [],
     ledger: [],
+    notify: { day: 0, sToday: false, kehai: [] },
   };
 }

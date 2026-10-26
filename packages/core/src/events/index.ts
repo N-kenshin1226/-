@@ -16,8 +16,8 @@ export type ActionEvent =
   | { type: "gainApplied"; skill: string; amount: number }
   /** 起床ログの構造化データ（睡眠時に発行） */
   | { type: "wakeReport"; report: WakeReport }
-  /** 称号を獲得した。rank は通知ランク（S/A/B） */
-  | { type: "titleGained"; id: string; rank: "S" | "A" | "B" }
+  /** 称号を獲得した。rank は通知ランク（S/A/B）。suppressed はS予算超過 */
+  | { type: "titleGained"; id: string; rank: "S" | "A" | "B"; suppressed?: boolean }
   /** 作品台帳に記録された */
   | { type: "workRecorded"; work: Work }
   /** 作品のティアが更新された（自己ベスト。大きな成長のトリガー） */
@@ -25,7 +25,9 @@ export type ActionEvent =
   /** 戦闘が終わった（03 §4） */
   | { type: "combatEnded"; enemyId: string; won: boolean; fled: boolean }
   /** 死亡して教会で蘇生した。未定着経験の半分を失う */
-  | { type: "died" };
+  | { type: "died" }
+  /** 気配：S候補に近づいた合図（条件は明かさない。03 §6） */
+  | { type: "kehai" };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;

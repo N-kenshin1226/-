@@ -91,3 +91,5 @@ export type {
   DealTopic,
 } from "./minigame/index.js";
 export { findContradictions, isContradiction } from "./conditions/check.js";
+export { approaching, consumeS, emitKehai, rankOf, resetDailyNotify } from "./notify/index.js";
+export type { NotifyRank } from "./notify/index.js";

@@ -117,6 +117,8 @@
     "combatWon": "――{name} を倒した。",
     "combatLost": "――力尽きた。……教会で目を覚ました。未定着の経験が半分失われた。",
     "combatFled": "――命だけは拾った。",
-    "combatGain": "《{skill}》の経験 +{amount}"
+    "combatGain": "《{skill}》の経験 +{amount}",
+    "kehai": "――何かが、噛み合いかけている。",
+    "titleSuppressed": "（記録：《{name}》—— 今日はこれ以上の知らせはない）"
   }
 }

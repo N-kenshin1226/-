@@ -115,16 +115,22 @@ export function runGrowth(): number {
     notes.push(`収益効率（未計測）: ${t.simpleRevenueShare.reason}`);
   }
 
-  // 称号の到達可能性（seeker を長めに回す）
-  const seeker = makeSeekerBot(titles.titles);
+  // 称号の到達可能性（seeker を長めに回す）。
+  // simReachable=false の称号は戦闘・台帳など訓練ボットが作らない条件なので対象外
+  const simTitles = titles.titles.filter((tt) => tt.simReachable !== false);
+  const excluded = titles.titles.filter((tt) => tt.simReachable === false).map((tt) => tt.id);
+  const seeker = makeSeekerBot(simTitles);
   const seekerRun = runBot(seeker, t.titleReachabilityDays, "titles", cfg, clock, skillIds);
   const earned = new Set(seekerRun.titlesEarned);
-  const missing = titles.titles.filter((tt) => !earned.has(tt.id)).map((tt) => tt.id);
+  const missing = simTitles.filter((tt) => !earned.has(tt.id)).map((tt) => tt.id);
   ok(
     "称号の到達可能性",
-    `${earned.size}/${titles.titles.length} 到達（${t.titleReachabilityDays}日シード）${missing.length ? ` 未到達: ${missing.join(", ")}` : ""}`,
+    `${earned.size}/${simTitles.length} 到達（${t.titleReachabilityDays}日シード）${missing.length ? ` 未到達: ${missing.join(", ")}` : ""}`,
     missing.length === 0,
   );
+  if (excluded.length > 0) {
+    notes.push(`到達性の対象外（戦闘・台帳など訓練で得られない条件）: ${excluded.join(", ")}`);
+  }
 
   for (const n of notes) console.log(`  - ${n}`);
 

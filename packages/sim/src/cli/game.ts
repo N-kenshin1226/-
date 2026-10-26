@@ -110,10 +110,19 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     });
   }
 
+  /** 称号獲得・気配の表示行（S予算超過の称号は折りたたみ表現） */
   const applyTitles = (events: ActionEvent[]): string[] =>
-    events
-      .filter((e): e is Extract<ActionEvent, { type: "titleGained" }> => e.type === "titleGained")
-      .map((e) => titleMessage(e.id, t));
+    events.flatMap((e) => {
+      if (e.type === "titleGained") {
+        if (e.suppressed) {
+          const name = titles.titles.find((x) => x.id === e.id)?.name ?? e.id;
+          return [tpl(t.text.titleSuppressed, { name })];
+        }
+        return [titleMessage(e.id, t)];
+      }
+      if (e.type === "kehai") return [t.text.kehai];
+      return [];
+    });
 
   const delay = opts.delay ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
 
