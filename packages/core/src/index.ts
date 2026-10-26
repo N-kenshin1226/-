@@ -44,4 +44,23 @@ export type { ActionEvent, Subscriber } from "./events/index.js";
 export { deserialize, migrations, SAVE_VERSION, serialize } from "./save/index.js";
 export { evaluate } from "./conditions/index.js";
 export type { Compare, Cond } from "./conditions/index.js";
+export { timingEngine, boardEngine, dealEngine } from "./minigame/index.js";
+export type {
+  MiniGame,
+  MiniGameCtx,
+  TimingConfig,
+  TimingInput,
+  TimingResult,
+  TimingState,
+  BoardConfig,
+  BoardInput,
+  BoardResult,
+  BoardState,
+  DealCard,
+  DealConfig,
+  DealInput,
+  DealResult,
+  DealState,
+  DealTopic,
+} from "./minigame/index.js";
 export { findContradictions, isContradiction } from "./conditions/check.js";
