@@ -229,6 +229,234 @@
           "ruin": "crisis.sample_mist.ruin"
         }
       }
+    },
+    {
+      "id": "crisis.sample_deep",
+      "name": "深層の鳴動（公開サンプル）",
+      "weight": 0.18,
+      "heavy": true,
+      "factions": [
+        {
+          "id": "faction.watch",
+          "name": "街道警備隊",
+          "speed": { "min": 3, "max": 5 },
+          "aptitude": { "might": 4, "bond": 2 }
+        },
+        {
+          "id": "faction.guild",
+          "name": "ギルド",
+          "speed": { "min": 2, "max": 4 },
+          "aptitude": { "craft": 2, "wealth": 2, "knowledge": 1 }
+        },
+        {
+          "id": "faction.shrine",
+          "name": "祠の祠守",
+          "speed": { "min": 1, "max": 2 },
+          "aptitude": { "knowledge": 3, "bond": 1 }
+        }
+      ],
+      "stages": [
+        {
+          "id": "omen",
+          "name": "鳴動",
+          "seasons": 1,
+          "effects": {
+            "enemy": [{ "challengeBonus": 3 }]
+          }
+        },
+        {
+          "id": "spread",
+          "name": "崩落",
+          "seasons": 1,
+          "effects": {
+            "price": [{ "factor": 1.2 }],
+            "enemy": [{ "challengeBonus": 6 }, { "id": "bandit", "hpFactor": 1.1 }]
+          }
+        },
+        {
+          "id": "deep",
+          "name": "天井の轟き",
+          "seasons": 1,
+          "effects": {
+            "closeAreas": ["forest"],
+            "price": [{ "factor": 1.4 }],
+            "enemy": [{ "hpFactor": 1.2, "challengeBonus": 9 }],
+            "npc": [{ "id": "npc.sado", "kind": "leave" }],
+            "features": ["crisis.sample_deep.survey"]
+          }
+        }
+      ],
+      "finales": [
+        {
+          "id": "finale.seal",
+          "name": "裂け目の封鎖",
+          "atBoundary": 2,
+          "fields": ["might", "craft"],
+          "required": 34,
+          "margin": 0.1,
+          "jitter": 1,
+          "ref": "deserter"
+        },
+        {
+          "id": "finale.calm",
+          "name": "深層の鎮定",
+          "atBoundary": 4,
+          "fields": ["bond", "wealth"],
+          "required": 55,
+          "margin": 0.1,
+          "jitter": 1
+        }
+      ],
+      "variables": [
+        {
+          "key": "source",
+          "options": ["shaft", "ruin", "grotto"]
+        }
+      ],
+      "touchpoints": [
+        {
+          "id": "tp.sample_deep.bracing",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "smithing", "atLeast": 1 }
+              },
+              "weight": 4
+            },
+            { "cond": { "skill": "smithing", "gte": 8 }, "weight": 2 }
+          ],
+          "offer": {
+            "name": "坑道の支保工",
+            "kind": "smithing",
+            "targetQuality": 50,
+            "rewardMoney": 100
+          }
+        },
+        {
+          "id": "tp.sample_deep.supply",
+          "kind": "supply",
+          "field": "wealth",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "eloquence", "atLeast": 1 }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "籠城用の物資斡旋",
+            "kind": "eloquence",
+            "targetQuality": 40,
+            "rewardMoney": 70
+          }
+        },
+        {
+          "id": "tp.sample_deep.patrol",
+          "kind": "defense",
+          "field": "might",
+          "fromStage": 1,
+          "ref": "bandit",
+          "affinity": [
+            { "cond": { "within": { "days": 14, "kind": "combat", "atLeast": 1 } }, "weight": 4 },
+            { "cond": { "counter": "kill.species.bandit", "gte": 1 }, "weight": 2 }
+          ]
+        },
+        {
+          "id": "tp.sample_deep.refugees",
+          "kind": "arbitration",
+          "field": "bond",
+          "fromStage": 2,
+          "affinity": [
+            { "cond": { "skill": "eloquence", "gte": 8 }, "weight": 4 },
+            { "cond": { "counter": "society.offer.citizen", "gte": 1 }, "weight": 2 }
+          ],
+          "offer": {
+            "name": "地上への避難の調整",
+            "kind": "eloquence",
+            "targetQuality": 55,
+            "rewardMoney": 90
+          }
+        },
+        {
+          "id": "tp.sample_deep.survey",
+          "kind": "study",
+          "field": "knowledge",
+          "fromStage": 1,
+          "affinity": [
+            { "cond": { "within": { "days": 14, "kind": "read", "atLeast": 1 } }, "weight": 4 },
+            { "cond": { "skill": "appraisal", "gte": 5 }, "weight": 2 }
+          ],
+          "offer": {
+            "name": "地脈の測量記録",
+            "kind": "appraisal",
+            "targetQuality": 45,
+            "rewardMoney": 80
+          }
+        },
+        {
+          "id": "tp.sample_deep.meals",
+          "kind": "supply",
+          "field": "wealth",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "fishing", "atLeast": 1 }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "避難所への保存食",
+            "kind": "fishing",
+            "targetQuality": 40,
+            "rewardMoney": 65
+          }
+        },
+        {
+          "id": "tp.sample_deep.songs",
+          "kind": "order",
+          "field": "bond",
+          "affinity": [
+            {
+              "cond": {
+                "within": { "days": 14, "kind": "work", "target": "performance", "atLeast": 1 }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "不安を鎮める酒場の演奏",
+            "kind": "performance",
+            "targetQuality": 45,
+            "rewardMoney": 75
+          }
+        },
+        {
+          "id": "tp.sample_deep.vanguard",
+          "kind": "escort",
+          "field": "might",
+          "fromStage": 2,
+          "ref": "deserter",
+          "affinity": [
+            { "cond": { "counter": "action.combat", "gte": 5 }, "weight": 4 },
+            { "cond": { "skill": "swordplay", "gte": 15 }, "weight": 2 }
+          ]
+        }
+      ],
+      "narration": {
+        "stage": {
+          "omen": "crisis.sample_deep.omen",
+          "spread": "crisis.sample_deep.spread",
+          "deep": "crisis.sample_deep.deep"
+        },
+        "finale": {
+          "resolved": "crisis.sample_deep.resolved",
+          "ruin": "crisis.sample_deep.ruin"
+        }
+      }
     }
   ]
 }

@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "sim:growth": "tsx src/cli.ts sim:growth",
     "sim:retention": "tsx src/cli.ts sim:retention",
+    "sim:crisis": "tsx src/cli.ts sim:crisis",
     "play:cli": "tsx src/cli.ts play:cli"
   },
   "dependencies": {
