@@ -53,6 +53,8 @@ export type Command =
       difficulty?: number;
       order?: string;
       flags?: string[];
+      /** 簡易判定なら経験係数（03 §2「50%」）。手動は省略/1 */
+      expFactor?: number;
     };
 
 export interface StepResult {
@@ -197,6 +199,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           potential: skill?.potential ?? 0,
           fatigue: next.player.fatigue,
           wind: windFor(next, "work", command.kind),
+          ...(command.expFactor !== undefined ? { modifiers: command.expFactor } : {}),
         },
         cfg.gain,
       );

@@ -29,10 +29,22 @@
       "spirit": "精神"
     },
     "qualityBands": [
-      { "upTo": 0.8, "label": "悪い" },
-      { "upTo": 1.05, "label": "普通" },
-      { "upTo": 1.4, "label": "良好" },
-      { "upTo": 99, "label": "極上" }
+      {
+        "upTo": 0.8,
+        "label": "悪い"
+      },
+      {
+        "upTo": 1.05,
+        "label": "普通"
+      },
+      {
+        "upTo": 1.4,
+        "label": "良好"
+      },
+      {
+        "upTo": 99,
+        "label": "極上"
+      }
     ]
   },
   "text": {
@@ -47,7 +59,7 @@
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
-    "menuActions": "  1) 訓練する  2) 休む（今日を終える）  3) 寝る（宿を選ぶ）  q) 中断する",
+    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 休む（今日を終える）  4) 寝る（宿を選ぶ）  q) 中断する",
     "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  q) 中断する",
     "mustSleep": "――身体はもう動きません。今日はここまでです。",
     "promptChoice": "> ",
@@ -75,6 +87,14 @@
     "titleGainedFallback": "――称号《{name}》を獲得しました。",
     "quit": "――中断します。記録は眠りのあとに残ります。",
     "invalidInput": "――入力が読めません。番号か数値で答えてください。",
-    "eof": "――入力が尽きました。終了します。"
+    "eof": "――入力が尽きました。終了します。",
+    "orderPick": "どの注文を受けますか",
+    "orderLine": "  {index}) 《{name}》 目標品質 {target}・報酬 {reward}G（{kind}）",
+    "workModePrompt": "手動で挑みますか（y=手動 / N=簡易判定）",
+    "workStart": "《{name}》 —— 勝負所です。槌の拍に合わせて Enter。{beats}打。",
+    "workBeat": "{n}打目――打て！",
+    "workSimple": "――簡易判定で仕上げました。",
+    "workResult": "《{name}》 品質 {quality}（{flags}） 経験 +{amount}",
+    "workResultTier": "――自己ベストの作品です。ティア {tier} に更新。"
   }
 }

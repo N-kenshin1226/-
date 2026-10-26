@@ -48,6 +48,8 @@ export { deserialize, migrations, SAVE_VERSION, serialize } from "./save/index.j
 export { evaluate } from "./conditions/index.js";
 export type { Compare, Cond } from "./conditions/index.js";
 export { timingEngine, boardEngine, dealEngine } from "./minigame/index.js";
+export { smithingGame, simpleJudgmentQuality } from "./minigame/index.js";
+export type { SmithingConfig, SmithingResult } from "./minigame/index.js";
 export type {
   MiniGame,
   MiniGameCtx,

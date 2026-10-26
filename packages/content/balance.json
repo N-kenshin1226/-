@@ -99,5 +99,25 @@
     "marketWindowDays": 7,
     "marketDecayPerWork": 0.9,
     "tierUpBonusPending": 8
+  },
+  "minigame": {
+    "simpleQualityFactor": 0.8,
+    "simpleExpFactor": 0.5,
+    "simpleHistorySize": 5,
+    "smithing": {
+      "beats": 5,
+      "beatIntervalMs": 900,
+      "windowBaseMs": 70,
+      "windowPerSkillMs": 2.0,
+      "qualityBase": 20,
+      "qualityScale": 80,
+      "criticalFlag": "会心",
+      "failBelowScore": 0.4,
+      "failFlag": "失敗作",
+      "unlocks": {
+        "seeTemperatureAt": 20,
+        "seeOrderHintsAt": 40
+      }
+    }
   }
 }

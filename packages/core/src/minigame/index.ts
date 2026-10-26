@@ -6,3 +6,5 @@ export { dealEngine } from "./deal.js";
 export type { DealCard, DealConfig, DealInput, DealResult, DealState, DealTopic } from "./deal.js";
 export type { MiniGame, MiniGameCtx } from "./types.js";
 export { ctxRng } from "./types.js";
+export { smithingGame, simpleJudgmentQuality } from "./smithing.js";
+export type { SmithingConfig, SmithingResult } from "./smithing.js";

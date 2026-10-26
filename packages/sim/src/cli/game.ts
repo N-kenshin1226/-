@@ -6,14 +6,17 @@ import {
   deserialize,
   newGame,
   serialize,
+  simpleJudgmentQuality,
   sleepQuality,
+  smithingGame,
   step,
   type ActionEvent,
   type GameState,
   type InnRank,
   type StepConfig,
+  type TimingInput,
 } from "@trace/core";
-import { balance, cliText, skills, titles } from "@trace/content";
+import { balance, cliText, orders, skills, titles, type Order } from "@trace/content";
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
 import { innPickLines, skillPickLines, statusLines, tpl, wakeBlock } from "./render.js";
@@ -26,6 +29,8 @@ export interface PlayCliOptions {
   seed?: string;
   /** テスト用に依存を差し替える口（既定: balance/content/stepConfig） */
   cfg?: StepConfig;
+  /** ミニゲームの拍の待機（既定: 実時間。テストでは即時を渡す） */
+  delay?: (ms: number) => Promise<void>;
 }
 
 const INN_ORDER: readonly InnRank[] = ["cheap", "normal", "good"];
@@ -102,6 +107,29 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       .filter((e): e is Extract<ActionEvent, { type: "titleGained" }> => e.type === "titleGained")
       .map((e) => titleMessage(e.id, t));
 
+  const delay = opts.delay ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+
+  /** 鍛冶（タイミング）を手動で遊ぶ。結果は品質とフラグ */
+  const playSmithing = async (
+    order: Order,
+    st: GameState,
+  ): Promise<{ quality: number; flags: string[] } | null> => {
+    const mg = smithingGame(balance.minigame.smithing);
+    let s = mg.init({ skill: st.player.skills[order.kind]?.value ?? 0, seed: st.seed });
+    out(tpl(t.text.workStart, { name: order.name, beats: balance.minigame.smithing.beats }));
+    for (let i = 0; i < s.beats.length; i++) {
+      await delay(balance.minigame.smithing.beatIntervalMs);
+      out(tpl(t.text.workBeat, { n: i + 1 }));
+      const pressedAt = Date.now();
+      const line = await io.read();
+      if (line === null) return null;
+      const at = (i + 1) * balance.minigame.smithing.beatIntervalMs + (Date.now() - pressedAt);
+      s = mg.tick(s, { at } satisfies TimingInput);
+    }
+    const r = mg.result(s);
+    return { quality: r.quality, flags: r.flags };
+  };
+
   // ---- ループ ----
   for (;;) {
     outAll(statusLines(state, cfg, t));
@@ -152,7 +180,82 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         }),
       );
       outAll(applyTitles(res.events));
-    } else if (pick === "2" || pick === "rest") {
+    } else if (pick === "2") {
+      // ---- 仕事（注文を選び、手動 or 簡易判定） ----
+      out(t.text.orderPick);
+      const orderList = orders.orders;
+      orderList.forEach((o, i) =>
+        out(
+          tpl(t.text.orderLine, {
+            index: i + 1,
+            name: o.name,
+            target: o.targetQuality,
+            reward: o.rewardMoney,
+            kind: skillNames.get(o.kind) ?? o.kind,
+          }),
+        ),
+      );
+      const oi = await ask(t.text.promptChoice);
+      if (oi === null) return state;
+      const order = orderList[Number.parseInt(oi.trim(), 10) - 1];
+      if (!order) {
+        out(t.text.invalidInput);
+        continue;
+      }
+      const mq = await ask(t.text.workModePrompt);
+      if (mq === null) return state;
+      const playManual = mq.trim().toLowerCase() === "y";
+
+      let quality: number;
+      let flags: string[] | undefined;
+      let expFactor: number | undefined;
+      if (playManual && order.kind === "smithing") {
+        const r = await playSmithing(order, state);
+        if (r === null) return state;
+        quality = r.quality;
+        flags = r.flags;
+      } else {
+        // 簡易判定（03 §2）：直近5回の同種作品の中央値 ×0.8 / 経験50%
+        const hist = state.ledger
+          .filter((w) => w.kind === order.kind)
+          .slice(-balance.minigame.simpleHistorySize)
+          .map((w) => w.quality);
+        quality = simpleJudgmentQuality(hist, state.player.skills[order.kind]?.value ?? 0);
+        expFactor = balance.minigame.simpleExpFactor;
+        out(t.text.workSimple);
+      }
+
+      const res = step(
+        state,
+        {
+          type: "work",
+          kind: order.kind,
+          quality,
+          difficulty: order.targetQuality,
+          order: order.id,
+          flags,
+          expFactor,
+        },
+        cfg,
+      );
+      state = res.state;
+      const gain = res.events.find(
+        (e): e is Extract<ActionEvent, { type: "gainApplied" }> => e.type === "gainApplied",
+      );
+      const tierUp = res.events.find(
+        (e): e is Extract<ActionEvent, { type: "tierUp" }> => e.type === "tierUp",
+      );
+      out(
+        tpl(t.text.workResult, {
+          name: order.name,
+          quality,
+          flags: flags?.length ? flags.join("・") : "―",
+          amount: (gain?.amount ?? 0).toFixed(1),
+        }),
+      );
+      if (tierUp) out(tpl(t.text.workResultTier, { tier: tierUp.tier }));
+      outAll(applyTitles(res.events));
+    } else if (pick === "3" || pick === "rest") {
       // ---- 休む（自宅。その日を終える） ----
       out(t.text.restDone);
       const res = step(state, { type: "rest" }, cfg);
@@ -165,7 +268,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       save(state);
       out(t.text.wake.saved);
-    } else if (pick === "3" || pick === "sleep") {
+    } else if (pick === "4" || pick === "sleep") {
       // ---- 寝る（宿・夕食を選ぶ） ----
       const withDinner = true;
       outAll(innPickLines(t, (inn) => sleepQuality(inn, withDinner, cfg.sleep)));

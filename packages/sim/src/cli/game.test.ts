@@ -17,7 +17,7 @@ function threeDays(sleepChoices: [string, string][]): string[] {
   for (const [inn, dinner] of sleepChoices) {
     lines.push("1", "1", ""); // 訓練：スキル1・推奨難度
     lines.push("1", "2", ""); // 訓練：スキル2・推奨難度
-    lines.push("3", inn, dinner); // 寝る：宿・夕食
+    lines.push("4", inn, dinner); // 寝る：宿・夕食
   }
   return lines;
 }
@@ -48,7 +48,7 @@ describe("playCli", () => {
   it("セーブとロードで続きから遊べる", async () => {
     const savePath = tmpSave();
     // 1日目を遊んで寝る（自動セーブ）
-    const first = scriptedIo(["1", "1", "", "3", "2", "y", "q"]);
+    const first = scriptedIo(["1", "1", "", "4", "2", "y", "q"]);
     const s1 = await playCli({ io: first.io, savePath, seed: SEED });
     expect(s1!.time.day).toBe(1);
 
@@ -63,6 +63,26 @@ describe("playCli", () => {
     expect(saved.time.day).toBe(1);
   });
 
+  it("仕事（簡易判定）で作品が台帳に残る", async () => {
+    const savePath = tmpSave();
+    const { io, output } = scriptedIo([
+      "2", // 仕事
+      "1", // 《釘の束》
+      "n", // 簡易判定
+      "4",
+      "2",
+      "y", // 寝る
+      "q",
+    ]);
+    const state = await playCli({ io, savePath, seed: SEED });
+    const text = output.join("\n");
+    expect(text).toContain("簡易判定で仕上げました");
+    expect(text).toContain("《釘の束》");
+    expect(state!.ledger).toHaveLength(1);
+    expect(state!.ledger[0]!.kind).toBe("smithing");
+    expect(state!.ledger[0]!.order).toBe("order.nail");
+  });
+
   it("起床ログの表示（スナップショット）", async () => {
     const savePath = tmpSave();
     const { io, output } = scriptedIo([
@@ -72,7 +92,7 @@ describe("playCli", () => {
       "1",
       "2",
       "", // 《回避》を推奨難度で
-      "3",
+      "4",
       "2",
       "y", // 宿屋《麦穂亭》・夕食あり
       "q",

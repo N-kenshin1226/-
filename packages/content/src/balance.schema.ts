@@ -117,6 +117,36 @@ export const balanceSchema = z
         tierUpBonusPending: z.number().nonnegative(),
       })
       .strict(),
+    /** docs/03 §2 ミニゲーム。各エンジン・皮の係数 */
+    minigame: z
+      .object({
+        /** 簡易判定：品質 = 直近中央値 × この係数（03 §2「80%」） */
+        simpleQualityFactor: z.number().min(0).max(1),
+        /** 簡易判定：経験はこの係数（03 §2「50%」） */
+        simpleExpFactor: z.number().min(0).max(1),
+        /** 簡易判定が参照する直近の同種作品数 */
+        simpleHistorySize: z.number().int().positive(),
+        smithing: z
+          .object({
+            beats: z.number().int().positive(),
+            beatIntervalMs: z.number().positive(),
+            windowBaseMs: z.number().positive(),
+            windowPerSkillMs: z.number().nonnegative(),
+            qualityBase: z.number().min(0).max(100),
+            qualityScale: z.number().positive(),
+            criticalFlag: z.string().min(1),
+            failBelowScore: z.number().min(0).max(1),
+            failFlag: z.string().min(1),
+            unlocks: z
+              .object({
+                seeTemperatureAt: z.number().nonnegative(),
+                seeOrderHintsAt: z.number().nonnegative(),
+              })
+              .strict(),
+          })
+          .strict(),
+      })
+      .strict(),
     /** docs/02_growth_system.md §4。core/growth/tailwind.ts の TailwindConfig に対応 */
     tailwind: z
       .object({
