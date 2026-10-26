@@ -27,7 +27,15 @@ export type ActionEvent =
   /** 死亡して教会で蘇生した。未定着経験の半分を失う */
   | { type: "died" }
   /** 気配：S候補に近づいた合図（条件は明かさない。03 §6） */
-  | { type: "kehai" };
+  | { type: "kehai" }
+  /** 立場・職業の打診が来た（通知Aランク相当。03 §1） */
+  | { type: "offerReceived"; kind: "standing" | "profession"; id: string }
+  /** 打診を受けて認定された */
+  | { type: "offerAccepted"; id: string }
+  /** 人生目標を宣言した */
+  | { type: "goalDeclared"; id: string }
+  /** 宣言した人生目標を達成した（報酬済み） */
+  | { type: "goalAchieved"; id: string };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;

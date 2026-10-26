@@ -1,0 +1,70 @@
+{
+  "standings": [
+    {
+      "id": "drifter",
+      "name": "流れ者",
+      "order": 0,
+      "note": "初期の立場。信用が無い"
+    },
+    {
+      "id": "citizen",
+      "name": "市民",
+      "order": 1,
+      "condition": { "counter": "days.slept", "gte": 7 },
+      "note": "この街に居続けた者。仕事の窓口が増える"
+    },
+    {
+      "id": "adventurer",
+      "name": "冒険者",
+      "order": 2,
+      "condition": {
+        "and": [
+          { "counter": "kill.species.wolf", "gte": 3 },
+          { "counter": "days.slept", "gte": 7 }
+        ]
+      },
+      "note": "危険な仕事を引き受けられる"
+    }
+  ],
+  "professions": [
+    {
+      "id": "smith",
+      "name": "鍛冶師",
+      "condition": { "work": { "kind": "smithing", "tierGte": 2 } },
+      "note": "武器・道具を作る職人"
+    },
+    {
+      "id": "miner",
+      "name": "採掘師",
+      "condition": { "work": { "kind": "mining", "tierGte": 2 } },
+      "note": "鉱石を掘る者"
+    }
+  ],
+  "lifeGoals": [
+    {
+      "id": "goal.first_work",
+      "name": "最初の作品を作る",
+      "condition": { "counter": "action.work", "gte": 1 },
+      "reward": { "pendingBySkill": { "smithing": 2 } },
+      "note": "仕事を1回こなす"
+    },
+    {
+      "id": "goal.sword_20",
+      "name": "剣術を20にする",
+      "condition": { "skill": "swordplay", "gte": 20 },
+      "reward": { "pendingBySkill": { "swordplay": 4 } }
+    },
+    {
+      "id": "goal.month",
+      "name": "この街で1ヶ月生きる",
+      "condition": { "counter": "days.slept", "gte": 30 },
+      "reward": { "pendingBySkill": { "observation": 5 } }
+    },
+    {
+      "id": "goal.first_hunt",
+      "name": "狼を1頭狩る",
+      "condition": { "counter": "kill.species.wolf", "gte": 1 },
+      "reward": { "pendingBySkill": { "swordplay": 3, "evasion": 2 } }
+    }
+  ]
+}

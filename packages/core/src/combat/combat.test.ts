@@ -202,6 +202,12 @@ const baseCfg = (): StepConfig => ({
     tierUpBonusPending: 2,
   },
   combat: cfg,
+  society: {
+    standings: [],
+    professions: [],
+    lifeGoals: [],
+    goalRewardFactor: 1,
+  },
   titles: [
     {
       id: "title.wolf_test",

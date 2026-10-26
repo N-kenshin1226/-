@@ -141,6 +141,12 @@ describe("step の work コマンド", () => {
       preciseObserve: 40,
       deathPendingFactor: 0.5,
     },
+    society: {
+      standings: [],
+      professions: [],
+      lifeGoals: [],
+      goalRewardFactor: 1,
+    },
     titles: [],
     ...over,
   });

@@ -59,8 +59,8 @@
     "menuWinds": "本日の追い風：{winds}",
     "menuNoWind": "本日の追い風：とくになし",
     "menuActionsLeft": "（残り行動 {left}/{max}）",
-    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  q) 中断する",
-    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  q) 中断する",
+    "menuActions": "  1) 訓練する  2) 仕事（注文に応じる）  3) 狩りに出る  4) 休む（今日を終える）  5) 寝る（宿を選ぶ）  6) 目標と認定  q) 中断する",
+    "menuSleepOnly": "  1) 寝る（宿を選ぶ）  2) 休む  3) 目標と認定  q) 中断する",
     "mustSleep": "――身体はもう動きません。今日はここまでです。",
     "promptChoice": "> ",
     "skillPick": "どの技能を鍛えますか",
@@ -119,6 +119,16 @@
     "combatFled": "――命だけは拾った。",
     "combatGain": "《{skill}》の経験 +{amount}",
     "kehai": "――何かが、噛み合いかけている。",
-    "titleSuppressed": "（記録：《{name}》—— 今日はこれ以上の知らせはない）"
+    "titleSuppressed": "（記録：《{name}》—— 今日はこれ以上の知らせはない）",
+    "societyHeader": "── 立場：{standing} ／ 職業：{profession} ／ 目標：{goal}",
+    "societyNoOffers": "打診はありません。",
+    "societyOfferLine": "  {i}) {name} の打診を受ける（{kind}）",
+    "societyGoalsHeader": "いま手が届きそうな目標：",
+    "societyGoalLine": "  {i}) {name} を宣言する",
+    "societyNoGoal": "（手が届きそうな目標はありません）",
+    "societyAccepted": "――打診を受けました。{name} となります。",
+    "societyDeclared": "――目標を宣言しました：《{name}》",
+    "offerReceived": "――{name} への打診が届きました（目標と認定で応えられます）。",
+    "goalAchieved": "――目標《{name}》を達成しました。世界が覚えています。"
   }
 }

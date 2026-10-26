@@ -90,6 +90,12 @@ const cfg: StepConfig = {
     deathPendingFactor: 0.5,
   },
   body,
+  society: {
+    standings: [],
+    professions: [],
+    lifeGoals: [],
+    goalRewardFactor: 1,
+  },
   titles: [],
 };
 

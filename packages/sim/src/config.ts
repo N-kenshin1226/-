@@ -1,4 +1,4 @@
-import { balance, tailwinds, titles } from "@trace/content";
+import { balance, society, tailwinds, titles } from "@trace/content";
 import type { StepConfig } from "@trace/core";
 
 /** balance.json とコンテンツJSONから実行時の StepConfig を組み立てる */
@@ -12,6 +12,12 @@ export function stepConfig(): StepConfig {
     body: balance.body,
     ledger: balance.ledger,
     combat: balance.combat,
+    society: {
+      standings: society.standings,
+      professions: society.professions,
+      lifeGoals: society.lifeGoals,
+      goalRewardFactor: balance.society.goalRewardFactor,
+    },
     titles: titles.titles.map((t) => ({ id: t.id, rank: t.rank, condition: t.condition })),
   };
 }

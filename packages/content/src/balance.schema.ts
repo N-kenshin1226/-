@@ -217,6 +217,12 @@ export const balanceSchema = z
       })
       .strict()
       .refine((t) => t.drawMin <= t.drawMax, { message: "drawMin <= drawMax が必要" }),
+    /** docs/03 §1 立場×職業。人生目標の達成報酬の係数 */
+    society: z
+      .object({
+        goalRewardFactor: z.number().positive().max(10),
+      })
+      .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */
     sim: z
       .object({

@@ -23,8 +23,17 @@ import {
   type StepConfig,
   type TimingInput,
 } from "@trace/core";
-import { startCombat, telegraphLines } from "@trace/core";
-import { balance, cliText, enemies, orders, skills, titles, type Order } from "@trace/content";
+import { startCombat, suggestGoals, telegraphLines } from "@trace/core";
+import {
+  balance,
+  cliText,
+  enemies,
+  orders,
+  skills,
+  society,
+  titles,
+  type Order,
+} from "@trace/content";
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
 import { innPickLines, skillPickLines, statusLines, tpl, wakeBlock } from "./render.js";
@@ -121,6 +130,17 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         return [titleMessage(e.id, t)];
       }
       if (e.type === "kehai") return [t.text.kehai];
+      if (e.type === "offerReceived") {
+        const name =
+          society.standings.find((s) => s.id === e.id)?.name ??
+          society.professions.find((p) => p.id === e.id)?.name ??
+          e.id;
+        return [tpl(t.text.offerReceived, { name })];
+      }
+      if (e.type === "goalAchieved") {
+        const name = society.lifeGoals.find((g) => g.id === e.id)?.name ?? e.id;
+        return [tpl(t.text.goalAchieved, { name })];
+      }
       return [];
     });
 
@@ -255,8 +275,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       return state;
     }
 
-    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む）
-    const pick = canAction ? c : c === "1" ? "sleep" : c === "2" ? "rest" : c;
+    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定）
+    const pick = canAction ? c : c === "1" ? "sleep" : c === "2" ? "rest" : c === "3" ? "6" : c;
 
     if (pick === "1") {
       // ---- 訓練 ----
@@ -489,6 +509,75 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       if (report) outAll(wakeBlock(report.report, applyTitles(res.events), t, skillNames));
       save(state);
       out(t.text.wake.saved);
+    } else if (pick === "6") {
+      // ---- 目標と認定（03 §1：立場×職業、人生目標の宣言） ----
+      const soc = state.society;
+      const standingName =
+        society.standings.find((s) => s.id === soc.standing)?.name ?? soc.standing;
+      const profName =
+        soc.profession === null
+          ? "なし"
+          : (society.professions.find((p) => p.id === soc.profession)?.name ?? soc.profession);
+      const goalName =
+        soc.goal === null
+          ? "なし"
+          : (society.lifeGoals.find((g) => g.id === soc.goal)?.name ?? soc.goal);
+      out(
+        tpl(t.text.societyHeader, {
+          standing: standingName,
+          profession: profName,
+          goal: goalName,
+        }),
+      );
+      // 打診の受諾
+      if (soc.pendingOffers.length === 0) {
+        out(t.text.societyNoOffers);
+      } else {
+        for (let i = 0; i < soc.pendingOffers.length; i++) {
+          const id = soc.pendingOffers[i]!;
+          const name =
+            society.standings.find((s) => s.id === id)?.name ??
+            society.professions.find((p) => p.id === id)?.name ??
+            id;
+          const kind = society.standings.some((s) => s.id === id) ? "立場" : "職業";
+          out(tpl(t.text.societyOfferLine, { i: i + 1, name, kind }));
+        }
+        const oi = await ask(t.text.promptChoice);
+        if (oi === null) return state;
+        const oiN = Number.parseInt(oi.trim(), 10) - 1;
+        if (oiN >= 0 && oiN < soc.pendingOffers.length) {
+          const id = soc.pendingOffers[oiN]!;
+          const res = step(state, { type: "acceptOffer", id }, cfg);
+          state = res.state;
+          const name =
+            society.standings.find((s) => s.id === id)?.name ??
+            society.professions.find((p) => p.id === id)?.name ??
+            id;
+          out(tpl(t.text.societyAccepted, { name }));
+          save(state);
+          continue;
+        }
+      }
+      // 人生目標の宣言（いま手が届きそうなもの3つを提示）
+      const suggestions = suggestGoals(state, cfg.society, 3);
+      out(t.text.societyGoalsHeader);
+      if (suggestions.length === 0) {
+        out(t.text.societyNoGoal);
+      } else {
+        for (let i = 0; i < suggestions.length; i++) {
+          out(tpl(t.text.societyGoalLine, { i: i + 1, name: suggestions[i]!.name }));
+        }
+        const gi = await ask(t.text.promptChoice);
+        if (gi === null) return state;
+        const giN = Number.parseInt(gi.trim(), 10) - 1;
+        if (giN >= 0 && giN < suggestions.length) {
+          const goal = suggestions[giN]!;
+          const res = step(state, { type: "declareGoal", id: goal.id }, cfg);
+          state = res.state;
+          out(tpl(t.text.societyDeclared, { name: goal.name }));
+          save(state);
+        }
+      }
     } else {
       out(t.text.invalidInput);
     }

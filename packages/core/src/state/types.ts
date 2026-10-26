@@ -122,4 +122,17 @@ export interface GameState {
     /** 今日すでに「気配」を出した称号ID */
     kehai: string[];
   };
+  /** 立場×職業と人生目標（03 §1）。立場は何ができるか、職業は何をするか — 独立した2軸 */
+  society: {
+    /** 立場ID（standings.json。初期は最下位） */
+    standing: string;
+    /** 認定された職業ID（professions.json）。未認定は null */
+    profession: string | null;
+    /** 打診中のオファーID（立場・職業どちらもここに溜まる） */
+    pendingOffers: string[];
+    /** 宣言した人生目標ID（lifeGoals.json） */
+    goal: string | null;
+    /** 達成済みの人生目標ID */
+    achievedGoals: string[];
+  };
 }

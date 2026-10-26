@@ -12,6 +12,7 @@ import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import type { CombatConfig } from "./combat/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
+import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { GameState, SkillId } from "./state/types.js";
 import { advance as advanceTime, sleep as sleepTime, type TimeConfig } from "./time/index.js";
@@ -34,6 +35,8 @@ export interface StepConfig {
   ledger: LedgerConfig;
   /** 戦闘（03 §4。死亡時の経験損失に使う） */
   combat: CombatConfig;
+  /** 立場・職業・人生目標の定義（03 §1。content/society.json）＋達成報酬の係数 */
+  society: SocietyDefs & { goalRewardFactor: number };
   /** 称号の定義（content/titles.json。core が必要とする最小形） */
   titles: readonly { id: string; rank: "S" | "A" | "B"; condition: Cond }[];
 }
@@ -72,7 +75,13 @@ export type Command =
       won: boolean;
       fled?: boolean;
       died?: boolean;
-    };
+    }
+  /** 打診を受けて立場・職業の認定を受ける（03 §1）。行動は消費しない */
+  | { type: "acceptOffer"; id: string }
+  /** 人生目標を宣言する（03 §1）。行動は消費しない */
+  | { type: "declareGoal"; id: string }
+  /** 人生目標を取り下げる（差し替え用） */
+  | { type: "abandonGoal" };
 
 export interface StepResult {
   state: GameState;
@@ -305,6 +314,31 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       next = { ...next, counters };
       break;
     }
+    case "acceptOffer": {
+      // 打診の受諾：行動は消費しない（認定は会話の一瞬）
+      const res = acceptOffer(next, cfg.society, command.id);
+      if (!res.ok) break;
+      next = res.state;
+      events.push({ type: "offerAccepted", id: command.id });
+      break;
+    }
+    case "declareGoal": {
+      // 人生目標の宣言：未達成・未宣言のものだけ。行動は消費しない
+      const exists = cfg.society.lifeGoals.some(
+        (g) => g.id === command.id && !next.society.achievedGoals.includes(g.id),
+      );
+      if (exists && next.society.goal !== command.id) {
+        next = { ...next, society: { ...next.society, goal: command.id } };
+        events.push({ type: "goalDeclared", id: command.id });
+      }
+      break;
+    }
+    case "abandonGoal": {
+      if (next.society.goal !== null) {
+        next = { ...next, society: { ...next.society, goal: null } };
+      }
+      break;
+    }
   }
 
   // イベントを購読者に流して派生状態を更新し、行動ログを記録する
@@ -344,6 +378,36 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     for (const sub of subscribers) next = sub(next, event);
     next = recordAction(next, event, cfg.actionLogMax);
     events.push(event);
+  }
+
+  // 立場・職業の打診（条件を満たしたらオファーが溜まる。通知Aランク相当）
+  for (const offer of newOffers(next, cfg.society, cfg.time)) {
+    next = {
+      ...next,
+      society: {
+        ...next.society,
+        pendingOffers: [...next.society.pendingOffers, offer.id],
+      },
+    };
+    events.push({ type: "offerReceived", kind: offer.kind, id: offer.id });
+  }
+  // 人生目標の達成：宣言していた目標が満たされたら報酬（pending）を付与
+  const achieved = goalAchieved(next, cfg.society, cfg.time);
+  if (achieved) {
+    next = {
+      ...next,
+      society: {
+        ...next.society,
+        achievedGoals: [...next.society.achievedGoals, achieved.id],
+        goal: null,
+      },
+    };
+    for (const [skillId, base] of Object.entries(achieved.reward.pendingBySkill ?? {})) {
+      const skill = next.player.skills[skillId];
+      if (!skill) continue;
+      skill.pending += base * cfg.society.goalRewardFactor;
+    }
+    events.push({ type: "goalAchieved", id: achieved.id });
   }
 
   return { state: next, events };

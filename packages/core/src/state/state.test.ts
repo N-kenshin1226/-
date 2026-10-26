@@ -92,6 +92,12 @@ const cfg: StepConfig = {
     restPotentialRecover: 3,
     potentialMax: 100,
   },
+  society: {
+    standings: [],
+    professions: [],
+    lifeGoals: [],
+    goalRewardFactor: 1,
+  },
   titles: [],
 };
 

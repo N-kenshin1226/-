@@ -182,5 +182,8 @@
     "observeBonus": 20,
     "preciseObserve": 40,
     "deathPendingFactor": 0.5
+  },
+  "society": {
+    "goalRewardFactor": 1.5
   }
 }

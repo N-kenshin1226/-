@@ -93,3 +93,5 @@ export type {
 export { findContradictions, isContradiction } from "./conditions/check.js";
 export { approaching, consumeS, emitKehai, rankOf, resetDailyNotify } from "./notify/index.js";
 export type { NotifyRank } from "./notify/index.js";
+export { acceptOffer, goalAchieved, newOffers, suggestGoals } from "./society/index.js";
+export type { LifeGoalDef, ProfessionDef, SocietyDefs, StandingDef } from "./society/index.js";

@@ -10,6 +10,8 @@ export interface NewGameConfig {
   initialPotential: number;
   /** 基礎能力の初期値 */
   initialStatValue: number;
+  /** 初期の立場（省略時は流れ者） */
+  initialStanding?: string;
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -49,5 +51,12 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     titles: [],
     ledger: [],
     notify: { day: 0, sToday: false, kehai: [] },
+    society: {
+      standing: cfg.initialStanding ?? "drifter",
+      profession: null,
+      pendingOffers: [],
+      goal: null,
+      achievedGoals: [],
+    },
   };
 }
