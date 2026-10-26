@@ -4,6 +4,12 @@ import {
   crisisOfferFlag,
   CRISIS_HERO_FLAG,
 } from "../crisis/index.js";
+import {
+  occasionAttemptDayKey,
+  occasionJoinDayKey,
+  occasionOfferDayKey,
+  occasionOfferKindDayKey,
+} from "../occasions/index.js";
 import type { CrisisFieldId, GameState, Work } from "../state/types.js";
 import type { GameTime } from "../time/index.js";
 import type { WakeReport } from "../growth/consolidate.js";
@@ -151,7 +157,21 @@ export type ActionEvent =
    * ライバルが決着の場面を勝ち取り英雄として記録された（通知Aランク相当）。
    * index はライバルの抽選順（log の ref "rival.<index>" と対応）
    */
-  | { type: "crisisRivalHero"; index: number; finale: string };
+  | { type: "crisisRivalHero"; index: number; finale: string }
+  // ---- 勝負所の行事（X-10、docs/03 §2「勝負所でミニゲームが出る」） ----
+  /**
+   * 行事の打診が届いた（通知Bランク相当 —— 人物からの持ちかけとして届く）。
+   * 届いた日は counters["occasion.offer.day.<id>"] に刻まれる
+   */
+  | { type: "occasionOffered"; id: string; kind: string }
+  /** 行事の打診に応えた（行動は消費しない。counters["occasion.join.day.<id>"] に当日を刻む） */
+  | { type: "occasionJoined"; id: string }
+  /**
+   * 勝負所を果たした（1行動。score は実際に遊んだ結果の出来 0〜1、won は勝敗）。
+   * 同日の再挑戦は counters["occasion.attempt.day.<id>"]、勝敗は
+   * occasion.won/lost（全体・行事別・種類別）と旗印 flags["occasion.won.<id>"|...] に刻む
+   */
+  | { type: "occasionAttempted"; id: string; kind: string; score: number; won: boolean };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -280,6 +300,57 @@ export const counterSubscriber: Subscriber = (state, event) => {
           ...state.counters,
           "crisis.rival.hero": (state.counters["crisis.rival.hero"] ?? 0) + 1,
         },
+      };
+    }
+    // ---- 勝負所の行事（X-10）：打診・受諾・勝負所の記録（日付・勝敗・旗印） ----
+    case "occasionOffered": {
+      // 届いた日を刻む（再提示の間隔の基準＋「今日届いている」の判定）。同日に二度刻まない
+      const dayKey = occasionOfferDayKey(event.id);
+      if (state.counters[dayKey] === state.time.day) return state;
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [dayKey]: state.time.day,
+          [occasionOfferKindDayKey(event.kind)]: state.time.day,
+          [`occasion.offered.${event.id}`]:
+            (state.counters[`occasion.offered.${event.id}`] ?? 0) + 1,
+          "occasion.offered": (state.counters["occasion.offered"] ?? 0) + 1,
+        },
+      };
+    }
+    case "occasionJoined": {
+      // 打診に応えた日を刻む（当日だけ有効。断った・応えない側には何も刻まれない）
+      const dayKey = occasionJoinDayKey(event.id);
+      if (state.counters[dayKey] === state.time.day) return state;
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [dayKey]: state.time.day,
+          "occasion.joined": (state.counters["occasion.joined"] ?? 0) + 1,
+        },
+      };
+    }
+    case "occasionAttempted": {
+      // 勝負所の結果を刻む（勝敗は全体・行事別・種類別のカウンタと旗印に。
+      // 旗印は条件DSLから「あの品評会を制した」「あの決闘に敗れた」を読める刻印）
+      const base = event.won ? "occasion.won" : "occasion.lost";
+      const idKey = `${base}.${event.id}`;
+      const kindKey = `${base}.${event.kind}`;
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [occasionAttemptDayKey(event.id)]: state.time.day,
+          "occasion.attempted": (state.counters["occasion.attempted"] ?? 0) + 1,
+          [`occasion.attempted.${event.id}`]:
+            (state.counters[`occasion.attempted.${event.id}`] ?? 0) + 1,
+          [base]: (state.counters[base] ?? 0) + 1,
+          [idKey]: (state.counters[idKey] ?? 0) + 1,
+          [kindKey]: (state.counters[kindKey] ?? 0) + 1,
+        },
+        flags: { ...state.flags, [idKey]: true },
       };
     }
     default:

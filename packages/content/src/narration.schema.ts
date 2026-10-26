@@ -25,6 +25,9 @@ export const narrationSchema = z
             legend: z.array(z.string()).min(1),
             /** ライバルの噂（T-47。{name}/{epithet}/{rank}/{score} を差し込む。ランキングがある日に混ざる） */
             rival: z.array(z.string()).min(1),
+            /** 勝負所の行事（X-10。{occasion}=《》で包んだ行事名。見出しの後に必ず載る確報） */
+            occasionWin: z.array(z.string()).min(1),
+            occasionLoss: z.array(z.string()).min(1),
           })
           .strict(),
       })

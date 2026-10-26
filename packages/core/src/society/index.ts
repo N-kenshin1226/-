@@ -132,6 +132,10 @@ function closeness(cond: Cond, state: GameState): number {
     const t = cond.gte ?? cond.eq;
     return t ? state.player.stats[cond.stat] / t : 0;
   }
+  if ("money" in cond) {
+    const t = cond.money.gte ?? cond.money.eq;
+    return t ? state.player.money / t : 0;
+  }
   if ("flag" in cond) {
     return (state.flags[cond.flag] ?? false) === (cond.eq ?? true) ? 1 : 0;
   }

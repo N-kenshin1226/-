@@ -4,6 +4,7 @@ import {
   canApprentice,
   crisisRivalName,
   crisisTypeOf,
+  occasionDef,
   rivalsOf,
   shelfBooks,
   step,
@@ -397,6 +398,28 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
     );
   }
   out(t.text.recordsRivalNote);
+  // 勝負所の行事（X-10）：臨んだ勝負所の記録（行動ログの occasion から読む。
+  // 勝敗の語りは新聞が担うので、ここは淡々とした結果の一覧だけ出す）
+  out(t.text.recordsOccasions);
+  const occasionLog = state.actionLog.filter((a) => a.kind === "occasion");
+  if (occasionLog.length === 0) {
+    out(t.text.recordsOccasionsNone);
+  } else {
+    for (const a of occasionLog.slice(-10)) {
+      const def =
+        ctx.cfg.occasions !== undefined
+          ? occasionDef(ctx.cfg.occasions, a.target ?? "")
+          : undefined;
+      out(
+        tpl(t.text.recordsOccasionsLine, {
+          day: a.day + 1,
+          name: def?.name ?? a.target ?? "",
+          result:
+            t.display.occasionResultNames[a.variant === "win" ? "win" : "loss"] ?? a.variant ?? "",
+        }),
+      );
+    }
+  }
   // 世界の出来事（W-01、docs/08）：危機の記録。段階や結末の語りは
   // 新新聞・噂が担うので、ここは淡々とした出来事の一覧だけ出す
   out(t.text.recordsCrisis);

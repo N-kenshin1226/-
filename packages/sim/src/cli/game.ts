@@ -59,6 +59,9 @@ import {
   crisisTouchpointOffers,
   crisisTypeOf,
   isSkillUnlocked,
+  occasionDef,
+  occasionOffers,
+  occasionSpeaker,
   reachedPinnacles,
   TENDENCY_IDS,
   TemplateProvider,
@@ -425,6 +428,32 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         const line = crisisLogLine("rival.hero", name);
         return line === null ? [] : [line];
       }
+      // 勝負所の行事（X-10、docs/03 §2）：打診は人物の口から届き、
+      // 勝敗は機械的な一行として刻む（数値・名の解決は core の刻印から）
+      if (e.type === "occasionOffered") {
+        const def = cfg.occasions !== undefined ? occasionDef(cfg.occasions, e.id) : undefined;
+        const name = def?.name ?? e.id;
+        const speaker =
+          cfg.occasions !== undefined && def !== undefined
+            ? occasionSpeaker(state!, cfg.occasions, def)
+            : undefined;
+        return [
+          tpl(t.text.occasionOffered, { name }),
+          ...(speaker !== undefined
+            ? [tpl(t.text.occasionSpeakerLine, { speaker: speaker.name, line: def!.line })]
+            : []),
+        ];
+      }
+      if (e.type === "occasionJoined") {
+        const name =
+          cfg.occasions !== undefined ? (occasionDef(cfg.occasions, e.id)?.name ?? e.id) : e.id;
+        return [tpl(t.text.occasionJoined, { name })];
+      }
+      if (e.type === "occasionAttempted") {
+        const name =
+          cfg.occasions !== undefined ? (occasionDef(cfg.occasions, e.id)?.name ?? e.id) : e.id;
+        return [tpl(e.won ? t.text.occasionWon : t.text.occasionLost, { name })];
+      }
       return [];
     });
 
@@ -577,12 +606,22 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     );
     // ライバルの噂（T-47）：ランキングの筆頭ライバルが話題に混ざる
     const topRival = rivalsOf(state!, rivals, balance.rivals).entries.find((e) => !e.isPlayer);
+    // 勝負所の行事（X-10）：昨日臨んだ勝負所の結果は必ず記事になる
+    // （行動ログの occasion/target/variant から行事名と勝敗を解く）
+    const occasionResults = state!.actionLog
+      .filter((a) => a.day === day && a.kind === "occasion")
+      .flatMap((a) => {
+        const def =
+          cfg.occasions !== undefined ? occasionDef(cfg.occasions, a.target ?? "") : undefined;
+        return def === undefined ? [] : [{ name: def.name, won: a.variant === "win" }];
+      });
     const lines = narrator.narrate(
       {
         scene: "newspaper",
         deeds,
         works,
         deaths,
+        ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title
@@ -1034,6 +1073,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         (o) => o.joinable || (o.joined && !o.attempted) || o.leadable,
       );
     if (crisisOpen) out(t.text.crisisMenuItem);
+    // 勝負所の行事（X-10、docs/03 §2）：届いた打診がある日だけ項目を足す。
+    // 届いていなければ街の行事は日常の裏で過ぎるだけ（クエストボードにはしない）
+    const occasionOpen =
+      canAction && cfg.occasions !== undefined && occasionOffers(state, cfg.occasions).length > 0;
+    if (occasionOpen) out(t.text.occasionMenuItem);
     const choice = await ask(t.text.promptChoice);
     if (choice === null) return state;
     const c = choice.trim().toLowerCase();
@@ -1585,6 +1629,122 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       const cPick = acts[Number.parseInt(ci.trim(), 10) - 1];
       if (cPick === undefined) out(t.text.invalidInput);
       else if (!(await cPick.run())) return state;
+    } else if (pick === "14" && canAction && cfg.occasions !== undefined) {
+      // ---- 勝負所の行事（X-10、docs/03 §2）：届いた打診への応えと勝負所 ----
+      // 打診は人物の口から届く。受ける・臨む以外の選択肢は「戻る」だけ ——
+      // 断っても不利益はなく、街の行事は応えなくても過ぎていく
+      const cur = state;
+      const occs = occasionOffers(cur, cfg.occasions);
+      out(t.text.occasionSceneHeader);
+      for (const o of occs) {
+        const status = o.attempted
+          ? t.text.occasionStatusDone
+          : o.accepted
+            ? t.text.occasionStatusAccepted
+            : t.text.occasionStatusOffered;
+        out(tpl(t.text.occasionSceneLine, { name: o.def.name, status }));
+        const sp = occasionSpeaker(cur, cfg.occasions, o.def);
+        if (sp !== undefined) {
+          const role = sp.role !== undefined && sp.role !== "" ? `${sp.role} ` : "";
+          out(tpl(t.text.occasionSpeakerLine, { speaker: `${role}${sp.name}`, line: o.def.line }));
+        }
+      }
+      const acts: { label: string; run: () => Promise<boolean> }[] = [];
+      for (const o of occs) {
+        // 打診に応える（行動は消費しない）
+        if (!o.accepted && !o.attempted) {
+          const occ = o;
+          acts.push({
+            label: tpl(t.text.occasionAcceptOption, { name: occ.def.name }),
+            run: async () => {
+              const res = step(state!, { type: "occasionAccept", id: occ.def.id }, cfg);
+              state = res.state;
+              outAll(applyTitles(res.events));
+              return true;
+            },
+          });
+        }
+        // 勝負所に臨む（請けた行事。器は既存のミニゲームの皮か一騎打ち）
+        if (o.accepted && !o.attempted) {
+          const occ = o;
+          acts.push({
+            label: tpl(t.text.occasionAttemptOption, { name: occ.def.name }),
+            run: async () => {
+              let score: number;
+              let died = false;
+              const vessel = occ.def.vessel;
+              if (vessel.kind === "combat") {
+                // 決闘：一騎打ちの実力勝負（逃げたら負けに近い出来）
+                const foe =
+                  enemies.enemies.find((e) => e.id === vessel.ref) ??
+                  [...enemies.enemies].sort((a, b) => b.challenge - a.challenge)[0]!;
+                const cs = await fightEnemy(
+                  combatIo,
+                  foe,
+                  `${state!.seed}-occasion-${occ.def.id}`,
+                  state!,
+                );
+                if (cs === null) return false;
+                const r = combatResult(cs);
+                score = r.won ? 1 : r.fled ? cfg.occasions!.combatFledScore : 0;
+                died = r.died;
+              } else {
+                // ミニゲームの皮（品質→0〜1 の出来に換算する）
+                const order: Order = {
+                  id: `occasion.${occ.def.id}`,
+                  kind: vessel.skill,
+                  name: occ.def.name,
+                  targetQuality: vessel.targetQuality,
+                  rewardMoney: 0,
+                };
+                const tSkin = timingSkin(vessel.skill);
+                const bSkin = boardSkin(vessel.skill);
+                if (tSkin !== null) {
+                  const r = await playTiming(order, state!, tSkin);
+                  if (r === null) return false;
+                  score = r.quality / 100;
+                } else if (bSkin !== null) {
+                  const r = await playBoard(order, state!, bSkin);
+                  if (r === null) return false;
+                  score = r.quality / 100;
+                } else {
+                  const r = await playNegotiation(order, state!);
+                  if (r === null) return false;
+                  score = r.quality / 100;
+                }
+              }
+              const res = step(
+                state!,
+                {
+                  type: "occasionAttempt",
+                  id: occ.def.id,
+                  score,
+                  ...(died ? { died: true } : {}),
+                },
+                cfg,
+              );
+              state = res.state;
+              const paid = res.events.find(
+                (e): e is Extract<ActionEvent, { type: "moneyPaid" }> => e.type === "moneyPaid",
+              );
+              if (paid) out(tpl(t.text.moneyPaid, { amount: paid.amount }));
+              outAll(applyTitles(res.events));
+              if (died) {
+                outAll(bioLines(res.state, "death", true));
+                if (noteDeath(res)) out(t.text.chronicleRecorded);
+              }
+              return true;
+            },
+          });
+        }
+      }
+      acts.push({ label: t.text.occasionBack, run: async () => true });
+      acts.forEach((a, i) => out(`  ${i + 1}) ${a.label}`));
+      const oi = await ask(t.text.promptChoice);
+      if (oi === null) return state;
+      const oPick = acts[Number.parseInt(oi.trim(), 10) - 1];
+      if (oPick === undefined) out(t.text.invalidInput);
+      else if (!(await oPick.run())) return state;
     } else {
       out(t.text.invalidInput);
     }

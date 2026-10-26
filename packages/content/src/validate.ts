@@ -21,6 +21,7 @@ import { mentorsFileSchema } from "./mentors.schema.js";
 import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 import { vowsFileSchema } from "./vows.schema.js";
 import { rivalsFileSchema } from "./rivals.schema.js";
+import { occasionsFileSchema } from "./occasions.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -65,6 +66,7 @@ check("mentors.json", mentorsFileSchema);
 check("pinnacles.json", pinnaclesFileSchema);
 check("vows.json", vowsFileSchema);
 check("rivals.json", rivalsFileSchema);
+check("occasions.json", occasionsFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
@@ -444,6 +446,63 @@ try {
   }
 } catch (e) {
   console.error(`✗ 危機の参照突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 勝負所の行事の参照突き合わせ（X-10）：話し手は voices.json の住人か
+// rivals.json の名前表の範囲内、器は既存のミニゲームの皮になる技能か
+// enemies.json の敵に限る
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const enemiesRaw = JSON.parse(readFileSync(join(root, "enemies.json"), "utf8")) as {
+    enemies?: { id?: string }[];
+  };
+  const voicesRaw = JSON.parse(readFileSync(join(root, "voices.json"), "utf8")) as {
+    npcs?: { id?: string }[];
+  };
+  const rivalsRaw = JSON.parse(readFileSync(join(root, "rivals.json"), "utf8")) as {
+    names?: string[];
+  };
+  const occasionsRaw = JSON.parse(readFileSync(join(root, "occasions.json"), "utf8")) as {
+    occasions?: {
+      id?: string;
+      speaker?: { kind?: string; id?: string; index?: number };
+      vessel?: { kind?: string; skill?: string; ref?: string };
+    }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const enemyIds = new Set((enemiesRaw.enemies ?? []).map((e) => e.id));
+  const npcIds = new Set((voicesRaw.npcs ?? []).map((n) => n.id));
+  const rivalNames = rivalsRaw.names?.length ?? 0;
+  const bad: string[] = [];
+  for (const o of occasionsRaw.occasions ?? []) {
+    const label = `occasions.json ${o.id ?? "?"}`;
+    if (o.speaker?.kind === "npc" && !npcIds.has(o.speaker.id ?? "")) {
+      bad.push(`${label}: 話し手NPC ${o.speaker.id}`);
+    }
+    if (
+      o.speaker?.kind === "rival" &&
+      (o.speaker.index === undefined || o.speaker.index >= rivalNames)
+    ) {
+      bad.push(`${label}: ライバル話し手 index ${o.speaker.index}`);
+    }
+    if (o.vessel?.kind === "minigame" && !skillIds.has(o.vessel.skill ?? "")) {
+      bad.push(`${label}: 勝負の技能 ${o.vessel.skill}`);
+    }
+    if (o.vessel?.kind === "combat" && !enemyIds.has(o.vessel.ref ?? "")) {
+      bad.push(`${label}: 決闘の相手 ${o.vessel.ref}`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 行事の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 行事の参照（occasions ↔ voices/rivals/skills/enemies）");
+  }
+} catch (e) {
+  console.error(`✗ 行事の参照突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

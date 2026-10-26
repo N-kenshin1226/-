@@ -240,6 +240,7 @@ export function MinigameScreen({
   kind,
   order,
   finale,
+  occasion,
   setScreen,
   act,
 }: {
@@ -248,6 +249,8 @@ export function MinigameScreen({
   order: Order;
   /** 決着の場面の勝負所なら場面の id（W-03。出来は危機の備えへ寄与する） */
   finale?: string;
+  /** 勝負所の行事なら行事の id（X-10。出来は行事の勝敗へ） */
+  occasion?: string;
   setScreen: (s: Screen) => void;
   act: Act;
 }) {
@@ -271,6 +274,15 @@ export function MinigameScreen({
       : `《${order.name}》`;
 
   const commit = () => {
+    // 勝負所の行事（X-10）：作品ではなく出来（品質→0〜1）として行事の勝敗へ
+    if (occasion !== undefined) {
+      act(
+        { type: "occasionAttempt", id: occasion, score: res.quality / 100 },
+        { format: (ev) => eventLines(ev, state) },
+      );
+      setScreen({ name: "menu" });
+      return;
+    }
     // 決着の場面の勝負所（W-03）：作品ではなく出来（品質→0〜1）として世界の備えへ
     if (finale !== undefined) {
       act(
@@ -305,7 +317,8 @@ export function MinigameScreen({
       ? [
           {
             id: "minigame-commit",
-            label: "作品を納める",
+            // 勝負所の行事は作品の納入ではない —— 出来を勝敗として確定する
+            label: occasion !== undefined ? "結果を確定" : "作品を納める",
             primary: true,
             onPick: commit,
           } satisfies MenuEntry,
@@ -314,7 +327,14 @@ export function MinigameScreen({
     {
       id: "minigame-quit",
       label: "やめる",
-      onPick: () => setScreen(finale !== undefined ? { name: "crisis" } : { name: "work" }),
+      onPick: () =>
+        setScreen(
+          occasion !== undefined
+            ? { name: "occasion" }
+            : finale !== undefined
+              ? { name: "crisis" }
+              : { name: "work" },
+        ),
     },
   ];
 
@@ -362,7 +382,15 @@ export function MinigameScreen({
         )}
         <CommandMenu
           entries={entries}
-          onBack={() => setScreen(finale !== undefined ? { name: "crisis" } : { name: "work" })}
+          onBack={() =>
+            setScreen(
+              occasion !== undefined
+                ? { name: "occasion" }
+                : finale !== undefined
+                  ? { name: "crisis" }
+                  : { name: "work" },
+            )
+          }
         />
       </WorldFrame>
       <HintBar

@@ -6,6 +6,7 @@ import {
   bioLines,
   cfg,
   crisisRecordLines,
+  occasionRecordLines,
   eventLines,
   loadChronicle,
   narrator,
@@ -165,6 +166,18 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
               </div>
             ))}
             <div style={{ color: P.dim, fontSize: 13 }}>{t.text.recordsRivalNote}</div>
+          </div>
+          {/* 勝負所の行事（X-10）：臨んだ勝負所の記録。淡々とした結果の一覧だけ */}
+          <div data-testid="records-occasions">
+            {occasionRecordLines(state).map((l, i) =>
+              i === 0 ? (
+                <PaperHead key="head">{l}</PaperHead>
+              ) : (
+                <div key={i} style={{ color: P.sub }}>
+                  {l}
+                </div>
+              ),
+            )}
           </div>
           {/* 世界の出来事（W-01、docs/08）：危機の記録。淡々とした出来事の一覧だけ */}
           <div data-testid="records-crisis">

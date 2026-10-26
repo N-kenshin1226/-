@@ -465,6 +465,8 @@ export const balanceSchema = z
         playerKillWeight: z.number().nonnegative(),
         /** 自分の実績点：深層の自己ベスト1層あたりの重み（abyss.best） */
         playerAbyssWeight: z.number().nonnegative(),
+        /** 自分の実績点：勝負所の評判1点あたりの重み（occasion.renown。X-10） */
+        playerRenownWeight: z.number().nonnegative(),
       })
       .strict()
       .refine((r) => r.scoreMin <= r.scoreMax, {
@@ -578,6 +580,29 @@ export const balanceSchema = z
           .refine((i) => i === undefined || i.stageThresholds[1]! <= i.stageThresholds[2]!, {
             message: "stageThresholds は昇順に並べる",
           }),
+      })
+      .strict(),
+    /**
+     * 勝負所の行事（X-10、docs/03 §2「勝負所でミニゲームが出る」）。
+     * core/occasions の OccasionsConfig に対応。行事の中身（条件・器・勝敗の効果）は
+     * occasions.json が持ち、ここには届く頻度と間隔・勝敗の目安の係数だけを置く
+     */
+    occasions: z
+      .object({
+        /** 1日に届く行事の上限（docs/03 §2「1日に1〜2回まで」） */
+        offersPerDay: z.number().int().min(1).max(4),
+        /** 行事が届く日の基本確率（届かない日もある ―― 日常は作業にならない） */
+        offerChance: z.number().min(0).max(1),
+        /** 2件目が届く確率（offersPerDay >= 2 のときだけ振られる） */
+        secondChance: z.number().min(0).max(1),
+        /** 行事が再び届くまでの既定間隔（日。occasions.json 側の cooldownDays が優先） */
+        cooldownDays: z.number().int().nonnegative(),
+        /** 同じ種類の行事が続かない既定の間隔（日） */
+        kindGapDays: z.number().int().nonnegative(),
+        /** 決闘（戦闘の器）で「勝った」とみなす出来の閾値（0〜1） */
+        combatWinScore: z.number().min(0).max(1),
+        /** 決闘から逃げたときの出来（呼び出し側が score に換算する目安。勝ちではない） */
+        combatFledScore: z.number().min(0).max(1),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

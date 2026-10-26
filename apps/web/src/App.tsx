@@ -57,6 +57,7 @@ import { BookScreen, SleepScreen, StatusScreen, TrainScreen } from "./screens/to
 import { MinigameScreen, WorkModeScreen, WorkScreen } from "./screens/work.js";
 import { AbyssScreen, CombatScreen, HuntScreen } from "./screens/hunt.js";
 import { CrisisScreen } from "./screens/crisis.js";
+import { OccasionScreen } from "./screens/occasion.js";
 import { LoreScreen, RecordsScreen } from "./screens/records.js";
 import { MentorScreen, SocietyScreen } from "./screens/society.js";
 import { HeirScreen, RebirthScreen, RetireScreen, SuccessionScreen } from "./screens/end.js";
@@ -119,6 +120,7 @@ const HUD_SCREENS = new Set<Screen["name"]>([
   "minigame",
   "hunt",
   "crisis",
+  "occasion",
   "lore",
   "book",
   "records",
@@ -585,6 +587,7 @@ function ScreenView(props: {
           kind={screen.kind}
           order={screen.order}
           finale={screen.finale}
+          occasion={screen.occasion}
           setScreen={setScreen}
           act={act}
         />
@@ -600,6 +603,7 @@ function ScreenView(props: {
           enemy={screen.enemy}
           touchpoint={screen.touchpoint}
           finale={screen.finale}
+          occasion={screen.occasion}
           setScreen={setScreen}
           act={act}
           push={push}
@@ -607,6 +611,8 @@ function ScreenView(props: {
       );
     case "crisis":
       return <CrisisScreen state={state} setScreen={setScreen} act={act} />;
+    case "occasion":
+      return <OccasionScreen state={state} setScreen={setScreen} act={act} />;
     case "ending":
       return <EndingScreen state={state} back={toMenu} />;
     case "lore":

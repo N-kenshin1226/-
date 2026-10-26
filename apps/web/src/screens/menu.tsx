@@ -7,6 +7,7 @@ import { canAct, describe, isSkillUnlocked, type GameState } from "@trace/core";
 import {
   cfg,
   crisisFinaleOffers,
+  occasionOffers,
   originList,
   skillList,
   townRumor,
@@ -101,6 +102,21 @@ export function MenuScreen({
             sub: "世界からの打診",
             gold: true,
             onPick: () => setScreen({ name: "crisis" }),
+          } satisfies MenuEntry,
+        ]
+      : []),
+    // 勝負所の行事（X-10、docs/03 §2）：届いた打診がある日だけ項目が出る。
+    // 届いていなければ街の行事は日常の裏で過ぎるだけ（クエストボードにしない）
+    ...(canActNow &&
+    cfg.occasions !== undefined &&
+    occasionOffers(state, cfg.occasions).some((o) => !o.attempted)
+      ? [
+          {
+            id: "menu-occasion",
+            label: "勝負所の行事",
+            sub: "届いた打診",
+            gold: true,
+            onPick: () => setScreen({ name: "occasion" }),
           } satisfies MenuEntry,
         ]
       : []),

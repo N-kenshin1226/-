@@ -65,6 +65,9 @@ import {
   crisisTouchpointOf,
   crisisTouchpointOffers,
   crisisTypeOf,
+  occasionDef,
+  occasionOffers,
+  occasionSpeaker,
   withWorldMods,
   worldFactor,
   worldMods,
@@ -104,6 +107,7 @@ import {
   enemiesByArea,
   mentors,
   narration,
+  occasions,
   orders,
   origins,
   pinnacles,
@@ -206,6 +210,23 @@ export const cfg: StepConfig = {
               size: balance.rivals.size,
             },
           },
+  },
+  /**
+   * 勝負所の行事（X-10、docs/03 §2。occasions.json の行事表＋balance.occasions の
+   * 頻度・間隔係数＋話し手の名簿（voices/rivals）を注入する）
+   */
+  occasions: {
+    occasions: occasions.occasions,
+    ...balance.occasions,
+    npcs: voices.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role })),
+    rivals: {
+      names: rivals.names,
+      epithets: rivals.epithets,
+      size: balance.rivals.size,
+      scoreMin: balance.rivals.scoreMin,
+      scoreMax: balance.rivals.scoreMax,
+      growthPerDay: balance.rivals.growthPerDay,
+    },
   },
 };
 
@@ -515,6 +536,11 @@ export function crisisLogLine(kind: string, name?: string): string | null {
   return text === undefined ? null : tpl(text, { name: name ?? "" });
 }
 
+/** 勝負所の行事の表示名（X-10。occasions.json から id で引く） */
+export function occasionName(id: string): string {
+  return cfg.occasions !== undefined ? (occasionDef(cfg.occasions, id)?.name ?? id) : id;
+}
+
 /** イベント → 表示行（CLIの applyTitles 相当）。state を渡すとライバル名まで解ける（W-03） */
 export function eventLines(events: ActionEvent[], state?: GameState): string[] {
   return events.flatMap((e) => {
@@ -687,6 +713,28 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         const line = crisisLogLine("rival.hero", name);
         return line === null ? [] : [line];
       }
+      // 勝負所の行事（X-10、docs/03 §2）：打診は人物の口から届き、
+      // 勝敗は機械的な一行として刻む（数値・名の解決は core の刻印から）
+      case "occasionOffered": {
+        const def = cfg.occasions !== undefined ? occasionDef(cfg.occasions, e.id) : undefined;
+        const name = def?.name ?? e.id;
+        const speaker =
+          cfg.occasions !== undefined && def !== undefined && state !== undefined
+            ? occasionSpeaker(state, cfg.occasions, def)
+            : undefined;
+        return [
+          tpl(t.text.occasionOffered, { name }),
+          ...(speaker !== undefined
+            ? [tpl(t.text.occasionSpeakerLine, { speaker: speaker.name, line: def!.line })]
+            : []),
+        ];
+      }
+      case "occasionJoined":
+        return [tpl(t.text.occasionJoined, { name: occasionName(e.id) })];
+      case "occasionAttempted":
+        return [
+          tpl(e.won ? t.text.occasionWon : t.text.occasionLost, { name: occasionName(e.id) }),
+        ];
       default:
         return [];
     }
@@ -776,6 +824,11 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
         };
   // ライバルの噂（T-47）：ランキングの筆頭ライバルが話題に混ざる
   const topRival = rivalsOf(state, rivals, balance.rivals).entries.find((e) => !e.isPlayer);
+  // 勝負所の行事（X-10）：昨日臨んだ勝負所の結果は必ず記事になる
+  // （行動ログの occasion/target/variant から行事名と勝敗を解く）
+  const occasionResults = state.actionLog
+    .filter((a) => a.day === day && a.kind === "occasion")
+    .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
   lines.push(
     ...narrator.narrate(
       {
@@ -783,6 +836,7 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
         deeds,
         works,
         deaths,
+        ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title
@@ -1066,7 +1120,34 @@ export {
   crisisRivalName,
   crisisSceneHaze,
   crisisTypeOf,
+  occasionDef,
+  occasionOffers,
+  occasionSpeaker,
 };
+
+/**
+ * 街の記録の「勝負所」欄（X-10）：行動ログの occasion から読む。
+ * 勝敗の語りは新聞が担うので、ここは淡々とした結果の一覧だけ（最新10件）
+ */
+export function occasionRecordLines(state: GameState): string[] {
+  const log = state.actionLog.filter((a) => a.kind === "occasion");
+  const out: string[] = [t.text.recordsOccasions];
+  if (log.length === 0) {
+    out.push(t.text.recordsOccasionsNone);
+    return out;
+  }
+  for (const a of log.slice(-10)) {
+    out.push(
+      tpl(t.text.recordsOccasionsLine, {
+        day: a.day + 1,
+        name: occasionName(a.target ?? ""),
+        result:
+          t.display.occasionResultNames[a.variant === "win" ? "win" : "loss"] ?? a.variant ?? "",
+      }),
+    );
+  }
+  return out;
+}
 
 /**
  * 街の記録の「世界の出来事」欄（W-01、docs/08）：危機の記録を
@@ -1195,6 +1276,9 @@ function deedLabel(kind: string, target?: string): string {
       return `${enemies.enemies.find((e) => e.id === target)?.name ?? "魔物"}との戦い`;
     case "abyss":
       return "深層への潜行";
+    case "occasion":
+      // 勝負所の行事（X-10）：臨んだ行事の名を記録欄に出す
+      return `《${occasionName(target ?? "")}》に臨んだ`;
     case "read":
       return "読書";
     case "wait":
@@ -1245,10 +1329,15 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
               : (titles.titles.find((x) => x.id === lastLife.epithet)?.name ?? lastLife.epithet),
         };
   const topRival = rivalsOf(state, rivals, balance.rivals).entries.find((e) => !e.isPlayer);
+  // 勝負所の行事（X-10）：昨日臨んだ勝負所の結果は必ず記事になる
+  const occasionResults = state.actionLog
+    .filter((a) => a.day === day && a.kind === "occasion")
+    .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
   const req = {
     deeds,
     works,
     deaths,
+    ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
     ...(prevLife !== undefined ? { prevLife } : {}),
     ...(topRival !== undefined ? { rival: topRival } : {}),
   };
@@ -1514,6 +1603,17 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
           ? "あなたが率いた決着は、世界の記録に刻まれました"
           : "備えは足りませんでした",
         rewards: [{ label: "決着の場面", name: `《${name}》` }],
+      });
+    }
+    // 勝負所の行事（X-10、docs/03 §2）：勝ちは物語を動かすAランクの出来事。
+    // 打診（occasionOffered）はB＝記録の一行だけ、負けも記録に留める（新聞が語る）
+    if (e.type === "occasionAttempted" && e.won) {
+      const name = occasionName(e.id);
+      out.push({
+        rank: "A",
+        title: `《${name}》で勝ちを収めた`,
+        sub: "勝負所の結果は、あなたの評判を動かします",
+        rewards: [{ label: "勝負所", name: `《${name}》` }],
       });
     }
     // ライバルの英雄（W-03）：自分でなくとも世界は進む ―― 記録として届くAランク

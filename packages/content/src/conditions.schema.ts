@@ -21,6 +21,8 @@ export const condSchema: z.ZodType<Cond> = z.lazy(() =>
     z.object({ flag: z.string().min(1), eq: z.boolean().optional() }).strict(),
     z.object({ skill: z.string().min(1), ...compare }).strict(),
     z.object({ stat: z.enum(STAT_IDS), ...compare }).strict(),
+    /** 所持金の比較（X-10。打診・行事の「身なり」条件） */
+    z.object({ money: z.object(compare).strict() }).strict(),
     z
       .object({
         work: z
