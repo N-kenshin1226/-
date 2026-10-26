@@ -703,3 +703,62 @@ describe("X-5 失われた書物（前世の技が次の世界の書店に）", 
     expect(text).toContain("山野の採集図鑑");
   });
 });
+
+describe("X-10 勝負所の行事", () => {
+  it("届いた打診に勝負所から応え、交渉に臨んで、記録と朝刊に残る", async () => {
+    const savePath = tmpSave();
+    // 「行商の大取引」の打診が届いた朝として仕込む。
+    // 届け方の抽選は core の occasions テストで検証済み ——
+    // ここでは「人物の台詞 → 請け → 勝負 → 残り方」の通しを見る
+    const g = newGame("x10-cli", "旅人", {
+      skillIds: skills.skills.map((s) => s.id),
+      initialPotential: 100,
+      initialStatValue: 10,
+      initialMoney: 300,
+    });
+    g.player.skills["eloquence"]!.value = 30;
+    const seeded = {
+      ...g,
+      counters: { ...g.counters, "occasion.offer.day.deal.grand_bargain": g.time.day },
+    };
+    writeFileSync(savePath, serialize(seeded));
+
+    const { io, output } = scriptedIo([
+      "1", // つづきから
+      "14", // 勝負所（届いた打診）
+      "1", // 《行商の大取引》の打診に応える
+      "14", // 勝負所にもどる
+      "1", // 《行商の大取引》に臨む → 交渉
+      "1",
+      "1",
+      "1", // 札を3枚出す（このシードでは3手で決着・勝つ）
+      "8", // 街の記録
+      "5", // 寝る →
+      "1", //   宿：1番
+      "y", //   夕食あり → 起床と朝刊
+      "q",
+    ]);
+    const state = await playCli({ io, savePath, seed: "x10-cli", delay: async () => {} });
+    const text = output.join("\n");
+
+    // 打診は人物の口から届く（クエストボードではない）
+    expect(text).toContain("勝負所の行事");
+    expect(text).toContain("打診が届いている");
+    expect(text).toContain("ひと山当てる話がある");
+    // 請けて臨み、勝ちを収めた（交渉の出来が行事の閾値を上回る）
+    expect(text).toContain("勝負を請けました");
+    expect(text).toContain("《行商の大取引》で勝ちを収めた");
+    // 街の記録に残る
+    expect(text).toContain("勝負所の記録");
+    expect(text).toContain("《行商の大取引》――勝ちを収めた");
+    // 翌日の朝刊に載る
+    expect(text).toContain("街の新聞");
+    expect(text).toMatch(/《行商の大取引》(――見事な立ち回り|の勝負を制した者あり|で栄冠を掴んだ)/);
+    // 結果は物語を動かす：賞金・評判・旗印が刻まれる
+    // （宿・夕食の支払いがあるので、賞金は出力行と初期所持金からの増加で確かめる）
+    expect(text).toContain("――報酬 250G を受け取った。");
+    expect(state!.player.money).toBeGreaterThan(300);
+    expect(state!.counters["occasion.renown"]).toBe(2);
+    expect(state!.flags["occasion.merchant_trusted"]).toBe(true);
+  });
+});

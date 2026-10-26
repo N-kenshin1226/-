@@ -69,6 +69,7 @@
       "train": 12,
       "work": 10,
       "combat": 20,
+      "occasion": 14,
       "abyss": 24
     },
     "fatigueDefaultPerAction": 2,
@@ -87,6 +88,10 @@
         "strength": 2,
         "endurance": 3,
         "agility": 2
+      },
+      "occasion": {
+        "dexterity": 2,
+        "spirit": 2
       },
       "abyss": {
         "strength": 2,
@@ -334,7 +339,17 @@
     "playerQualityWeight": 1.0,
     "playerTitleWeight": 12,
     "playerKillWeight": 1.5,
-    "playerAbyssWeight": 6
+    "playerAbyssWeight": 6,
+    "playerRenownWeight": 4
+  },
+  "occasions": {
+    "offersPerDay": 2,
+    "offerChance": 0.5,
+    "secondChance": 0.3,
+    "cooldownDays": 6,
+    "kindGapDays": 3,
+    "combatWinScore": 0.5,
+    "combatFledScore": 0.35
   },
   "crisis": {
     "strongFields": 2,

@@ -204,6 +204,25 @@ export type {
   RivalsConfig,
 } from "./rivals/index.js";
 export {
+  OCCASION_RENOWN_KEY,
+  occasionAttemptDayKey,
+  occasionDef,
+  occasionJoinDayKey,
+  occasionOfferDayKey,
+  occasionOfferKindDayKey,
+  occasionOffers,
+  occasionPending,
+  occasionSpeaker,
+} from "./occasions/index.js";
+export type {
+  OccasionDef,
+  OccasionOffer,
+  OccasionSide,
+  OccasionsConfig,
+  OccasionSpeaker as OccasionSpeakerDef,
+  OccasionVessel,
+} from "./occasions/index.js";
+export {
   addHeroContribution,
   CRISIS_HERO_FLAG,
   crisisAreaClosed,

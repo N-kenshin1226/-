@@ -576,6 +576,93 @@
         "note": "無風の誓いを一季節守り抜いた証"
       },
       "message": "――称号《無風の旅人》を獲得しました。追い風なき道を歩き通した者に。"
+    },
+    {
+      "id": "title.fair_champion",
+      "name": "品評会の覇者",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "occasion.won.exhibition.craft_fair",
+        "gte": 1
+      },
+      "effect": {
+        "priceVs": {
+          "smithing": 1.1
+        },
+        "note": "品評会の覇者の名は鍛冶の値段を少し上げる"
+      },
+      "message": "――称号《品評会の覇者》を獲得しました。勝負所で勝ち取った名に。"
+    },
+    {
+      "id": "title.duel_victor",
+      "name": "果たし合いの勝者",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "occasion.won.duel.named_rival",
+        "gte": 1
+      },
+      "effect": {
+        "damageVs": {
+          "deserter": 1.1
+        },
+        "note": "果たし合いを制した者の太刀筋は重い"
+      },
+      "message": "――称号《果たし合いの勝者》を獲得しました。名のある者を打ち破った者に。"
+    },
+    {
+      "id": "title.bargain_closer",
+      "name": "大取引を制した者",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "occasion.won.deal.grand_bargain",
+        "gte": 1
+      },
+      "effect": {
+        "priceVs": {
+          "eloquence": 1.1
+        },
+        "note": "大取引を制した口は値段を少し釣り上げる"
+      },
+      "message": "――称号《大取引を制した者》を獲得しました。席を制する口を持つ者に。"
+    },
+    {
+      "id": "title.trove_eye",
+      "name": "蔵の目利き",
+      "rank": "A",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "occasion.won.appraisal.trove",
+        "gte": 1
+      },
+      "effect": {
+        "gainVs": {
+          "appraisal": 1.05
+        },
+        "note": "蔵出しの鑑定会で証明した目利きは、鑑定の冴えを少し上げる"
+      },
+      "message": "――称号《蔵の目利き》を獲得しました。古い品の真を見抜いた者に。"
+    },
+    {
+      "id": "title.chance_master",
+      "name": "街の大勝負師",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "counter": "occasion.won",
+        "gte": 6
+      },
+      "effect": {
+        "note": "勝負所を幾度も制した者の記録"
+      },
+      "message": "――称号《街の大勝負師》を獲得しました。ここ一番で負けない者に。"
     }
   ]
 }

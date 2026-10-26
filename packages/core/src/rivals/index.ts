@@ -31,6 +31,8 @@ export interface RivalsConfig {
   playerKillWeight: number;
   /** 自分の実績点：深層の自己ベスト1層あたりの重み（abyss.best） */
   playerAbyssWeight: number;
+  /** 自分の実績点：勝負所の評判1点あたりの重み（occasion.renown。X-10。省略時 0） */
+  playerRenownWeight?: number;
 }
 
 /** ライバルの素性の母集団（content/rivals.json 由来） */
@@ -72,11 +74,15 @@ export function playerScore(state: GameState, cfg: RivalsConfig): number {
     .filter(([k]) => k.startsWith("kill.species."))
     .reduce((s, [, v]) => s + v, 0);
   const abyssBest = state.counters["abyss.best"] ?? 0;
+  // X-10：勝負所の評判（occasions/index.ts の OCCASION_RENOWN_KEY と同じ刻印。
+  // ここでは文字列で読む —— occasions→rivals の参照と循環させないため）
+  const renown = state.counters["occasion.renown"] ?? 0;
   return Math.round(
     bestQuality * cfg.playerQualityWeight +
       state.titles.length * cfg.playerTitleWeight +
       kills * cfg.playerKillWeight +
-      abyssBest * cfg.playerAbyssWeight,
+      abyssBest * cfg.playerAbyssWeight +
+      renown * (cfg.playerRenownWeight ?? 0),
   );
 }
 

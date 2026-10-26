@@ -34,6 +34,8 @@ export const cliTextSchema = z
         crisisRoleNames: z.record(z.string(), z.string()),
         /** 危機への関与の段階（W-03。1見届けた/2支えた/3担った/4率いた）→ 表示名 */
         crisisStageNames: z.record(z.string(), z.string()),
+        /** 勝負所の結果（X-10。win/loss → 記録行に差し込む表示語） */
+        occasionResultNames: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -209,6 +211,31 @@ export const cliTextSchema = z
         crisisFinaleJoined: z.string(),
         /** 勝負所を果たした行（W-03。{name} に場面名） */
         crisisFinaleAttempt: z.string(),
+        /**
+         * 勝負所の行事（X-10、docs/03 §2）：メニューの追加項目・画面の見出しと各行・
+         * 状態語・選択肢・戻る。{name}/{status}/{speaker}/{line} を差し込む
+         */
+        occasionMenuItem: z.string(),
+        occasionSceneHeader: z.string(),
+        occasionSceneLine: z.string(),
+        occasionStatusOffered: z.string(),
+        occasionStatusAccepted: z.string(),
+        occasionStatusDone: z.string(),
+        occasionSpeakerLine: z.string(),
+        occasionAcceptOption: z.string(),
+        occasionAttemptOption: z.string(),
+        occasionBack: z.string(),
+        /** 打診が届いた行（{name} に行事名） */
+        occasionOffered: z.string(),
+        /** 打診に応えた行 */
+        occasionJoined: z.string(),
+        /** 勝負所の結果の行（勝った／敗れた。{name} に行事名） */
+        occasionWon: z.string(),
+        occasionLost: z.string(),
+        /** 街の記録の勝負所欄（見出し・空行・各記録行。{day}/{name}/{result} を差し込む） */
+        recordsOccasions: z.string(),
+        recordsOccasionsNone: z.string(),
+        recordsOccasionsLine: z.string(),
         /** 年代記（T-38）：周回をまたぐ人生の一覧。開始時の件数・見出し・各頁の行・追記の告知 */
         chronicleLives: z.string(),
         chronicleHeader: z.string(),

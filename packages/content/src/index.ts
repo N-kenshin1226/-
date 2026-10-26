@@ -57,6 +57,16 @@ export type { Vow, VowsFile } from "./vows.schema.js";
 export { rivals } from "./rivals.js";
 export { rivalsFileSchema } from "./rivals.schema.js";
 export type { RivalsFile } from "./rivals.schema.js";
+// 勝負所の行事（X-10、docs/03 §2）
+export { occasions } from "./occasions.js";
+export {
+  occasionSchema,
+  occasionSideSchema,
+  occasionSpeakerSchema,
+  occasionVesselSchema,
+  occasionsFileSchema,
+} from "./occasions.schema.js";
+export type { OccasionJson, OccasionsFile } from "./occasions.schema.js";
 export { worldModsSchema } from "./world-mods.schema.js";
 // 世界の危機（W-01、docs/08）。型のスキーマはコンテンツと並べて crises/schema.ts に置く
 export { crises, crisisTypes, sampleCrises } from "./crises.js";

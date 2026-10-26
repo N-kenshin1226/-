@@ -33,6 +33,12 @@ export function rankOf(
     case "pinnacleStageReached":
       // 段ごとの指定ランク（06 §3A。中間段はB/A、頂点はS）
       return event.rank;
+    // 勝負所の行事（X-10）：打診は日常に混ざる知らせ（B）。
+    // 勝負所の結果は物語を動かす —— 勝ちはA、負けはB（負けも記録される）
+    case "occasionOffered":
+      return "B";
+    case "occasionAttempted":
+      return event.won ? "A" : "B";
     default:
       return null; // slept / wakeReport / gainApplied / actionPerformed
   }
@@ -70,6 +76,7 @@ export function approaching(cond: Cond, state: GameState): boolean {
   if ("counter" in cond) return near(state.counters[cond.counter] ?? 0, cond);
   if ("skill" in cond) return near(state.player.skills[cond.skill]?.value ?? 0, cond);
   if ("stat" in cond) return near(state.player.stats[cond.stat] ?? 0, cond);
+  if ("money" in cond) return near(state.player.money, cond.money);
   if ("and" in cond) return cond.and.every((c) => approaching(c, state));
   if ("or" in cond) return cond.or.some((c) => approaching(c, state));
   if ("not" in cond || "within" in cond || "work" in cond || "time" in cond || "flag" in cond)

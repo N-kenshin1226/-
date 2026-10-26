@@ -28,6 +28,12 @@ export interface NarrationTemplates {
       legend: string[];
       /** ライバルの噂（T-47。ランキングのライバルが候補の日に混ざる。{name}/{epithet}/{rank}/{score} を差し込む） */
       rival: string[];
+      /**
+       * 勝負所の行事（X-10）：行事に臨んだ日の記事。見出しとは別に必ず載る確報。
+       * {occasion} には《》で包んだ行事名が入る（勝った日／敗れた日で別の文面）
+       */
+      occasionWin: string[];
+      occasionLoss: string[];
     };
   };
   npcWord: {
@@ -78,6 +84,11 @@ export type NarrationRequest =
       prevLife?: { name: string; epithet?: string };
       /** ライバル（T-47）：ランキングの話題にするライバル。あれば噂が候補に混ざる */
       rival?: { name: string; epithet: string; rank: number; score: number };
+      /**
+       * 勝負所の行事（X-10）：昨日臨んだ勝負所の結果。あれば見出しの後に必ず載る
+       * （name は行事名 —— 《》は語り層が付ける）
+       */
+      occasions?: readonly { name: string; won: boolean }[];
     }
   /** NPCの一言。deed は直近の話題（例: 狩り・仕事）、standing は立場ID（口調が変わる） */
   | { scene: "npcWord"; name: string; deed?: string; standing?: string }
@@ -178,7 +189,13 @@ export class TemplateProvider implements NarrationProvider {
             ...rivals,
           ];
         }
-        return [t.newspaper.header, tpl(this.pick(pool, rng), vars)];
+        // 勝負所の行事（X-10）：結果は「物語を動かす」確報なので、見出しの後に必ず載せる
+        const occasionLines = (req.occasions ?? []).map((o) =>
+          tpl(this.pick(o.won ? L.occasionWin : L.occasionLoss, rng), {
+            occasion: `《${o.name}》`,
+          }),
+        );
+        return [t.newspaper.header, tpl(this.pick(pool, rng), vars), ...occasionLines];
       }
       case "npcWord": {
         // 立場が分かっていれば口調を差し替える（voices.json／narration.json の byStanding）

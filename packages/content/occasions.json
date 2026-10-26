@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "occasions": [
+    {
+      "id": "exhibition.craft_fair",
+      "name": "炉前の品評会",
+      "kind": "exhibition",
+      "speaker": { "kind": "npc", "id": "npc.fenn" },
+      "line": "炉前の品評会がある。腕に覚えがあるなら出てみろ ―― 目利きどもが集まるぞ",
+      "require": {
+        "or": [
+          { "skill": "smithing", "gte": 25 },
+          { "skill": "appraisal", "gte": 25 }
+        ]
+      },
+      "every": { "days": 9, "offset": 6 },
+      "weight": 2,
+      "vessel": { "kind": "minigame", "skill": "smithing", "targetQuality": 60 },
+      "win": { "money": 180, "renown": 3, "flags": ["occasion.fair_winner"] },
+      "loss": { "renown": -1 }
+    },
+    {
+      "id": "exhibition.street_stage",
+      "name": "広場の腕比べ",
+      "kind": "exhibition",
+      "speaker": { "kind": "npc", "id": "npc.marta" },
+      "line": "広場で芸の腕比べがあるそうだよ。人を集められる腕があるなら、出てみるかい",
+      "require": { "skill": "performance", "gte": 20 },
+      "every": { "days": 9, "offset": 15 },
+      "vessel": { "kind": "minigame", "skill": "performance", "targetQuality": 60 },
+      "win": { "money": 120, "renown": 2, "flags": ["occasion.stage_winner"] },
+      "loss": { "renown": -1 }
+    },
+    {
+      "id": "deal.grand_bargain",
+      "name": "行商の大取引",
+      "kind": "deal",
+      "speaker": { "kind": "npc", "id": "npc.nola" },
+      "line": "ひと山当てる話がある。口と度胸に自信があるなら、席に着きな",
+      "require": {
+        "and": [{ "skill": "eloquence", "gte": 20 }, { "money": { "gte": 150 } }]
+      },
+      "vessel": { "kind": "minigame", "skill": "eloquence", "targetQuality": 65 },
+      "win": { "money": 250, "renown": 2, "flags": ["occasion.merchant_trusted"] },
+      "loss": { "money": -50, "renown": -1 }
+    },
+    {
+      "id": "appraisal.trove",
+      "name": "蔵出しの鑑定会",
+      "kind": "appraisal",
+      "speaker": { "kind": "npc", "id": "npc.edel" },
+      "line": "礼拝堂の蔵を開ける。古い品の目利きに自信があるなら、手伝ってもらえぬか",
+      "require": { "skill": "appraisal", "gte": 25 },
+      "every": { "days": 15, "offset": 12 },
+      "vessel": { "kind": "minigame", "skill": "appraisal", "targetQuality": 65 },
+      "win": { "money": 140, "renown": 3, "flags": ["occasion.appraiser_eye"] },
+      "loss": { "renown": -1 }
+    },
+    {
+      "id": "duel.named_rival",
+      "name": "果たし合い",
+      "kind": "duel",
+      "speaker": { "kind": "rival", "index": 0 },
+      "line": "お前の名が聞こえてきた。潔く果たし合おうではないか ―― 名が泣く前に",
+      "require": {
+        "and": [
+          { "counter": "action.combat", "gte": 6 },
+          { "skill": "swordplay", "gte": 15 }
+        ]
+      },
+      "cooldownDays": 7,
+      "vessel": { "kind": "combat", "ref": "deserter" },
+      "win": { "money": 200, "renown": 5, "flags": ["occasion.duel_winner"] },
+      "loss": { "money": -30, "renown": -2 }
+    }
+  ]
+}

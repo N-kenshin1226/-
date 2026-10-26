@@ -16,13 +16,16 @@ export type Screen =
   | { name: "sleep" }
   | { name: "work" }
   | { name: "workMode"; order: Order }
-  /** 決着の場面の勝負所なら finale に場面の id が入る（結果は危機の備えへ。W-03） */
-  | { name: "minigame"; kind: MinigameKind; order: Order; finale?: string }
+  /** 決着の場面の勝負所なら finale に場面の id が入る（結果は危機の備えへ。W-03）。
+      勝負所の行事なら occasion に行事の id が入る（結果は行事の勝敗へ。X-10） */
+  | { name: "minigame"; kind: MinigameKind; order: Order; finale?: string; occasion?: string }
   | { name: "hunt" }
   /** 危機の接点の相手なら touchpoint に接点の id が入る（勝ったときだけ寄与。W-02） */
-  | { name: "combat"; enemy: EnemyJson; touchpoint?: string; finale?: string }
+  | { name: "combat"; enemy: EnemyJson; touchpoint?: string; finale?: string; occasion?: string }
   /** 決着の場面（W-03、docs/08 §6）：打診への応え・勝負所・自分で起こす */
   | { name: "crisis" }
+  /** 勝負所の行事（X-10、docs/03 §2）：人物から届いた打診への応えと勝負所 */
+  | { name: "occasion" }
   /**
    * 終幕の画面（W-04、docs/08 §7）：危機の決着・滅びを紙の層の語り＋
    * その世界の年代記の一頁で見せる。通知の「一頁を開く」から開き、

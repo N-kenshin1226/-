@@ -18,6 +18,8 @@ const text: NarrationTemplates = {
       rumor: ["風の噂：実は王族だという。", "風の噂：空を飛ぶ者を見た。"],
       legend: ["昔語り：{name}という者がいたという。{epithet}と呼ばれたらしい。"],
       rival: ["風の噂：{epithet}の{name}（{rank}位・名声{score}）の話だ。"],
+      occasionWin: ["{occasion}――見事な勝ちであった。"],
+      occasionLoss: ["{occasion}――あえなく敗れたという。"],
     },
   },
   npcWord: {
@@ -156,6 +158,26 @@ describe("TemplateProvider（07 §6）", () => {
       )[1]!;
       expect(line).not.toContain("アルロ");
     }
+  });
+
+  it("新聞：勝負所の結果は見出しの後に必ず載る（X-10。勝敗で文面が変わる）", () => {
+    const won = provider.narrate(
+      { scene: "newspaper", deeds: ["occasion"], occasions: [{ name: "炉前の品評会", won: true }] },
+      rng(),
+    );
+    expect(won).toHaveLength(3);
+    expect(won[2]).toBe("《炉前の品評会》――見事な勝ちであった。");
+    const lost = provider.narrate(
+      {
+        scene: "newspaper",
+        deeds: ["occasion"],
+        occasions: [{ name: "炉前の品評会", won: false }],
+      },
+      rng(),
+    );
+    expect(lost[2]).toBe("《炉前の品評会》――あえなく敗れたという。");
+    // 渡さなければ出ない
+    expect(provider.narrate({ scene: "newspaper", deeds: ["occasion"] }, rng())).toHaveLength(2);
   });
 
   it("新聞：勘違い系の見出しが一定確率で混ざる", () => {

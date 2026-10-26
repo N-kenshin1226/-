@@ -35,6 +35,7 @@ function collectRanges(conds: Cond[], out: Map<string, Interval>): void {
     if ("counter" in c) merge(`counter:${c.counter}`, c);
     else if ("skill" in c) merge(`skill:${c.skill}`, c);
     else if ("stat" in c) merge(`stat:${c.stat}`, c);
+    else if ("money" in c) merge("money", c.money);
     else if ("time" in c) {
       const t = c.time;
       if (t.day) merge("time:day", t.day);

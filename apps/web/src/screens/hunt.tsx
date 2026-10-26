@@ -169,6 +169,7 @@ export function CombatScreen({
   enemy,
   touchpoint,
   finale,
+  occasion,
   setScreen,
   act,
   push,
@@ -179,6 +180,8 @@ export function CombatScreen({
   touchpoint?: string;
   /** 決着の場面の勝負所なら場面の id（W-03。結果は危機の備えへ寄与する） */
   finale?: string;
+  /** 勝負所の行事（決闘）なら行事の id（X-10。結果は行事の勝敗へ） */
+  occasion?: string;
   setScreen: (s: Screen) => void;
   act: Act;
   push: Push;
@@ -205,6 +208,27 @@ export function CombatScreen({
 
   const finish = () => {
     const r = combatResult(cs);
+    if (occasion !== undefined) {
+      // 勝負所の行事の決闘（X-10）：戦闘の結果を出来（0〜1）に換算して行事の勝敗へ。
+      // 勝=1・逃=combatFledScore・敗=0。経験や討伐記録は付かない —— これは狩りではなく勝負所
+      act(
+        {
+          type: "occasionAttempt",
+          id: occasion,
+          score: r.won ? 1 : r.fled ? (cfg.occasions?.combatFledScore ?? 0) : 0,
+          ...(r.died ? { died: true } : {}),
+        },
+        {
+          format: (ev) => [
+            ...eventLines(ev, state),
+            ...(r.died ? [...bioLines(state, "death", true), t.text.chronicleRecorded] : []),
+          ],
+        },
+      );
+      push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
+      setScreen({ name: "menu" });
+      return;
+    }
     if (finale !== undefined) {
       // 決着の場面の勝負所（W-03）：戦闘の結果を出来（0〜1）に換算して世界の備えへ。
       // 勝=1・逃=0.35・敗=0。経験や討伐記録は付かない —— これは仕事ではなく勝負所

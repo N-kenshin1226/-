@@ -6,12 +6,14 @@ import {
   cliText,
   crisisTypes,
   mentors,
+  occasions,
   pinnacles,
   rivals,
   skills,
   society,
   tailwinds,
   titles,
+  voices,
   vows,
 } from "@trace/content";
 import { loadHiddenCrises } from "@trace/content/hidden";
@@ -109,6 +111,23 @@ export function stepConfig(): StepConfig {
     vows: vows.vows,
     /** 世界の危機（W-01、docs/08。hidden/crises があればそれ、なければ公開サンプル） */
     crisis: crisisConfig(),
+    /**
+     * 勝負所の行事（X-10、docs/03 §2。occasions.json の行事表＋balance.occasions の
+     * 頻度・間隔係数＋話し手の名簿（voices/rivals）を注入する）
+     */
+    occasions: {
+      occasions: occasions.occasions,
+      ...balance.occasions,
+      npcs: voices.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role })),
+      rivals: {
+        names: rivals.names,
+        epithets: rivals.epithets,
+        size: balance.rivals.size,
+        scoreMin: balance.rivals.scoreMin,
+        scoreMax: balance.rivals.scoreMax,
+        growthPerDay: balance.rivals.growthPerDay,
+      },
+    },
     lore: {
       atoms: atoms.map((a) => ({ id: a.id, reveals: a.reveals, unlock: a.unlock })),
       connections: canon.events

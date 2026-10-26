@@ -86,6 +86,10 @@
       "2": "支えた",
       "3": "担った",
       "4": "率いた"
+    },
+    "occasionResultNames": {
+      "win": "勝ちを収めた",
+      "loss": "敗れた"
     }
   },
   "text": {
@@ -333,6 +337,23 @@
     "crisisFinaleOffered": "――《{name}》への参加の打診が届きました（決着の場面で応えられます）。",
     "crisisFinaleJoined": "――《{name}》への参加を請けました。",
     "crisisFinaleAttempt": "――《{name}》の勝負所で、あなたの力が世界の備えに加わった。",
+    "occasionMenuItem": "  14) 勝負所（届いた打診）",
+    "occasionSceneHeader": "── 勝負所の行事 ──",
+    "occasionSceneLine": "  《{name}》 ―― {status}",
+    "occasionStatusOffered": "打診が届いている",
+    "occasionStatusAccepted": "請けている",
+    "occasionStatusDone": "勝負を終えた",
+    "occasionSpeakerLine": "  {speaker}――「{line}」",
+    "occasionAcceptOption": "《{name}》の打診に応える",
+    "occasionAttemptOption": "《{name}》に臨む",
+    "occasionBack": "戻る",
+    "occasionOffered": "――《{name}》の打診が届きました（勝負所で応えられます）。",
+    "occasionJoined": "――《{name}》への勝負を請けました。",
+    "occasionWon": "――《{name}》で勝ちを収めた。",
+    "occasionLost": "――《{name}》に敗れた。",
+    "recordsOccasions": "── 勝負所の記録 ──",
+    "recordsOccasionsNone": "  まだ勝負所に臨んだ記録はない。",
+    "recordsOccasionsLine": "  {day}日目：《{name}》――{result}",
     "resetConfirm": "――この街での全ての記録を消します。よろしいですか"
   }
 }

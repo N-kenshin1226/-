@@ -38,6 +38,12 @@ import {
   mentorSession,
   type MentorsConfig,
 } from "./mentors/index.js";
+import {
+  OCCASION_RENOWN_KEY,
+  occasionOffers,
+  occasionPending,
+  type OccasionsConfig,
+} from "./occasions/index.js";
 import { unlockSkills } from "./skills/index.js";
 import { restoreRng } from "./rng/index.js";
 import type { CrisisFieldId, GameState, SkillId } from "./state/types.js";
@@ -97,6 +103,11 @@ export interface StepConfig {
    * 未抽選の世界（v15 以前のセーブ）は次の季節の変わり目に抽選される
    */
   crisis?: CrisisConfig;
+  /**
+   * 勝負所の行事（X-10、docs/03 §2。balance.occasions ＋ occasions.json）。
+   * 指定すると、その日の行事が条件と日付＋シードの抽選で打診として届く
+   */
+  occasions?: OccasionsConfig;
 }
 
 export type Command =
@@ -200,6 +211,19 @@ export type Command =
    * だけで判定する）。成否は主に主人公側の備え（自分の寄与＋実力＋名声）で決まる
    */
   | { type: "crisisLead"; id: string; field?: CrisisFieldId }
+  /**
+   * 勝負所の行事の打診に応える（X-10。行動は消費しない —— 打診は人物から届き、
+   * 応えるのは会話の一瞬。crisisFinaleJoin と同じ扱い）。
+   * 当日届いた（occasion.offer.day.<id> === 今日）打診だけ請けられる
+   */
+  | { type: "occasionAccept"; id: string }
+  /**
+   * 応えた行事の勝負所に臨む（X-10。1行動を消費）。score は実際に遊んだ結果の
+   * 出来 0〜1（ミニゲームの品質・戦闘の勝敗を呼び出し側が換算）。
+   * 勝敗は器ごとの閾値で決まり、賞金・評判・旗印が刻まれる。同じ日に同じ行事は1回。
+   * died=true なら決闘で倒れた扱い（教会蘇生：未定着経験の半分を失う。03 §4 と同じ）
+   */
+  | { type: "occasionAttempt"; id: string; score: number; died?: boolean }
   /**
    * 引退する（06 §1、T-40）。いつでも選べて行動は消費しない。
    * state は変えず `retired` イベントだけを返す —— 伝記・年代記・継承・転生は
@@ -933,6 +957,78 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       }
       break;
     }
+    case "occasionAccept": {
+      // 行事の打診に応える：行動は消費しない（会話の一瞬）。
+      // 当日届いた打診に限り請けられる —— 応えなくても世界は進む
+      if (cfg.occasions === undefined) break;
+      const offer = occasionOffers(next, cfg.occasions).find((o) => o.def.id === command.id);
+      if (offer === undefined || offer.accepted || offer.attempted) break;
+      events.push({ type: "occasionJoined", id: command.id });
+      break;
+    }
+    case "occasionAttempt": {
+      // 勝負所に臨む（1行動）。応えた行事に限り当日一度だけ。
+      // 出来（0〜1）と器の閾値で勝敗が決まり、勝敗に応じて賞金・評判・旗印が刻まれる
+      if (cfg.occasions === undefined || !canAct(next.time, cfg.time)) break;
+      const offer = occasionOffers(next, cfg.occasions).find((o) => o.def.id === command.id);
+      if (offer === undefined || !offer.accepted || offer.attempted) break;
+      const def = offer.def;
+      const score = Math.max(0, Math.min(1, command.score));
+      const threshold =
+        def.vessel.kind === "combat"
+          ? cfg.occasions.combatWinScore
+          : def.vessel.targetQuality / 100;
+      const won = score >= threshold;
+      const side = won ? def.win : def.loss;
+      // 賞金・掛け金の動き（負けは掛け金の損失として負の値。所持金は 0 未満にならない）
+      if (side?.money !== undefined && side.money !== 0) {
+        const amount = Math.trunc(side.money);
+        next = {
+          ...next,
+          player: { ...next.player, money: Math.max(0, next.player.money + amount) },
+        };
+        if (amount > 0) events.push({ type: "moneyPaid", amount });
+      }
+      // 評判（occasion.renown：ライバル・ランキングの実績点に乗る。敗れて減ることもある）
+      if (side?.renown !== undefined && side.renown !== 0) {
+        const counters = { ...next.counters };
+        counters[OCCASION_RENOWN_KEY] = Math.max(
+          0,
+          (counters[OCCASION_RENOWN_KEY] ?? 0) + Math.trunc(side.renown),
+        );
+        next = { ...next, counters };
+      }
+      // 勝敗で立つ旗印（条件DSLが読める刻印 —— 称号・後の打診の材料になる）
+      if (side?.flags !== undefined && side.flags.length > 0) {
+        const flags = { ...next.flags };
+        for (const f of side.flags) flags[f] = true;
+        next = { ...next, flags };
+      }
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "occasion", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "occasion",
+        day: next.time.day,
+        target: def.id,
+        variant: won ? "win" : "loss",
+      });
+      events.push({ type: "occasionAttempted", id: def.id, kind: def.kind, score, won });
+      if (command.died === true) {
+        // 決闘で倒れた：戦闘と同じ教会蘇生（未定着経験の半分を失う。03 §4）
+        const counters = { ...next.counters };
+        counters["death.count"] = (counters["death.count"] ?? 0) + 1;
+        next = { ...next, counters };
+        const skills = { ...next.player.skills };
+        for (const id of Object.keys(skills)) {
+          const s = skills[id]!;
+          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+        }
+        next = { ...next, player: { ...next.player, skills } };
+        events.push({ type: "died" });
+      }
+      break;
+    }
     case "retire": {
       // 引退：行動を消費せず状態も変えない。生涯の終わりを告げる出来事だけを発行し、
       // 伝記・年代記への記録・継承・転生は呼び出し側の仕事（T-40。06 §1）
@@ -1052,6 +1148,18 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     for (const offer of crisisFinaleOffers(next, cfg.crisis)) {
       if (!offer.pending || offer.offered) continue;
       const event: ActionEvent = { type: "crisisFinaleOffered", id: offer.def.id };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
+  }
+
+  // 勝負所の行事の打診（X-10、docs/03 §2）：その日届く行事は日付＋世界シードの
+  // 独立した抽選で決まる（state.rng は消費しない）。届いた打診には日付が刻まれ、
+  // 応えるも応えないも自由 —— 断っても不利益はなく、街の日常は続く
+  if (cfg.occasions !== undefined) {
+    for (const def of occasionPending(next, cfg.occasions, cfg.time)) {
+      const event: ActionEvent = { type: "occasionOffered", id: def.id, kind: def.kind };
       for (const sub of subscribers) next = sub(next, event);
       next = recordAction(next, event, cfg.actionLogMax);
       events.push(event);
