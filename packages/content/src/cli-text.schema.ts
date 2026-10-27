@@ -271,6 +271,29 @@ export const cliTextSchema = z
         /** 勝負所の結果の行（勝った／敗れた。{name} に行事名） */
         occasionWon: z.string(),
         occasionLost: z.string(),
+        /**
+         * 日々の出来事（F-05）：メニュー項目（行動ありの日＝15番、行動残が無い
+         * 日＝8番に差す）、届いた告知（{name}）、場の見出し・出来事名の行、
+         * 先送りの選択肢、話し手の台詞の行（{speaker}/{line}）、選択肢の行
+         * （{index}/{label}/{hint}）、出来事由来の経験（{name}/{amount}）と
+         * 見聞録への記録（{title}）の一行
+         */
+        incidentMenuItem: z.string(),
+        incidentMenuItemRest: z.string(),
+        incidentOffered: z.string(),
+        incidentSceneHeader: z.string(),
+        incidentSceneName: z.string(),
+        incidentDefer: z.string(),
+        incidentSpeakerLine: z.string(),
+        incidentChoice: z.string(),
+        incidentGain: z.string(),
+        incidentAtom: z.string(),
+        /** 勝負所の注文の印（F-05、03 §2「使い所の原則」。注文名の前に付ける） */
+        showdownTag: z.string(),
+        /** 日常の注文を手動で仕上げる開始行（勝負所の触れ込みは付けない） */
+        workStartCasual: z.string(),
+        performanceStartCasual: z.string(),
+        fishingStartCasual: z.string(),
         /** 街の記録の勝負所欄（見出し・空行・各記録行。{day}/{name}/{result} を差し込む） */
         recordsOccasions: z.string(),
         recordsOccasionsNone: z.string(),

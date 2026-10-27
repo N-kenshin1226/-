@@ -13,6 +13,9 @@ import {
   fishingGame,
   hasLifeRecord,
   heirGenerationOf,
+  incidentDef,
+  incidentPendingChoice,
+  incidentSpeaker,
   legacyOf,
   lostBookFlags,
   lostBookSkillId,
@@ -26,6 +29,7 @@ import {
   rivalsOf,
   serialize,
   serializeChronicle,
+  showdownOrderOf,
   simpleJudgmentQuality,
   sleepQuality,
   smithingGame,
@@ -36,6 +40,7 @@ import {
   type Chronicle,
   type DealCard,
   type GameState,
+  type IncidentOffer,
   type Legacy,
   type LifeCause,
   type MiniGame,
@@ -77,6 +82,7 @@ import {
   type Work,
 } from "@trace/core";
 import {
+  atoms,
   balance,
   canon,
   cliText,
@@ -498,6 +504,16 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       if (e.type === "npcEvent") {
         return [tpl(t.text.npcEvent, { name: e.name, text: e.text })];
       }
+      // 日々の出来事（F-05）：届いた旨を1行告げる（会話の窓は続けて開かれる）。
+      // 結末は core が {name} 解決済みの文を text に載せて渡す
+      if (e.type === "incidentOffered") {
+        const name =
+          cfg.incidents !== undefined ? (incidentDef(cfg.incidents, e.id)?.name ?? e.id) : e.id;
+        return [tpl(t.text.incidentOffered, { name })];
+      }
+      if (e.type === "incidentResolved") {
+        return [e.text];
+      }
       return [];
     });
 
@@ -760,27 +776,31 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     return { quality: r.quality, flags: r.flags };
   };
 
-  /** 注文の kind → タイミング系の皮（ゲーム本体と拍の間隔・演出文） */
-  const timingSkin = (kind: string) => {
+  /**
+   * 注文の kind → タイミング系の皮（ゲーム本体と拍の間隔・演出文）。
+   * showdown=true のときだけ開始行に「勝負所です」と付く —— 日常の注文を
+   * 手動で仕上げても勝負所とは呼ばない（F-05、03 §2「使い所の原則」）
+   */
+  const timingSkin = (kind: string, showdown = false) => {
     if (kind === "smithing")
       return {
         game: smithingGame(balance.minigame.smithing),
         intervalMs: balance.minigame.smithing.beatIntervalMs,
-        start: t.text.workStart,
+        start: showdown ? t.text.workStart : t.text.workStartCasual,
         beat: t.text.workBeat,
       };
     if (kind === "performance")
       return {
         game: performanceGame(balance.minigame.performance),
         intervalMs: balance.minigame.performance.beatIntervalMs,
-        start: t.text.performanceStart,
+        start: showdown ? t.text.performanceStart : t.text.performanceStartCasual,
         beat: t.text.performanceBeat,
       };
     if (kind === "fishing")
       return {
         game: fishingGame(balance.minigame.fishing),
         intervalMs: balance.minigame.fishing.beatIntervalMs,
-        start: t.text.fishingStart,
+        start: showdown ? t.text.fishingStart : t.text.fishingStartCasual,
         beat: t.text.fishingBeat,
       };
     return null;
@@ -1132,6 +1152,95 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     noteDeath,
   };
 
+  // ---- 日々の出来事（F-05）：行動の合間に会話の窓が差し込まれる ----
+  // 応えるのは会話の一瞬（行動を消費しない）。「あとにする」で先送りにした
+  // 出来事はその日のうちならメニューの「届いた出来事」から応え直せる ——
+  // 応えなくても翌日には流れる（断った不利益はない）
+  let incidentDeferDay = -1;
+  const incidentDeferred = new Set<string>();
+
+  /** 出来事の会話窓1件分。応えた/先送りしたら true、入力が尽きたら false */
+  const incidentScene = async (offer: IncidentOffer): Promise<boolean> => {
+    const def = offer.def;
+    out(t.text.incidentSceneHeader);
+    out(tpl(t.text.incidentSceneName, { name: def.name }));
+    out(def.text);
+    const sp =
+      cfg.incidents !== undefined ? incidentSpeaker(state!, cfg.incidents, def) : undefined;
+    if (sp !== undefined && def.say !== undefined) {
+      const role = sp.role !== undefined && sp.role !== "" ? `${sp.role} ` : "";
+      out(tpl(t.text.incidentSpeakerLine, { speaker: `${role}${sp.name}`, line: def.say }));
+    }
+    def.choices.forEach((c, i) =>
+      out(
+        tpl(t.text.incidentChoice, {
+          index: i + 1,
+          label: c.label,
+          hint: c.hint !== undefined && c.hint !== "" ? `（${c.hint}）` : "",
+        }),
+      ),
+    );
+    // 最後に「あとにする」を足す —— 安全な先送り（応えなくても不利益はない）
+    out(
+      tpl(t.text.incidentChoice, {
+        index: def.choices.length + 1,
+        label: t.text.incidentDefer,
+        hint: "",
+      }),
+    );
+    const ci = await ask(t.text.promptChoice);
+    if (ci === null) return false;
+    const pick = Number.parseInt(ci.trim(), 10);
+    const choice = def.choices[pick - 1];
+    if (choice === undefined) {
+      // 「あとにする」・範囲外は先送り —— 無理に応えさせない
+      incidentDeferred.add(def.id);
+      return true;
+    }
+    const res = step(state!, { type: "incidentChoose", id: def.id, choice: choice.id }, cfg);
+    state = res.state;
+    // 結末の文（incidentResolved）は applyTitles が出す。そのあと効果の行
+    outAll(applyTitles(res.events));
+    for (const e of res.events) {
+      if (e.type === "moneyPaid") out(tpl(t.text.moneyPaid, { amount: e.amount }));
+      else if (e.type === "gainApplied") {
+        out(
+          tpl(t.text.incidentGain, {
+            name: skillNames.get(e.skill) ?? e.skill,
+            amount: e.amount.toFixed(1),
+          }),
+        );
+      } else if (e.type === "atomRead") {
+        const a = atoms.find((x) => x.id === e.id);
+        out(tpl(t.text.incidentAtom, { title: a?.title ?? e.id }));
+      }
+    }
+    return true;
+  };
+
+  /**
+   * 届いた出来事の会話窓を開く。all=false の自動割り込みでは「あとにする」と
+   * した出来事は同じ日には再び割り込まない（うるさくしない）。all=true の
+   * メニューからの呼び出しでは先送り済みも含めて全部開ける
+   */
+  const runIncidents = async (all: boolean): Promise<boolean> => {
+    if (cfg.incidents === undefined) return true;
+    if (incidentDeferDay !== state!.time.day) {
+      // 日が変わったら先送りの記憶は流れる（昨日の出来事は昨日流れた）
+      incidentDeferDay = state!.time.day;
+      incidentDeferred.clear();
+    }
+    for (const offer of incidentPendingChoice(state!, cfg.incidents)) {
+      if (!all && incidentDeferred.has(offer.def.id)) continue;
+      if (!(await incidentScene(offer))) return false;
+    }
+    return true;
+  };
+
+  /** 届いていてまだ応えていない出来事があるか（メニュー項目の表示条件） */
+  const incidentOpen = (): boolean =>
+    cfg.incidents !== undefined && incidentPendingChoice(state!, cfg.incidents).length > 0;
+
   // ---- ループ ----
   for (;;) {
     // 老衰したまま残ったセーブは転生フローから再開する（T-40・D-31。
@@ -1140,6 +1249,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       state = await reincarnate(state, "oldAge");
       continue;
     }
+    // 日々の出来事（F-05）：届いた分は行動の合間に会話の窓で差し込む。
+    // 「あとにする」はその日は再び割り込まず、メニューの「届いた出来事」から応え直せる
+    if (!(await runIncidents(false))) return state;
     outAll(statusLines(state, cfg, t));
 
     const canAction = canAct(state.time, cfg.time);
@@ -1159,6 +1271,12 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     const occasionOpen =
       canAction && cfg.occasions !== undefined && occasionOffers(state, cfg.occasions).length > 0;
     if (occasionOpen) out(t.text.occasionMenuItem);
+    // 日々の出来事（F-05）：応えは会話の一瞬（行動を消費しない）ので、
+    // 行動残が無い日でも届いた分には応えられる（寝る前の応え直しの窓口）
+    const incidentShown = incidentOpen();
+    if (incidentShown) {
+      out(canAction ? t.text.incidentMenuItem : t.text.incidentMenuItemRest);
+    }
     const choice = await ask(t.text.promptChoice);
     if (choice === null) return state;
     const c = choice.trim().toLowerCase();
@@ -1167,7 +1285,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       return state;
     }
 
-    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定, 4=街の記録, 5=書店, 6=師匠, 7=引退）
+    // 行動残が無いときのメニュー番号は別表（1=寝る, 2=休む, 3=目標と認定, 4=街の記録, 5=書店, 6=師匠, 7=引退, 8=届いた出来事）
     const pick = canAction
       ? c
       : c === "1"
@@ -1184,7 +1302,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
                   ? "10"
                   : c === "7"
                     ? "11"
-                    : c;
+                    : c === "8"
+                      ? "inc"
+                      : c;
 
     if (pick === "1") {
       // ---- 訓練（派生スキルは解放済みだけ出す）----
@@ -1231,6 +1351,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       out(t.text.orderPick);
       // 日替わりの特別注文（街の出来事。シード×日付で決定的に出る）
       const special = specialOrderOf(state.seed, state.time.day);
+      // 今日の勝負所の注文（F-05）：showdown の印のある注文から日替わり1件。
+      // 一覧には「勝負所：」の印を付ける —— 日常の注文は簡易判定が標準
+      const showdown = showdownOrderOf(state.seed, state.time.day, orders.orders);
       // 危機の接点（W-02）：「異変：」の印を付けた日替わりの注文として注文に混ざる。
       // 印は示すだけ —— 受けても受けなくてもよく、無視する側には何も起きない
       const crisisOrders: Order[] =
@@ -1255,7 +1378,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         out(
           tpl(t.text.orderLine, {
             index: i + 1,
-            name: o.name,
+            name:
+              showdown !== null && o.id === showdown.id ? `${t.text.showdownTag}${o.name}` : o.name,
             target: o.targetQuality,
             reward: o.rewardMoney,
             kind: skillNames.get(o.kind) ?? o.kind,
@@ -1276,7 +1400,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       let quality: number;
       let flags: string[] | undefined;
       let expFactor: number | undefined;
-      const tSkin = playManual ? timingSkin(order.kind) : null;
+      // 勝負所の注文だけ開始行に「勝負所です」と付く（日常の注文は付かない）
+      const isShowdown = showdown !== null && order.id === showdown.id;
+      const tSkin = playManual ? timingSkin(order.kind, isShowdown) : null;
       const bSkin = playManual ? boardSkin(order.kind) : null;
       if (tSkin) {
         const r = await playTiming(order, state, tSkin);
@@ -1633,7 +1759,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
                 targetQuality: 50,
                 rewardMoney: 0,
               };
-              const tSkin = timingSkin(kind);
+              // 決着の場面は真の勝負所 —— 開始行に「勝負所です」と付く
+              const tSkin = timingSkin(kind, true);
               const bSkin = boardSkin(kind);
               if (tSkin !== null) {
                 const r = await playTiming(order, cur, tSkin);
@@ -1784,7 +1911,8 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
                   targetQuality: vessel.targetQuality,
                   rewardMoney: 0,
                 };
-                const tSkin = timingSkin(vessel.skill);
+                // 行事の勝負所は真の勝負所 —— 開始行に「勝負所です」と付く
+                const tSkin = timingSkin(vessel.skill, true);
                 const bSkin = boardSkin(vessel.skill);
                 if (tSkin !== null) {
                   const r = await playTiming(order, state!, tSkin);
@@ -1832,6 +1960,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       const oPick = acts[Number.parseInt(oi.trim(), 10) - 1];
       if (oPick === undefined) out(t.text.invalidInput);
       else if (!(await oPick.run())) return state;
+    } else if ((pick === "15" || pick === "inc") && incidentShown) {
+      // ---- 届いた出来事（F-05）：先送りした分も含めて応え直せる ----
+      if (!(await runIncidents(true))) return state;
     } else {
       out(t.text.invalidInput);
     }

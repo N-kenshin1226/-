@@ -67,6 +67,16 @@ export {
   occasionsFileSchema,
 } from "./occasions.schema.js";
 export type { OccasionJson, OccasionsFile } from "./occasions.schema.js";
+// 日々の出来事（F-05、docs/devin_tasks/F-05_daily_events.md）
+export { incidents } from "./incidents.js";
+export {
+  incidentChoiceSchema,
+  incidentOutcomeSchema,
+  incidentSchema,
+  incidentSpeakerSchema,
+  incidentsFileSchema,
+} from "./incidents.schema.js";
+export type { IncidentJson, IncidentsFile } from "./incidents.schema.js";
 // 天候（X-13、docs/03 §2・§5。世界シード×日付で決まる日替わりの空）
 export { weather } from "./weather.js";
 export { weatherFileSchema, weatherKindSchema } from "./weather.schema.js";

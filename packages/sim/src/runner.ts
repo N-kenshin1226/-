@@ -1,5 +1,6 @@
 import {
   createRng,
+  incidentPendingChoice,
   newGame,
   step,
   type Command,
@@ -19,6 +20,8 @@ export interface DayRecord {
   totalSkill: number;
   fatigue: number;
   overwork: boolean;
+  /** 終わった日に日々の出来事が届いたか（F-05 の頻度ゲートが読む） */
+  incident: boolean;
 }
 
 /** 「初めての経験」イベント（初称号・初追い風の種類・初めての行動など） */
@@ -35,6 +38,8 @@ export interface RunResult {
   /** 行動コマンドの同一（kind×target）最大連続数。sleep/rest は切れ目に含めない */
   maxConsecutiveSameAction: number;
   titlesEarned: string[];
+  /** 日々の出来事が届いた日の一覧（昇順。F-05 の頻度ゲート「3日に1回以上」が読む） */
+  incidentDays: number[];
   final: GameState;
 }
 
@@ -61,6 +66,9 @@ export function runBot(
     ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
   });
   const rng = createRng(`bot:${seed}:${bot.id}`);
+  // 出来事への応えは独立した乱数列で引く —— 出来事の有無が
+  // ボットの主系列の判断（仕事・訓練・睡眠の選択）をずらさない（core と同じ方式）
+  const incidentRng = createRng(`bot-inc:${seed}:${bot.id}`);
   const ctx: BotCtx = { cfg, rng, skillIds };
 
   const records: DayRecord[] = [];
@@ -72,6 +80,8 @@ export function runBot(
   let consecutive = 0;
   let maxConsecutive = 0;
   let lastActionKey = "";
+  let incidentToday = false;
+  const incidentDaySet = new Set<number>();
 
   const pushFirst = (key: string, label: string) => {
     if (seenFirsts.has(key)) return;
@@ -87,6 +97,21 @@ export function runBot(
     const { state: next, events } = step(g, cmd, cfg);
     g = next;
     minutes += SLEEP_KINDS.has(cmd.type) ? clock.minutesPerSleep : clock.minutesPerAction;
+    // 出来事への応答のステップで発行されたイベント（アトム・称号・頂点段などの
+    // 尾を引く効果）は主ステップのイベントと同じく記録する —— 捨てると
+    // 「出来事の途中で段に達した」が記録に残らない（merchant_king.market_face など）
+    const extraEvents: typeof events = [];
+
+    // 日々の出来事（F-05）：届いた分にはその場で応える（応えは行動を消費しない。
+    // 選択は出来事専用の乱数列で決定的に —— 手堅い手と賭けの手の両方がシムに流れる）
+    if (cfg.incidents !== undefined) {
+      for (const offer of incidentPendingChoice(g, cfg.incidents)) {
+        const choice = incidentRng.pick(offer.def.choices);
+        const res = step(g, { type: "incidentChoose", id: offer.def.id, choice: choice.id }, cfg);
+        g = res.state;
+        extraEvents.push(...res.events);
+      }
+    }
 
     // 連続同一行動の計測（睡眠・休息は切れ目にしない＝日をまたいだ連続も数える）
     if (!SLEEP_KINDS.has(cmd.type)) {
@@ -99,7 +124,7 @@ export function runBot(
     if (cmd.type === "sleep") pushFirst(`sleep:${cmd.inn ?? "normal"}`, "宿");
     if (cmd.type === "rest") pushFirst("rest", "休養");
 
-    for (const e of events) {
+    for (const e of [...events, ...extraEvents]) {
       if (e.type === "titleGained") {
         titlesEarned.push(e.id);
         pushFirst(`title:${e.id}`, `称号 ${e.id}`);
@@ -118,6 +143,11 @@ export function runBot(
         pushFirst(`rankup:${e.skill}:${e.toRank}`, `ランクアップ ${e.skill}`);
       } else if (e.type === "slept") {
         pushFirst("slept", "初めての睡眠");
+      } else if (e.type === "incidentOffered") {
+        // 出来事が届いた日を記録する（応える・応えないに関わらず「出会いがあった日」）
+        incidentToday = true;
+        incidentDaySet.add(dayBefore);
+        pushFirst(`incident:${e.id}`, `出来事 ${e.id}`);
       }
     }
 
@@ -131,7 +161,9 @@ export function runBot(
         totalSkill: values.reduce((a, b) => a + b, 0),
         fatigue: g.player.fatigue,
         overwork: g.player.overwork.active,
+        incident: incidentToday,
       });
+      incidentToday = false;
       titlesEarned = [...new Set(titlesEarned)];
     }
   }
@@ -142,6 +174,7 @@ export function runBot(
     firsts,
     maxConsecutiveSameAction: maxConsecutive,
     titlesEarned,
+    incidentDays: [...incidentDaySet].sort((a, b) => a - b),
     final: g,
   };
 }

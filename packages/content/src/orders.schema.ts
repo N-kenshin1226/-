@@ -12,6 +12,12 @@ export const orderSchema = z
     /** 成功時の報酬（所持金は M1 途中まで表示のみ） */
     rewardMoney: z.number().int().nonnegative(),
     note: z.string().optional(),
+    /**
+     * 勝負所の注文の候補（F-05、03 §2「使い所の原則」）。この印のある注文から
+     * 日替わりで1件だけ「勝負所」の札が付く —— 一覧が勝負所だらけにならないように
+     * （釘の束のような日常の注文は簡易判定が標準）
+     */
+    showdown: z.literal(true).optional(),
   })
   .strict();
 

@@ -6,6 +6,12 @@ import {
 } from "../crisis/index.js";
 import type { NpcLifeEventKind } from "../npclife/index.js";
 import {
+  incidentDoneDayKey,
+  incidentLastOfferKey,
+  incidentOfferDayKey,
+  incidentOfferKindDayKey,
+} from "../incidents/index.js";
+import {
   occasionAttemptDayKey,
   occasionJoinDayKey,
   occasionOfferDayKey,
@@ -182,6 +188,20 @@ export type ActionEvent =
    * occasion.won/lost（全体・行事別・種類別）と旗印 flags["occasion.won.<id>"|...] に刻む
    */
   | { type: "occasionAttempted"; id: string; kind: string; score: number; won: boolean }
+  // ---- 日々の出来事（F-05）：行動の合間に差し込まれる小さな出来事 ----
+  /**
+   * 出来事が届いた（通知Bランク相当 —— 行動の合間に会話の窓で応える）。
+   * 届いた日は counters["incident.offer.day.<id>"] に刻まれる。
+   * 応えるも応えないも自由 —— 応えなくても翌日には流れる
+   */
+  | { type: "incidentOffered"; id: string; kind: string }
+  /**
+   * 出来事に応えた（行動は消費しない。選んだ選択肢から結末が決定的に引かれる）。
+   * choice は選んだ選択肢の id、text は結末の一文（記録・新聞・画面に出る）。
+   * 応えた日は counters["incident.done.day.<id>"]、効果の刻印は結果定義の
+   * flags/counters/atom/contribution に従う
+   */
+  | { type: "incidentResolved"; id: string; kind: string; choice: string; text: string }
   /**
    * 隠し要素を見つけた（X-11、docs/03 §5。通知Bランク相当）。
    * id は discoveries.json の id。flags["found.<id>"] は step 内で既に立っている
@@ -270,6 +290,12 @@ export const counterSubscriber: Subscriber = (state, event) => {
         counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
       };
     }
+    case "mentorApprenticed":
+      // 「いま師匠がいる」の印を立てる（F-05：出来事の条件が flags["mentor.now"] を読む。
+      // 危機・歳月で師が街を去る経路は npclife がこの旗を消す）
+      return { ...state, flags: { ...state.flags, "mentor.now": true } };
+    case "mentorLeft":
+      return { ...state, flags: { ...state.flags, "mentor.now": false } };
     case "crisisFinale": {
       // 決着の場面の成否を数える（条件DSLから「危機の場面を支えた/見届けた」を読める。W-01）
       const key = event.success ? "crisis.finale.win" : "crisis.finale.loss";
@@ -403,6 +429,38 @@ export const counterSubscriber: Subscriber = (state, event) => {
           [kindKey]: (state.counters[kindKey] ?? 0) + 1,
         },
         flags: { ...state.flags, [idKey]: true },
+      };
+    }
+    // ---- 日々の出来事（F-05）：届いた日・応えた日・累計の記録 ----
+    case "incidentOffered": {
+      // 届いた日を刻む（再提示の間隔の基準＋「今日届いている」の判定）。同日に二度刻まない
+      const dayKey = incidentOfferDayKey(event.id);
+      if (state.counters[dayKey] === state.time.day) return state;
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [dayKey]: state.time.day,
+          // 出来事が最後に届いた日（保証の間隔の基準。どの出来事でも良い）
+          [incidentLastOfferKey]: state.time.day,
+          [incidentOfferKindDayKey(event.kind)]: state.time.day,
+          [`incident.offered.${event.id}`]:
+            (state.counters[`incident.offered.${event.id}`] ?? 0) + 1,
+          "incident.offered": (state.counters["incident.offered"] ?? 0) + 1,
+        },
+      };
+    }
+    case "incidentResolved": {
+      // 応えた日と累計を刻む（同日の二度応え防止＋条件DSLから「出来事に応えた」を読める）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [incidentDoneDayKey(event.id)]: state.time.day,
+          "incident.resolved": (state.counters["incident.resolved"] ?? 0) + 1,
+          [`incident.resolved.${event.id}`]:
+            (state.counters[`incident.resolved.${event.id}`] ?? 0) + 1,
+        },
       };
     }
     case "discovery": {

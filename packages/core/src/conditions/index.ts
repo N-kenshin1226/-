@@ -69,7 +69,13 @@ export type Cond =
    * weather.json の kind id の集合一致（配列で複数指定可）。
    * 天候表（env.weather）の無い世界では成立しない
    */
-  | { weather: string | string[] };
+  | { weather: string | string[] }
+  /**
+   * 世界の危機の進行（F-05、docs/08）：active は「進行中の危機がある」、
+   * minStage は段階の下限（進行中でない世界では成立しない）。
+   * 出来事・打診が「危機の気配」に応じて現れる条件に使う
+   */
+  | { crisis: { active?: boolean; minStage?: number } };
 
 function compareNum(v: number, c: Compare): boolean {
   if (c.gte !== undefined && v < c.gte) return false;
@@ -98,6 +104,16 @@ export function evaluate(cond: Cond, state: GameState, time: TimeConfig, env?: C
   if ("money" in cond) return compareNum(state.player.money, cond.money);
   if ("work" in cond) {
     return matchesWork(state.ledger, cond.work);
+  }
+  if ("crisis" in cond) {
+    const c = state.crisis;
+    const active = c !== null && c.outcome === "ongoing";
+    if (cond.crisis.active !== undefined && active !== cond.crisis.active) return false;
+    // 段階条件は進行中の世界にだけ効く（未抽選・決着済みは成立しない）
+    if (cond.crisis.minStage !== undefined && (!active || c!.stageIndex < cond.crisis.minStage)) {
+      return false;
+    }
+    return true;
   }
   if ("weather" in cond) {
     // 今日の天候（X-13）：seed+day から導出するので state.rng は消費しない。

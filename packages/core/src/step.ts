@@ -26,6 +26,13 @@ import {
 import { consolidateSleep, type InnRank, type SleepConfig } from "./growth/consolidate.js";
 import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
 import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js";
+import {
+  incidentChoosable,
+  incidentOutcome,
+  incidentPending,
+  incidentSpeaker,
+  type IncidentsConfig,
+} from "./incidents/index.js";
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import type { CombatConfig } from "./combat/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
@@ -113,6 +120,14 @@ export interface StepConfig {
    * 指定すると、その日の行事が条件と日付＋シードの抽選で打診として届く
    */
   occasions?: OccasionsConfig;
+  /**
+   * 日々の出来事（F-05、docs/devin_tasks/F-05_daily_events.md。
+   * balance.incidents ＋ incidents.json ＋ npc/ライバル/師匠の顔ぶれ）。
+   * 指定すると、行動の合間に小さな出来事が会話の窓に届く（1日0〜perDay 件。
+   * 日付＋世界シードの独立した抽選 —— state.rng は消費しない）。
+   * 届いた出来事に応えるも応えないも自由 —— 応えなくても翌日には流れる
+   */
+  incidents?: IncidentsConfig;
   /**
    * 隠し要素（X-11、docs/03 §5。content/discoveries.json）。
    * 指定すると、毎ステップの行動後の状態で発見条件を評価し、
@@ -260,6 +275,13 @@ export type Command =
    * died=true なら決闘で倒れた扱い（教会蘇生：未定着経験の半分を失う。03 §4 と同じ）
    */
   | { type: "occasionAttempt"; id: string; score: number; died?: boolean }
+  /**
+   * 届いた日々の出来事に応える（F-05。行動は消費しない —— 出来事は行動の
+   * 合間に差し込まれ、応えるのは会話の一瞬。occasionAccept と同じ扱い）。
+   * 当日届いた（incident.offer.day.<id> === 今日）未応答の出来事だけ選べ、
+   * 結末は世界シード×日付×出来事×選択肢の独立した抽選で1件に決まる
+   */
+  | { type: "incidentChoose"; id: string; choice: string }
   /**
    * 引退する（06 §1、T-40）。いつでも選べて行動は消費しない。
    * state は変えず `retired` イベントだけを返す —— 伝記・年代記・継承・転生は
@@ -1103,6 +1125,99 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       }
       break;
     }
+    case "incidentChoose": {
+      // 出来事に応える：行動は消費しない（会話の一瞬）。
+      // 今日届いていて未応答のものだけ —— 応えなくても世界は進む
+      if (cfg.incidents === undefined) break;
+      const offer = incidentChoosable(next, cfg.incidents, command.id);
+      if (offer === undefined) break;
+      const def = offer.def;
+      const choice = def.choices.find((c) => c.id === command.choice);
+      if (choice === undefined) break;
+      // 結末は選んだ選択肢の表から決定的に引く（同じ日・同じ選択には同じ結末）
+      const outcome = incidentOutcome(next, def, choice);
+      const sp = incidentSpeaker(next, cfg.incidents, def);
+      const text = sp !== undefined ? outcome.text.replaceAll("{name}", sp.name) : outcome.text;
+      // 小さな効果（どれも日常の範囲 —— 出来事は勝負所ではない）：
+      // 金（所持金は 0 未満にならない）・未定着経験・疲労・旗印・カウンタ・
+      // 見聞録のアトム（手がかり）・世界の備えへの寄与（進行中の危機がある世界だけ）
+      if (outcome.money !== undefined && outcome.money !== 0) {
+        const amount = Math.trunc(outcome.money);
+        next = {
+          ...next,
+          player: { ...next.player, money: Math.max(0, next.player.money + amount) },
+        };
+        if (amount > 0) events.push({ type: "moneyPaid", amount });
+      }
+      if (outcome.gain !== undefined && outcome.gain.amount !== 0) {
+        const skill = next.player.skills[outcome.gain.skill];
+        if (skill !== undefined) {
+          next = {
+            ...next,
+            player: {
+              ...next.player,
+              skills: {
+                ...next.player.skills,
+                [outcome.gain.skill]: {
+                  ...skill,
+                  pending: skill.pending + outcome.gain.amount,
+                },
+              },
+            },
+          };
+          events.push({
+            type: "gainApplied",
+            skill: outcome.gain.skill,
+            amount: outcome.gain.amount,
+          });
+        }
+      }
+      if (outcome.fatigue !== undefined && outcome.fatigue !== 0) {
+        next = {
+          ...next,
+          player: {
+            ...next.player,
+            fatigue: Math.max(0, Math.min(100, next.player.fatigue + outcome.fatigue)),
+          },
+        };
+      }
+      if (outcome.flags !== undefined && outcome.flags.length > 0) {
+        const flags = { ...next.flags };
+        for (const f of outcome.flags) flags[f] = true;
+        next = { ...next, flags };
+      }
+      if (outcome.counters !== undefined) {
+        const counters = { ...next.counters };
+        for (const [k, v] of Object.entries(outcome.counters)) {
+          counters[k] = (counters[k] ?? 0) + v;
+        }
+        next = { ...next, counters };
+      }
+      if (outcome.atom !== undefined) {
+        // 手がかり：アトムを読み終えたことにする（事実・つながりの判定は readAtom と同じ道。
+        // 読み済みなら何も起きない —— 同じ手がかりは二度入らない）
+        const res = readAtom(next, outcome.atom, cfg.lore);
+        if (res.ok) {
+          next = res.state;
+          events.push({ type: "atomRead", id: outcome.atom });
+          for (const f of res.newFacts) events.push({ type: "factLearned", id: f });
+          for (const c of res.connections) {
+            events.push({ type: "loreConnection", id: c.eventId, flag: c.flag });
+          }
+        }
+      }
+      if (outcome.contribution !== undefined && outcome.contribution.amount > 0) {
+        next = addHeroContribution(next, outcome.contribution.field, outcome.contribution.amount);
+      }
+      events.push({
+        type: "incidentResolved",
+        id: def.id,
+        kind: def.kind,
+        choice: choice.id,
+        text,
+      });
+      break;
+    }
     case "retire": {
       // 引退：行動を消費せず状態も変えない。生涯の終わりを告げる出来事だけを発行し、
       // 伝記・年代記への記録・継承・転生は呼び出し側の仕事（T-40。06 §1）
@@ -1272,6 +1387,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   if (cfg.occasions !== undefined) {
     for (const def of occasionPending(next, cfg.occasions, cfg.time, condEnv)) {
       const event: ActionEvent = { type: "occasionOffered", id: def.id, kind: def.kind };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
+  }
+
+  // 日々の出来事（F-05）：その日の出来事は日付＋世界シードの独立した抽選で
+  // 決まり、届く行動番号（slot）を過ぎた行動の終わりに会話の窓へ差し込まれる
+  // （このステップで行動が行われたときだけ —— 睡眠・会話だけの往復では届かない）。
+  // 届いた出来事には日付が刻まれ、応えるも応えないも自由 —— 応えなくても
+  // 翌日には流れ、断ったことによる不利益はない
+  if (cfg.incidents !== undefined && events.some((e) => e.type === "actionPerformed")) {
+    for (const def of incidentPending(next, cfg.incidents, cfg.time, condEnv)) {
+      const event: ActionEvent = { type: "incidentOffered", id: def.id, kind: def.kind };
       for (const sub of subscribers) next = sub(next, event);
       next = recordAction(next, event, cfg.actionLogMax);
       events.push(event);

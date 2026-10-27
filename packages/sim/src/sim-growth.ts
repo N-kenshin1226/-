@@ -27,7 +27,16 @@ function ok(metric: string, detail: string, pass: boolean) {
 
 function writeCsv(result: RunResult, outDir: string) {
   const skillIds = skills.skills.map((s) => s.id);
-  const head = ["day", "minutes", "mainSkill", "totalSkill", "fatigue", "overwork", ...skillIds];
+  const head = [
+    "day",
+    "minutes",
+    "mainSkill",
+    "totalSkill",
+    "fatigue",
+    "overwork",
+    "incident",
+    ...skillIds,
+  ];
   const rows = result.days.map((d) =>
     [
       d.day,
@@ -36,6 +45,7 @@ function writeCsv(result: RunResult, outDir: string) {
       d.totalSkill.toFixed(3),
       d.fatigue.toFixed(1),
       d.overwork ? 1 : 0,
+      d.incident ? 1 : 0,
       ...skillIds.map((id) => (d.skills[id] ?? 0).toFixed(3)),
     ].join(","),
   );

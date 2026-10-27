@@ -31,6 +31,7 @@ import {
   isTimingKind,
   minigameResult,
   orderList,
+  showdownOrderOf,
   simpleQuality,
   skillList,
   specialOrderOf,
@@ -118,6 +119,9 @@ export function WorkScreen({
   setScreen: (s: Screen) => void;
 }) {
   const special = specialOrderOf(state.seed, state.time.day);
+  // 今日の勝負所の注文（F-05）：showdown の印のある注文から日替わり1件。
+  // 一覧には「勝負所：」の印を付ける —— 日常の注文は簡易判定が標準
+  const showdown = showdownOrderOf(state);
   // 危機の接点（W-02）：「異変：」の印を付けた注文が日替わりで混ざる。受けても受けなくてもよい
   const crisis = crisisOrders(state);
   // 特別注文と異変の注文は先頭に並べる（目玉がスクロール下に埋もれないように）
@@ -129,11 +133,12 @@ export function WorkScreen({
     ...list.map((o) => {
       const kind = skillList.find((s) => s.id === o.kind)?.name ?? o.kind;
       const isSpecial = "special" in o && o.special === true;
+      const isShowdown = showdown !== null && o.id === showdown.id;
       return {
         id: `order-${o.id}`,
-        label: o.name,
+        label: isShowdown ? `${t.text.showdownTag}${o.name}` : o.name,
         sub: `${kind}・目標${o.targetQuality}・${o.rewardMoney}G`,
-        gold: isSpecial,
+        gold: isSpecial || isShowdown,
         onPick: () => setScreen({ name: "workMode", order: o }),
       };
     }),
@@ -291,6 +296,10 @@ export function MinigameScreen({
     startMinigame(kind, state),
   );
   const res = minigameResult(kind, gs);
+  // 「勝負所です」の開始行はその日の勝負所の注文にだけ付く（F-05、03 §2「使い所の原則」）。
+  // 日常の注文・行事の器・決着の場面の勝負所（別の語りを持つ）には付けない
+  const showdown = showdownOrderOf(state);
+  const isShowdown = finale === undefined && occasion === undefined && order.id === showdown?.id;
   // 結果が出た一拍の音（F-02）：目標を超えた出来なら扇、届かなければ窓の開く音
   const doneRef = useRef(false);
   useEffect(() => {
@@ -309,10 +318,16 @@ export function MinigameScreen({
   const startLine = isTimingKind(kind)
     ? tpl(
         kind === "performance"
-          ? t.text.performanceStart
+          ? isShowdown
+            ? t.text.performanceStart
+            : t.text.performanceStartCasual
           : kind === "fishing"
-            ? t.text.fishingStart
-            : t.text.workStart,
+            ? isShowdown
+              ? t.text.fishingStart
+              : t.text.fishingStartCasual
+            : isShowdown
+              ? t.text.workStart
+              : t.text.workStartCasual,
         { name: order.name, beats: (gs as TimingState).beats.length },
       )
     : isBoardKind(kind)

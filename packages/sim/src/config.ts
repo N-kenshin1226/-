@@ -6,6 +6,7 @@ import {
   cliText,
   crisisTypes,
   discoveries,
+  incidents,
   mentors,
   npcLifecycle,
   occasions,
@@ -138,6 +139,24 @@ export function stepConfig(): StepConfig {
       connections: canon.events
         .filter((e) => e.reward !== null)
         .map((e) => ({ eventId: e.id, facts: e.reward!.facts, flag: e.reward!.flag })),
+    },
+    /**
+     * 日々の出来事（F-05）：incidents.json の出来事表＋balance.incidents の
+     * 頻度・間隔係数＋話し手の名簿（voices/rivals/mentors）を注入する
+     */
+    incidents: {
+      incidents: incidents.incidents,
+      ...balance.incidents,
+      npcs: voices.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role })),
+      rivals: {
+        names: rivals.names,
+        epithets: rivals.epithets,
+        size: balance.rivals.size,
+        scoreMin: balance.rivals.scoreMin,
+        scoreMax: balance.rivals.scoreMax,
+        growthPerDay: balance.rivals.growthPerDay,
+      },
+      mentors: mentors.mentors,
     },
     /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
     discoveries: discoveries.discoveries,

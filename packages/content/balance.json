@@ -404,6 +404,14 @@
     "combatWinScore": 0.5,
     "combatFledScore": 0.35
   },
+  "incidents": {
+    "perDay": 2,
+    "chance": 0.5,
+    "secondChance": 0.25,
+    "cooldownDays": 4,
+    "kindGapDays": 2,
+    "pityGapDays": 3
+  },
   "crisis": {
     "strongFields": 2,
     "weakFieldFactor": 0.3,

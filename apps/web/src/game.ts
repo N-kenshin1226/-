@@ -48,6 +48,7 @@ import {
   combatResult,
   combatIntent,
   combatTurn,
+  showdownOrderOf as coreShowdownOrderOf,
   specialOrderOf as coreSpecialOrderOf,
   TENDENCY_IDS,
   TemplateProvider,
@@ -68,6 +69,9 @@ import {
   dailyDiscoveryHint,
   discoveryHintText,
   drawRivalCast,
+  incidentDef,
+  incidentPendingChoice,
+  incidentSpeaker,
   npcGoneReason,
   npcLifeRecent,
   npcLifeToday,
@@ -91,6 +95,7 @@ import {
   type EnemyDef,
   type GameState,
   type HeirKind,
+  type IncidentOffer,
   type Legacy,
   type LifeCause,
   type MiniGameCtx,
@@ -113,6 +118,7 @@ import {
   discoveries,
   enemies,
   enemiesByArea,
+  incidents,
   mentors,
   narration,
   npcLifecycle,
@@ -240,6 +246,25 @@ export const cfg: StepConfig = {
       scoreMax: balance.rivals.scoreMax,
       growthPerDay: balance.rivals.growthPerDay,
     },
+  },
+  /**
+   * 日々の出来事（F-05）：incidents.json の出来事表＋balance.incidents の
+   * 頻度・間隔係数＋話し手の名簿（voices/rivals/mentors）を注入する。
+   * 行動の合間に差し込まれる会話の挿話 —— 勝負所の行事とは別物（行動を消費しない）
+   */
+  incidents: {
+    incidents: incidents.incidents,
+    ...balance.incidents,
+    npcs: voices.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role })),
+    rivals: {
+      names: rivals.names,
+      epithets: rivals.epithets,
+      size: balance.rivals.size,
+      scoreMin: balance.rivals.scoreMin,
+      scoreMax: balance.rivals.scoreMax,
+      growthPerDay: balance.rivals.growthPerDay,
+    },
+    mentors: mentors.mentors,
   },
   /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
   discoveries: discoveries.discoveries,
@@ -824,6 +849,25 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       // 記事文は core が {name} 解決済みで渡す（引退・結婚・死去・栄転・旅立ち）
       case "npcEvent":
         return [tpl(t.text.npcEvent, { name: e.name, text: e.text })];
+      // 日々の出来事（F-05）：届いた旨を1行告げる（会話の窓は出来事画面が開く）。
+      // 結末は core が {name} 解決済みの文を text に載せて渡す
+      case "incidentOffered":
+        return [
+          tpl(t.text.incidentOffered, {
+            name:
+              cfg.incidents !== undefined ? (incidentDef(cfg.incidents, e.id)?.name ?? e.id) : e.id,
+          }),
+        ];
+      case "incidentResolved":
+        return [e.text];
+      // 手がかり（F-05）：出来事の結果でアトムが読み終えたとき。
+      // 見聞録画面からの readAtom ではこの行を出さない（画面側が atomRead を除く）
+      case "atomRead":
+        return [
+          tpl(t.text.incidentAtom, {
+            title: atoms.find((a) => a.id === e.id)?.title ?? e.id,
+          }),
+        ];
       default:
         return [];
     }
@@ -999,6 +1043,15 @@ export function specialOrderOf(seed: string, day: number): SpecialOrder | null {
     rewardFactor: balance.town.specialOrderRewardFactor,
     qualityFactor: balance.town.specialOrderQualityFactor,
   }) as SpecialOrder | null;
+}
+
+/**
+ * その日の「勝負所」の注文（F-05、03 §2「使い所の原則」）。
+ * showdown の印のある注文から日替わりで1件だけ選ぶ —— 一覧に並ぶ勝負所は
+ * 特別注文（0〜1件）と合わせても1日2件に収まる。日常の注文は簡易判定が標準
+ */
+export function showdownOrderOf(state: GameState): Order | null {
+  return coreShowdownOrderOf(state.seed, state.time.day, orders.orders);
 }
 
 /**
@@ -1241,6 +1294,10 @@ export {
   occasionDef,
   occasionOffers,
   occasionSpeaker,
+  incidentDef,
+  incidentPendingChoice,
+  incidentSpeaker,
+  type IncidentOffer,
 };
 
 /**

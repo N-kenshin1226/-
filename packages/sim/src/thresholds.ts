@@ -80,6 +80,19 @@ export const thresholdsSchema = z
         maxConsecutiveSameAction: z
           .object({ max: z.number().int().positive(), bots: z.array(z.string()).min(1) })
           .strict(),
+        /**
+         * 日々の出来事の頻度（F-05「普通に遊んで3日に1回以上」）。
+         * 届いた日の割合と、届かない日の最大連続数の両方で見る
+         */
+        incidents: z
+          .object({
+            /** 出来事が届いた日の割合の下限（3日に1回以上 ≒ 0.34） */
+            minOfferRate: z.number().min(0).max(1),
+            /** 出来事の届かない日の最大連続数（行動しない日は出来事も来ない） */
+            maxDryStreak: z.number().int().nonnegative(),
+            bots: z.array(z.string()).min(1),
+          })
+          .strict(),
         /** しきい値の適用範囲に関する注記（JSON にコメントを書けないため） */
         notes: z.record(z.string(), z.string()).optional(),
       })
