@@ -156,6 +156,12 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     return line;
   };
 
+  /** y/N 質問の受理：y・j・ja・1・はい を「はい」と見なす */
+  const isYes = (line: string): boolean => {
+    const v = line.trim().toLowerCase();
+    return v === "y" || v === "j" || v === "ja" || v === "1" || v === "はい";
+  };
+
   const save = (state: GameState) => {
     mkdirSync(dirname(savePath), { recursive: true });
     writeFileSync(savePath, serialize(state));
@@ -1219,7 +1225,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       const mq = await ask(t.text.workModePrompt);
       if (mq === null) return state;
-      const playManual = mq.trim().toLowerCase() === "y";
+      const playManual = isYes(mq);
 
       let quality: number;
       let flags: string[] | undefined;
@@ -1439,7 +1445,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       const dq = await ask(t.text.dinnerPrompt);
       if (dq === null) return state;
-      const dinner = dq.trim().toLowerCase() === "y";
+      const dinner = isYes(dq);
       const res = step(state, { type: "sleep", inn, dinner }, cfg);
       state = res.state;
       const report = res.events.find(
@@ -1486,7 +1492,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // ---- 引退（06 §1・T-40）：いつでも選べる。確認は1回 ----
       const conf = await ask(t.text.retireConfirm);
       if (conf === null) return state;
-      if (conf.trim().toLowerCase() === "y") {
+      if (isYes(conf)) {
         const res = step(state, { type: "retire" }, cfg);
         state = await reincarnate(res.state, "retire");
       } else {
@@ -1641,7 +1647,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
             }
             const conf = await ask(tpl(t.text.crisisLeadConfirm, { name: o.def.name }));
             if (conf === null) return false;
-            if (conf.trim().toLowerCase() !== "y") return true;
+            if (!isYes(conf)) return true;
             const res = step(
               cur,
               {
