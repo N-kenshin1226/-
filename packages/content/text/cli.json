@@ -125,7 +125,7 @@
     "promptChoice": "> ",
     "skillPick": "どの技能を鍛えますか",
     "skillLine": "  {index}) 《{name}》 {value}（+{pending}） 素質 {potential}%",
-    "difficultyPrompt": "難度を入力してください（推奨 {recommended}、空で推奨）",
+    "difficultyPrompt": "難度：1=抑えめ（{low}） 2=推奨（{recommended}） 3=高み（{high}）。空=推奨、数値で直接指定も可",
     "trainResult": "《{name}》の訓練（難度 {difficulty}）―― 経験 +{amount}",
     "restDone": "――家で休みました。",
     "innPick": "どこに泊まりますか",

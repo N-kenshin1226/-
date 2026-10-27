@@ -34,7 +34,7 @@ import {
   voices,
   type CliText,
 } from "@trace/content";
-import { tpl } from "./render.js";
+import { parseDifficulty, tpl } from "./render.js";
 
 /**
  * サブメニューの分岐（game.ts の主ループから切り出したもの）。
@@ -298,10 +298,16 @@ export async function mentorMenu(state: GameState, ctx: MenuCtx): Promise<GameSt
         return state;
       }
       const recommended = Math.round(state.player.skills[current.skill]?.value ?? 0) + 10;
-      const di = await ask(tpl(t.text.difficultyPrompt, { recommended }));
+      const di = await ask(
+        tpl(t.text.difficultyPrompt, {
+          low: Math.max(0, recommended - 10),
+          recommended,
+          high: recommended + 10,
+        }),
+      );
       if (di === null) return null;
-      const difficulty = di.trim() === "" ? recommended : Number.parseInt(di.trim(), 10);
-      if (!Number.isFinite(difficulty) || difficulty < 0) {
+      const difficulty = parseDifficulty(di, recommended);
+      if (difficulty === null) {
         out(t.text.invalidInput);
         return state;
       }

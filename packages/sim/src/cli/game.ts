@@ -97,7 +97,14 @@ import {
 } from "@trace/content";
 import { stepConfig } from "../config.js";
 import type { CliIo } from "./io.js";
-import { innPickLines, skillPickLines, statusLines, tpl, wakeBlock } from "./render.js";
+import {
+  innPickLines,
+  parseDifficulty,
+  skillPickLines,
+  statusLines,
+  tpl,
+  wakeBlock,
+} from "./render.js";
 import { booksMenu, loreMenu, mentorMenu, recordsMenu, societyMenu } from "./menus.js";
 import { combatGainLines, fightEnemy, runAbyss, type CombatIo } from "./combat.js";
 import { specialOrderOf, type SpecialOrder } from "./town.js";
@@ -1172,10 +1179,16 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       const skill = avail[idx]!;
       const recommended = Math.round(state.player.skills[skill.id]!.value) + 10;
-      const di = await ask(tpl(t.text.difficultyPrompt, { recommended }));
+      const di = await ask(
+        tpl(t.text.difficultyPrompt, {
+          low: Math.max(0, recommended - 10),
+          recommended,
+          high: recommended + 10,
+        }),
+      );
       if (di === null) return state;
-      const difficulty = di.trim() === "" ? recommended : Number.parseInt(di.trim(), 10);
-      if (!Number.isFinite(difficulty) || difficulty < 0) {
+      const difficulty = parseDifficulty(di, recommended);
+      if (difficulty === null) {
         out(t.text.invalidInput);
         continue;
       }

@@ -6,6 +6,18 @@ export function tpl(template: string, values: Record<string, string | number>): 
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? `{${key}}`));
 }
 
+/**
+ * 難度入力の解釈：空・2=推奨、1=抑えめ、3=高み、それ以外の非負整数は直接指定。
+ * 不正な入力は null（呼び出し側が invalidInput を出してやり直す）
+ */
+export function parseDifficulty(input: string, recommended: number): number | null {
+  const s = input.trim();
+  if (s === "" || s === "2") return recommended;
+  if (s === "1") return Math.max(0, recommended - 10);
+  if (s === "3") return recommended + 10;
+  return /^\d+$/.test(s) ? Number.parseInt(s, 10) : null;
+}
+
 function fmt(n: number, digits = 1): string {
   return n.toFixed(digits);
 }
