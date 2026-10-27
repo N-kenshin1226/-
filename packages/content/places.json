@@ -11,11 +11,21 @@
       "desc": "あなたの寝床。戸を閉めれば外の音も遠い",
       "npcs": [],
       "actions": [
-        { "type": "rest" },
-        { "type": "status" },
-        { "type": "settings" },
-        { "type": "retire" },
-        { "type": "reset" }
+        {
+          "type": "rest"
+        },
+        {
+          "type": "status"
+        },
+        {
+          "type": "settings"
+        },
+        {
+          "type": "retire"
+        },
+        {
+          "type": "reset"
+        }
       ]
     },
     {
@@ -26,7 +36,20 @@
       "pos": [32, 64],
       "desc": "旅人の宿。朝刊は朝食の席に届き、一日の終わりはここで眠る",
       "npcs": ["npc.marta"],
-      "actions": [{ "type": "sleep" }, { "type": "news" }, { "type": "incident" }]
+      "actions": [
+        {
+          "type": "sleep"
+        },
+        {
+          "type": "news"
+        },
+        {
+          "type": "incident"
+        },
+        {
+          "type": "mentor"
+        }
+      ]
     },
     {
       "id": "tavern",
@@ -37,9 +60,25 @@
       "desc": "灯りと酒の匂い。余興の仕事と旅の噂はここに集まる",
       "npcs": [],
       "actions": [
-        { "type": "work", "kinds": ["performance"] },
-        { "type": "news" },
-        { "type": "incident" }
+        {
+          "type": "work",
+          "kinds": [
+            "performance",
+            "singing",
+            "cooking",
+            "brewing",
+            "gambling",
+            "flourish",
+            "storyteller",
+            "medicinal_meal"
+          ]
+        },
+        {
+          "type": "news"
+        },
+        {
+          "type": "incident"
+        }
       ]
     },
     {
@@ -48,9 +87,20 @@
       "kind": "town",
       "scene": "forge",
       "pos": [68, 78],
-      "desc": "炭の熱気と槌の音。鍛冶の注文はここに届く",
+      "desc": "炭の熱気と槌の音。鍛冶の注文と武器の売り買いはここ",
       "npcs": ["npc.cum"],
-      "actions": [{ "type": "work", "kinds": ["smithing"] }, { "type": "mentor" }]
+      "actions": [
+        {
+          "type": "work",
+          "kinds": ["smithing", "fire_magic", "weapon_eye"]
+        },
+        {
+          "type": "arms"
+        },
+        {
+          "type": "mentor"
+        }
+      ]
     },
     {
       "id": "market",
@@ -61,9 +111,23 @@
       "desc": "露店が軒を連ねる広場。古書店はその片隅に店を構える",
       "npcs": ["npc.nola"],
       "actions": [
-        { "type": "work", "kinds": ["eloquence", "appraisal"] },
-        { "type": "book" },
-        { "type": "mentor" }
+        {
+          "type": "work",
+          "kinds": [
+            "eloquence",
+            "appraisal",
+            "bargaining",
+            "arithmetic",
+            "etiquette",
+            "merchant_eye"
+          ]
+        },
+        {
+          "type": "book"
+        },
+        {
+          "type": "mentor"
+        }
       ]
     },
     {
@@ -75,12 +139,44 @@
       "desc": "冒険者の集う宿場の要。掲示板に注文と世界からの打診が届く",
       "npcs": [],
       "actions": [
-        { "type": "work", "kinds": ["mining", "fishing"], "default": true },
-        { "type": "train" },
-        { "type": "society" },
-        { "type": "records" },
-        { "type": "crisis" },
-        { "type": "occasion" }
+        {
+          "type": "work",
+          "kinds": [
+            "mining",
+            "fishing",
+            "swordplay",
+            "dagger",
+            "spear",
+            "axe",
+            "archery",
+            "throwing",
+            "brawl",
+            "shield",
+            "evasion",
+            "stealth",
+            "intimidation",
+            "observation",
+            "iaijutsu",
+            "parry",
+            "hidden_weapon"
+          ],
+          "default": true
+        },
+        {
+          "type": "train"
+        },
+        {
+          "type": "society"
+        },
+        {
+          "type": "records"
+        },
+        {
+          "type": "crisis"
+        },
+        {
+          "type": "occasion"
+        }
       ]
     },
     {
@@ -91,7 +187,46 @@
       "pos": [82, 24],
       "desc": "石造りの静けさ。古い記録と灯火がここに守られている",
       "npcs": ["npc.edel"],
-      "actions": [{ "type": "lore" }, { "type": "mentor" }]
+      "actions": [
+        {
+          "type": "work",
+          "kinds": [
+            "prayer",
+            "medicine",
+            "cure",
+            "literacy",
+            "archaeology",
+            "mana",
+            "water_magic",
+            "light_magic",
+            "dark_magic",
+            "void_magic",
+            "life_magic",
+            "care_worker"
+          ]
+        },
+        {
+          "type": "lore"
+        },
+        {
+          "type": "mentor"
+        }
+      ]
+    },
+    {
+      "id": "workshop",
+      "name": "職工区",
+      "kind": "town",
+      "scene": "forge",
+      "pos": [18, 40],
+      "desc": "革と木と薬の匂い。細工師たちが肩を寄せて作る仕事場",
+      "npcs": [],
+      "actions": [
+        {
+          "type": "work",
+          "kinds": ["carpentry", "leatherwork", "tailoring", "craft", "alchemy"]
+        }
+      ]
     },
     {
       "id": "gate",
@@ -102,10 +237,33 @@
       "desc": "アルディの東門。街の外の道はここからしか通れない",
       "npcs": ["npc.sado"],
       "actions": [
-        { "type": "travel", "to": "forest" },
-        { "type": "travel", "to": "highway" },
-        { "type": "travel", "to": "lake" },
-        { "type": "travel", "to": "abyss" }
+        {
+          "type": "work",
+          "kinds": ["riding", "footwork", "wind_magic", "lancer"]
+        },
+        {
+          "type": "mentor"
+        },
+        {
+          "type": "travel",
+          "to": "forest"
+        },
+        {
+          "type": "travel",
+          "to": "highway"
+        },
+        {
+          "type": "travel",
+          "to": "lake"
+        },
+        {
+          "type": "travel",
+          "to": "farm"
+        },
+        {
+          "type": "travel",
+          "to": "abyss"
+        }
       ]
     },
     {
@@ -116,12 +274,36 @@
       "desc": "街の裏手に広がる古い森。木々の隙間に魔物が潜む",
       "npcs": ["npc.garo"],
       "actions": [
-        { "type": "hunt" },
-        { "type": "mentor" },
-        { "type": "travel", "to": "gate" },
-        { "type": "travel", "to": "highway" },
-        { "type": "travel", "to": "lake" },
-        { "type": "travel", "to": "abyss" }
+        {
+          "type": "hunt"
+        },
+        {
+          "type": "work",
+          "kinds": ["logging", "gathering", "hunting"]
+        },
+        {
+          "type": "mentor"
+        },
+        {
+          "type": "travel",
+          "to": "gate"
+        },
+        {
+          "type": "travel",
+          "to": "highway"
+        },
+        {
+          "type": "travel",
+          "to": "lake"
+        },
+        {
+          "type": "travel",
+          "to": "farm"
+        },
+        {
+          "type": "travel",
+          "to": "abyss"
+        }
       ]
     },
     {
@@ -132,12 +314,32 @@
       "desc": "かつての街道の名残。石畳の切れ目に追い剥ぎが待ち伏せる",
       "npcs": ["npc.fenn"],
       "actions": [
-        { "type": "hunt" },
-        { "type": "mentor" },
-        { "type": "travel", "to": "gate" },
-        { "type": "travel", "to": "forest" },
-        { "type": "travel", "to": "lake" },
-        { "type": "travel", "to": "abyss" }
+        {
+          "type": "hunt"
+        },
+        {
+          "type": "mentor"
+        },
+        {
+          "type": "travel",
+          "to": "gate"
+        },
+        {
+          "type": "travel",
+          "to": "forest"
+        },
+        {
+          "type": "travel",
+          "to": "lake"
+        },
+        {
+          "type": "travel",
+          "to": "farm"
+        },
+        {
+          "type": "travel",
+          "to": "abyss"
+        }
       ]
     },
     {
@@ -148,11 +350,55 @@
       "desc": "街から歩いて半日の静かな湖。風のない日は水面が鏡になる",
       "npcs": [],
       "actions": [
-        { "type": "fish" },
-        { "type": "travel", "to": "gate" },
-        { "type": "travel", "to": "forest" },
-        { "type": "travel", "to": "highway" },
-        { "type": "travel", "to": "abyss" }
+        {
+          "type": "fish"
+        },
+        {
+          "type": "work",
+          "kinds": ["fishing", "swimming"]
+        },
+        {
+          "type": "travel",
+          "to": "gate"
+        },
+        {
+          "type": "travel",
+          "to": "forest"
+        },
+        {
+          "type": "travel",
+          "to": "highway"
+        },
+        {
+          "type": "travel",
+          "to": "abyss"
+        }
+      ]
+    },
+    {
+      "id": "farm",
+      "name": "開墾地",
+      "kind": "region",
+      "scene": "highway",
+      "desc": "旧街道を外れた先の開けた畑。風に麦の穂がなびく",
+      "npcs": [],
+      "actions": [
+        {
+          "type": "work",
+          "kinds": ["farming", "earth_magic"]
+        },
+        {
+          "type": "travel",
+          "to": "gate"
+        },
+        {
+          "type": "travel",
+          "to": "forest"
+        },
+        {
+          "type": "travel",
+          "to": "highway"
+        }
       ]
     },
     {
@@ -163,11 +409,25 @@
       "desc": "街の裏山に口を開ける深い穴。灯りが尽きるまで潜れる",
       "npcs": [],
       "actions": [
-        { "type": "abyss" },
-        { "type": "travel", "to": "gate" },
-        { "type": "travel", "to": "forest" },
-        { "type": "travel", "to": "highway" },
-        { "type": "travel", "to": "lake" }
+        {
+          "type": "abyss"
+        },
+        {
+          "type": "travel",
+          "to": "gate"
+        },
+        {
+          "type": "travel",
+          "to": "forest"
+        },
+        {
+          "type": "travel",
+          "to": "highway"
+        },
+        {
+          "type": "travel",
+          "to": "lake"
+        }
       ]
     }
   ]

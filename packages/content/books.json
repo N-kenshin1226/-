@@ -7,7 +7,12 @@
       "desc": "型と足運びを図解した教本。読むとしばらく剣の理屈が身体に残る（剣術・回避の伸び 5日）",
       "readText": "「剣は腕で振るものではない。足で運ぶものである」――見開きの図解が、寝ても覚めるまで頭に張りついた。",
       "price": 30,
-      "effect": { "gainVs": { "swordplay": 1.2, "evasion": 1.1 } },
+      "effect": {
+        "gainVs": {
+          "swordplay": 1.2,
+          "evasion": 1.1
+        }
+      },
       "durationDays": 5
     },
     {
@@ -16,7 +21,11 @@
       "desc": "温度の見極めと槌の入れ方が記された使い込まれた手帖（鍛冶の伸び 5日）",
       "readText": "焼けた鉄の色は蜜、飴、苺の順で深くなる。欄外の走り書き「火を見るな、鉄を見ろ」が一番役に立った。",
       "price": 35,
-      "effect": { "gainVs": { "smithing": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "smithing": 1.25
+        }
+      },
       "durationDays": 5
     },
     {
@@ -25,7 +34,12 @@
       "desc": "鉱脈の見つけ方と魚の棲み処をまとめた野外の手引き（採掘・釣りの伸び 5日）",
       "readText": "苔むす岩肌の割れ目、水の淀み、鳥が集まる岸。野外に「当たりの場所」はちゃんと書いてあった。",
       "price": 25,
-      "effect": { "gainVs": { "mining": 1.2, "fishing": 1.15 } },
+      "effect": {
+        "gainVs": {
+          "mining": 1.2,
+          "fishing": 1.15
+        }
+      },
       "durationDays": 5
     },
     {
@@ -34,7 +48,11 @@
       "desc": "呼吸と姿勢を整える修行の書。読むと心が澄み、目と口の働きが戻る（観察・鑑定・弁舌の素質回復）",
       "readText": "息を吐き切ると、視界のざらつきが一度に落ちる。心が澄むとは、余計な力が抜けることだと分かった。",
       "price": 40,
-      "potentialRecover": { "observation": 12, "appraisal": 12, "eloquence": 12 }
+      "potentialRecover": {
+        "observation": 12,
+        "appraisal": 12,
+        "eloquence": 12
+      }
     },
     {
       "id": "book.old_highway",
@@ -42,7 +60,12 @@
       "desc": "旧街道に出る獣と匪賊の生態を記した狩人の記録（追い剥ぎ・脱走兵への与ダメージ 7日）",
       "readText": "追い剥ぎは右手の短刀より、左袖の第二撃で殺す。脱走兵の薙ぎ払いは、一度目を引いてから踏み込め。",
       "price": 45,
-      "effect": { "damageVs": { "bandit": 1.1, "deserter": 1.05 } },
+      "effect": {
+        "damageVs": {
+          "bandit": 1.1,
+          "deserter": 1.05
+        }
+      },
       "durationDays": 7,
       "flag": "knows.highway_beasts"
     },
@@ -53,7 +76,9 @@
       "readText": "頁を追うごとに、見知った街の輪郭が滲んでいく。写本は言う。世界は何度もめくられ、同じ名の人が何度も生きる。最後の頁に、あなたは自分の名を見つけた。",
       "price": 150,
       "flag": "knows.world_truth",
-      "condition": { "flag": "found.taboo_codex" }
+      "condition": {
+        "flag": "found.taboo_codex"
+      }
     },
     {
       "id": "book.star_lore",
@@ -61,9 +86,15 @@
       "desc": "星の列が開く夜と暦の対応を記した写本。列を見た者にだけ、その順序が読める（観察の伸び 7日）",
       "readText": "星は列をなして巡り、ほどけることなく天を渡る。列の開く夜を数えれば、巡りの読み方が見える。書き手は最後の頁に、小さく自分だけの列を記している。",
       "price": 90,
-      "effect": { "gainVs": { "observation": 1.1 } },
+      "effect": {
+        "gainVs": {
+          "observation": 1.1
+        }
+      },
       "durationDays": 7,
-      "condition": { "flag": "seen.star_terrace" }
+      "condition": {
+        "flag": "seen.star_terrace"
+      }
     },
     {
       "id": "book.lost_swordplay",
@@ -71,10 +102,18 @@
       "desc": "誰の遺したものか分からない手記。頁を埋める剣筋の図解が、読む者の腕に滲む（剣術の伸び 7日・素質回復）",
       "readText": "「切っ先は相手の眉間ではなく、その後ろの闇を指せ」――名もなき達人が遺した一冊。頁の端の汗じみまでが指南だった。",
       "price": 60,
-      "effect": { "gainVs": { "swordplay": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "swordplay": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "swordplay": 15 },
-      "condition": { "flag": "lostbook.swordplay" }
+      "potentialRecover": {
+        "swordplay": 15
+      },
+      "condition": {
+        "flag": "lostbook.swordplay"
+      }
     },
     {
       "id": "book.lost_evasion",
@@ -82,10 +121,18 @@
       "desc": "獣にも人にも斬らせなかった身のこなしを書き留めた置き手紙（回避の伸び 7日・素質回復）",
       "readText": "「刃は避けるな。刃の来る場所を先に捨てろ」――筆跡は急ぎ、文字は揺れている。それでも身体が先に読み取った。",
       "price": 60,
-      "effect": { "gainVs": { "evasion": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "evasion": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "evasion": 15 },
-      "condition": { "flag": "lostbook.evasion" }
+      "potentialRecover": {
+        "evasion": 15
+      },
+      "condition": {
+        "flag": "lostbook.evasion"
+      }
     },
     {
       "id": "book.lost_observation",
@@ -93,10 +140,18 @@
       "desc": "見ることを極めた者の観察帖。空白にこそ勘所が書かれている（観察の伸び 7日・素質回復）",
       "readText": "頁の大半は余白だった。「書けないものを見よ」――そう一頁だけ記されていた。目が開かれる気がした。",
       "price": 60,
-      "effect": { "gainVs": { "observation": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "observation": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "observation": 15 },
-      "condition": { "flag": "lostbook.observation" }
+      "potentialRecover": {
+        "observation": 15
+      },
+      "condition": {
+        "flag": "lostbook.observation"
+      }
     },
     {
       "id": "book.lost_smithing",
@@ -104,10 +159,18 @@
       "desc": "名工が炉のそばで書き遺した鍛錬録。槌音の間取りまで読み取れる（鍛冶の伸び 7日・素質回復）",
       "readText": "「鉄は怒らせるな、諭せ」――煤けた紙に、焼入れの温度と槌の返しだけが几帳面に綴られていた。",
       "price": 60,
-      "effect": { "gainVs": { "smithing": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "smithing": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "smithing": 15 },
-      "condition": { "flag": "lostbook.smithing" }
+      "potentialRecover": {
+        "smithing": 15
+      },
+      "condition": {
+        "flag": "lostbook.smithing"
+      }
     },
     {
       "id": "book.lost_mining",
@@ -115,10 +178,18 @@
       "desc": "坑道の湿り気ごと鉱脈の読み方を伝える土つきの帳面（採掘の伸び 7日・素質回復）",
       "readText": "「岩は嘘をつかない。つくのは掘る者の目だ」――挟まれた枯れ葉が、坑口の光の向きを今も指していた。",
       "price": 60,
-      "effect": { "gainVs": { "mining": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "mining": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "mining": 15 },
-      "condition": { "flag": "lostbook.mining" }
+      "potentialRecover": {
+        "mining": 15
+      },
+      "condition": {
+        "flag": "lostbook.mining"
+      }
     },
     {
       "id": "book.lost_eloquence",
@@ -126,10 +197,18 @@
       "desc": "千の商談をまとめた口八丁の遺文。沈黙の使い方までが記されている（弁舌の伸び 7日・素質回復）",
       "readText": "「値切るな。相手に売らせろ」――行間に咳払いの位置まで書き込まれていた。声に出すと、言葉が滑った。",
       "price": 60,
-      "effect": { "gainVs": { "eloquence": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "eloquence": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "eloquence": 15 },
-      "condition": { "flag": "lostbook.eloquence" }
+      "potentialRecover": {
+        "eloquence": 15
+      },
+      "condition": {
+        "flag": "lostbook.eloquence"
+      }
     },
     {
       "id": "book.lost_performance",
@@ -137,10 +216,18 @@
       "desc": "聴衆を泣かせた演奏家の断章。指使いより、間の取り方に頁が割かれている（演奏の伸び 7日・素質回復）",
       "readText": "「音は引くな。聴き手の胸に置いて来い」――譜面の欄外に、舞台のざわめきがそのまま書き止めてあった。",
       "price": 60,
-      "effect": { "gainVs": { "performance": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "performance": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "performance": 15 },
-      "condition": { "flag": "lostbook.performance" }
+      "potentialRecover": {
+        "performance": 15
+      },
+      "condition": {
+        "flag": "lostbook.performance"
+      }
     },
     {
       "id": "book.lost_fishing",
@@ -148,10 +235,18 @@
       "desc": "潮を読み、魚を待ち続けた釣師の帳。竿の出し方より待ち方が詳しい（釣りの伸び 7日・素質回復）",
       "readText": "「釣れぬ日こそ、水底を読め」――潮の匂いがしみ込んだ紙に、季節ごとの岸の絵が添えられていた。",
       "price": 60,
-      "effect": { "gainVs": { "fishing": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "fishing": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "fishing": 15 },
-      "condition": { "flag": "lostbook.fishing" }
+      "potentialRecover": {
+        "fishing": 15
+      },
+      "condition": {
+        "flag": "lostbook.fishing"
+      }
     },
     {
       "id": "book.lost_appraisal",
@@ -159,10 +254,18 @@
       "desc": "万の贋作を見抜いた目利きの蔵目録。本物の匂いの嗅ぎ分け方が綴られている（鑑定の伸び 7日・素質回復）",
       "readText": "「真贋は作りを見るな。作った者の迷いを見ろ」――裏写りするほどの勢いで書かれた、最後の鑑定記録だった。",
       "price": 60,
-      "effect": { "gainVs": { "appraisal": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "appraisal": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "appraisal": 15 },
-      "condition": { "flag": "lostbook.appraisal" }
+      "potentialRecover": {
+        "appraisal": 15
+      },
+      "condition": {
+        "flag": "lostbook.appraisal"
+      }
     },
     {
       "id": "book.lost_iaijutsu",
@@ -170,10 +273,18 @@
       "desc": "抜刀一瞬に一生を賭けた剣士の秘伝。納めたまま斬る術が綴られている（居合の伸び 7日・素質回復）",
       "readText": "「抜くな。鞘の中で既に斬れ」――表紙を開くだけで、刃の気配が頁から立った。",
       "price": 80,
-      "effect": { "gainVs": { "iaijutsu": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "iaijutsu": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "iaijutsu": 15 },
-      "condition": { "flag": "lostbook.iaijutsu" }
+      "potentialRecover": {
+        "iaijutsu": 15
+      },
+      "condition": {
+        "flag": "lostbook.iaijutsu"
+      }
     },
     {
       "id": "book.lost_parry",
@@ -181,10 +292,18 @@
       "desc": "あらゆる一撃を受け流した達人の奥義書。力の逃がし方だけが記されている（受け流しの伸び 7日・素質回復）",
       "readText": "「受けるな。流すな。通せ」――矛盾めいた教えが、読み終わる頃には身体の理になっていた。",
       "price": 80,
-      "effect": { "gainVs": { "parry": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "parry": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "parry": 15 },
-      "condition": { "flag": "lostbook.parry" }
+      "potentialRecover": {
+        "parry": 15
+      },
+      "condition": {
+        "flag": "lostbook.parry"
+      }
     },
     {
       "id": "book.lost_prospecting",
@@ -192,10 +311,18 @@
       "desc": "山の息遣いで鉱脈を見つけた者の図入り手記。山肌の読みが一目で分かる（鉱脈勘の伸び 7日・素質回復）",
       "readText": "「鉱脈は掘って探すな。山が教えてくれている場所を聞け」――等高線が、地図のように頁を這っていた。",
       "price": 80,
-      "effect": { "gainVs": { "prospecting": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "prospecting": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "prospecting": 15 },
-      "condition": { "flag": "lostbook.prospecting" }
+      "potentialRecover": {
+        "prospecting": 15
+      },
+      "condition": {
+        "flag": "lostbook.prospecting"
+      }
     },
     {
       "id": "book.lost_flourish",
@@ -203,10 +330,99 @@
       "desc": "見る者の息を止めた妙技の演目帳。技の組み立て方に独創が光る（妙技の伸び 7日・素質回復）",
       "readText": "「技は数で魅せるな。一つを世界の終わりまで伸ばせ」――挿し絵の舞う姿が、頁の中で今も回っていた。",
       "price": 80,
-      "effect": { "gainVs": { "flourish": 1.25 } },
+      "effect": {
+        "gainVs": {
+          "flourish": 1.25
+        }
+      },
       "durationDays": 7,
-      "potentialRecover": { "flourish": 15 },
-      "condition": { "flag": "lostbook.flourish" }
+      "potentialRecover": {
+        "flourish": 15
+      },
+      "condition": {
+        "flag": "lostbook.flourish"
+      }
+    },
+    {
+      "id": "book.magic_primer",
+      "name": "魔道入門",
+      "desc": "見えない流れの触れ方を記した薄い教本。読むと世界の底に何かが流れているのが分かる（魔素の気配を得る）",
+      "readText": "「魔素は空気ではない。祈りでもない。それは世界の底を流れる、聞こえない水のようなものだ」――本を閉じると、指先に淡い光の粒が滲んだ。",
+      "price": 120,
+      "flag": "magic.sense",
+      "effect": {
+        "gainVs": {
+          "mana": 1.2,
+          "prayer": 1.1
+        }
+      },
+      "durationDays": 7,
+      "condition": {
+        "counter": "action.read",
+        "gte": 3
+      }
+    },
+    {
+      "id": "book.old_script_reader",
+      "name": "古字の読み解き",
+      "desc": "崩れた古い文字と今の字の対照表。写本の虫食いを埋める力が付く（古文書・読み書きの伸び 5日）",
+      "readText": "「読めない字は捨てるな。形の似た字で埋めて、あとで揺らいで確かめろ」――欄外の走り書きの方が役に立った。",
+      "price": 45,
+      "effect": {
+        "gainVs": {
+          "archaeology": 1.2,
+          "literacy": 1.15
+        }
+      },
+      "durationDays": 5,
+      "potentialRecover": {
+        "archaeology": 12
+      }
+    },
+    {
+      "id": "book.seven_highways",
+      "name": "七街道の旅日記",
+      "desc": "七つの街道を歩いた旅人の日記。道の読み方と足の使い方が綴られている（地理・健脚の伸び 5日）",
+      "readText": "「道は地図には書けない。道は足が覚えるものだ」――靴底のすり減り具合まで記録されていた。",
+      "price": 40,
+      "effect": {
+        "gainVs": {
+          "geography": 1.2,
+          "footwork": 1.15
+        }
+      },
+      "durationDays": 5,
+      "flag": "knows.seven_highways"
+    },
+    {
+      "id": "book.pot_and_herb",
+      "name": "薬草と鍋",
+      "desc": "摘んだ草を鍋に入れた食の手帖。薬膳という言葉が初めて目に入る（料理・採取の伸び 5日）",
+      "readText": "「草は摘むだけでは駄目だ。火を通して初めて、草は体に届く」――レシピの端に、毒草の見分け方が添えられていた。",
+      "price": 35,
+      "effect": {
+        "gainVs": {
+          "cooking": 1.2,
+          "gathering": 1.15
+        }
+      },
+      "durationDays": 5,
+      "flag": "knows.medicinal_meal"
+    },
+    {
+      "id": "book.arms_ledger",
+      "name": "武器見立帖",
+      "desc": "名工が武器を見立てた帳。刃の値打ちと持ち手の技の関係が書かれている（剣術・鍛冶の伸び 5日）",
+      "readText": "「良い剣は作った者の迷いを宿さない。見るべきは刃ではなく、刃を置く台だ」――武器の価値を量る目が少し開いた。",
+      "price": 55,
+      "effect": {
+        "gainVs": {
+          "swordplay": 1.15,
+          "smithing": 1.15
+        }
+      },
+      "durationDays": 5,
+      "flag": "knows.weapon_eye"
     }
   ]
 }

@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -107,13 +107,32 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
      * 世界シードから抽選する（新しい世界と同じ危機になる。途中からでも決定論的）
      */
     15: (old) => ({ ...old, version: 16, crisis: null }),
+    /**
+     * 16 → 17: 武器（K-01「技能の種類を増やす」）。旧セーブは素手と剣を
+     * 携えて剣を構えているものとする（従来の戦闘と同じ装備）。
+     * 旧版に無い技能レコードは deserialize の opts.skillIds で補う
+     * （コンテンツの技能一覧は core からは見えないため呼び出し側が渡す）
+     */
+    16: (old) => {
+      const p = (old.player ?? {}) as Record<string, unknown>;
+      return {
+        ...old,
+        version: 17,
+        player: { ...p, weapons: ["fist", "sword"], weapon: "sword" },
+      };
+    },
   };
 
 export function serialize(state: GameState): string {
   return JSON.stringify(state);
 }
 
-export function deserialize(raw: string): GameState {
+export function deserialize(
+  raw: string,
+  /** K-01：コンテンツの技能一覧（＋新規レコードの素質）を渡すと、旧セーブに
+   *  無い技能を空レコード（value 0・未発見）として補う */
+  opts?: { skillIds?: readonly string[]; initialPotential?: number },
+): GameState {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   if (typeof parsed !== "object" || parsed === null) {
     throw new Error("deserialize: オブジェクトではないデータ");
@@ -134,7 +153,28 @@ export function deserialize(raw: string): GameState {
     version = data.version as number;
   }
   assertShape(data);
-  return data as unknown as GameState;
+  const state = data as unknown as GameState;
+  // K-01：旧版のセーブに無い技能（後から加わった技能）を空の技能として補う。
+  // 素質は呼び出し側が渡す初期値（balance.player.initialPotential）に揃え、
+  // 値は 0 のまま —— 未発見の技能として ?? ではなく普通に育てられる。
+  // 解放条件のある技能は解放まで ?? 表示のまま（newGame と同じ形）
+  if (opts?.skillIds !== undefined && opts.initialPotential !== undefined) {
+    const skills = { ...state.player.skills };
+    for (const id of opts.skillIds) {
+      if (skills[id] === undefined) {
+        skills[id] = {
+          value: 0,
+          peak: 0,
+          pending: 0,
+          potential: opts.initialPotential,
+          potentialCap: opts.initialPotential,
+          lastUsedDay: 0,
+        };
+      }
+    }
+    state.player = { ...state.player, skills };
+  }
+  return state;
 }
 
 /** 最低限の形チェック（厳密な内容検証は行わない） */

@@ -1,17 +1,133 @@
 {
   "skills": [
-    { "id": "swordplay", "name": "剣術" },
-    { "id": "evasion", "name": "回避" },
-    { "id": "observation", "name": "観察" },
-    { "id": "smithing", "name": "鍛冶" },
-    { "id": "mining", "name": "採掘" },
-    { "id": "eloquence", "name": "弁舌" },
-    { "id": "performance", "name": "演奏" },
-    { "id": "fishing", "name": "釣り" },
-    { "id": "appraisal", "name": "鑑定" },
+    { "id": "swordplay", "name": "剣術", "category": "combat" },
+    { "id": "dagger", "name": "短剣", "category": "combat" },
+    { "id": "spear", "name": "槍術", "category": "combat" },
+    { "id": "axe", "name": "斧術", "category": "combat" },
+    { "id": "archery", "name": "弓術", "category": "combat" },
+    { "id": "throwing", "name": "投擲", "category": "combat" },
+    { "id": "brawl", "name": "格闘", "category": "combat" },
+    { "id": "shield", "name": "盾術", "category": "combat" },
+    { "id": "evasion", "name": "回避", "category": "combat" },
+
+    { "id": "stealth", "name": "隠密", "category": "body" },
+    { "id": "acrobatics", "name": "軽業", "category": "body" },
+    { "id": "riding", "name": "騎乗", "category": "body" },
+    { "id": "swimming", "name": "水泳", "category": "body" },
+    { "id": "footwork", "name": "健脚", "category": "body" },
+
+    { "id": "smithing", "name": "鍛冶", "category": "craft" },
+    { "id": "carpentry", "name": "木工", "category": "craft" },
+    { "id": "leatherwork", "name": "革細工", "category": "craft" },
+    { "id": "tailoring", "name": "裁縫", "category": "craft" },
+    { "id": "craft", "name": "細工", "category": "craft" },
+    { "id": "alchemy", "name": "調合", "category": "craft" },
+    { "id": "cooking", "name": "料理", "category": "craft" },
+    { "id": "brewing", "name": "醸造", "category": "craft" },
+
+    { "id": "mining", "name": "採掘", "category": "gather" },
+    { "id": "logging", "name": "伐採", "category": "gather" },
+    { "id": "gathering", "name": "採取", "category": "gather" },
+    { "id": "hunting", "name": "狩猟", "category": "gather" },
+    { "id": "fishing", "name": "釣り", "category": "gather" },
+    { "id": "farming", "name": "農耕", "category": "gather" },
+
+    { "id": "observation", "name": "観察", "category": "knowledge" },
+    { "id": "appraisal", "name": "鑑定", "category": "knowledge" },
+    { "id": "literacy", "name": "読み書き", "category": "knowledge" },
+    { "id": "arithmetic", "name": "算術", "category": "knowledge" },
+    { "id": "medicine", "name": "医術", "category": "knowledge" },
+    { "id": "geography", "name": "地理", "category": "knowledge" },
+    { "id": "zoology", "name": "動物知識", "category": "knowledge" },
+    { "id": "archaeology", "name": "古文書", "category": "knowledge" },
+
+    { "id": "eloquence", "name": "弁舌", "category": "social" },
+    { "id": "bargaining", "name": "値切り", "category": "social" },
+    { "id": "performance", "name": "演奏", "category": "social" },
+    { "id": "singing", "name": "歌唱", "category": "social" },
+    { "id": "leadership", "name": "統率", "category": "social" },
+    { "id": "teaching", "name": "教授", "category": "social" },
+    { "id": "gambling", "name": "賭博", "category": "social" },
+    { "id": "etiquette", "name": "礼儀作法", "category": "social" },
+    { "id": "intimidation", "name": "威圧", "category": "social" },
+
+    { "id": "prayer", "name": "祈祷", "category": "prayer" },
+
+    {
+      "id": "mana",
+      "name": "魔力操作",
+      "category": "magic",
+      "unlock": { "or": [{ "flag": "magic.sense" }, { "skill": "prayer", "gte": 20 }] }
+    },
+    {
+      "id": "fire_magic",
+      "name": "火魔法",
+      "category": "magic",
+      "unlock": { "skill": "mana", "gte": 5 }
+    },
+    {
+      "id": "water_magic",
+      "name": "水魔法",
+      "category": "magic",
+      "unlock": { "skill": "mana", "gte": 5 }
+    },
+    {
+      "id": "wind_magic",
+      "name": "風魔法",
+      "category": "magic",
+      "unlock": { "skill": "mana", "gte": 5 }
+    },
+    {
+      "id": "earth_magic",
+      "name": "土魔法",
+      "category": "magic",
+      "unlock": { "skill": "mana", "gte": 5 }
+    },
+    {
+      "id": "light_magic",
+      "name": "光魔法",
+      "category": "magic",
+      "unlock": {
+        "and": [
+          { "skill": "mana", "gte": 8 },
+          { "skill": "prayer", "gte": 10 }
+        ]
+      }
+    },
+    {
+      "id": "dark_magic",
+      "name": "闇魔法",
+      "category": "magic",
+      "unlock": { "skill": "mana", "gte": 8 }
+    },
+    {
+      "id": "void_magic",
+      "name": "無属性魔法",
+      "category": "magic",
+      "unlock": { "skill": "mana", "gte": 8 }
+    },
+    {
+      "id": "life_magic",
+      "name": "生活魔法",
+      "category": "magic",
+      "unlock": { "skill": "mana", "gte": 3 }
+    },
+    {
+      "id": "cure",
+      "name": "治癒",
+      "category": "magic",
+      "unlock": {
+        "and": [
+          { "skill": "mana", "gte": 6 },
+          { "skill": "medicine", "gte": 10 }
+        ]
+      }
+    },
+
     {
       "id": "iaijutsu",
       "name": "居合",
+      "category": "derived",
       "unlock": {
         "and": [
           { "skill": "swordplay", "gte": 25 },
@@ -22,6 +138,7 @@
     {
       "id": "parry",
       "name": "受け流し",
+      "category": "derived",
       "unlock": {
         "and": [
           { "skill": "evasion", "gte": 20 },
@@ -32,6 +149,7 @@
     {
       "id": "prospecting",
       "name": "鉱脈勘",
+      "category": "derived",
       "unlock": {
         "and": [
           { "skill": "mining", "gte": 20 },
@@ -42,10 +160,99 @@
     {
       "id": "flourish",
       "name": "妙技",
+      "category": "derived",
       "unlock": {
         "and": [
           { "skill": "performance", "gte": 15 },
           { "stat": "dexterity", "gte": 15 }
+        ]
+      }
+    },
+    {
+      "id": "weapon_eye",
+      "name": "武器目利き",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "smithing", "gte": 15 },
+          { "skill": "swordplay", "gte": 10 }
+        ]
+      }
+    },
+    {
+      "id": "medicinal_meal",
+      "name": "薬膳",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "cooking", "gte": 10 },
+          { "skill": "gathering", "gte": 10 }
+        ]
+      }
+    },
+    {
+      "id": "hidden_weapon",
+      "name": "暗器",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "stealth", "gte": 10 },
+          { "skill": "throwing", "gte": 10 }
+        ]
+      }
+    },
+    {
+      "id": "storyteller",
+      "name": "語り部",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "performance", "gte": 15 },
+          { "skill": "eloquence", "gte": 15 }
+        ]
+      }
+    },
+    {
+      "id": "merchant_eye",
+      "name": "目利き商い",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "appraisal", "gte": 15 },
+          { "skill": "arithmetic", "gte": 10 }
+        ]
+      }
+    },
+    {
+      "id": "lancer",
+      "name": "騎槍",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "riding", "gte": 10 },
+          { "skill": "spear", "gte": 10 }
+        ]
+      }
+    },
+    {
+      "id": "care_worker",
+      "name": "施療",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "medicine", "gte": 10 },
+          { "skill": "alchemy", "gte": 10 }
+        ]
+      }
+    },
+    {
+      "id": "wayfarer",
+      "name": "旅慣れ",
+      "category": "derived",
+      "unlock": {
+        "and": [
+          { "skill": "geography", "gte": 10 },
+          { "skill": "footwork", "gte": 10 }
         ]
       }
     }

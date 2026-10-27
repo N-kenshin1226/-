@@ -241,7 +241,8 @@ export const balanceSchema = z
         baseHp: z.number().positive(),
         hpPerEndurance: z.number().nonnegative(),
         attackBase: z.number().nonnegative(),
-        attackPerSwordplay: z.number().nonnegative(),
+        /** 武器技能1あたりの攻撃力（K-01。持ち替えた武器の技能が乗る） */
+        attackPerWeaponSkill: z.number().nonnegative(),
         attackPerStrength: z.number().nonnegative(),
         ctBase: z.number().positive(),
         ctPerAgility: z.number().nonnegative(),
@@ -256,18 +257,18 @@ export const balanceSchema = z
          * F-04（03 §4）：命中・会心・揺らぎ・対応行動。
          * core/combat の CombatConfig に対応
          */
-        /** 攻撃の命中率 = base + 剣術×perSwordplay + (敏捷−敵敏捷)×perAgilityDiff */
+        /** 攻撃の命中率 = base + 武器技能×perWeaponSkill + (敏捷−敵敏捷)×perAgilityDiff */
         hitBase: z.number().min(0).max(1),
-        hitPerSwordplay: z.number().nonnegative(),
+        hitPerWeaponSkill: z.number().nonnegative(),
         hitPerAgilityDiff: z.number().nonnegative(),
         hitMin: z.number().min(0).max(1),
         hitMax: z.number().min(0).max(1),
         /** ダメージの揺らぎ範囲（最終威力に掛ける一様乱数） */
         varianceMin: z.number().positive(),
         varianceMax: z.number().positive(),
-        /** 会心率 = base + 剣術×perSwordplay、倍率 critFactor */
+        /** 会心率 = base + 武器技能×perWeaponSkill、倍率 critFactor */
         critBase: z.number().min(0).max(1),
-        critPerSwordplay: z.number().nonnegative(),
+        critPerWeaponSkill: z.number().nonnegative(),
         critFactor: z.number().min(1),
         /** 敵の痛恨率・倍率 */
         enemyCritBase: z.number().min(0).max(1),
@@ -452,7 +453,8 @@ export const balanceSchema = z
         tailwindFactor: z.number().min(1).max(2),
         headwindFactor: z.number().min(0.5).max(1),
         recentDays: z.number().int().min(1).max(14),
-        headwindBiasK: z.number().min(0).max(10),
+        /** 逆風の重み係数。追い風の定義数が増えても（K-01 で68件）固定ルーチンへの逆風が薄れないよう、母数の大きいプールを想定した上限 */
+        headwindBiasK: z.number().min(0).max(30),
         tailwindBoostK: z.number().min(0).max(10),
         drawMin: z.number().int().min(1),
         drawMax: z.number().int().min(1),
@@ -819,6 +821,23 @@ export const balanceSchema = z
         minutesPerSleep: z.number().nonnegative(),
       })
       .strict(),
+    /**
+     * 技能の効果の結線（K-01、core/links の SkillLinks に対応）。
+     * フック名 → {cap, skills{技能id→係数}}。
+     * 係数系フック（combat.attack 等）：Σ(技能値×係数) を cap で頭打ちして効果に乗せる。
+     * 定数系フック（*.gain・beast.exp）：skills 表の値そのものが行動時の経験になる
+     */
+    links: z
+      .record(
+        z.string(),
+        z
+          .object({
+            cap: z.number().nonnegative(),
+            skills: z.record(z.string(), z.number().nonnegative()),
+          })
+          .strict(),
+      )
+      .optional(),
   })
   .strict();
 

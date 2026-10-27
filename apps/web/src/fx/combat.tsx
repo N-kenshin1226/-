@@ -50,6 +50,9 @@ export function sfxOf(ev: CombatEvent): SoundId | null {
       return "dodge";
     case "playerFlee":
       return "miss";
+    case "playerSwitch":
+      // 武器の持ち替え（K-01）：小さな決め音だけ立てる
+      return "tag";
     case "enemyHit":
       return ev.guarded === true ? "guard" : ev.big === true || ev.crit === true ? "heavy" : "hit";
     case "enemyMiss":

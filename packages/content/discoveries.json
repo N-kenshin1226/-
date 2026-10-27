@@ -8,12 +8,25 @@
       "hint": "{weekday}の夜、{moon}にだけ鳴る鐘があるという。足を止めた者だけがその音を聞く",
       "condition": {
         "and": [
-          { "time": { "timeOfDay": "night" } },
-          { "within": { "days": 1, "kind": "wait", "atLeast": 1 } }
+          {
+            "time": {
+              "timeOfDay": "night"
+            }
+          },
+          {
+            "within": {
+              "days": 1,
+              "kind": "wait",
+              "atLeast": 1
+            }
+          }
         ]
       },
       "setFlags": ["heard.moon_bell"],
-      "seeded": { "weekday": true, "moon": true }
+      "seeded": {
+        "weekday": true,
+        "moon": true
+      }
     },
     {
       "id": "old_forge",
@@ -22,12 +35,25 @@
       "hint": "{weekday}の夕、旧街道で追い剥ぎを追い払った帰りに、焼け跡の方から槌の音がしたという",
       "condition": {
         "and": [
-          { "time": { "timeOfDay": "evening" } },
-          { "within": { "days": 1, "kind": "combat", "target": "bandit", "atLeast": 1 } }
+          {
+            "time": {
+              "timeOfDay": "evening"
+            }
+          },
+          {
+            "within": {
+              "days": 1,
+              "kind": "combat",
+              "target": "bandit",
+              "atLeast": 1
+            }
+          }
         ]
       },
       "setFlags": [],
-      "seeded": { "weekday": true }
+      "seeded": {
+        "weekday": true
+      }
     },
     {
       "id": "night_market",
@@ -35,10 +61,22 @@
       "foundText": "――橋の袂に、夜だけ立つ小さな市を見つけた。",
       "hint": "{moon}の夜にだけ開く市があるという。働き続けた者の目にだけ見えるらしい",
       "condition": {
-        "and": [{ "time": { "timeOfDay": "night" } }, { "counter": "action.work", "gte": 5 }]
+        "and": [
+          {
+            "time": {
+              "timeOfDay": "night"
+            }
+          },
+          {
+            "counter": "action.work",
+            "gte": 5
+          }
+        ]
       },
       "setFlags": [],
-      "seeded": { "moon": true }
+      "seeded": {
+        "moon": true
+      }
     },
     {
       "id": "taboo_codex",
@@ -47,8 +85,14 @@
       "hint": "古書店の奥の棚に、店主も売らない写本があるという。読み続けて目が肥えた者にだけ見えるらしい",
       "condition": {
         "and": [
-          { "counter": "action.read", "gte": 8 },
-          { "skill": "observation", "gte": 20 }
+          {
+            "counter": "action.read",
+            "gte": 8
+          },
+          {
+            "skill": "observation",
+            "gte": 20
+          }
         ]
       },
       "setFlags": []
@@ -59,7 +103,18 @@
       "foundText": "――雨を避けて佇んだ軒の下、古い井戸の縁に誰かの刻んだ目印を見つけた。",
       "hint": "雨の日にだけ、軒下の古い井戸の縁に刻まれた目印が浮かぶという。足を止めた者にだけ見える",
       "condition": {
-        "and": [{ "weather": "rain" }, { "within": { "days": 1, "kind": "wait", "atLeast": 1 } }]
+        "and": [
+          {
+            "weather": "rain"
+          },
+          {
+            "within": {
+              "days": 1,
+              "kind": "wait",
+              "atLeast": 1
+            }
+          }
+        ]
       },
       "setFlags": ["seen.rain_well"]
     },
@@ -69,7 +124,16 @@
       "foundText": "――雪の残る朝、街はずれに点々と続く足跡を辿ると、見覚えのない小さな庵を見つけた。",
       "hint": "雪の積もった朝にだけ、街はずれから丘へ続く足跡が現れるという。日が高くなる前に辿った者だけが、その先の庵を知る",
       "condition": {
-        "and": [{ "weather": "snow" }, { "time": { "timeOfDay": "morning" } }]
+        "and": [
+          {
+            "weather": "snow"
+          },
+          {
+            "time": {
+              "timeOfDay": "morning"
+            }
+          }
+        ]
       },
       "setFlags": []
     },
@@ -79,10 +143,21 @@
       "foundText": "――雲ひとつない夜空の下、丘の頂で星が天に一列に並ぶのを見つけた。",
       "hint": "雲ひとつない{moon}の夜、丘の上でだけ星が天に一列に並ぶという。その列を見た者は星の読み方を知るらしい",
       "condition": {
-        "and": [{ "weather": "clear" }, { "time": { "timeOfDay": "night" } }]
+        "and": [
+          {
+            "weather": "clear"
+          },
+          {
+            "time": {
+              "timeOfDay": "night"
+            }
+          }
+        ]
       },
       "setFlags": ["seen.star_terrace"],
-      "seeded": { "moon": true }
+      "seeded": {
+        "moon": true
+      }
     },
     {
       "id": "evening_rainbow",
@@ -91,12 +166,39 @@
       "hint": "雨の日に働き続けた者だけが、夕暮れの橋で低い虹を見るという。一日の労りが空に架かる、と職人は言う",
       "condition": {
         "and": [
-          { "weather": "rain" },
-          { "time": { "timeOfDay": "evening" } },
-          { "within": { "days": 1, "kind": "work", "atLeast": 1 } }
+          {
+            "weather": "rain"
+          },
+          {
+            "time": {
+              "timeOfDay": "evening"
+            }
+          },
+          {
+            "within": {
+              "days": 1,
+              "kind": "work",
+              "atLeast": 1
+            }
+          }
         ]
       },
       "setFlags": ["seen.evening_rainbow"]
+    },
+    {
+      "id": "magic_sense",
+      "name": "魔素の気配",
+      "foundText": "――祈りを捧げる指先に、淡い光の粒が揺れた。世界の底に、見えない何かが流れている。",
+      "hint": "祈りを重ねる者のもとに、目に見えない流れの気配が訪れるという",
+      "condition": {
+        "within": {
+          "days": 30,
+          "kind": "train",
+          "target": "prayer",
+          "atLeast": 2
+        }
+      },
+      "setFlags": ["magic.sense"]
     }
   ]
 }

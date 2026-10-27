@@ -354,7 +354,10 @@ function workQualityEstimate(g: GameState, kind: string): number {
 
 /**
  * 稼ぐ仕事の種目（X-9）：市場の反復減衰が最も浅い＝見込み報酬が最も高い種目を選ぶ。
- * 同じ種目を詰め込むと相場が逓減して稼げなくなるため、種目を回す
+ * 同じ種目を詰め込むと相場が逓減して稼げなくなるため、種目を回す。
+ * K-01：技能が増えて全技能に散らすと一つも育たない（品質もティアも伸びず
+ * 認定職の打診にも届かない）ため、台帳に載せた実績種目が3種以上あれば
+ * その中で回す —— 手動プレイの「得意な仕事を軸に回す」動きに近い
  */
 function bestWorkKind(g: GameState, ctx: BotCtx): string {
   const est = (kind: string): number => {
@@ -367,7 +370,10 @@ function bestWorkKind(g: GameState, ctx: BotCtx): string {
       Math.pow(ctx.cfg.ledger.marketDecayPerWork, recent)
     );
   };
-  return unlockedSkills(g, ctx).reduce((a, b) => (est(a) >= est(b) ? a : b));
+  const unlocked = unlockedSkills(g, ctx);
+  const practiced = [...new Set(g.ledger.map((w) => w.kind))].filter((k) => unlocked.includes(k));
+  const pool = practiced.length >= 3 ? practiced : unlocked;
+  return pool.reduce((a, b) => (est(a) >= est(b) ? a : b));
 }
 
 /** 書物代・寄付金を稼ぐための仕事（相場のいい種目で） */
@@ -541,6 +547,25 @@ export function makePinnacleBot(
       const offer = requiredOffers(cond).find((o) => (g.counters[`society.offer.${o}`] ?? 0) < 1);
       if (offer !== undefined && g.society.pendingOffers.includes(offer)) {
         return { type: "acceptOffer", id: offer };
+      }
+      // 未着の職業認定：条件の作業種目へ集中して打診を引き出す（K-01）。
+      // 技能が増えて相場ローテーションでは同一種目の tier が上がらなくなったため、
+      // 段が要求する認定職の種目を繰り返して tierGte を満たす
+      if (offer !== undefined) {
+        const prof = ctx.cfg.society.professions.find((p) => p.id === offer);
+        const wk =
+          prof === undefined
+            ? undefined
+            : requiredWorks(prof.condition).find((w) => !evaluate({ work: w }, g, ctx.cfg.time));
+        if (wk?.kind !== undefined) {
+          const kind = wk.kind;
+          return {
+            type: "work",
+            kind,
+            quality: workQualityEstimate(g, kind),
+            difficulty: workQualityEstimate(g, kind),
+          };
+        }
       }
 
       // 読む系の条件（知識フラグ・読了数）：アトムや書物を読み、足りなければ稼ぐ

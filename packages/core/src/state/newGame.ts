@@ -72,6 +72,13 @@ export interface NewGameConfig {
    * GameState の形は変えず flags だけで表現する
    */
   flags?: readonly string[];
+  /**
+   * 初期の所持武器ID（weapons.json の id、K-01、v17〜）。
+   * 省略時は素手と剣を持っているものとして始める
+   */
+  initialWeapons?: readonly string[];
+  /** 初期装備の武器ID（省略時は剣。initialWeapons に含まれること） */
+  initialWeapon?: string;
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -127,6 +134,9 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       fatigue: 0,
       overwork: { streakDays: 0, active: false },
       money: cfg.initialMoney ?? 0,
+      // 武器（K-01）：省略時は素手と剣を携えて始める
+      weapons: [...new Set(cfg.initialWeapons ?? ["fist", "sword"])],
+      weapon: cfg.initialWeapon ?? "sword",
     },
     counters: {},
     flags: Object.fromEntries([

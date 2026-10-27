@@ -1,0 +1,10 @@
+{
+  "id": "rumor.lancer",
+  "kind": "npc",
+  "title": "騎手の噂",
+  "text": "門番のサドが昔話をした。かつて巡礼路を守った騎兵は、馬の背に構えた槍一本で野盗の群れを退けたという。馬を乗りこなし、槍に習熟した者にだけ、その技は届くらしい。",
+  "refs": ["npc.sado", "event.pilgrim_road"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.lancer" }
+}

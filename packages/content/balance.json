@@ -43,7 +43,7 @@
   },
   "sleep": {
     "nightlyCapPerSkill": 3.0,
-    "nightlyCapTotal": 1.7,
+    "nightlyCapTotal": 2.0,
     "focusShare": 0.5,
     "skillRanks": [
       {
@@ -178,7 +178,7 @@
     "tailwindFactor": 1.3,
     "headwindFactor": 0.8,
     "recentDays": 3,
-    "headwindBiasK": 1.5,
+    "headwindBiasK": 14,
     "tailwindBoostK": 0.5,
     "drawMin": 1,
     "drawMax": 2
@@ -330,7 +330,6 @@
     "baseHp": 30,
     "hpPerEndurance": 2.4,
     "attackBase": 5,
-    "attackPerSwordplay": 0.15,
     "attackPerStrength": 0.2,
     "ctBase": 12,
     "ctPerAgility": 0.15,
@@ -342,14 +341,12 @@
     "preciseObserve": 40,
     "deathPendingFactor": 0.5,
     "hitBase": 0.86,
-    "hitPerSwordplay": 0.002,
     "hitPerAgilityDiff": 0.012,
     "hitMin": 0.45,
     "hitMax": 0.98,
     "varianceMin": 0.8,
     "varianceMax": 1.25,
     "critBase": 0.08,
-    "critPerSwordplay": 0.002,
     "critFactor": 1.8,
     "enemyCritBase": 0.05,
     "enemyCritFactor": 1.6,
@@ -383,7 +380,10 @@
       "hpJitter": 0.1,
       "powerJitter": 0.1,
       "agilityJitter": 2
-    }
+    },
+    "attackPerWeaponSkill": 0.12,
+    "hitPerWeaponSkill": 0.002,
+    "critPerWeaponSkill": 0.002
   },
   "society": {
     "goalRewardFactor": 1.5
@@ -403,28 +403,41 @@
     "orderPrice": {
       "clear": {
         "eloquence": 1.1,
-        "performance": 1.1
+        "performance": 1.1,
+        "gathering": 1.05,
+        "farming": 1.1,
+        "archery": 1.05
       },
       "cloud": {},
       "rain": {
         "mining": 0.8,
         "fishing": 1.2,
-        "performance": 1.1
+        "performance": 1.1,
+        "logging": 0.8,
+        "gathering": 0.9,
+        "farming": 1.15,
+        "footwork": 0.85,
+        "riding": 0.85,
+        "singing": 1.05
       },
       "snow": {
         "mining": 0.8,
         "fishing": 0.8,
-        "performance": 1.1
+        "performance": 1.1,
+        "logging": 0.8,
+        "farming": 0.7,
+        "footwork": 0.8,
+        "riding": 0.8
       }
     }
   },
   "rust": {
-    "graceDays": 14,
+    "graceDays": 21,
     "ratePerDay": 0.1,
     "floorFactor": 0.7,
     "relearnFactor": 3,
-    "capacityThreshold": 300,
-    "capacityGraceMinFactor": 0.25
+    "capacityThreshold": 700,
+    "capacityGraceMinFactor": 0.35
   },
   "legacy": {
     "potentialFactor": 0.1,
@@ -522,9 +535,69 @@
       "leadFocusFactor": 0.75,
       "coordinatorSpread": 5,
       "roleSkills": {
-        "vanguard": ["swordplay", "evasion", "iaijutsu", "parry", "observation"],
-        "negotiator": ["eloquence", "performance", "flourish"],
-        "artisan": ["smithing", "mining", "appraisal", "prospecting", "fishing"]
+        "vanguard": [
+          "swordplay",
+          "dagger",
+          "spear",
+          "axe",
+          "archery",
+          "throwing",
+          "brawl",
+          "shield",
+          "evasion",
+          "stealth",
+          "hunting",
+          "fire_magic",
+          "dark_magic",
+          "light_magic",
+          "void_magic",
+          "cure",
+          "iaijutsu",
+          "parry",
+          "lancer",
+          "hidden_weapon",
+          "observation",
+          "intimidation"
+        ],
+        "negotiator": [
+          "eloquence",
+          "bargaining",
+          "performance",
+          "singing",
+          "leadership",
+          "teaching",
+          "gambling",
+          "etiquette",
+          "intimidation",
+          "storyteller",
+          "merchant_eye",
+          "flourish"
+        ],
+        "artisan": [
+          "smithing",
+          "carpentry",
+          "leatherwork",
+          "tailoring",
+          "craft",
+          "alchemy",
+          "cooking",
+          "brewing",
+          "mining",
+          "logging",
+          "gathering",
+          "fishing",
+          "farming",
+          "appraisal",
+          "literacy",
+          "arithmetic",
+          "medicine",
+          "geography",
+          "prospecting",
+          "weapon_eye",
+          "medicinal_meal",
+          "care_worker",
+          "life_magic"
+        ]
       },
       "rivals": {
         "growthPerBoundary": {
@@ -537,6 +610,153 @@
         },
         "contribution": 3.0,
         "hastenWindow": 1
+      }
+    }
+  },
+  "links": {
+    "combat.attack": {
+      "cap": 0.6,
+      "skills": {
+        "fire_magic": 0.004,
+        "hidden_weapon": 0.003,
+        "lancer": 0.004,
+        "weapon_eye": 0.002,
+        "intimidation": 0.001
+      }
+    },
+    "combat.hit": {
+      "cap": 0.15,
+      "skills": {
+        "void_magic": 0.002,
+        "throwing": 0.0005
+      }
+    },
+    "combat.crit": {
+      "cap": 0.15,
+      "skills": {
+        "dark_magic": 0.002,
+        "iaijutsu": 0.003
+      }
+    },
+    "combat.evade": {
+      "cap": 0.15,
+      "skills": {
+        "acrobatics": 0.0025,
+        "wind_magic": 0.002,
+        "stealth": 0.001
+      }
+    },
+    "combat.defend": {
+      "cap": 0.3,
+      "skills": {
+        "earth_magic": 0.002,
+        "parry": 0.003
+      }
+    },
+    "combat.flee": {
+      "cap": 0.35,
+      "skills": {
+        "stealth": 0.004,
+        "footwork": 0.002,
+        "riding": 0.002,
+        "wind_magic": 0.001,
+        "wayfarer": 0.003
+      }
+    },
+    "combat.enemyPower": {
+      "cap": 0.25,
+      "skills": {
+        "intimidation": 0.002,
+        "dark_magic": 0.001,
+        "water_magic": 0.001
+      }
+    },
+    "beast.attack": {
+      "cap": 0.3,
+      "skills": {
+        "zoology": 0.003,
+        "hunting": 0.002,
+        "light_magic": 0.002
+      }
+    },
+    "beast.exp": {
+      "cap": 5,
+      "skills": {
+        "hunting": 3,
+        "zoology": 1.5,
+        "archery": 1
+      }
+    },
+    "sleep.quality": {
+      "cap": 0.25,
+      "skills": {
+        "prayer": 0.002,
+        "cure": 0.002,
+        "medicinal_meal": 0.002,
+        "light_magic": 0.001
+      }
+    },
+    "death.keep": {
+      "cap": 0.35,
+      "skills": {
+        "medicine": 0.004,
+        "cure": 0.003,
+        "care_worker": 0.004
+      }
+    },
+    "work.price": {
+      "cap": 0.5,
+      "skills": {
+        "bargaining": 0.005,
+        "arithmetic": 0.003,
+        "merchant_eye": 0.006,
+        "etiquette": 0.002,
+        "literacy": 0.001,
+        "storyteller": 0.003
+      }
+    },
+    "work.exp": {
+      "cap": 0.4,
+      "skills": {
+        "life_magic": 0.004,
+        "teaching": 0.003,
+        "flourish": 0.003
+      }
+    },
+    "travel.gain": {
+      "cap": 5,
+      "skills": {
+        "footwork": 1.5,
+        "geography": 1.0,
+        "wayfarer": 1.5
+      }
+    },
+    "read.gain": {
+      "cap": 5,
+      "skills": {
+        "archaeology": 1.5,
+        "literacy": 0.5
+      }
+    },
+    "read.potential": {
+      "cap": 0.5,
+      "skills": {
+        "literacy": 0.008,
+        "archaeology": 0.005
+      }
+    },
+    "crisis.contrib": {
+      "cap": 0.5,
+      "skills": {
+        "leadership": 0.005,
+        "prayer": 0.002,
+        "singing": 0.001
+      }
+    },
+    "mentor.fee": {
+      "cap": 0.4,
+      "skills": {
+        "teaching": 0.004
       }
     }
   }

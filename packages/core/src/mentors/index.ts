@@ -117,12 +117,18 @@ export interface MentorSessionResult {
 
 /**
  * 稽古の清算：礼金を払い、担当スキルの素質を回復し、初回なら秘伝フラグを立てる。
- * gain の計算は step 側（train と同じ式。M項には弟子期間効果が別途乗る）
+ * gain の計算は step 側（train と同じ式。M項には弟子期間効果が別途乗る）。
+ * feeFactor: 礼金への係数（K-01。教授の技能リンク mentor.fee で安くなる）
  */
-export function mentorSession(state: GameState, cfg?: MentorsConfig): MentorSessionResult {
+export function mentorSession(
+  state: GameState,
+  cfg?: MentorsConfig,
+  feeFactor = 1,
+): MentorSessionResult {
   const mentor = currentMentor(state, cfg);
   if (cfg === undefined || mentor === null) return { state, ok: false, recovered: [] };
-  if (state.player.money < mentor.fee) return { state, ok: false, recovered: [] };
+  const fee = Math.max(0, Math.round(mentor.fee * feeFactor));
+  if (state.player.money < fee) return { state, ok: false, recovered: [] };
   const s = state.player.skills[mentor.skill];
   if (s === undefined) return { state, ok: false, recovered: [] };
 
@@ -149,7 +155,7 @@ export function mentorSession(state: GameState, cfg?: MentorsConfig): MentorSess
   return {
     state: {
       ...state,
-      player: { ...state.player, skills, money: state.player.money - mentor.fee },
+      player: { ...state.player, skills, money: state.player.money - fee },
       flags,
     },
     ok: true,

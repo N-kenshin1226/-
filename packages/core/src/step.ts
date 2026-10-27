@@ -39,7 +39,8 @@ import {
   type IncidentsConfig,
 } from "./incidents/index.js";
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
-import type { CombatConfig } from "./combat/index.js";
+import type { CombatConfig, WeaponDef } from "./combat/index.js";
+import { linkFlat, linkFlatCap, linkSum, type SkillLinks } from "./links/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
 import { npcLifeEvents, type NpcLifeConfig } from "./npclife/index.js";
 import { checkPinnacles, type PinnacleRouteDef } from "./pinnacle/index.js";
@@ -182,6 +183,22 @@ export interface StepConfig {
    * 消費しないが、門から街の外へ出る・街の外どうしの移動は行動を消費する
    */
   travel?: { outsideCost: number };
+  /**
+   * 技能リンク（K-01、balance.links）。技能がどこに効くかの結線表：
+   * 戦闘・仕事・睡眠・移動・読書・危機・師匠の各フックをここから引く
+   */
+  links?: SkillLinks;
+  /**
+   * 武器の定義表（K-01、weapons.json）。buyWeapon/equipWeapon の
+   * 購入・持ち替えと、戦闘経験が入る武器技能の解決に使う
+   */
+  weapons?: Record<string, WeaponDef>;
+  /**
+   * 旧セーブに無い技能へ経験が入るときに作る技能レコードの素質
+   * （K-01、balance.player.initialPotential を渡す。後から加わった
+   * 技能も途中の世界から育てられる）。省略時は無い技能への経験は捨てる
+   */
+  initialSkillPotential?: number;
 }
 
 export type Command =
@@ -235,6 +252,13 @@ export type Command =
        * 負け・逃げ・提示外では何も起きない
        */
       touchpoint?: string;
+      /**
+       * 使った武器のID（K-01。戦闘中に持ち替えたなら最後に構えていた武器。
+       * 省略時は装備中の武器 —— この武器の技能に経験が入る）
+       */
+      weapon?: string;
+      /** 相手が獣か（K-01。beast.exp の技能リンクが経験を入れるかの判定に使う） */
+      beast?: boolean;
     }
   /**
    * 深層ダンジョンのランの結果を世界に反映する（06 §3B、T-43）。
@@ -249,6 +273,11 @@ export type Command =
       kills?: readonly { enemyId: string; difficulty: number }[];
       /** 未決着で終わった層の敵（逃走・死亡・灯り切れ）。失敗経験を入れる */
       loss?: { enemyId: string; difficulty: number };
+      /**
+       * ラン中に最後に使った武器のID（K-01。戦闘中の持ち替えを反映する。
+       * 省略時は装備中の武器 —— この武器の技能に経験が入る）
+       */
+      weapon?: string;
     }
   /** 打診を受けて立場・職業の認定を受ける（03 §1）。行動は消費しない */
   | { type: "acceptOffer"; id: string }
@@ -265,6 +294,10 @@ export type Command =
   | { type: "readAtom"; id: string }
   /** 書物を買う（02 §8、T-26。行動は消費しない） */
   | { type: "buyBook"; id: string }
+  /** 武器を買う（K-01。行動は消費しない —— 書店への立ち寄りと同じ扱い） */
+  | { type: "buyWeapon"; id: string }
+  /** 武器を持ち替える（K-01。行動は消費しない —— 腰の物を替える一瞬） */
+  | { type: "equipWeapon"; id: string }
   /** 所持する書物を読む（行動を1回消費。素質回復・期間効果・知識フラグ） */
   | { type: "readBook"; id: string }
   /** 師匠に弟子入りする（02 §8、T-27。条件達成で認められる。行動は消費しない） */
@@ -371,6 +404,54 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     );
   };
 
+  /* ── K-01：技能リンク（balance.links）と後発技能の技能レコード ── */
+
+  /**
+   * 技能レコードの取得。旧セーブ等で無い技能は initialSkillPotential で
+   * 新しく作る（後から加わった技能も途中の世界から育てられる）
+   */
+  const ensureSkillRecord = (id: string) => {
+    let skill = next.player.skills[id];
+    if (skill === undefined && cfg.initialSkillPotential !== undefined) {
+      skill = {
+        value: 0,
+        peak: 0,
+        pending: 0,
+        potential: cfg.initialSkillPotential,
+        potentialCap: cfg.initialSkillPotential,
+        lastUsedDay: 0,
+      };
+      next.player.skills[id] = skill;
+    }
+    return skill;
+  };
+  /** リンク由来の定数経験を技能に足し、gainApplied イベントを出す */
+  const grantPending = (id: string, amount: number): void => {
+    if (amount <= 0) return;
+    const skill = ensureSkillRecord(id);
+    if (skill === undefined) return;
+    skill.pending += amount;
+    skill.lastUsedDay = next.time.day;
+    events.push({ type: "gainApplied", skill: id, amount });
+  };
+  /**
+   * 定数系フック（travel.gain / beast.exp / read.gain）の経験をまとめて付与。
+   * cap はその行動1回あたりの合計上限 —— 超えた分は係数の比で縮める
+   */
+  const grantLinkGains = (hook: string): void => {
+    const flat = linkFlat(cfg.links, hook);
+    const cap = linkFlatCap(cfg.links, hook);
+    const sum = Object.values(flat).reduce((a, v) => a + v, 0);
+    const scale = cap > 0 && sum > cap ? cap / sum : 1;
+    for (const [id, amt] of Object.entries(flat)) grantPending(id, amt * scale);
+  };
+  /** 死亡時に残る未定着経験の割合（death.keep リンクで蘇生が手厚くなる。K-01） */
+  const deathKeepFactor = (): number =>
+    Math.min(
+      1,
+      cfg.combat.deathPendingFactor + linkSum(cfg.links, "death.keep", next.player.skills),
+    );
+
   switch (command.type) {
     case "wait": {
       next.time = advanceTime(next.time, cfg.time);
@@ -392,6 +473,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         day: next.time.day,
         ...(command.to !== undefined ? { target: command.to } : {}),
       });
+      // 長い道のり（K-01）：健脚・地理・旅慣れの技能に少し経験が入る（travel.gain）
+      grantLinkGains("travel.gain");
       break;
     }
     case "sleep":
@@ -427,6 +510,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             )
           : { kind: "normal" as const, factor: 1 };
 
+      // K-01：祈祷・治癒・薬膳などの技能が睡眠の質を上げる（sleep.quality リンク）
+      const linkQuality = 1 + linkSum(cfg.links, "sleep.quality", next.player.skills);
       const { state: rested, report } = consolidateSleep(
         next,
         isRest ? "normal" : (command.inn ?? "normal"),
@@ -435,8 +520,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         {
           capFactor,
           skillFactor: band?.skillFactor,
-          ...(isRest || cfg.variance !== undefined
-            ? { qualityOverride: baseQuality * condition.factor }
+          ...(isRest || cfg.variance !== undefined || linkQuality !== 1
+            ? { qualityOverride: baseQuality * condition.factor * linkQuality }
             : {}),
           names: cfg.skillNames,
         },
@@ -663,7 +748,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           potential: skill?.potential ?? 0,
           fatigue: next.player.fatigue,
           wind: windFor(next, "work", command.kind),
-          modifiers: (command.expFactor ?? 1) * gainModifier(effects, "work", command.kind),
+          // K-01：生活魔法・教授・妙技が仕事の経験に乗る（work.exp リンク）
+          modifiers:
+            (command.expFactor ?? 1) *
+            gainModifier(effects, "work", command.kind) *
+            (1 + linkSum(cfg.links, "work.exp", next.player.skills)),
         },
         cfg.gain,
       );
@@ -713,6 +802,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         Math.round(
           (command.rewardMoney ?? recorded.work.marketValue) *
             priceFactor(effects, command.kind) *
+            // K-01：値切り・算術・目利き商いなどが売値を上げる（work.price リンク）
+            (1 + linkSum(cfg.links, "work.price", next.player.skills)) *
             worldFactor(fate, "rewardFactor") *
             crisisPriceFactor(next, cfg.crisis, command.kind) *
             weatherPriceFactor(next, cfg.weather, cfg.time, command.kind) *
@@ -738,7 +829,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           condEnv,
         );
         if (tp !== null) {
-          const amount = cfg.crisis.touchpoints?.contribution.work ?? 0;
+          // K-01：統率・祈祷・歌唱が世界の備えへの寄与を底上げする（crisis.contrib）
+          const amount =
+            (cfg.crisis.touchpoints?.contribution.work ?? 0) *
+            (1 + linkSum(cfg.links, "crisis.contrib", next.player.skills));
           next = addHeroContribution(next, tp.field, amount);
           events.push({ type: "crisisTouchpoint", id: tp.id, field: tp.field, amount });
         }
@@ -746,8 +840,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       break;
     }
     case "combat": {
-      // 戦闘も行動：剣術と回避に経験が入る（kind "combat" の B）
-      const sks = next.player.skills;
+      // 戦闘も行動：武器技能と回避に経験が入る（kind "combat" の B）
       const repeats = recentRepeats(
         next.actionLog,
         "combat",
@@ -764,8 +857,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         ),
         ...activeBookEffects(next, cfg.books),
       ];
-      for (const skillId of ["swordplay", "evasion"] as const) {
-        const skill = sks[skillId];
+      // K-01：経験が入るのは「使った武器の技能」＋回避。
+      // 持ち替えて戦えば、その武器の技能（槍術・弓術・格闘…）が育つ
+      const usedWeaponSkill =
+        cfg.weapons?.[command.weapon ?? next.player.weapon]?.skill ?? "swordplay";
+      for (const skillId of new Set([usedWeaponSkill, "evasion"])) {
+        const skill = ensureSkillRecord(skillId);
         if (!skill) continue;
         const { amount } = computeGain(
           {
@@ -788,6 +885,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         skill.lastUsedDay = next.time.day;
         events.push({ type: "gainApplied", skill: skillId, amount: applied });
       }
+      // 獣との戦い（K-01）：狩猟・動物知識などに少し経験が入る（beast.exp）
+      if (command.beast === true) grantLinkGains("beast.exp");
 
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "combat", cfg.body);
@@ -820,11 +919,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       }
       if (command.died) {
         counters["death.count"] = (counters["death.count"] ?? 0) + 1;
-        // 教会蘇生：未定着経験の半分を失う。数値そのものは下がらない（03 §4）
+        // 教会蘇生：未定着経験の半分を失う。数値そのものは下がらない（03 §4）。
+        // 医術・治癒・施療の技能があれば残る分が増える（death.keep、K-01）
         const skills = { ...next.player.skills };
+        const keep = deathKeepFactor();
         for (const id of Object.keys(skills)) {
           const s = skills[id]!;
-          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+          skills[id] = { ...s, pending: s.pending * keep };
         }
         next = { ...next, player: { ...next.player, skills } };
         events.push({ type: "died" });
@@ -843,7 +944,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           condEnv,
         );
         if (tp !== null) {
-          const amount = cfg.crisis.touchpoints?.contribution.combat ?? 0;
+          // K-01：crisis.contrib リンク（統率・祈祷・歌唱）で寄与が底上げされる
+          const amount =
+            (cfg.crisis.touchpoints?.contribution.combat ?? 0) *
+            (1 + linkSum(cfg.links, "crisis.contrib", next.player.skills));
           next = addHeroContribution(next, tp.field, amount);
           events.push({ type: "crisisTouchpoint", id: tp.id, field: tp.field, amount });
         }
@@ -856,7 +960,6 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // GameState の形は変えないのでセーブバージョン据置
       if (!canAct(next.time, cfg.time)) break;
       const counters = { ...next.counters };
-      const sks = next.player.skills;
       const effects = [
         ...activeEffects(
           next,
@@ -873,8 +976,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         const repeats =
           recentRepeats(next.actionLog, "combat", fight.enemyId, cfg.gain.noveltyWindow) +
           (inRun.get(fight.enemyId) ?? 0);
-        for (const skillId of ["swordplay", "evasion"] as const) {
-          const skill = sks[skillId];
+        // K-01：深層でも経験が入るのは使った武器の技能＋回避
+        // （ラン中の持ち替えは command.weapon＝最後に構えていた武器に入る）
+        const usedWeaponSkill =
+          cfg.weapons?.[command.weapon ?? next.player.weapon]?.skill ?? "swordplay";
+        for (const skillId of new Set([usedWeaponSkill, "evasion"])) {
+          const skill = ensureSkillRecord(skillId);
           if (!skill) continue;
           const { amount } = computeGain(
             {
@@ -944,10 +1051,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (command.end === "died") {
         counters["death.count"] = (counters["death.count"] ?? 0) + 1;
         // 教会蘇生：未定着経験の半分を失う。深層で死んでも扱いは戦闘死と同じ（03 §4）
+        // K-01：医術・治癒・施療が蘇生を手厚くする（death.keep リンク）
         const skills = { ...next.player.skills };
+        const keep = deathKeepFactor();
         for (const id of Object.keys(skills)) {
           const s = skills[id]!;
-          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+          skills[id] = { ...s, pending: s.pending * keep };
         }
         next = { ...next, player: { ...next.player, skills } };
         events.push({ type: "died" });
@@ -1021,6 +1130,32 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       events.push({ type: "bookBought", id: command.id });
       break;
     }
+    case "buyWeapon": {
+      // 武器屋での購入（K-01）：行動は消費しない（書店への立ち寄りと同じ扱い）。
+      // 売り物（price のある定義）で、未所持・所持金が足りるものだけ買える
+      const def = cfg.weapons?.[command.id];
+      if (def === undefined || def.price === undefined) break;
+      if (next.player.weapons.includes(def.id)) break;
+      if (next.player.money < def.price) break;
+      next = {
+        ...next,
+        player: {
+          ...next.player,
+          money: next.player.money - def.price,
+          weapons: [...next.player.weapons, def.id],
+        },
+      };
+      events.push({ type: "weaponBought", id: def.id });
+      break;
+    }
+    case "equipWeapon": {
+      // 持ち替え（K-01）：行動は消費しない。所持している武器にだけ替えられる
+      if (!next.player.weapons.includes(command.id)) break;
+      if (next.player.weapon === command.id) break;
+      next = { ...next, player: { ...next.player, weapon: command.id } };
+      events.push({ type: "weaponEquipped", id: command.id });
+      break;
+    }
     case "readBook": {
       // 読むのは行動（1回消費）。未所持・読了済み・不明IDは時間だけ使わない。
       // 行動残が無いときは読めない（期間効果を無料で得る抜け道を塞ぐ）
@@ -1042,6 +1177,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         recovered: res.recovered,
         ...(res.flag !== undefined ? { flag: res.flag } : {}),
       });
+      // 読書の副産物（K-01）：読み書き・古文書の技能に経験が入り（read.gain）、
+      // 読み進めるほど文字に強くなりその技能の素質も戻る（read.potential）
+      grantLinkGains("read.gain");
+      const readPotCap = linkFlatCap(cfg.links, "read.potential");
+      for (const [id, coef] of Object.entries(linkFlat(cfg.links, "read.potential"))) {
+        const sk = next.player.skills[id];
+        if (sk === undefined) continue;
+        const frac = Math.min(readPotCap > 0 ? readPotCap : 1, sk.value * coef);
+        if (frac <= 0) continue;
+        sk.potential = Math.min(
+          sk.potentialCap,
+          sk.potential + (sk.potentialCap - sk.potential) * frac,
+        );
+      }
       break;
     }
     case "apprentice": {
@@ -1083,7 +1232,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         break;
       }
       if (!canAct(next.time, cfg.time)) break;
-      if (next.player.money < mentor.fee) break;
+      // K-01：教授の技能があれば師も教え方を汲み、礼金が安くなる（mentor.fee リンク）
+      const feeFactor = 1 - linkSum(cfg.links, "mentor.fee", next.player.skills);
+      const fee = Math.max(0, Math.round(mentor.fee * feeFactor));
+      if (next.player.money < fee) break;
       const skill = next.player.skills[mentor.skill];
       if (!skill) break;
 
@@ -1126,8 +1278,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       skill.pending += applied;
       skill.lastUsedDay = next.time.day;
 
-      // 礼金と素質回復・秘伝フラグ（gain の後に清算する）
-      const ses = mentorSession(next, cfg.mentors);
+      // 礼金と素質回復・秘伝フラグ（gain の後に清算する。礼金は技能リンクで割引）
+      const ses = mentorSession(next, cfg.mentors, feeFactor);
       next = ses.state;
 
       next.time = advanceTime(next.time, cfg.time);
@@ -1143,7 +1295,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       events.push({
         type: "mentorTrained",
         id: mentor.id,
-        fee: mentor.fee,
+        fee,
         recovered: ses.recovered,
         ...(ses.flag !== undefined ? { flag: ses.flag } : {}),
       });
@@ -1184,10 +1336,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         const counters = { ...next.counters };
         counters["death.count"] = (counters["death.count"] ?? 0) + 1;
         next = { ...next, counters };
+        // K-01：医術・治癒・施療が蘇生を手厚くする（death.keep リンク）
         const skills = { ...next.player.skills };
+        const keep = deathKeepFactor();
         for (const id of Object.keys(skills)) {
           const s = skills[id]!;
-          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+          skills[id] = { ...s, pending: s.pending * keep };
         }
         next = { ...next, player: { ...next.player, skills } };
         events.push({ type: "died" });
@@ -1283,10 +1437,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         const counters = { ...next.counters };
         counters["death.count"] = (counters["death.count"] ?? 0) + 1;
         next = { ...next, counters };
+        // K-01：医術・治癒・施療が蘇生を手厚くする（death.keep リンク）
         const skills = { ...next.player.skills };
+        const keep = deathKeepFactor();
         for (const id of Object.keys(skills)) {
           const s = skills[id]!;
-          skills[id] = { ...s, pending: s.pending * cfg.combat.deathPendingFactor };
+          skills[id] = { ...s, pending: s.pending * keep };
         }
         next = { ...next, player: { ...next.player, skills } };
         events.push({ type: "died" });
@@ -1318,27 +1474,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         if (amount > 0) events.push({ type: "moneyPaid", amount });
       }
       if (outcome.gain !== undefined && outcome.gain.amount !== 0) {
-        const skill = next.player.skills[outcome.gain.skill];
-        if (skill !== undefined) {
-          next = {
-            ...next,
-            player: {
-              ...next.player,
-              skills: {
-                ...next.player.skills,
-                [outcome.gain.skill]: {
-                  ...skill,
-                  pending: skill.pending + outcome.gain.amount,
-                },
-              },
-            },
-          };
-          events.push({
-            type: "gainApplied",
-            skill: outcome.gain.skill,
-            amount: outcome.gain.amount,
-          });
-        }
+        // K-01：後発技能（旧セーブにレコードが無い技能）にも経験が入る
+        grantPending(outcome.gain.skill, outcome.gain.amount);
       }
       if (outcome.fatigue !== undefined && outcome.fatigue !== 0) {
         next = {
@@ -1375,7 +1512,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         }
       }
       if (outcome.contribution !== undefined && outcome.contribution.amount > 0) {
-        next = addHeroContribution(next, outcome.contribution.field, outcome.contribution.amount);
+        // K-01：crisis.contrib リンク（統率・祈祷・歌唱）で寄与が底上げされる
+        next = addHeroContribution(
+          next,
+          outcome.contribution.field,
+          outcome.contribution.amount *
+            (1 + linkSum(cfg.links, "crisis.contrib", next.player.skills)),
+        );
       }
       events.push({
         type: "incidentResolved",
@@ -1528,8 +1671,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       },
     };
     for (const [skillId, base] of Object.entries(achieved.reward.pendingBySkill ?? {})) {
-      const skill = next.player.skills[skillId];
-      if (!skill) continue;
+      // K-01：目標報酬も後発技能に入る（旧セーブにレコードが無くても作られる）
+      const skill = ensureSkillRecord(skillId);
+      if (skill === undefined) continue;
       skill.pending += base * cfg.society.goalRewardFactor;
     }
     events.push({ type: "goalAchieved", id: achieved.id });

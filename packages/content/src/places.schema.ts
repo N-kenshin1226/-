@@ -23,6 +23,8 @@ export const PLACE_ACTION_TYPES = [
   "hunt",
   "fish",
   "abyss",
+  /** 武器屋（K-01。weapons.json の売り物を並べ、購入と持ち替えができる） */
+  "arms",
   "book",
   "news",
   "lore",

@@ -1,0 +1,105 @@
+{
+  "weapons": [
+    {
+      "id": "fist",
+      "name": "素手",
+      "skill": "brawl",
+      "power": 0,
+      "ctFactor": 0.85,
+      "critBonus": 0,
+      "hitBonus": 0,
+      "desc": "武器を持たず、拳と足で戦う。軽いが威力は出ない"
+    },
+    {
+      "id": "sword",
+      "name": "剣",
+      "skill": "swordplay",
+      "power": 6,
+      "ctFactor": 1.0,
+      "critBonus": 0.02,
+      "hitBonus": 0,
+      "price": 40,
+      "desc": "街の鍛冶場で打たれた直刀。間合いと威力の釣り合いが取れた定番"
+    },
+    {
+      "id": "knife",
+      "name": "短刀",
+      "skill": "dagger",
+      "power": 3,
+      "ctFactor": 0.8,
+      "critBonus": 0.05,
+      "hitBonus": 0.05,
+      "price": 30,
+      "desc": "懐に仕舞える短い刃。威力は控えめだが、出が速く急所を突きやすい"
+    },
+    {
+      "id": "spear",
+      "name": "槍",
+      "skill": "spear",
+      "power": 8,
+      "ctFactor": 1.15,
+      "critBonus": 0.02,
+      "hitBonus": 0.02,
+      "price": 60,
+      "desc": "間合いの長い直槍。相手に触れさせる前に突き通す"
+    },
+    {
+      "id": "war_axe",
+      "name": "戦斧",
+      "skill": "axe",
+      "power": 12,
+      "ctFactor": 1.35,
+      "critBonus": 0.05,
+      "hitBonus": -0.08,
+      "price": 80,
+      "desc": "盾も鎧も叩き割る重斧。当たれば痛いが、振りは大きく隙も多い"
+    },
+    {
+      "id": "bow",
+      "name": "弓",
+      "skill": "archery",
+      "power": 5,
+      "ctFactor": 1.0,
+      "critBonus": 0.08,
+      "hitBonus": 0.05,
+      "price": 70,
+      "desc": "猟師の使う短弓。離れた間合いから狙い撃つ"
+    },
+    {
+      "id": "darts",
+      "name": "投げ矢",
+      "skill": "throwing",
+      "power": 2,
+      "ctFactor": 0.75,
+      "critBonus": 0.03,
+      "hitBonus": 0,
+      "price": 25,
+      "desc": "巾着に忍ばせる細い矢。速く連ねられるが一撃は軽い"
+    },
+    {
+      "id": "buckler",
+      "name": "小盾",
+      "skill": "shield",
+      "power": 1,
+      "ctFactor": 1.05,
+      "critBonus": 0,
+      "hitBonus": 0,
+      "defendBonus": 0.15,
+      "price": 45,
+      "desc": "手の甲に構える小さな盾。攻めは貧弱だが、防ぎに滅法強い"
+    },
+    {
+      "id": "staff",
+      "name": "杖",
+      "skill": "mana",
+      "power": 2,
+      "ctFactor": 0.95,
+      "critBonus": 0,
+      "hitBonus": 0,
+      "price": 90,
+      "desc": "魔素を通す樫の杖。魔力を巡らせた打撃を放つ"
+    }
+  ],
+  "initial": ["fist", "sword"],
+  "defaultWeapon": "sword"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "rumor.wayfarer",
+  "kind": "event",
+  "title": "旅慣れの噂",
+  "text": "行商人のノラが言うには、本当の旅慣れとは地図を暗記することではない。道を読み、足を整え、三日歩いても疲れない身体を作ることだという。地理を知り、健脚を備えた者だけが、その境地に立てるらしい。",
+  "refs": ["npc.nola", "event.pilgrim_road"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.wayfarer" }
+}

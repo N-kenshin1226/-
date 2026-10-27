@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { appraisalGame, deserializeChronicle, newGame, serialize } from "@trace/core";
-import { balance, orders, skills } from "@trace/content";
+import { balance, orders, origins, skills } from "@trace/content";
 import { playCli } from "./game.js";
 import { scriptedIo } from "./io.js";
 
@@ -104,7 +104,7 @@ describe("playCli", () => {
       "", // 《剣術》を推奨難度で
       "1",
       "2",
-      "", // 《回避》を推奨難度で
+      "", // 《短剣》を推奨難度で
       "5",
       "2",
       "y", // 宿屋《麦穂亭》・夕食あり
@@ -579,7 +579,9 @@ describe("T-48 子・弟子への継承延長（同じ世界）", () => {
       skillIds: skills.skills.map((s) => s.id),
       initialPotential: 100,
       initialStatValue: 10,
-      origin: { id: "origin.wanderer", potentialBase: 100, affinity: {} },
+      // 本物の出自を使う：initialSkills があると素質乱数列の位置が変わるので、
+      // テスト側で簡略化した出自だと基準線がずれて heir 分の差が取れない
+      origin: origins.origins.find((o) => o.id === "origin.wanderer")!,
       potentialInitMin: balance.player.potentialInitMin,
       potentialInitMax: balance.player.potentialInitMax,
     });

@@ -118,6 +118,8 @@ export type {
   CombatConfig,
   CombatEvent,
   CombatIntent,
+  CombatLinkBonuses,
+  CombatPlayer,
   CombatResult,
   CombatState,
   EnemyDef,
@@ -126,7 +128,12 @@ export type {
   EnemyTrait,
   IndividualConfig,
   Telegraph,
+  WeaponDef,
 } from "./combat/index.js";
+export { weaponDefOf } from "./combat/index.js";
+// 技能リンク（K-01、balance.links）：技能がどこに効くかの結線を読む薄い層
+export { linkFlat, linkFlatCap, linkSum } from "./links/index.js";
+export type { SkillLinkDef, SkillLinks } from "./links/index.js";
 export {
   customerMoodFactor,
   gainSpread,

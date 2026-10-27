@@ -162,7 +162,7 @@ describe("succeedLife（T-48 同じ世界で次代を継ぐ）", () => {
     const restored = deserialize(serialize(next));
     expect(restored.version).toBe(SAVE_VERSION);
     expect(restored).toEqual(next);
-    // T-48 自体は形を変えない。16 への版上げは W-01（世界の危機の追加）によるもの
-    expect(SAVE_VERSION).toBe(16);
+    // T-48 自体は形を変えない。17 への版上げは K-01（武器の追加）によるもの
+    expect(SAVE_VERSION).toBe(17);
   });
 });

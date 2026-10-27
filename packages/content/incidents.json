@@ -19,8 +19,13 @@
             {
               "weight": 1,
               "text": "――旅人はここまでの道のりを詳しく話してくれた。聞き覚えのある名が混ざっていた。",
-              "gain": { "skill": "observation", "amount": 3 },
-              "counters": { "bond.traveler": 1 }
+              "gain": {
+                "skill": "observation",
+                "amount": 3
+              },
+              "counters": {
+                "bond.traveler": 1
+              }
             }
           ]
         },
@@ -28,7 +33,11 @@
           "id": "leave",
           "label": "立ち去る",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――気にせず歩を進めた。旅人の背はすぐに見えなくなった。" }]
+          "outcomes": [
+            {
+              "text": "――気にせず歩を進めた。旅人の背はすぐに見えなくなった。"
+            }
+          ]
         }
       ]
     },
@@ -37,7 +46,10 @@
       "name": "猟師の誘い",
       "kind": "encounter",
       "text": "――猟師のガロが弓を担いで立っている。山の方角を指差した。",
-      "speaker": { "kind": "npc", "id": "npc.garo" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.garo"
+      },
       "say": "山の獣が騒がしい。暇ならついて来るかい。",
       "choices": [
         {
@@ -48,14 +60,20 @@
             {
               "weight": 1,
               "text": "――ガロの横で獣道を歩いた。戦いの勘が少し磨かれた気がする。",
-              "gain": { "skill": "swordplay", "amount": 6 },
+              "gain": {
+                "skill": "swordplay",
+                "amount": 6
+              },
               "fatigue": 6
             },
             {
               "weight": 2,
               "text": "――獣には会えなかったが、山道の歩き方だけは覚えた。足が重い。",
               "fatigue": 12,
-              "gain": { "skill": "observation", "amount": 2 }
+              "gain": {
+                "skill": "observation",
+                "amount": 2
+              }
             }
           ]
         },
@@ -63,7 +81,11 @@
           "id": "pass",
           "label": "今日はやめておく",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――ガロは気にせず一人で山へ向かった。" }]
+          "outcomes": [
+            {
+              "text": "――ガロは気にせず一人で山へ向かった。"
+            }
+          ]
         }
       ]
     },
@@ -72,7 +94,10 @@
       "name": "採掘場の人手",
       "kind": "encounter",
       "text": "――採掘場のまとめ役フェンが、荷の運び出しに手こずっている。",
-      "speaker": { "kind": "npc", "id": "npc.fenn" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.fenn"
+      },
       "say": "悪いが手を貸してくれ。手間賃は出す。",
       "choices": [
         {
@@ -88,9 +113,14 @@
             {
               "weight": 1,
               "text": "――フェンが石の見方を教えてくれた。手間賃より得るものがあった。",
-              "gain": { "skill": "mining", "amount": 5 },
+              "gain": {
+                "skill": "mining",
+                "amount": 5
+              },
               "fatigue": 8,
-              "counters": { "bond.npc.fenn": 1 }
+              "counters": {
+                "bond.npc.fenn": 1
+              }
             }
           ]
         },
@@ -98,7 +128,11 @@
           "id": "decline",
           "label": "断る",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――フェンは肩をすくめて自分で荷を担いだ。" }]
+          "outcomes": [
+            {
+              "text": "――フェンは肩をすくめて自分で荷を担いだ。"
+            }
+          ]
         }
       ]
     },
@@ -107,7 +141,10 @@
       "name": "ライバルの視線",
       "kind": "encounter",
       "text": "――通りで《{name}》と目が合った。ライバルがこちらを値踏みするように見ている。",
-      "speaker": { "kind": "rival", "index": 0 },
+      "speaker": {
+        "kind": "rival",
+        "index": 0
+      },
       "say": "おう、お前か。街は狭いな。ここは顔を合わせるのも縁だ。",
       "choices": [
         {
@@ -117,13 +154,20 @@
             {
               "weight": 2,
               "text": "――二言三言、刺し違えるような挨拶を交わした。口の回し方が少し掴めた。",
-              "gain": { "skill": "eloquence", "amount": 3 },
-              "counters": { "bond.rival": 1 }
+              "gain": {
+                "skill": "eloquence",
+                "amount": 3
+              },
+              "counters": {
+                "bond.rival": 1
+              }
             },
             {
               "weight": 1,
               "text": "――{name}は珍しく気さくに笑い、近場の評判を聞かせてくれた。",
-              "counters": { "bond.rival": 2 }
+              "counters": {
+                "bond.rival": 2
+              }
             }
           ]
         },
@@ -131,7 +175,11 @@
           "id": "avert",
           "label": "視線を逸らす",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――何事もなく通り過ぎた。" }]
+          "outcomes": [
+            {
+              "text": "――何事もなく通り過ぎた。"
+            }
+          ]
         }
       ]
     },
@@ -148,13 +196,17 @@
             {
               "weight": 2,
               "text": "――巡礼者は深々と礼を言い、縁があればまた、と去っていった。",
-              "counters": { "bond.town": 1 }
+              "counters": {
+                "bond.town": 1
+              }
             },
             {
               "weight": 1,
               "text": "――巡礼者は行き先の山に古い鐘があると教えてくれた。",
               "atom": "place.moon_bell",
-              "counters": { "bond.traveler": 1 }
+              "counters": {
+                "bond.traveler": 1
+              }
             }
           ]
         },
@@ -162,7 +214,11 @@
           "id": "pass",
           "label": "通り過ぎる",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――街の人が助けるだろう。先を急いだ。" }]
+          "outcomes": [
+            {
+              "text": "――街の人が助けるだろう。先を急いだ。"
+            }
+          ]
         }
       ]
     },
@@ -195,7 +251,9 @@
           "outcomes": [
             {
               "text": "――宿の者が落とし主を探してくれるという。悪くない気分だ。",
-              "counters": { "bond.town": 2 },
+              "counters": {
+                "bond.town": 2
+              },
               "flags": ["incident.honest"]
             }
           ]
@@ -216,14 +274,18 @@
               "weight": 3,
               "text": "――猫は満足そうに喉を鳴らした。少し気が休まった。",
               "fatigue": -4,
-              "counters": { "bond.cat": 1 }
+              "counters": {
+                "bond.cat": 1
+              }
             },
             {
               "weight": 1,
               "text": "――猫は満足すると、どこかの裏窓に吸い込まれた。気配を追うと、古い屋敷の抜け道が見えた気がした。",
               "fatigue": -2,
               "flags": ["incident.cat_way"],
-              "counters": { "bond.cat": 1 }
+              "counters": {
+                "bond.cat": 1
+              }
             }
           ]
         },
@@ -231,7 +293,12 @@
           "id": "pet",
           "label": "撫でるだけ",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――猫はひと撫でだけ許して、すり抜けて行った。", "fatigue": -2 }]
+          "outcomes": [
+            {
+              "text": "――猫はひと撫でだけ許して、すり抜けて行った。",
+              "fatigue": -2
+            }
+          ]
         }
       ]
     },
@@ -240,7 +307,10 @@
       "name": "古銭の発見",
       "kind": "found",
       "text": "――露店の荷の間から、見慣れない刻印の古銭が転がり出てきた。",
-      "require": { "skill": "appraisal", "gte": 8 },
+      "require": {
+        "skill": "appraisal",
+        "gte": 8
+      },
       "choices": [
         {
           "id": "appraise",
@@ -249,7 +319,10 @@
             {
               "weight": 2,
               "text": "――刻印は昔の領主のものらしい。目利きの勘が少し冴えた。",
-              "gain": { "skill": "appraisal", "amount": 5 }
+              "gain": {
+                "skill": "appraisal",
+                "amount": 5
+              }
             },
             {
               "weight": 1,
@@ -262,7 +335,12 @@
           "id": "sell",
           "label": "そのまま売り払う",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――古銭はそれなりの値で売れた。", "money": 10 }]
+          "outcomes": [
+            {
+              "text": "――古銭はそれなりの値で売れた。",
+              "money": 10
+            }
+          ]
         }
       ]
     },
@@ -271,7 +349,9 @@
       "name": "雨に掘られた小箱",
       "kind": "found",
       "text": "――雨にえぐられた路地の隅に、木片の小箱が半分埋まっている。",
-      "require": { "weather": "rain" },
+      "require": {
+        "weather": "rain"
+      },
       "choices": [
         {
           "id": "dig",
@@ -295,7 +375,11 @@
           "id": "later",
           "label": "後にする",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――雨の日に掘り仕事はしないことにした。" }]
+          "outcomes": [
+            {
+              "text": "――雨の日に掘り仕事はしないことにした。"
+            }
+          ]
         }
       ]
     },
@@ -304,7 +388,11 @@
       "name": "月照りの草",
       "kind": "found",
       "text": "――満月の光の下で、草の葉が白く輝いて見える。",
-      "require": { "time": { "moon": "full" } },
+      "require": {
+        "time": {
+          "moon": "full"
+        }
+      },
       "weight": 0.6,
       "choices": [
         {
@@ -329,7 +417,11 @@
           "id": "leave",
           "label": "触らない",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――ただ眺めて過ごした。月は雲に隠れていった。" }]
+          "outcomes": [
+            {
+              "text": "――ただ眺めて過ごした。月は雲に隠れていった。"
+            }
+          ]
         }
       ]
     },
@@ -348,7 +440,10 @@
               "weight": 1,
               "text": "――路地で追い詰めた。すりは銭を吐き出して逃げた。身のこなしに自信がついた。",
               "money": 15,
-              "gain": { "skill": "evasion", "amount": 4 }
+              "gain": {
+                "skill": "evasion",
+                "amount": 4
+              }
             },
             {
               "weight": 2,
@@ -376,7 +471,10 @@
       "name": "酒場の揉め事",
       "kind": "trouble",
       "text": "――宿の酒場で、酔った男たちが揉め始めた。宿屋の主が目で助けを求めている。",
-      "speaker": { "kind": "npc", "id": "npc.marta" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.marta"
+      },
       "say": "あんた、そこをなんとかしておくれよ。壊れ物ばっかりでね。",
       "choices": [
         {
@@ -388,14 +486,18 @@
               "weight": 1,
               "text": "――酔漢たちを分かせた。マルタが礼に飯を奢ってくれた。",
               "money": 10,
-              "counters": { "bond.npc.marta": 2 },
+              "counters": {
+                "bond.npc.marta": 2
+              },
               "fatigue": 4
             },
             {
               "weight": 2,
               "text": "――巻き込まれて引っぱたかれた。揉め事は静まったが、身体が痛む。",
               "fatigue": 12,
-              "counters": { "bond.npc.marta": 1 }
+              "counters": {
+                "bond.npc.marta": 1
+              }
             }
           ]
         },
@@ -403,7 +505,11 @@
           "id": "exit",
           "label": "席を立つ",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――揉め事が静まるのを外で待った。" }]
+          "outcomes": [
+            {
+              "text": "――揉め事が静まるのを外で待った。"
+            }
+          ]
         }
       ]
     },
@@ -412,7 +518,10 @@
       "name": "荷車の立ち往生",
       "kind": "trouble",
       "text": "――行商人の荷車が溝に車輪を取られ、荷が崩れかけている。",
-      "speaker": { "kind": "npc", "id": "npc.nola" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.nola"
+      },
       "say": "すまない、少しだけ持ち上げてくれないか。このままだと荷が全部だ。",
       "choices": [
         {
@@ -423,13 +532,17 @@
               "weight": 2,
               "text": "――車輪を持ち上げて荷車を助けた。ノラは心ばかりの謝礼をくれた。",
               "money": 9,
-              "counters": { "bond.npc.nola": 1 }
+              "counters": {
+                "bond.npc.nola": 1
+              }
             },
             {
               "weight": 1,
               "text": "――重い荷を持ち上げて腰に来たが、荷車は助かった。",
               "fatigue": 8,
-              "counters": { "bond.npc.nola": 2 }
+              "counters": {
+                "bond.npc.nola": 2
+              }
             }
           ]
         },
@@ -437,7 +550,11 @@
           "id": "watch",
           "label": "他の者を呼ぶ",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――通りがかりの男が手を貸した。自分の出番はなかった。" }]
+          "outcomes": [
+            {
+              "text": "――通りがかりの男が手を貸した。自分の出番はなかった。"
+            }
+          ]
         }
       ]
     },
@@ -474,7 +591,11 @@
           "id": "leave",
           "label": "離れておく",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――路地を離れた。振り返るともう誰もいなかった。" }]
+          "outcomes": [
+            {
+              "text": "――路地を離れた。振り返るともう誰もいなかった。"
+            }
+          ]
         }
       ]
     },
@@ -492,14 +613,18 @@
               "weight": 3,
               "text": "――子供はパンを抱えて走り去った。街が少しだけ優しく見えた。",
               "money": -4,
-              "counters": { "bond.town": 2 }
+              "counters": {
+                "bond.town": 2
+              }
             },
             {
               "weight": 1,
               "text": "――子供はお礼にと、宿の掲示のことを教えてくれた。",
               "money": -4,
               "atom": "npc.marta_board",
-              "counters": { "bond.town": 1 }
+              "counters": {
+                "bond.town": 1
+              }
             }
           ]
         },
@@ -507,7 +632,11 @@
           "id": "ignore",
           "label": "目を逸らす",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――視線を逸らした。子供の姿はすぐに人混みに消えた。" }]
+          "outcomes": [
+            {
+              "text": "――視線を逸らした。子供の姿はすぐに人混みに消えた。"
+            }
+          ]
         }
       ]
     },
@@ -516,7 +645,10 @@
       "name": "行商人の掘り出し物",
       "kind": "market",
       "text": "――行商人のノラが荷から包みを出して、にやりと笑った。",
-      "speaker": { "kind": "npc", "id": "npc.nola" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.nola"
+      },
       "say": "おや、丁度いいところに。これ、見ていかないかい。損はさせないよ。",
       "choices": [
         {
@@ -548,12 +680,17 @@
               "text": "――値切りに応じたノラは感心したように値を下げた。",
               "money": -16,
               "atom": "rumor.merchant_king",
-              "gain": { "skill": "eloquence", "amount": 3 }
+              "gain": {
+                "skill": "eloquence",
+                "amount": 3
+              }
             },
             {
               "weight": 1,
               "text": "――「買う気があるなら正規の値でね」。ノラは荷を仕舞い込んだ。",
-              "counters": { "bond.npc.nola": -1 }
+              "counters": {
+                "bond.npc.nola": -1
+              }
             }
           ]
         },
@@ -561,7 +698,11 @@
           "id": "pass",
           "label": "見送る",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――ノラは「いつでもおいで」と荷を仕舞った。" }]
+          "outcomes": [
+            {
+              "text": "――ノラは「いつでもおいで」と荷を仕舞った。"
+            }
+          ]
         }
       ]
     },
@@ -570,7 +711,10 @@
       "name": "鉱脈の噂",
       "kind": "market",
       "text": "――炭焼きのクムが、山仕事の雑談の中で何か言いかけた。",
-      "speaker": { "kind": "npc", "id": "npc.cum" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.cum"
+      },
       "say": "山の奥に昔の鍛冶場があってね。興味があるなら場所を教えてもいい。",
       "choices": [
         {
@@ -585,7 +729,10 @@
             {
               "weight": 1,
               "text": "――話の中に山の道筋のことが混ざっていた。山を探る目が少し育った。",
-              "gain": { "skill": "prospecting", "amount": 4 }
+              "gain": {
+                "skill": "prospecting",
+                "amount": 4
+              }
             }
           ]
         },
@@ -593,7 +740,11 @@
           "id": "pass",
           "label": "興味なしと告げる",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――クムはうなずいて炭俵に戻った。" }]
+          "outcomes": [
+            {
+              "text": "――クムはうなずいて炭俵に戻った。"
+            }
+          ]
         }
       ]
     },
@@ -602,7 +753,13 @@
       "name": "目利きの客",
       "kind": "market",
       "text": "――見慣れない装いの客が、あなたの仕事ぶりを遠くから見て、何か言いたそうにしている。",
-      "require": { "work": { "count": { "atLeast": 3 } } },
+      "require": {
+        "work": {
+          "count": {
+            "atLeast": 3
+          }
+        }
+      },
       "choices": [
         {
           "id": "listen",
@@ -632,7 +789,9 @@
       "name": "後ろ盾の誘い",
       "kind": "market",
       "text": "――先日の目利きの客が戻ってきた。今度は席を用意している。",
-      "require": { "flag": "incident.patron_hint" },
+      "require": {
+        "flag": "incident.patron_hint"
+      },
       "once": true,
       "weight": 1.5,
       "choices": [
@@ -663,7 +822,9 @@
             {
               "text": "――誘いを断った。客は「堅実なのは悪くない」と笑って帰った。",
               "flags": ["incident.patron_off"],
-              "counters": { "bond.town": 1 }
+              "counters": {
+                "bond.town": 1
+              }
             }
           ]
         }
@@ -674,7 +835,10 @@
       "name": "広場の賑やかし",
       "kind": "market",
       "text": "――広場に人だかりができている。一曲歌えば、いくらか銭が飛んできそうだ。",
-      "require": { "skill": "performance", "gte": 10 },
+      "require": {
+        "skill": "performance",
+        "gte": 10
+      },
       "choices": [
         {
           "id": "sing",
@@ -685,13 +849,18 @@
               "weight": 2,
               "text": "――歌に足を止めた人々が銭を投げてくれた。",
               "money": 14,
-              "gain": { "skill": "performance", "amount": 3 }
+              "gain": {
+                "skill": "performance",
+                "amount": 3
+              }
             },
             {
               "weight": 1,
               "text": "――歌は大いに受けた。帽子が銭でいっぱいになった。",
               "money": 38,
-              "counters": { "bond.town": 1 }
+              "counters": {
+                "bond.town": 1
+              }
             },
             {
               "weight": 1,
@@ -704,7 +873,11 @@
           "id": "pass",
           "label": "やめておく",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――今日は聞き手に回ることにした。" }]
+          "outcomes": [
+            {
+              "text": "――今日は聞き手に回ることにした。"
+            }
+          ]
         }
       ]
     },
@@ -713,9 +886,13 @@
       "name": "師匠の差し入れ",
       "kind": "visitor",
       "text": "――師匠が様子を見にやって来て、手土産を置いていった。",
-      "speaker": { "kind": "mentor" },
+      "speaker": {
+        "kind": "mentor"
+      },
       "say": "頼まれもしないがな。お前の顔を見に来た。",
-      "require": { "flag": "mentor.now" },
+      "require": {
+        "flag": "mentor.now"
+      },
       "choices": [
         {
           "id": "accept",
@@ -738,7 +915,11 @@
           "id": "decline",
           "label": "遠慮する",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――師匠は「遠慮する奴だ」と笑って帰っていった。" }]
+          "outcomes": [
+            {
+              "text": "――師匠は「遠慮する奴だ」と笑って帰っていった。"
+            }
+          ]
         }
       ]
     },
@@ -747,7 +928,10 @@
       "name": "鐘の調べ",
       "kind": "visitor",
       "text": "――礼拝堂の番人エデルが、不思議そうに鐘楼を見上げている。",
-      "speaker": { "kind": "npc", "id": "npc.edel" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.edel"
+      },
       "say": "鐘がいつもと違う鳴り方をしてね。あんたなら何か聞き分けられるかい。",
       "choices": [
         {
@@ -757,7 +941,10 @@
             {
               "weight": 2,
               "text": "――鐘の音の余韻に、かすかな重なりを聞き取った。耳が少し冴えた。",
-              "gain": { "skill": "observation", "amount": 5 }
+              "gain": {
+                "skill": "observation",
+                "amount": 5
+              }
             },
             {
               "weight": 1,
@@ -770,7 +957,11 @@
           "id": "cant",
           "label": "何も聞こえないと答える",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――エデルは「そうかい」とうなずき、鐘楼の戸を閉めた。" }]
+          "outcomes": [
+            {
+              "text": "――エデルは「そうかい」とうなずき、鐘楼の戸を閉めた。"
+            }
+          ]
         }
       ]
     },
@@ -779,7 +970,10 @@
       "name": "炭詰めの手伝い",
       "kind": "visitor",
       "text": "――炭焼きのクムが窯の前で炭を袋に詰めている。人手が足りなさそうだ。",
-      "speaker": { "kind": "npc", "id": "npc.cum" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.cum"
+      },
       "say": "悪いが少し手伝ってくれ。炭の扱いも覚えられる。",
       "choices": [
         {
@@ -789,7 +983,10 @@
             {
               "weight": 2,
               "text": "――炭詰めを手伝った。火の扱いの勘が少し育った。",
-              "gain": { "skill": "smithing", "amount": 4 },
+              "gain": {
+                "skill": "smithing",
+                "amount": 4
+              },
               "fatigue": 6
             },
             {
@@ -797,7 +994,9 @@
               "text": "――力仕事を手伝い切った。クムは心ばかりの銭を握らせてくれた。",
               "money": 9,
               "fatigue": 8,
-              "counters": { "bond.npc.cum": 1 }
+              "counters": {
+                "bond.npc.cum": 1
+              }
             }
           ]
         },
@@ -805,7 +1004,11 @@
           "id": "decline",
           "label": "断る",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――クムは黙々と作業に戻った。" }]
+          "outcomes": [
+            {
+              "text": "――クムは黙々と作業に戻った。"
+            }
+          ]
         }
       ]
     },
@@ -814,7 +1017,10 @@
       "name": "戸口の贈り物",
       "kind": "visitor",
       "text": "――戸口に、差出人のない小包が置いてある。誰かがあなたを気にかけている。",
-      "require": { "counter": "bond.town", "gte": 3 },
+      "require": {
+        "counter": "bond.town",
+        "gte": 3
+      },
       "weight": 0.8,
       "choices": [
         {
@@ -841,7 +1047,9 @@
           "outcomes": [
             {
               "text": "――贈り主は見つからなかったが、街の人々がにこやかに目礼した。悪くない気分だ。",
-              "counters": { "bond.town": 1 },
+              "counters": {
+                "bond.town": 1
+              },
               "fatigue": -3
             }
           ]
@@ -853,7 +1061,11 @@
       "name": "気配の風",
       "kind": "omen",
       "text": "――吹き抜ける風が、いつもと違う匂いを運んできた。世界のどこかで何かが動いている。",
-      "require": { "crisis": { "active": true } },
+      "require": {
+        "crisis": {
+          "active": true
+        }
+      },
       "choices": [
         {
           "id": "follow",
@@ -862,13 +1074,19 @@
             {
               "weight": 2,
               "text": "――風の匂いを追った。世界の裏側で起きていることが、少しだけ輪郭を見せた。",
-              "gain": { "skill": "observation", "amount": 3 },
+              "gain": {
+                "skill": "observation",
+                "amount": 3
+              },
               "flags": ["incident.felt_omen"]
             },
             {
               "weight": 1,
               "text": "――気配の筋を辿って、街の備え方について考えを巡らせた。",
-              "contribution": { "field": "knowledge", "amount": 3 },
+              "contribution": {
+                "field": "knowledge",
+                "amount": 3
+              },
               "flags": ["incident.felt_omen"]
             }
           ]
@@ -877,7 +1095,11 @@
           "id": "dismiss",
           "label": "気のせいとする",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――風はすぐに止んだ。普段通りの空に見える。" }]
+          "outcomes": [
+            {
+              "text": "――風はすぐに止んだ。普段通りの空に見える。"
+            }
+          ]
         }
       ]
     },
@@ -886,9 +1108,16 @@
       "name": "見張りの手伝い",
       "kind": "omen",
       "text": "――門番のサドが、増員の立て札を抱えて腕を組んでいる。",
-      "speaker": { "kind": "npc", "id": "npc.sado" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.sado"
+      },
       "say": "近頃、物騒な気配があってね。見張りに人手がいる。協力してくれるかい。",
-      "require": { "crisis": { "active": true } },
+      "require": {
+        "crisis": {
+          "active": true
+        }
+      },
       "choices": [
         {
           "id": "help",
@@ -897,14 +1126,22 @@
             {
               "weight": 2,
               "text": "――門の見張りを少しの間手伝った。街の備えに小さく貢した気がする。",
-              "contribution": { "field": "bond", "amount": 4 },
-              "counters": { "bond.npc.sado": 1 },
+              "contribution": {
+                "field": "bond",
+                "amount": 4
+              },
+              "counters": {
+                "bond.npc.sado": 1
+              },
               "fatigue": 5
             },
             {
               "weight": 1,
               "text": "――力仕事の番を引き受けた。街の備えに力で貢した。",
-              "contribution": { "field": "might", "amount": 5 },
+              "contribution": {
+                "field": "might",
+                "amount": 5
+              },
               "fatigue": 9
             }
           ]
@@ -913,7 +1150,11 @@
           "id": "busy",
           "label": "都合を告げる",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――サドは「無理は言わない」と笑った。" }]
+          "outcomes": [
+            {
+              "text": "――サドは「無理は言わない」と笑った。"
+            }
+          ]
         }
       ]
     },
@@ -922,9 +1163,17 @@
       "name": "不穏な噂の売り子",
       "kind": "omen",
       "text": "――行商人のノラが声を潜めて近づいてきた。",
-      "speaker": { "kind": "npc", "id": "npc.nola" },
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.nola"
+      },
       "say": "あんたには耳よりな話がある。街道筋ではあの件でもちきりだよ。",
-      "require": { "crisis": { "active": true, "minStage": 1 } },
+      "require": {
+        "crisis": {
+          "active": true,
+          "minStage": 1
+        }
+      },
       "choices": [
         {
           "id": "buy",
@@ -934,7 +1183,10 @@
               "weight": 2,
               "text": "――街道筋の様子を聞けた。世界に起きていることの見通しが少し開けた。",
               "money": -8,
-              "contribution": { "field": "knowledge", "amount": 4 }
+              "contribution": {
+                "field": "knowledge",
+                "amount": 4
+              }
             },
             {
               "weight": 1,
@@ -948,7 +1200,11 @@
           "id": "pass",
           "label": "聞かない",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――ノラは惜しげなく口を閉ざした。" }]
+          "outcomes": [
+            {
+              "text": "――ノラは惜しげなく口を閉ざした。"
+            }
+          ]
         }
       ]
     },
@@ -957,7 +1213,12 @@
       "name": "人気のない参道",
       "kind": "omen",
       "text": "――小さな祠の参道に人影がない。石段の苔が、いつもより深く見える。",
-      "require": { "crisis": { "active": true, "minStage": 1 } },
+      "require": {
+        "crisis": {
+          "active": true,
+          "minStage": 1
+        }
+      },
       "weight": 0.7,
       "choices": [
         {
@@ -968,14 +1229,20 @@
               "weight": 2,
               "text": "――静かに手を合わせた。落ち着かない心が少しだけ澄んだ。",
               "fatigue": -5,
-              "contribution": { "field": "bond", "amount": 2 },
+              "contribution": {
+                "field": "bond",
+                "amount": 2
+              },
               "flags": ["incident.prayed"]
             },
             {
               "weight": 1,
               "text": "――手を合わせると、祠の裏に古い刻印があることに気づいた。",
               "fatigue": -2,
-              "gain": { "skill": "observation", "amount": 3 }
+              "gain": {
+                "skill": "observation",
+                "amount": 3
+              }
             }
           ]
         },
@@ -983,7 +1250,11 @@
           "id": "back",
           "label": "引き返す",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――参道を後にした。祠は黙って立っている。" }]
+          "outcomes": [
+            {
+              "text": "――参道を後にした。祠は黙って立っている。"
+            }
+          ]
         }
       ]
     },
@@ -992,7 +1263,11 @@
       "name": "流れ星",
       "kind": "fate",
       "text": "――夜空に、一筋の流れ星が走った。",
-      "require": { "time": { "timeOfDay": "night" } },
+      "require": {
+        "time": {
+          "timeOfDay": "night"
+        }
+      },
       "weight": 0.5,
       "choices": [
         {
@@ -1017,7 +1292,12 @@
           "id": "watch",
           "label": "ただ眺める",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――星は流れて消えた。夜は静かだ。", "fatigue": -2 }]
+          "outcomes": [
+            {
+              "text": "――星は流れて消えた。夜は静かだ。",
+              "fatigue": -2
+            }
+          ]
         }
       ]
     },
@@ -1050,7 +1330,11 @@
           "id": "stay",
           "label": "行かない",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――白い鳥は見えなくなった。気のせいだったかもしれない。" }]
+          "outcomes": [
+            {
+              "text": "――白い鳥は見えなくなった。気のせいだったかもしれない。"
+            }
+          ]
         }
       ]
     },
@@ -1082,7 +1366,329 @@
           "id": "fold",
           "label": "降りる",
           "hint": "手堅い",
-          "outcomes": [{ "text": "――賭場を後にした。懐は冷えなかった。" }]
+          "outcomes": [
+            {
+              "text": "――賭場を後にした。懐は冷えなかった。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "incident.horse_bolt",
+      "name": "驚いた荷馬",
+      "kind": "encounter",
+      "text": "――荷を積んだ馬が物音に驚いて暴れ始めた。荷駄が滑り落ちそうになっている。",
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.sado"
+      },
+      "say": "おい、手を貸してくれ！　馬が暴れて荷が落ちる！",
+      "choices": [
+        {
+          "id": "hold",
+          "label": "手綱を掴んで押さえる",
+          "outcomes": [
+            {
+              "weight": 2,
+              "text": "――馬はしばらく暴れたが、やがて鼻を鳴らしておさまった。手綱の捌き方をひとつ覚えた。",
+              "gain": {
+                "skill": "riding",
+                "amount": 5
+              },
+              "fatigue": 8
+            },
+            {
+              "weight": 1,
+              "text": "――荷は守れたが、馬に引きずられて転んだ。それでも馬の気配は掴めた気がする。",
+              "gain": {
+                "skill": "riding",
+                "amount": 3
+              },
+              "fatigue": 14
+            }
+          ]
+        },
+        {
+          "id": "shout",
+          "label": "大声で馬を制する",
+          "hint": "賭け",
+          "outcomes": [
+            {
+              "weight": 1,
+              "text": "――馬は声に一瞬怯んで動きを止めた。その隙にサドが手綱を取り戻した。",
+              "gain": {
+                "skill": "intimidation",
+                "amount": 4
+              },
+              "money": 4
+            },
+            {
+              "weight": 2,
+              "text": "――馬はさらに驚いて跳ねた。荷が少し崩れた。",
+              "fatigue": 8
+            }
+          ]
+        },
+        {
+          "id": "watch",
+          "label": "見守る",
+          "hint": "手堅い",
+          "outcomes": [
+            {
+              "text": "――サドが手綱を取り戻した。馬はしばらく鼻を鳴らしていた。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "incident.drowning_child",
+      "name": "川に落ちた子ども",
+      "kind": "trouble",
+      "text": "――川岸で悲鳴が上がった。流された子どもが水面から手を伸ばしている。",
+      "choices": [
+        {
+          "id": "dive",
+          "label": "飛び込んで救う",
+          "outcomes": [
+            {
+              "weight": 2,
+              "text": "――冷たい水を掻き分けて子を抱え、岸に這い上がった。濡れた身体に、泳ぎの感覚が残った。",
+              "gain": {
+                "skill": "swimming",
+                "amount": 6
+              },
+              "fatigue": 12
+            },
+            {
+              "weight": 1,
+              "text": "――子は岸に流れ着いた。自分もずぶ濡れになったが、水の流れの読み方が少し分かった。",
+              "gain": {
+                "skill": "swimming",
+                "amount": 3
+              },
+              "fatigue": 10
+            }
+          ]
+        },
+        {
+          "id": "call",
+          "label": "助けを呼ぶ",
+          "hint": "手堅い",
+          "outcomes": [
+            {
+              "text": "――近くの猟師が駆けつけて、子は無事に引き上げられた。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "incident.sick_traveler",
+      "name": "病の旅人",
+      "kind": "encounter",
+      "text": "――街道の端に座り込んだ旅人がいる。額に触れるとひどく熱い。",
+      "speaker": {
+        "kind": "npc",
+        "id": "npc.edel"
+      },
+      "say": "この方の顔色が悪い。あなたに何かできることはあるかい。",
+      "choices": [
+        {
+          "id": "treat",
+          "label": "手当てをする",
+          "outcomes": [
+            {
+              "weight": 2,
+              "text": "――水で額を冷やし、呼吸を整えさせた。旅人の目に少し力が戻った。手当ての手順を覚えた。",
+              "gain": {
+                "skill": "medicine",
+                "amount": 5
+              }
+            },
+            {
+              "weight": 1,
+              "text": "――うまくいかなかったが、エデルが祈りで助けてくれた。手当ての難しさを学んだ。",
+              "gain": {
+                "skill": "medicine",
+                "amount": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": "pray",
+          "label": "一緒に祈る",
+          "outcomes": [
+            {
+              "weight": 1,
+              "text": "――二人で静かに祈りを捧げた。旅人の呼吸が少し楽になった気がする。",
+              "gain": {
+                "skill": "prayer",
+                "amount": 4
+              }
+            }
+          ]
+        },
+        {
+          "id": "leave",
+          "label": "立ち去る",
+          "hint": "手堅い",
+          "outcomes": [
+            {
+              "text": "――エデルが付き添うと言った。あなたは先を急いだ。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "incident.card_game",
+      "name": "裏路地の賭け",
+      "kind": "encounter",
+      "text": "――裏路地から笑い声と硬貨の音。賭けの輪がこちらを誘っている。",
+      "choices": [
+        {
+          "id": "join",
+          "label": "賭けに加わる",
+          "hint": "賭け",
+          "outcomes": [
+            {
+              "weight": 1,
+              "text": "――勝った。出し抜く呼吸の読み方を掴んだ気がする。",
+              "gain": {
+                "skill": "gambling",
+                "amount": 6
+              },
+              "money": 15
+            },
+            {
+              "weight": 2,
+              "text": "――負けた。イカサマの手口だけは目に焼き付いた。",
+              "gain": {
+                "skill": "gambling",
+                "amount": 3
+              },
+              "money": -8
+            }
+          ]
+        },
+        {
+          "id": "watch",
+          "label": "勝負を見る",
+          "outcomes": [
+            {
+              "weight": 1,
+              "text": "――卓の流れを眺めていた。勝ち筋の読み方をひとつ覚えた。",
+              "gain": {
+                "skill": "gambling",
+                "amount": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": "pass",
+          "label": "通り過ぎる",
+          "hint": "手堅い",
+          "outcomes": [
+            {
+              "text": "――硬貨の音が背中に追いついてきたが、あなたは歩を進めた。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "incident.street_singer",
+      "name": "道端の歌い手",
+      "kind": "encounter",
+      "text": "――橋の袂で、見知らぬ歌い手がリュートを爪弾いている。足を止める人が何人かいる。",
+      "choices": [
+        {
+          "id": "sing",
+          "label": "一緒に歌う",
+          "outcomes": [
+            {
+              "weight": 2,
+              "text": "――歌い手は目を見開いて笑い、合わせるように旋律を変えた。歌う呼吸が少し掴めた。",
+              "gain": {
+                "skill": "singing",
+                "amount": 5
+              },
+              "money": 3
+            },
+            {
+              "weight": 1,
+              "text": "――声がかすれて笑われた。それでも歌い手は手を上げて別れを惜しんだ。",
+              "gain": {
+                "skill": "singing",
+                "amount": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": "listen",
+          "label": "聴き入る",
+          "outcomes": [
+            {
+              "weight": 1,
+              "text": "――歌の節回しが耳に残った。",
+              "gain": {
+                "skill": "singing",
+                "amount": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "incident.lost_merchant",
+      "name": "道に迷う行商人",
+      "kind": "encounter",
+      "text": "――荷車を引く行商人が、分かれ道の標を前に腕を組んでいる。",
+      "choices": [
+        {
+          "id": "guide",
+          "label": "道案内をする",
+          "outcomes": [
+            {
+              "weight": 2,
+              "text": "――近道と足場の悪い場所を教えた。地図にない道の覚え方を自慢された。",
+              "gain": {
+                "skill": "geography",
+                "amount": 4
+              },
+              "money": 5
+            },
+            {
+              "weight": 1,
+              "text": "――道を教えたが、行商人は逆の道へ向かった。歩幅の知識だけは残った。",
+              "gain": {
+                "skill": "footwork",
+                "amount": 3
+              }
+            }
+          ]
+        },
+        {
+          "id": "share",
+          "label": "荷を持ってやる",
+          "hint": "手堅い",
+          "outcomes": [
+            {
+              "weight": 1,
+              "text": "――荷車の引き方と足の運び方を教わった。",
+              "gain": {
+                "skill": "footwork",
+                "amount": 4
+              },
+              "fatigue": 10
+            }
+          ]
         }
       ]
     }

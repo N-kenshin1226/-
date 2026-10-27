@@ -1,0 +1,10 @@
+{
+  "id": "rumor.weaponeye",
+  "kind": "item",
+  "title": "武器目利きの噂",
+  "text": "旧鍛冶場の話だが、名工クムは武器を一目で見立てたという。作りを知る者だけが、刃の値打ちを誤らない。鍛冶と剣、その両方に通じた者にだけ開かれる目らしい。",
+  "refs": ["npc.cum", "place.old_forge"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.weaponeye" }
+}

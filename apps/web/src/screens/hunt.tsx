@@ -25,10 +25,12 @@ import {
   killFloor,
   newAbyssRun,
   playCombatTurn,
+  skillList,
   spendLight,
   t,
   tpl,
   uniqueOf,
+  weaponDefs,
   type CombatState,
 } from "../game.js";
 import {
@@ -177,6 +179,42 @@ function CombatArena({
   );
 }
 
+/* ── K-01：武器の持ち替え ── */
+
+/** 武器の表示名（定義が無い id はそのまま出す） */
+const weaponName = (id: string) => weaponDefs[id]?.name ?? id;
+/** 武器が使う技能の表示名 */
+const weaponSkillName = (id: string) => {
+  const w = weaponDefs[id];
+  return w === undefined ? undefined : (skillList.find((s) => s.id === w.skill)?.name ?? w.skill);
+};
+
+/**
+ * 持ち替えのコマンド列（K-01）：所持武器を並べ、選ぶと1行動を消費して
+ * その武器に持ち替える（次の行動から武器技能・間隔・補正が変わる）
+ */
+function switchEntries(
+  cs: CombatState,
+  doAction: (a: CombatAction) => void,
+  cancel: () => void,
+): MenuEntry[] {
+  return [
+    ...cs.ownedWeapons.map((id): MenuEntry => {
+      const cur = id === cs.playerWeapon;
+      const skill = weaponSkillName(id);
+      return {
+        id: `combat-switch-${id}`,
+        label: `${weaponName(id)}${cur ? `（${t.text.armsEquippedTag}）` : ""}`,
+        ...(skill !== undefined ? { sub: `技能 ${skill}` } : {}),
+        disabled: cur,
+        onPick: () => doAction({ type: "switch", weapon: id }),
+      };
+    }),
+    { kind: "divider" },
+    { id: "combat-switch-back", label: "戻る", onPick: cancel },
+  ];
+}
+
 // ---- 狩り（CT戦闘） ----
 export function HuntScreen({
   state,
@@ -298,6 +336,8 @@ export function CombatScreen({
   push: Push;
 }) {
   const [cs, setCs] = useState<CombatState>(() => beginCombat(state, enemy));
+  // 持ち替えの一覧を開いているか（K-01。武器を2つ以上持っていると選べる）
+  const [weaponPick, setWeaponPick] = useState(false);
   // 決着後に戻る先（P-01）：戦いの起きた場所 —— 場所を経由しない導線は見取り図へ
   const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   /** 世界補正込みの敵定義（意図の表示が解決側と一致するよう同じものを使う） */
@@ -398,6 +438,11 @@ export function CombatScreen({
       ...("uniqueVariant" in enemy && enemy.uniqueVariant ? { unique: true } : {}),
       // 接点の相手なら接点の id を渡す（W-02。勝利時に備えへ寄与。逃げ・敗北では何も起きない）
       ...(touchpoint !== undefined ? { touchpoint } : {}),
+      // 使った武器（K-01）：持ち替えて戦い抜いたなら最後に構えていた武器。
+      // 経験はこの武器の技能（槍術・弓術・格闘…）に入る
+      weapon: cs.playerWeapon,
+      // 獣との戦いなら beast.exp の技能リンク（狩猟・動物知識）に経験が入る
+      ...(enemy.beast === true ? { beast: true } : {}),
     });
     push(
       r.won
@@ -418,27 +463,47 @@ export function CombatScreen({
   // コマンド列は一本（キー入力が競合しないよう、戦闘中も確定後も同じ列を使う）
   // 再生中はボタンが「早送り」になる（表示は同じ：行動そのものは積まない）
   const entries: MenuEntry[] = !cs.done
-    ? [
-        ...(
-          [
-            ["attack", "攻撃"],
-            ["defend", "防御"],
-            ["observe", "見切り"],
-            ["flee", "逃げる"],
-          ] as const
-        ).map(([a, label]): MenuEntry => ({
-          id: `combat-${a}`,
-          label,
-          onPick: () => doAction(a),
-        })),
-        { kind: "divider" },
-        {
-          id: "combat-giveup",
-          label: "あきらめる",
-          danger: true,
-          onPick: () => setScreen(backTo),
-        },
-      ]
+    ? weaponPick
+      ? switchEntries(
+          cs,
+          (a) => {
+            setWeaponPick(false);
+            doAction(a);
+          },
+          () => setWeaponPick(false),
+        )
+      : [
+          ...(
+            [
+              ["attack", "攻撃"],
+              ["defend", "防御"],
+              ["observe", "見切り"],
+              ["flee", "逃げる"],
+            ] as const
+          ).map(([a, label]): MenuEntry => ({
+            id: `combat-${a}`,
+            label,
+            onPick: () => doAction(a),
+          })),
+          // 武器の持ち替え（K-01）：2つ以上持っていると選べる。1行動を消費する
+          ...(cs.ownedWeapons.length > 1
+            ? [
+                {
+                  id: "combat-weapons",
+                  label: t.text.combatSwitchLabel,
+                  sub: tpl(t.text.combatWeaponLine, { name: weaponName(cs.playerWeapon) }),
+                  onPick: () => setWeaponPick(true),
+                } satisfies Extract<MenuEntry, { id: string }>,
+              ]
+            : []),
+          { kind: "divider" },
+          {
+            id: "combat-giveup",
+            label: "あきらめる",
+            danger: true,
+            onPick: () => setScreen(backTo),
+          },
+        ]
     : [
         {
           id: "combat-finish",
@@ -497,6 +562,8 @@ export function AbyssScreen({
 }) {
   const [run, setRun] = useState<AbyssRun>(() => newAbyssRun(state));
   const [cs, setCs] = useState<CombatState | null>(null);
+  // 持ち替えの一覧を開いているか（K-01）
+  const [weaponPick, setWeaponPick] = useState(false);
   /** 現在戦っている層の敵（撃破で run.floor が進んでも表示が変わらないよう保持する） */
   const [enemy, setEnemy] = useState<EnemyJson | null>(null);
   /** その層の個体差の抽選鍵（R-01。層が進むたびに dive で立て直す） */
@@ -582,6 +649,8 @@ export function AbyssScreen({
         end,
         kills: run.kills,
         ...(loss !== null ? { loss } : {}),
+        // ラン中に最後に使った武器（K-01。持ち替えたまま終わればその武器の技能に経験）
+        weapon: cs?.playerWeapon ?? state.player.weapon,
       },
       {
         format: (ev) => [
@@ -654,18 +723,44 @@ export function AbyssScreen({
         )}
         {!cs?.done && cs !== null ? (
           <CommandMenu
-            entries={(
-              [
-                ["attack", "攻撃"],
-                ["defend", "防御"],
-                ["observe", "見切り"],
-                ["flee", "逃げる"],
-              ] as const
-            ).map(([a, label]) => ({
-              id: `combat-${a}`,
-              label,
-              onPick: () => doAction(a),
-            }))}
+            entries={
+              weaponPick
+                ? switchEntries(
+                    cs,
+                    (a) => {
+                      setWeaponPick(false);
+                      doAction(a);
+                    },
+                    () => setWeaponPick(false),
+                  )
+                : [
+                    ...(
+                      [
+                        ["attack", "攻撃"],
+                        ["defend", "防御"],
+                        ["observe", "見切り"],
+                        ["flee", "逃げる"],
+                      ] as const
+                    ).map(([a, label]): MenuEntry => ({
+                      id: `combat-${a}`,
+                      label,
+                      onPick: () => doAction(a),
+                    })),
+                    // 武器の持ち替え（K-01。層の中でも構えを変えられる）
+                    ...(cs.ownedWeapons.length > 1
+                      ? [
+                          {
+                            id: "combat-weapons",
+                            label: t.text.combatSwitchLabel,
+                            sub: tpl(t.text.combatWeaponLine, {
+                              name: weaponName(cs.playerWeapon),
+                            }),
+                            onPick: () => setWeaponPick(true),
+                          } satisfies Extract<MenuEntry, { id: string }>,
+                        ]
+                      : []),
+                  ]
+            }
           />
         ) : (
           <CommandMenu entries={body} onBack={back} />

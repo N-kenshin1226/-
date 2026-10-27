@@ -32,6 +32,11 @@ export const enemySchema = z
           .strict(),
       )
       .min(1),
+    /**
+     * 獣の敵（K-01。狩猟・動物知識が効く相手。省略＝獣ではない）：
+     * 獣には beast.attack / beast.exp の技能リンクが乗る
+     */
+    beast: z.literal(true).optional(),
   })
   .strict();
 

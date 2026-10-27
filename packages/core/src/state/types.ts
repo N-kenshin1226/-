@@ -61,6 +61,13 @@ export interface PlayerState {
   overwork: { streakDays: number; active: boolean };
   /** 所持金。仕事の報酬が入り、宿代などに使う（03 §3） */
   money: number;
+  /**
+   * 所持している武器のID（weapons.json の id、K-01、v17〜）。
+   * 素手 "fist" は常に所持している
+   */
+  weapons: string[];
+  /** 装備中の武器のID（戦闘の技能・威力・間隔がこれで変わる。v17〜） */
+  weapon: string;
 }
 
 /** 行動の記録（新規性・追い風の偏り判定などに使う直近N件） */
