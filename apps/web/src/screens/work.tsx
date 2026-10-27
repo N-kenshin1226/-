@@ -97,11 +97,12 @@ export function WorkScreen({
   const special = specialOrderOf(state.seed, state.time.day);
   // 危機の接点（W-02）：「異変：」の印を付けた注文が日替わりで混ざる。受けても受けなくてもよい
   const crisis = crisisOrders(state);
-  const list: (Order | SpecialOrder)[] = special
-    ? [...orderList, ...crisis, special]
-    : [...orderList, ...crisis];
+  // 特別注文と異変の注文は先頭に並べる（目玉がスクロール下に埋もれないように）
+  const list: (Order | SpecialOrder)[] = [...(special ? [special] : []), ...crisis, ...orderList];
   const entries: MenuEntry[] = [
-    ...(special ? [{ kind: "header" as const, text: t.text.specialOrder }] : []),
+    ...(special !== undefined || crisis.length > 0
+      ? [{ kind: "header" as const, text: t.text.specialOrder }]
+      : []),
     ...list.map((o) => {
       const kind = skillList.find((s) => s.id === o.kind)?.name ?? o.kind;
       const isSpecial = "special" in o && o.special === true;

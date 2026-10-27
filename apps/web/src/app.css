@@ -190,6 +190,18 @@ button {
   white-space: nowrap;
   flex-shrink: 0;
 }
+/* スクロールする窓の下端に出す「まだ下がある」印（CommandMenu が制御） */
+.scroll-more {
+  position: sticky;
+  bottom: 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 0 2px;
+  color: var(--t-world-light);
+  background: linear-gradient(transparent, var(--t-world-bg) 70%);
+  pointer-events: none;
+}
 .cmd-sub {
   margin-left: auto;
   font-size: 13px;

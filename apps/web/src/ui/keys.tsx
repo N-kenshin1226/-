@@ -67,6 +67,25 @@ export function CommandMenu({
   useEffect(() => {
     navRef.current?.querySelector(`[data-idx="${focus}"]`)?.scrollIntoView({ block: "nearest" });
   }, [focus]);
+  // 下にまだ項目があるなら「▼」を出す（開始/主行動が埋もれて見つからない事故の防止）
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const scroller = navRef.current?.closest<HTMLElement>(".scroll");
+    if (!scroller) {
+      setMore(false);
+      return;
+    }
+    const check = () =>
+      setMore(scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight > 8);
+    check();
+    scroller.addEventListener("scroll", check, { passive: true });
+    const ro = new ResizeObserver(check);
+    ro.observe(scroller);
+    return () => {
+      scroller.removeEventListener("scroll", check);
+      ro.disconnect();
+    };
+  }, [items.length]);
 
   useEffect(() => {
     if (!auto) return;
@@ -148,6 +167,11 @@ export function CommandMenu({
           </button>
         );
       })}
+      {more && (
+        <div className="scroll-more" aria-hidden>
+          ▼
+        </div>
+      )}
     </nav>
   );
 }
