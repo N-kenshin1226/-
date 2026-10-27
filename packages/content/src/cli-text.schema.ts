@@ -20,6 +20,11 @@ export const cliTextSchema = z
           .object({ new: z.string(), waxing: z.string(), full: z.string(), waning: z.string() })
           .strict(),
         statNames: z.record(z.string(), z.string()),
+        /**
+         * スキルのランク帯の表示名（docs/02 §1 のランク表。F-01）。
+         * balance.sleep.skillRanks の添字と対応する（0=未経験 …）
+         */
+        skillRankNames: z.array(z.string().min(1)).min(1),
         /** 狩りの行き先（enemies.json の area）→ 表示名 */
         huntAreas: z.record(z.string(), z.string()),
         /** 人生の終わり方（chronicle の cause）→ 表示名 */
@@ -348,6 +353,10 @@ export const cliTextSchema = z
             footer: z.string(),
             qualityLine: z.string(),
             skillLine: z.string(),
+            /** 上限で定着しきれず翌日へ持ち越された分の行（F-01。{name}/{amount}） */
+            carryoverLine: z.string(),
+            /** ランク帯を越えた節目の行（F-01。{name}/{rank} —— rank は skillRankNames で解決済みの名） */
+            rankUp: z.string(),
             statJoiner: z.string(),
             windsLine: z.string(),
             windsNone: z.string(),

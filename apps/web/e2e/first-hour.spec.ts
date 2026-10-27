@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { skipIntro } from "./helpers.js";
+import { dismissFx, skipIntro } from "./helpers.js";
 
 /**
  * F-06 最初の1時間：開始画面の出し分けと導入の会話窓、
@@ -83,6 +83,8 @@ test("最初の一日：働けば称号が付き、寝れば起床の窓に成�
   await page.getByTestId("work-simple").click();
   await expect(page.getByTestId("log")).toContainText("称号");
   await expect(page.getByTestId("log")).not.toContainText("{");
+  // F-02：称号はモーダルの通知窓でも届く。畳んでから次へ進む
+  await dismissFx(page);
 
   // 宿で眠る → 起床の窓に昨日の頑張りの定着が載る（鍛冶の技能行）
   await page.getByTestId("menu-sleep").click();

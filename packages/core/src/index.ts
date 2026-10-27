@@ -14,10 +14,18 @@ export {
   recentRepeats,
 } from "./growth/gain.js";
 export type { GainConfig, GainResult, GainTerms } from "./growth/gain.js";
-export { consolidateSleep, sleepQuality, statLine } from "./growth/consolidate.js";
+export {
+  consolidateSleep,
+  rankCapFactor,
+  skillRankIndex,
+  sleepQuality,
+  statLine,
+} from "./growth/consolidate.js";
 export type {
   ConsolidateResult,
   InnRank,
+  SkillRankDef,
+  SkillRankUp,
   SleepConfig,
   WakeLine,
   WakeReport,

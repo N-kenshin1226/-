@@ -4,14 +4,20 @@
  * ゲーム内テキストの文体は cli.json/narration.json を使う（AGENTS 文体節）
  */
 
-/** 熟練度の階級（紋章の頭文字と呼称）。value 0〜100 を帯に写す表示だけの物 */
+/**
+ * 熟練度の階級（紋章の頭文字と呼称）。value 0〜100 を帯に写す表示だけの物。
+ * 境界は docs/02 §1・balance.json sleep.skillRanks と一致（F-01）：
+ * 0 未経験 / 10 見習い / 25 初心者 / 40 一人前 / 60 熟練 / 80 達人 / 95 極み / 100 ???
+ */
 export const SKILL_BANDS = [
-  { upTo: 10, crest: "見", name: "見習い" },
-  { upTo: 25, crest: "初", name: "初心者" },
-  { upTo: 45, crest: "一", name: "一人前" },
-  { upTo: 65, crest: "熟", name: "熟練" },
-  { upTo: 85, crest: "達", name: "達人" },
-  { upTo: Infinity, crest: "極", name: "極み" },
+  { upTo: 10, crest: "未", name: "未経験" },
+  { upTo: 25, crest: "見", name: "見習い" },
+  { upTo: 40, crest: "初", name: "初心者" },
+  { upTo: 60, crest: "一", name: "一人前" },
+  { upTo: 80, crest: "熟", name: "熟練" },
+  { upTo: 95, crest: "達", name: "達人" },
+  { upTo: 100, crest: "極", name: "極み" },
+  { upTo: Infinity, crest: "?", name: "???" },
 ] as const;
 
 export function skillBandOf(value: number): { crest: string; name: string } {

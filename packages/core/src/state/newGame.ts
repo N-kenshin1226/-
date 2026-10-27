@@ -22,6 +22,11 @@ export interface NewGameConfig {
     id: string;
     potentialBase: number;
     affinity: Record<string, number>;
+    /**
+     * 出自由来の初期スキル値（F-01）。min〜max（整数）の範囲をシード由来の
+     * 乱数で引き、value・peak に入れる（鍛冶屋の子は鍛冶 8〜12 から始まる、など）
+     */
+    initialSkills?: Record<string, { min: number; max: number }>;
   };
   /** 出自のばらつき範囲（balance.player.potentialInitMin/Max。origin 指定時に必要） */
   potentialInitMin?: number;
@@ -89,9 +94,13 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     }
     // 前世の頂きが素質を少し底上げする（上限は legacyOf 側で適用済み）
     potential += cfg.legacy?.potentialBonus[id] ?? 0;
+    // 出自由来の初期値（F-01）：身についていた技能は最初の朝から目に見える。
+    // 素質のばらつきと同じ乱数源（seed+出自）で決定論的に引く
+    const ini = cfg.origin?.initialSkills?.[id];
+    const initial = ini !== undefined && oRng ? oRng.int(ini.min, ini.max) : 0;
     const s: SkillState = {
-      value: 0,
-      peak: 0,
+      value: initial,
+      peak: initial,
       pending: 0,
       potential,
       potentialCap: potential,

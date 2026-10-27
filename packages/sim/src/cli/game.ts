@@ -335,6 +335,13 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         return [titleMessage(e.id, t)];
       }
       if (e.type === "kehai") return [t.text.kehai];
+      // ランク帯を越えた（F-01）：起床ログの区切りとして大きく扱う。
+      // ランクの表示名は cli.json display.skillRankNames（balance.sleep.skillRanks の添字）
+      if (e.type === "skillRankUp") {
+        const name = skillNames.get(e.skill) ?? e.skill;
+        const rank = t.display.skillRankNames[e.toRank] ?? String(e.toRank);
+        return [tpl(t.text.wake.rankUp, { name, rank })];
+      }
       // 強個体の討伐（T-44）：図鑑に刻んだ旨を1行出す
       if (e.type === "uniqueDefeated") {
         const name = enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId;

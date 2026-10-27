@@ -9,7 +9,7 @@ import type { ActionEvent, GameState, WakeReport } from "@trace/core";
 import { narration } from "@trace/content";
 import { CountUp, CrestShift } from "../fx/fx.js";
 import { playSfx } from "../fx/sound.js";
-import { dateLabel, endingPageLines, newsPack, t, wakePack, type Notice } from "../game.js";
+import { dateLabel, endingPageLines, newsPack, t, tpl, wakePack, type Notice } from "../game.js";
 import {
   BlessingWindow,
   CommandMenu,
@@ -129,58 +129,73 @@ export function WakeScreen({
             数値はカウントアップ、ゲージは伸びるように光る（F-02） */}
         <div style={{ margin: "16px 40px 0" }}>
           {p.skillLines.map((l) => (
-            <div
-              key={l.name}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "150px 34px minmax(0,1fr) 150px 70px",
-                alignItems: "center",
-                gap: 16,
-                height: 52,
-                borderBottom: `1px solid ${B.frameInner}`,
-              }}
-            >
-              <span
+            <div key={l.name}>
+              <div
                 style={{
-                  fontFamily: theme.font.mincho,
-                  fontSize: 19,
-                  color: "#eaf8fb",
+                  display: "grid",
+                  gridTemplateColumns: "150px 34px minmax(0,1fr) 150px 70px",
+                  alignItems: "center",
+                  gap: 16,
+                  height: 52,
+                  borderBottom: `1px solid ${B.frameInner}`,
                 }}
               >
-                《{l.name}》
-              </span>
-              {/* 熟練の階級が変わった行は紋章が入れ替わる */}
-              <CrestShift from={skillBandOf(l.from).crest} to={skillBandOf(l.to).crest} size={30} />
-              <SegGauge from={l.from} to={l.to} animate />
-              <span
-                style={{
-                  fontFamily: theme.font.en,
-                  fontSize: 18,
-                  color: B.dim,
-                  textAlign: "right",
-                }}
-              >
-                {l.from.toFixed(1)} <span style={{ color: B.faint }}>›</span>{" "}
-                <CountUp
-                  from={l.from}
-                  to={l.to}
-                  digits={1}
-                  testId={`wake-skill-${l.name}`}
-                  style={{ color: "#eaf8fb", fontWeight: 700 }}
-                />
-              </span>
-              <span
-                style={{
-                  fontFamily: theme.font.en,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: l.delta < 0 ? theme.colors.warn : theme.colors.grow,
-                  textAlign: "right",
-                }}
-              >
-                {l.delta >= 0 ? "+" : ""}
-                <CountUp from={0} to={l.delta} digits={1} />
-              </span>
+                <span
+                  style={{
+                    fontFamily: theme.font.mincho,
+                    fontSize: 19,
+                    color: "#eaf8fb",
+                  }}
+                >
+                  《{l.name}》
+                </span>
+                {/* 熟練の階級が変わった行は紋章が入れ替わる */}
+                <CrestShift from={skillBandOf(l.from).crest} to={skillBandOf(l.to).crest} size={30} />
+                <SegGauge from={l.from} to={l.to} animate />
+                <span
+                  style={{
+                    fontFamily: theme.font.en,
+                    fontSize: 18,
+                    color: B.dim,
+                    textAlign: "right",
+                  }}
+                >
+                  {l.from.toFixed(1)} <span style={{ color: B.faint }}>›</span>{" "}
+                  <CountUp
+                    from={l.from}
+                    to={l.to}
+                    digits={1}
+                    testId={`wake-skill-${l.name}`}
+                    style={{ color: "#eaf8fb", fontWeight: 700 }}
+                  />
+                </span>
+                <span
+                  style={{
+                    fontFamily: theme.font.en,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: l.delta < 0 ? theme.colors.warn : theme.colors.grow,
+                    textAlign: "right",
+                  }}
+                >
+                  {l.delta >= 0 ? "+" : ""}
+                  <CountUp from={0} to={l.delta} digits={1} />
+                </span>
+              </div>
+              {/* F-01：上限で削られた分は消えない —— 明日への持ち越しを薄く滲ませる */}
+              {l.carried !== undefined && (
+                <p
+                  style={{
+                    margin: "2px 0 0",
+                    paddingLeft: 150 + 16,
+                    fontSize: 12,
+                    color: B.dim,
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  {tpl(t.text.wake.carryoverLine, { name: l.name, amount: l.carried.toFixed(1) })}
+                </p>
+              )}
             </div>
           ))}
           {p.skillLines.length === 0 && (
