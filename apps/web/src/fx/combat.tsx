@@ -41,7 +41,7 @@ export function beatMs(ev: CombatEvent, short: boolean): number {
 export function sfxOf(ev: CombatEvent): SoundId | null {
   switch (ev.type) {
     case "playerAttack":
-      return ev.crit === true || ev.counter === true ? "crit" : "hit";
+      return ev.crit === true || ev.counter === true ? "crit" : "slash";
     case "playerMiss":
       return "miss";
     case "playerDefend":

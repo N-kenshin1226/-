@@ -27,6 +27,7 @@ import { npcLifecycleFileSchema } from "./npc_lifecycle.schema.js";
 import { incidentsFileSchema } from "./incidents.schema.js";
 import { weatherFileSchema } from "./weather.schema.js";
 import { placesFileSchema } from "./places.schema.js";
+import { audioFileSchema } from "./audio.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -77,7 +78,63 @@ check("npc_lifecycle.json", npcLifecycleFileSchema);
 check("incidents.json", incidentsFileSchema);
 check("weather.json", weatherFileSchema);
 check("places.json", placesFileSchema);
+check("audio.json", audioFileSchema);
 check("crises/sample.json", crisesFileSchema);
+
+// 音の割り当ての突き合わせ（S-01）：audio.json の assign が指す場所 id・
+// 情景キー・天候 id が実在すること（曲・環境音 id の存在はスキーマ側で検証済み）
+try {
+  const placesRaw = JSON.parse(readFileSync(join(root, "places.json"), "utf8")) as {
+    places?: { id?: string; scene?: string }[];
+  };
+  const weatherRaw = JSON.parse(readFileSync(join(root, "weather.json"), "utf8")) as {
+    kinds?: { id?: string }[];
+  };
+  const audioRaw = JSON.parse(readFileSync(join(root, "audio.json"), "utf8")) as {
+    assign?: {
+      bgm?: { places?: Record<string, unknown> };
+      ambient?: {
+        places?: Record<string, unknown>;
+        scenes?: Record<string, unknown>;
+        weather?: Record<string, unknown>;
+      };
+    };
+  };
+  const placeIds = new Set((placesRaw.places ?? []).map((p) => p.id));
+  // 情景キー = places.json の scene に加え、場所に縛られない固定情景
+  // （dawn/night/desk/plain。apps/web の SceneKind と対になる）
+  const sceneIds = new Set([
+    ...(placesRaw.places ?? []).map((p) => p.scene),
+    "town",
+    "dawn",
+    "night",
+    "desk",
+    "plain",
+  ]);
+  const weatherIds = new Set((weatherRaw.kinds ?? []).map((k) => k.id));
+  const bad: string[] = [];
+  for (const key of Object.keys(audioRaw.assign?.bgm?.places ?? {})) {
+    if (!placeIds.has(key)) bad.push(`bgm.places: 場所 ${key}`);
+  }
+  for (const key of Object.keys(audioRaw.assign?.ambient?.places ?? {})) {
+    if (!placeIds.has(key)) bad.push(`ambient.places: 場所 ${key}`);
+  }
+  for (const key of Object.keys(audioRaw.assign?.ambient?.scenes ?? {})) {
+    if (!sceneIds.has(key)) bad.push(`ambient.scenes: 情景 ${key}`);
+  }
+  for (const key of Object.keys(audioRaw.assign?.ambient?.weather ?? {})) {
+    if (!weatherIds.has(key)) bad.push(`ambient.weather: 天候 ${key}`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 音の割り当てが未定義のキーを指す: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 音の割り当て（audio ↔ places/weather）");
+  }
+} catch (e) {
+  console.error(`✗ 音の割り当ての突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
 // society.json の standings id に存在するものだけ

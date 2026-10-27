@@ -1,16 +1,32 @@
 /**
- * 演出・効果音の設定（F-02）。ブラウザの localStorage に永続化する。
+ * 演出・音の設定（F-02・S-01）。ブラウザの localStorage に永続化する。
  * core には置かない —— 演出はルールに関わらない表示層の都合（AGENTS 絶対ルール）。
  * e2e は `localStorage["trace.fx.v1"] = {sound:false}` で音を切って動かせる
+ * （sound=false は全系統のミュート —— S-01 の3系統も全部止まる。互換の要）
  */
 import { useEffect, useState } from "react";
 import { theme } from "../theme.js";
 
 export interface FxSettings {
-  /** 効果音を鳴らすか */
+  /**
+   * 音全体（マスター）。false で効果音・BGM・環境音の全系統が無音になる。
+   * F-02 までは「効果音」フラグだったキー —— 保存値の互換のため名前はそのまま
+   */
   sound: boolean;
-  /** 音量 0〜1（master ゲインに掛ける） */
+  /** 全体音量 0〜1（各系統のゲインに掛ける） */
   volume: number;
+  /** 効果音（SFX）を鳴らすか */
+  sfx: boolean;
+  /** 効果音の音量 0〜1 */
+  sfxVolume: number;
+  /** BGM を鳴らすか */
+  music: boolean;
+  /** BGM の音量 0〜1 */
+  musicVolume: number;
+  /** 環境音を鳴らすか */
+  ambient: boolean;
+  /** 環境音の音量 0〜1 */
+  ambientVolume: number;
   /** 「演出を短く」：カウントアップや札の表示時間を短い側に切り替える */
   shortFx: boolean;
 }
@@ -20,6 +36,12 @@ export const FX_SETTINGS_KEY = "trace.fx.v1";
 export const FX_DEFAULTS: FxSettings = {
   sound: true,
   volume: theme.fx.defaultVolume,
+  sfx: true,
+  sfxVolume: 1,
+  music: true,
+  musicVolume: theme.fx.defaultMusicVolume,
+  ambient: true,
+  ambientVolume: theme.fx.defaultAmbientVolume,
   shortFx: false,
 };
 
@@ -30,13 +52,19 @@ export function parseFxSettings(raw: string | null): FxSettings {
   if (raw === null) return { ...FX_DEFAULTS };
   try {
     const p = JSON.parse(raw) as Partial<Record<keyof FxSettings, unknown>>;
+    const bool = (v: unknown, def: boolean) => (typeof v === "boolean" ? v : def);
+    const vol = (v: unknown, def: number) =>
+      typeof v === "number" && Number.isFinite(v) ? clamp01(v) : def;
     return {
-      sound: typeof p.sound === "boolean" ? p.sound : FX_DEFAULTS.sound,
-      volume:
-        typeof p.volume === "number" && Number.isFinite(p.volume)
-          ? clamp01(p.volume)
-          : FX_DEFAULTS.volume,
-      shortFx: typeof p.shortFx === "boolean" ? p.shortFx : FX_DEFAULTS.shortFx,
+      sound: bool(p.sound, FX_DEFAULTS.sound),
+      volume: vol(p.volume, FX_DEFAULTS.volume),
+      sfx: bool(p.sfx, FX_DEFAULTS.sfx),
+      sfxVolume: vol(p.sfxVolume, FX_DEFAULTS.sfxVolume),
+      music: bool(p.music, FX_DEFAULTS.music),
+      musicVolume: vol(p.musicVolume, FX_DEFAULTS.musicVolume),
+      ambient: bool(p.ambient, FX_DEFAULTS.ambient),
+      ambientVolume: vol(p.ambientVolume, FX_DEFAULTS.ambientVolume),
+      shortFx: bool(p.shortFx, FX_DEFAULTS.shortFx),
     };
   } catch {
     return { ...FX_DEFAULTS };
@@ -57,18 +85,21 @@ export function getFxSettings(): FxSettings {
 }
 
 /** 設定変更を同一タブへ即時伝えるためのカスタムイベント名 */
-const FX_EVENT = "trace:fx-settings";
+export const FX_SETTINGS_EVENT = "trace:fx-settings";
+
+const VOLUME_KEYS = ["volume", "sfxVolume", "musicVolume", "ambientVolume"] as const;
 
 export function setFxSettings(patch: Partial<FxSettings>): FxSettings {
   const cur = getFxSettings();
-  const next = { ...cur, ...patch, volume: clamp01(patch.volume ?? cur.volume) };
+  const next = { ...cur, ...patch };
+  for (const k of VOLUME_KEYS) next[k] = clamp01(next[k]);
   cache = next;
   try {
     localStorage.setItem(FX_SETTINGS_KEY, JSON.stringify(next));
   } catch {
     /* 保存できない環境（プライベートモード等）では今回のセッションだけ有効 */
   }
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(FX_EVENT));
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(FX_SETTINGS_EVENT));
   return next;
 }
 
@@ -77,11 +108,11 @@ export function useFxSettings(): FxSettings {
   const [s, setS] = useState<FxSettings>(getFxSettings);
   useEffect(() => {
     const on = () => setS(getFxSettings());
-    window.addEventListener(FX_EVENT, on);
+    window.addEventListener(FX_SETTINGS_EVENT, on);
     // 別タブでの変更も拾う
     window.addEventListener("storage", on);
     return () => {
-      window.removeEventListener(FX_EVENT, on);
+      window.removeEventListener(FX_SETTINGS_EVENT, on);
       window.removeEventListener("storage", on);
     };
   }, []);

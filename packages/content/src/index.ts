@@ -108,6 +108,18 @@ export {
 } from "./npc_lifecycle.schema.js";
 export type { NpcLifeEventJson, NpcLifecycleFile, NpcLifeNpcJson } from "./npc_lifecycle.schema.js";
 export { worldModsSchema } from "./world-mods.schema.js";
+// 音（S-01。audio.json の生成レシピと場面への割り当て）
+export { audio } from "./audio.js";
+export { audioFileSchema } from "./audio.schema.js";
+export type {
+  AmbientEntryJson,
+  AmbientHitJson,
+  AmbientJson,
+  AmbientLayerJson,
+  AudioFile,
+  BgmLayerJson,
+  TrackJson,
+} from "./audio.schema.js";
 // 世界の危機（W-01、docs/08）。型のスキーマはコンテンツと並べて crises/schema.ts に置く
 export { crises, crisisTypes, sampleCrises } from "./crises.js";
 export {

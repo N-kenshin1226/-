@@ -44,6 +44,8 @@ import {
 import { places } from "@trace/content";
 import { TravelVeil, type TravelFx, type TravelFxKind } from "./fx/travel.js";
 import { fxMs, motionOff } from "./fx/settings.js";
+import { AudioDirector } from "./fx/director.js";
+import { playSfx } from "./fx/sound.js";
 import { FxTagLayer, MoneyCount, type FxTagItem } from "./fx/fx.js";
 import {
   CellGauge,
@@ -288,6 +290,12 @@ export function App() {
           : next.name === "combat"
             ? "combat"
             : null;
+    // 移動の音（S-01）：街の中へ入る＝扉、それ以外の行き来＝足音。
+    // 幕を掛けるか否かに関わらず、ユーザーの操作の中で鳴らす
+    if (kind === "travel") {
+      const entering = next.name === "place" && placeOf(next.place)?.kind === "town";
+      playSfx(cur.name === "menu" && entering ? "door" : "steps");
+    }
     // 演出オフ（短く・動きを減らす）では幕を掛けず直接切り替える
     if (kind === null || motionOff()) {
       commit(next);
@@ -539,6 +547,14 @@ export function App() {
   if (!state) {
     return (
       <Stage>
+        {/* タイトル：ゲーム外の場面。曲は title、環境音は鳴らさない */}
+        <AudioDirector
+          screen="title"
+          place={undefined}
+          scene="town"
+          tod="morning"
+          weather="clear"
+        />
         <TitleScreen fate={fate} setFate={setFate} startNew={startNew} />
       </Stage>
     );
@@ -575,6 +591,16 @@ export function App() {
                 lastPlaceRef.current ??
                 undefined),
         ) ?? undefined);
+  // 音の基準場所（S-01）：場所の画面・場所に縛られた画面はその場所、
+  // それ以外は最後に居た場所。見取り図では場所を持たない（街の時間帯曲になる）
+  const audioPlace =
+    effScreen.name === "menu"
+      ? undefined
+      : effScreen.name === "place"
+        ? effScreen.place
+        : (("place" in effScreen ? effScreen.place : undefined) ??
+          lastPlaceRef.current ??
+          undefined);
   const jolt = fx?.kind === "combat";
 
   return (
@@ -584,6 +610,14 @@ export function App() {
         className={`scene${jolt ? " fx-jolt" : ""}`}
         style={jolt ? { animationDuration: `${fxInMs("combat")}ms` } : undefined}
       >
+        {/* 音の監督（S-01）：背景と同じ場面情報から BGM・環境音を同期させる */}
+        <AudioDirector
+          screen={effScreen.name}
+          place={audioPlace}
+          scene={scene}
+          tod={sky.tod}
+          weather={sky.weather}
+        />
         {/* 背景 → 名札 → HUD → 画面の窓 → 会話窓 → 操作ガイド → 通知 の順に重ねる */}
         <SceneBackground kind={scene} haze={haze} tod={sky.tod} weather={sky.weather} />
         {HUD_SCREENS.has(effScreen.name) && <TopChrome state={state} place={chromePlace} />}

@@ -1,0 +1,823 @@
+{
+  "version": 1,
+  "license": "全トラック・全環境音を Web Audio で即時生成する（外部素材なし）",
+  "tracks": [
+    {
+      "id": "title",
+      "name": "導入",
+      "bpm": 60,
+      "beats": 16,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.08,
+          "notes": [
+            [0, 69, 2],
+            [2, 72, 2],
+            [4, 71, 2],
+            [6, 74, 2],
+            [8, 76, 4],
+            [12, 74, 2],
+            [14, 72, 2]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.14,
+          "notes": [
+            [0, 45, 8],
+            [8, 41, 8]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.05,
+          "notes": [
+            [0, 57, 8],
+            [8, 55, 8]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "town_morning",
+      "name": "街の朝",
+      "bpm": 76,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.1,
+          "notes": [
+            [0, 76, 0.5],
+            [0.5, 74, 0.5],
+            [1, 72, 1],
+            [2, 74, 1],
+            [3, 76, 1],
+            [4, 79, 2],
+            [6, 76, 2]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.16,
+          "notes": [
+            [0, 48, 4],
+            [4, 43, 4]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.05,
+          "notes": [
+            [0, 60, 4],
+            [4, 55, 4]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "town_noon",
+      "name": "街の昼",
+      "bpm": 96,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.11,
+          "notes": [
+            [0, 72, 0.5],
+            [0.5, 74, 0.5],
+            [1, 76, 0.5],
+            [1.5, 74, 0.5],
+            [2, 72, 1],
+            [3, 69, 1],
+            [4, 72, 0.5],
+            [4.5, 74, 0.5],
+            [5, 76, 0.5],
+            [5.5, 79, 0.5],
+            [6, 74, 2]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.15,
+          "notes": [
+            [0, 48, 2],
+            [2, 45, 2],
+            [4, 43, 2],
+            [6, 45, 2]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.04,
+          "notes": [
+            [0, 60, 4],
+            [4, 55, 4]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "town_evening",
+      "name": "街の夕",
+      "bpm": 70,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.09,
+          "notes": [
+            [0, 69, 1],
+            [1, 72, 1],
+            [2, 74, 2],
+            [4, 72, 1],
+            [5, 69, 1],
+            [6, 67, 2]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.14,
+          "notes": [
+            [0, 45, 4],
+            [4, 48, 4]
+          ]
+        },
+        { "type": "sine", "vol": 0.04, "notes": [[0, 57, 8]] }
+      ]
+    },
+    {
+      "id": "town_night",
+      "name": "街の夜",
+      "bpm": 58,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "sine",
+          "vol": 0.08,
+          "notes": [
+            [0, 76, 2],
+            [2, 74, 2],
+            [4, 72, 3],
+            [7, 69, 1]
+          ]
+        },
+        { "type": "sine", "vol": 0.13, "notes": [[0, 45, 8]] },
+        {
+          "type": "sine",
+          "vol": 0.04,
+          "notes": [
+            [0, 57, 4],
+            [4, 55, 4]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tavern",
+      "name": "酒場",
+      "bpm": 104,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.11,
+          "notes": [
+            [0, 72, 0.5],
+            [0.5, 76, 0.5],
+            [1, 72, 0.5],
+            [1.5, 76, 0.5],
+            [2, 79, 1],
+            [3, 76, 1],
+            [4, 74, 0.5],
+            [4.5, 72, 0.5],
+            [5, 74, 0.5],
+            [5.5, 76, 0.5],
+            [6, 72, 2]
+          ]
+        },
+        {
+          "type": "sawtooth",
+          "vol": 0.07,
+          "notes": [
+            [0, 36, 1],
+            [1, 43, 1],
+            [2, 45, 1],
+            [3, 43, 1],
+            [4, 41, 1],
+            [5, 45, 1],
+            [6, 43, 2]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forge",
+      "name": "鍛冶場",
+      "bpm": 84,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "sawtooth",
+          "vol": 0.08,
+          "notes": [
+            [0, 40, 1],
+            [1, 40, 0.5],
+            [1.5, 40, 0.5],
+            [2, 40, 1],
+            [3, 43, 1],
+            [4, 38, 2],
+            [6, 41, 2]
+          ]
+        },
+        {
+          "type": "triangle",
+          "vol": 0.07,
+          "notes": [
+            [0, 64, 2],
+            [4, 67, 2],
+            [6, 64, 1]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forest",
+      "name": "近郊の森",
+      "bpm": 72,
+      "beats": 16,
+      "layers": [
+        {
+          "type": "sine",
+          "vol": 0.09,
+          "notes": [
+            [0, 74, 2],
+            [2, 76, 2],
+            [4, 79, 4],
+            [8, 78, 2],
+            [10, 76, 2],
+            [12, 74, 4]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.13,
+          "notes": [
+            [0, 50, 8],
+            [8, 45, 8]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.04,
+          "notes": [
+            [0, 62, 8],
+            [8, 57, 8]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "highway",
+      "name": "旧街道",
+      "bpm": 80,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.09,
+          "notes": [
+            [0, 69, 1],
+            [1, 67, 1],
+            [2, 64, 2],
+            [4, 62, 1],
+            [5, 64, 1],
+            [6, 60, 2]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.14,
+          "notes": [
+            [0, 40, 4],
+            [4, 38, 4]
+          ]
+        },
+        { "type": "sine", "vol": 0.04, "notes": [[0, 52, 8]] }
+      ]
+    },
+    {
+      "id": "lake",
+      "name": "湖畔",
+      "bpm": 66,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "sine",
+          "vol": 0.08,
+          "notes": [
+            [0, 71, 2],
+            [2, 74, 2],
+            [4, 76, 4]
+          ]
+        },
+        { "type": "sine", "vol": 0.13, "notes": [[0, 47, 8]] },
+        { "type": "sine", "vol": 0.04, "notes": [[0, 59, 8]] }
+      ]
+    },
+    {
+      "id": "abyss",
+      "name": "深層",
+      "bpm": 56,
+      "beats": 8,
+      "layers": [
+        { "type": "sawtooth", "vol": 0.05, "notes": [[0, 33, 8]] },
+        {
+          "type": "sine",
+          "vol": 0.08,
+          "notes": [
+            [0, 69, 2],
+            [4, 68, 2]
+          ]
+        },
+        { "type": "sine", "vol": 0.12, "notes": [[0, 45, 8]] }
+      ]
+    },
+    {
+      "id": "combat",
+      "name": "戦闘",
+      "bpm": 128,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "sawtooth",
+          "vol": 0.09,
+          "notes": [
+            [0, 40, 0.5],
+            [0.5, 40, 0.5],
+            [1, 40, 0.5],
+            [1.5, 40, 0.5],
+            [2, 43, 0.5],
+            [2.5, 43, 0.5],
+            [3, 40, 1],
+            [4, 40, 0.5],
+            [4.5, 40, 0.5],
+            [5, 40, 0.5],
+            [5.5, 40, 0.5],
+            [6, 45, 0.5],
+            [6.5, 43, 0.5],
+            [7, 40, 1]
+          ]
+        },
+        {
+          "type": "square",
+          "vol": 0.05,
+          "notes": [
+            [0, 64, 1],
+            [2, 67, 1],
+            [4, 64, 1],
+            [6, 69, 1]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wake",
+      "name": "起床",
+      "bpm": 62,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.1,
+          "notes": [
+            [0, 69, 1],
+            [1, 72, 1],
+            [2, 74, 1],
+            [3, 76, 3]
+          ]
+        },
+        { "type": "sine", "vol": 0.13, "notes": [[0, 45, 8]] },
+        { "type": "sine", "vol": 0.05, "notes": [[0, 57, 8]] }
+      ]
+    },
+    {
+      "id": "status",
+      "name": "鏡の前",
+      "bpm": 54,
+      "beats": 8,
+      "layers": [
+        {
+          "type": "sine",
+          "vol": 0.08,
+          "notes": [
+            [0, 72, 2],
+            [2, 71, 2],
+            [4, 69, 4]
+          ]
+        },
+        { "type": "sine", "vol": 0.12, "notes": [[0, 45, 8]] },
+        {
+          "type": "sine",
+          "vol": 0.04,
+          "notes": [
+            [0, 57, 4],
+            [4, 55, 4]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "finale",
+      "name": "終幕",
+      "bpm": 58,
+      "beats": 16,
+      "layers": [
+        {
+          "type": "triangle",
+          "vol": 0.09,
+          "notes": [
+            [0, 69, 4],
+            [4, 67, 4],
+            [8, 64, 4],
+            [12, 62, 4]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.14,
+          "notes": [
+            [0, 45, 8],
+            [8, 40, 8]
+          ]
+        },
+        {
+          "type": "sine",
+          "vol": 0.05,
+          "notes": [
+            [0, 57, 8],
+            [8, 52, 8]
+          ]
+        }
+      ]
+    }
+  ],
+  "ambient": [
+    {
+      "id": "town",
+      "name": "街のざわめき",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "bandpass",
+          "freq": 520,
+          "q": 0.7,
+          "vol": 0.05,
+          "wobble": { "f": 0.11, "depth": 0.5 }
+        },
+        {
+          "kind": "pattern",
+          "every": 6.5,
+          "hits": [
+            { "t": 0, "f": 210, "type": "sine", "dur": 0.3, "vol": 0.03 },
+            { "t": 0.9, "f": 170, "type": "sine", "dur": 0.24, "vol": 0.02 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "town_night",
+      "name": "夜の虫",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "pattern",
+          "every": 0.72,
+          "hits": [
+            { "t": 0, "f": 4300, "type": "sine", "dur": 0.045, "vol": 0.035 },
+            { "t": 0.12, "f": 4300, "dur": 0.045, "vol": 0.03 },
+            { "t": 0.24, "f": 4500, "dur": 0.05, "vol": 0.025 }
+          ]
+        },
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 300,
+          "vol": 0.012,
+          "wobble": { "f": 0.06, "depth": 0.5 }
+        }
+      ]
+    },
+    {
+      "id": "forge",
+      "name": "鍛冶の火と槌",
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 260,
+          "vol": 0.05,
+          "wobble": { "f": 0.9, "depth": 0.6 }
+        },
+        {
+          "kind": "pattern",
+          "every": 2.6,
+          "hits": [
+            { "t": 0, "n": 700, "dur": 0.09, "vol": 0.4 },
+            { "t": 0, "f": 1900, "type": "triangle", "dur": 0.11, "vol": 0.06 },
+            { "t": 1.3, "n": 700, "dur": 0.07, "vol": 0.25 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tavern",
+      "name": "酒場のざわめき",
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "bandpass",
+          "freq": 760,
+          "q": 0.5,
+          "vol": 0.055,
+          "wobble": { "f": 0.15, "depth": 0.5 }
+        },
+        {
+          "kind": "pattern",
+          "every": 5.2,
+          "hits": [
+            { "t": 0, "f": 2093, "type": "sine", "dur": 0.12, "vol": 0.04 },
+            { "t": 2.1, "f": 1760, "dur": 0.1, "vol": 0.03 },
+            { "t": 3.4, "f": 2349, "dur": 0.1, "vol": 0.03 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hearth",
+      "name": "焚き火",
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 420,
+          "vol": 0.05,
+          "wobble": { "f": 0.7, "depth": 0.7 }
+        },
+        {
+          "kind": "pattern",
+          "every": 1.1,
+          "hits": [
+            { "t": 0, "n": 1300, "dur": 0.03, "vol": 0.05 },
+            { "t": 0.6, "n": 900, "dur": 0.025, "vol": 0.04 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quiet",
+      "name": "静けさ",
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 200,
+          "vol": 0.012,
+          "wobble": { "f": 0.05, "depth": 0.5 }
+        }
+      ]
+    },
+    {
+      "id": "gate",
+      "name": "門の風",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "bandpass",
+          "freq": 400,
+          "q": 0.3,
+          "vol": 0.04,
+          "wobble": { "f": 0.08, "depth": 0.6 }
+        },
+        {
+          "kind": "noise",
+          "filter": "bandpass",
+          "freq": 640,
+          "q": 0.6,
+          "vol": 0.02,
+          "wobble": { "f": 0.13, "depth": 0.5 }
+        }
+      ]
+    },
+    {
+      "id": "forest",
+      "name": "森の鳥と風",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 520,
+          "vol": 0.035,
+          "wobble": { "f": 0.12, "depth": 0.6 }
+        },
+        {
+          "kind": "pattern",
+          "every": 4.2,
+          "hits": [
+            { "t": 0, "f": 2800, "type": "sine", "dur": 0.09, "vol": 0.05 },
+            { "t": 0.15, "f": 3300, "dur": 0.07, "vol": 0.04 },
+            { "t": 1.8, "f": 2500, "dur": 0.12, "vol": 0.04 },
+            { "t": 2.0, "f": 2900, "dur": 0.08, "vol": 0.03 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forest_night",
+      "name": "夜の森",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "pattern",
+          "every": 0.72,
+          "hits": [
+            { "t": 0, "f": 4200, "type": "sine", "dur": 0.05, "vol": 0.03 },
+            { "t": 0.14, "f": 4400, "dur": 0.05, "vol": 0.025 }
+          ]
+        },
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 380,
+          "vol": 0.018,
+          "wobble": { "f": 0.07, "depth": 0.6 }
+        }
+      ]
+    },
+    {
+      "id": "highway",
+      "name": "街道の風",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "bandpass",
+          "freq": 350,
+          "q": 0.4,
+          "vol": 0.05,
+          "wobble": { "f": 0.07, "depth": 0.7 }
+        },
+        { "kind": "pattern", "every": 7, "hits": [{ "t": 0, "n": 1400, "dur": 0.3, "vol": 0.02 }] }
+      ]
+    },
+    {
+      "id": "lake",
+      "name": "湖の水音",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 240,
+          "vol": 0.05,
+          "wobble": { "f": 0.25, "depth": 0.5 }
+        },
+        { "kind": "pattern", "every": 3.5, "hits": [{ "t": 0, "n": 300, "dur": 0.5, "vol": 0.03 }] }
+      ]
+    },
+    {
+      "id": "abyss",
+      "name": "深層の鳴動",
+      "layers": [
+        {
+          "kind": "tone",
+          "f": 55,
+          "type": "sine",
+          "vol": 0.05,
+          "wobble": { "f": 0.1, "depth": 0.3 }
+        },
+        { "kind": "noise", "filter": "lowpass", "freq": 140, "vol": 0.03 },
+        {
+          "kind": "pattern",
+          "every": 6,
+          "hits": [
+            { "t": 0, "f": 1200, "type": "sine", "dur": 0.15, "vol": 0.04 },
+            { "t": 2.7, "f": 880, "dur": 0.2, "vol": 0.03 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rain",
+      "name": "雨",
+      "outdoor": true,
+      "layers": [
+        { "kind": "noise", "filter": "bandpass", "freq": 1600, "q": 0.4, "vol": 0.055 },
+        { "kind": "noise", "filter": "highpass", "freq": 4200, "vol": 0.018 },
+        {
+          "kind": "pattern",
+          "every": 0.9,
+          "hits": [
+            { "t": 0, "n": 3000, "dur": 0.04, "vol": 0.02 },
+            { "t": 0.3, "n": 2600, "dur": 0.03, "vol": 0.015 },
+            { "t": 0.55, "n": 3400, "dur": 0.03, "vol": 0.02 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "snow",
+      "name": "雪の静寂",
+      "outdoor": true,
+      "layers": [
+        {
+          "kind": "noise",
+          "filter": "lowpass",
+          "freq": 800,
+          "vol": 0.014,
+          "wobble": { "f": 0.05, "depth": 0.5 }
+        }
+      ]
+    }
+  ],
+  "assign": {
+    "bgm": {
+      "default": "town_noon",
+      "townTod": {
+        "morning": "town_morning",
+        "noon": "town_noon",
+        "evening": "town_evening",
+        "night": "town_night"
+      },
+      "places": {
+        "tavern": "tavern",
+        "inn": "tavern",
+        "forge": "forge",
+        "forest": "forest",
+        "highway": "highway",
+        "lake": "lake",
+        "abyss": "abyss"
+      },
+      "screens": {
+        "combat": "combat",
+        "wake": "wake",
+        "status": "status",
+        "settings": "status",
+        "news": "status",
+        "book": "status",
+        "lore": "status",
+        "records": "status",
+        "ending": "finale",
+        "succession": "status",
+        "rebirth": "status",
+        "heir": "status",
+        "retire": "status",
+        "reset": "status",
+        "intro": "title",
+        "title": "title"
+      }
+    },
+    "ambient": {
+      "default": "town",
+      "places": {
+        "home": "hearth",
+        "inn": "hearth",
+        "tavern": "tavern",
+        "forge": "forge",
+        "market": "town",
+        "guild": "town",
+        "church": "quiet",
+        "gate": { "day": "gate", "night": "town_night" },
+        "forest": { "day": "forest", "night": "forest_night" },
+        "highway": { "day": "highway", "night": "forest_night" },
+        "lake": { "day": "lake", "night": "forest_night" },
+        "abyss": "abyss"
+      },
+      "scenes": {
+        "town": "town",
+        "dawn": "town",
+        "night": "town_night",
+        "desk": "quiet",
+        "plain": "quiet",
+        "forge": "forge",
+        "market": "town",
+        "tavern": "tavern",
+        "guild": "town",
+        "church": "quiet",
+        "inn": "hearth",
+        "home": "hearth",
+        "gate": "gate",
+        "forest": "forest",
+        "highway": "highway",
+        "lake": "lake",
+        "abyss": "abyss"
+      },
+      "weather": { "rain": "rain", "snow": "snow" }
+    }
+  }
+}
