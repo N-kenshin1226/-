@@ -75,7 +75,6 @@ export function PlaceScreen({
   };
 
   const entries: MenuEntry[] = [
-    { kind: "header", text: p.kind === "region" ? "REGION" : "PLACE" },
     ...p.actions.flatMap((a): MenuEntry[] =>
       actionEntries(a, p, state, canActNow, setScreen, act, travel),
     ),
