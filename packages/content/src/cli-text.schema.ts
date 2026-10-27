@@ -15,6 +15,10 @@ export const cliTextSchema = z
         timeOfDayNames: z
           .object({ morning: z.string(), noon: z.string(), evening: z.string(), night: z.string() })
           .strict(),
+        /** 月齢の相（time/moon の相）→ 表示名（隠し要素のヒントなどに差し込む。X-11） */
+        moonNames: z
+          .object({ new: z.string(), waxing: z.string(), full: z.string(), waning: z.string() })
+          .strict(),
         statNames: z.record(z.string(), z.string()),
         /** 狩りの行き先（enemies.json の area）→ 表示名 */
         huntAreas: z.record(z.string(), z.string()),
@@ -344,6 +348,8 @@ export const cliTextSchema = z
           .strict(),
         titleGainedFallback: z.string(),
         skillUnlocked: z.string(),
+        /** 隠し要素の発見（X-11、通知Bランク。{name} は発見名） */
+        discoveryFound: z.string(),
         quit: z.string(),
         invalidInput: z.string(),
         eof: z.string(),

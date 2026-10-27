@@ -1,5 +1,6 @@
 import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/index.js";
 import { evaluate, type Cond } from "./conditions/index.js";
+import { checkDiscoveries, type DiscoveryDef } from "./discoveries/index.js";
 import {
   addHeroContribution,
   crisisFinaleAttempt,
@@ -110,6 +111,14 @@ export interface StepConfig {
    * 指定すると、その日の行事が条件と日付＋シードの抽選で打診として届く
    */
   occasions?: OccasionsConfig;
+  /**
+   * 隠し要素（X-11、docs/03 §5。content/discoveries.json）。
+   * 指定すると、毎ステップの行動後の状態で発見条件を評価し、
+   * 満たした発見は flags["found.<id>"]（＋setFlags）を立てて
+   * discovery イベント（通知Bランク相当）を発行する。
+   * 発見フラグは頂点・称号の条件判定より先に立つので同じステップで効く
+   */
+  discoveries?: readonly DiscoveryDef[];
 }
 
 export type Command =
@@ -1061,6 +1070,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   for (const event of events) {
     for (const sub of subscribers) next = sub(next, event);
     next = recordAction(next, event, cfg.actionLogMax);
+  }
+
+  // 隠し要素（X-11、docs/03 §5）：行動後の状態で発見条件を評価する。
+  // within の条件が行動ログを読むので購読者ループの後、
+  // found.<id> を頂点・称号の条件から使えるように称号判定より前に置く
+  if (cfg.discoveries !== undefined) {
+    const res = checkDiscoveries(next, cfg.discoveries, cfg.time);
+    next = res.state;
+    for (const def of res.found) {
+      const event: ActionEvent = { type: "discovery", id: def.id };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
   }
 
   // 称号の判定（購読者がカウンタを更新した後の state で評価。

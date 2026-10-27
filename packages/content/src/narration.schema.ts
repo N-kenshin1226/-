@@ -28,6 +28,11 @@ export const narrationSchema = z
             /** 勝負所の行事（X-10。{occasion}=《》で包んだ行事名。見出しの後に必ず載る確報） */
             occasionWin: z.array(z.string()).min(1),
             occasionLoss: z.array(z.string()).min(1),
+            /**
+             * 隠し要素のヒント（X-11。{text}=発見ごとのヒント文。
+             * 見逃し対策として未発見の間は見出しの後に必ず載る）
+             */
+            discoveryHint: z.array(z.string()).min(1),
           })
           .strict(),
       })

@@ -20,6 +20,7 @@ const text: NarrationTemplates = {
       rival: ["風の噂：{epithet}の{name}（{rank}位・名声{score}）の話だ。"],
       occasionWin: ["{occasion}――見事な勝ちであった。"],
       occasionLoss: ["{occasion}――あえなく敗れたという。"],
+      discoveryHint: ["風の噂：{text}", "酒場の噂：{text}"],
     },
   },
   npcWord: {
@@ -178,6 +179,23 @@ describe("TemplateProvider（07 §6）", () => {
     expect(lost[2]).toBe("《炉前の品評会》――あえなく敗れたという。");
     // 渡さなければ出ない
     expect(provider.narrate({ scene: "newspaper", deeds: ["occasion"] }, rng())).toHaveLength(2);
+  });
+
+  it("新聞：隠し要素のヒントは見出しの後に必ず載る（X-11。渡さなければ出ない）", () => {
+    const lines = provider.narrate(
+      { scene: "newspaper", deeds: ["wait"], hints: ["満月の夜にだけ鳴る鐘があるという"] },
+      rng(),
+    );
+    expect(lines).toHaveLength(3);
+    expect(lines[2]).toMatch(/噂：満月の夜にだけ鳴る鐘があるという/);
+    // 複数ヒントは全件載る（未発見が複数ある日の呼び出し側の選択に応じる）
+    const two = provider.narrate(
+      { scene: "newspaper", deeds: ["wait"], hints: ["甲という", "乙という"] },
+      rng(),
+    );
+    expect(two).toHaveLength(4);
+    // 渡さなければ出ない（発見済みのヒントは呼び出し側が渡さない）
+    expect(provider.narrate({ scene: "newspaper", deeds: ["wait"] }, rng())).toHaveLength(2);
   });
 
   it("新聞：勘違い系の見出しが一定確率で混ざる", () => {

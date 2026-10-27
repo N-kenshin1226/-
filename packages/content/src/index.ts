@@ -67,6 +67,14 @@ export {
   occasionsFileSchema,
 } from "./occasions.schema.js";
 export type { OccasionJson, OccasionsFile } from "./occasions.schema.js";
+// 隠し要素（X-11、docs/03 §5。時刻・月齢・行動の組み合わせで出る発見）
+export { discoveries } from "./discoveries.js";
+export {
+  discoveriesFileSchema,
+  discoverySchema,
+  discoverySeededSchema,
+} from "./discoveries.schema.js";
+export type { DiscoveriesFile, DiscoveryJson } from "./discoveries.schema.js";
 export { worldModsSchema } from "./world-mods.schema.js";
 // 世界の危機（W-01、docs/08）。型のスキーマはコンテンツと並べて crises/schema.ts に置く
 export { crises, crisisTypes, sampleCrises } from "./crises.js";

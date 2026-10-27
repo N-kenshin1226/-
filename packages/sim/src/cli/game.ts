@@ -58,6 +58,8 @@ import {
   crisisTouchpointOf,
   crisisTouchpointOffers,
   crisisTypeOf,
+  dailyDiscoveryHint,
+  discoveryHintText,
   isSkillUnlocked,
   occasionDef,
   occasionOffers,
@@ -458,11 +460,36 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           cfg.occasions !== undefined ? (occasionDef(cfg.occasions, e.id)?.name ?? e.id) : e.id;
         return [tpl(e.won ? t.text.occasionWon : t.text.occasionLost, { name })];
       }
+      // 隠し要素の発見（X-11）：通知Bランク —— 発見名＋発見の語り
+      if (e.type === "discovery") {
+        const def = cfg.discoveries?.find((d) => d.id === e.id);
+        return [
+          tpl(t.text.discoveryFound, { name: def?.name ?? e.id }),
+          ...(def?.foundText !== undefined ? [def.foundText] : []),
+        ];
+      }
       return [];
     });
 
   // 語り層（07 §6）：文章だけを返す。ゲーム結果は core が先に決めている
   const narrator = opts.narrator ?? new TemplateProvider(narration);
+  /**
+   * 隠し要素の噂ヒント（X-11）：未発見の発見があれば当日の一件を返す。
+   * 世界シードで抽選された時刻パラメータは表示名で差し込む
+   * （{weekday}→曜日、{moon}→月齢名 など）
+   */
+  const discoveryHintLine = (st: GameState): string | null => {
+    if (cfg.discoveries === undefined) return null;
+    const def = dailyDiscoveryHint(st, cfg.discoveries);
+    return def === null
+      ? null
+      : discoveryHintText(def, st.seed, cfg.time, {
+          weekday: (i) => `${t.display.weekdayNames[i] ?? i}曜日`,
+          moon: (p) => t.display.moonNames[p] ?? p,
+          season: (i) => t.display.seasonNames[i] ?? String(i),
+          dayOfSeason: (i) => `${i + 1}日目`,
+        });
+  };
   /** 作品の表示名：注文名（特別注文は元の注文名、接点の注文は接点の品名）＞スキル名の順で解決する */
   const workName = (w: Work): string => {
     const orderId = w.order?.split("#")[0];
@@ -619,6 +646,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           cfg.occasions !== undefined ? occasionDef(cfg.occasions, a.target ?? "") : undefined;
         return def === undefined ? [] : [{ name: def.name, won: a.variant === "win" }];
       });
+    // 隠し要素のヒント（X-11）：未発見の発見は噂として新聞に必ず混ぜる。
+    // 発見済み（found.<id>）のヒントはここでは渡さず二度と出ない
+    const hint = discoveryHintLine(state!);
     const lines = narrator.narrate(
       {
         scene: "newspaper",
@@ -626,6 +656,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         works,
         deaths,
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
+        ...(hint !== null ? { hints: [hint] } : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title

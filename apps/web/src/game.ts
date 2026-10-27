@@ -65,6 +65,8 @@ import {
   crisisTouchpointOf,
   crisisTouchpointOffers,
   crisisTypeOf,
+  dailyDiscoveryHint,
+  discoveryHintText,
   occasionDef,
   occasionOffers,
   occasionSpeaker,
@@ -103,6 +105,7 @@ import {
   canon,
   cliText,
   crisisTypes,
+  discoveries,
   enemies,
   enemiesByArea,
   mentors,
@@ -230,6 +233,8 @@ export const cfg: StepConfig = {
       growthPerDay: balance.rivals.growthPerDay,
     },
   },
+  /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
+  discoveries: discoveries.discoveries,
 };
 
 /** 運命の傾向の選択肢（T-45。UI で3択を出す用） */
@@ -545,6 +550,24 @@ export function occasionName(id: string): string {
   return cfg.occasions !== undefined ? (occasionDef(cfg.occasions, id)?.name ?? id) : id;
 }
 
+/**
+ * 隠し要素の噂ヒント（X-11）：未発見の発見があれば当日の一件を返す。
+ * 世界シードで抽選された時刻パラメータは display 名で差し込む
+ * （{weekday}→曜日名、{moon}→月齢名 など）。発見済みは二度と出ない
+ */
+export function discoveryHintLine(state: GameState): string | null {
+  if (cfg.discoveries === undefined) return null;
+  const def = dailyDiscoveryHint(state, cfg.discoveries);
+  return def === null
+    ? null
+    : discoveryHintText(def, state.seed, cfg.time, {
+        weekday: (i) => `${t.display.weekdayNames[i] ?? i}曜日`,
+        moon: (p) => t.display.moonNames[p] ?? p,
+        season: (i) => t.display.seasonNames[i] ?? String(i),
+        dayOfSeason: (i) => `${i + 1}日目`,
+      });
+}
+
 /** イベント → 表示行（CLIの applyTitles 相当）。state を渡すとライバル名まで解ける（W-03） */
 export function eventLines(events: ActionEvent[], state?: GameState): string[] {
   return events.flatMap((e) => {
@@ -742,6 +765,14 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         return [
           tpl(e.won ? t.text.occasionWon : t.text.occasionLost, { name: occasionName(e.id) }),
         ];
+      // 隠し要素の発見（X-11）：通知Bランク —— 発見名＋発見の語り
+      case "discovery": {
+        const def = cfg.discoveries?.find((d) => d.id === e.id);
+        return [
+          tpl(t.text.discoveryFound, { name: def?.name ?? e.id }),
+          ...(def?.foundText !== undefined ? [def.foundText] : []),
+        ];
+      }
       default:
         return [];
     }
@@ -836,6 +867,8 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   const occasionResults = state.actionLog
     .filter((a) => a.day === day && a.kind === "occasion")
     .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
+  // 隠し要素のヒント（X-11）：未発見の発見は噂として新聞に必ず混ぜる
+  const hint = discoveryHintLine(state);
   lines.push(
     ...narrator.narrate(
       {
@@ -844,6 +877,7 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
         works,
         deaths,
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
+        ...(hint !== null ? { hints: [hint] } : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title
@@ -1342,11 +1376,14 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
   const occasionResults = state.actionLog
     .filter((a) => a.day === day && a.kind === "occasion")
     .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
+  // 隠し要素のヒント（X-11）：未発見の発見は噂として紙面に必ず混ぜる
+  const hint = discoveryHintLine(state);
   const req = {
     deeds,
     works,
     deaths,
     ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
+    ...(hint !== null ? { hints: [hint] } : {}),
     ...(prevLife !== undefined ? { prevLife } : {}),
     ...(topRival !== undefined ? { rival: topRival } : {}),
   };
@@ -1477,6 +1514,12 @@ export function townRumor(state: GameState): string {
     cfg.crisis !== undefined ? crisisStageLine(state, cfg.crisis, narration.crisis, rng) : null;
   if (crisis !== null && (state.crisis?.outcome === "ruin" || state.time.day % 2 === 0)) {
     return `噂 ―「${crisis}」`;
+  }
+  // 隠し要素の噂（X-11）：未発見の発見のヒントを下帯の噂ローテーションに混ぜる。
+  // 新聞には毎日載るので下帯では一日おき（危機の噂が優先する偶数日と交互）
+  const hint = discoveryHintLine(state);
+  if (hint !== null && state.time.day % 2 === 1) {
+    return `噂 ―「${hint}」`;
   }
   const deeds = state.actionLog.filter((a) => a.day === state.time.day - 1).map((a) => a.kind);
   const line = narrator.narrate({ scene: "newspaper", deeds, works: [], deaths: 0 }, rng)[1];
