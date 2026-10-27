@@ -47,7 +47,6 @@ const cfg = (lore: LoreConfig = loreCfg): StepConfig =>
     sleep: {
       nightlyCapPerSkill: 8,
       nightlyCapTotal: 999,
-      carryoverRatio: 0.5,
       innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
       dinnerFactors: { withDinner: 1, noDinner: 1 },
       qualityMin: 0.6,

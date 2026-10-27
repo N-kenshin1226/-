@@ -10,6 +10,20 @@ export const originSchema = z
     potentialBase: z.number().min(1).max(200),
     /** スキルごとの出自ボーナス（%ポイント。正のみ） */
     affinity: z.record(z.string(), z.number().min(0).max(50)),
+    /**
+     * 出自由来の初期スキル値（F-01。鍛冶屋の子は鍛冶が最初から身についている）。
+     * min〜max（整数）の範囲で世界シードから決定論的に引かれ、value・peak の
+     * 両方に入る —— 最初のステータス画面から「自分の得意」が見える
+     */
+    initialSkills: z
+      .record(
+        z.string(),
+        z
+          .object({ min: z.number().int().nonnegative(), max: z.number().int().nonnegative() })
+          .strict()
+          .refine((r) => r.min <= r.max, { message: "initialSkills は min <= max で" }),
+      )
+      .optional(),
   })
   .strict();
 

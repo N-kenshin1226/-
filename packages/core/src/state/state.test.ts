@@ -40,7 +40,6 @@ const cfg: StepConfig = {
   sleep: {
     nightlyCapPerSkill: 8.0,
     nightlyCapTotal: 999,
-    carryoverRatio: 0.5,
     innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
     dinnerFactors: { withDinner: 1.1, noDinner: 0.85 },
     qualityMin: 0.6,
@@ -156,6 +155,38 @@ describe("newGame", () => {
       potentialInitMax: 130,
     });
     expect(h.player.origin).toBe("origin.hunter_child");
+  });
+
+  it("出自の initialSkills が最初の朝から value/peak に出る（F-01）", () => {
+    const mk = () =>
+      newGame("seed-ini", "初期値", {
+        ...newGameCfg,
+        origin: {
+          id: "origin.smith_child",
+          potentialBase: 90,
+          affinity: {},
+          initialSkills: { smithing: { min: 8, max: 12 }, mining: { min: 2, max: 4 } },
+        },
+        potentialInitMin: 80,
+        potentialInitMax: 130,
+      });
+    const g = mk();
+    // 鍛冶屋の子は鍛冶 8〜12、採掘 2〜4 の腕を持って始まる
+    const sm = g.player.skills.smithing!;
+    expect(sm.value).toBeGreaterThanOrEqual(8);
+    expect(sm.value).toBeLessThanOrEqual(12);
+    expect(Number.isInteger(sm.value)).toBe(true);
+    expect(sm.peak).toBe(sm.value);
+    const mi = g.player.skills.mining!;
+    expect(mi.value).toBeGreaterThanOrEqual(2);
+    expect(mi.value).toBeLessThanOrEqual(4);
+    // 指定のないスキルは 0 のまま
+    expect(g.player.skills.swordplay!.value).toBe(0);
+    // 同じシード・同じ出自では同じ初期値（決定論）
+    expect(mk().player.skills.smithing!.value).toBe(sm.value);
+    // 出自なしなら全て 0（従来どおり）
+    const plain = newGame("seed-ini", "初期値", newGameCfg);
+    expect(plain.player.skills.smithing!.value).toBe(0);
   });
 
   it("運命の傾向と誓約（T-45/T-46）：既定は calm＋誓約なし", () => {

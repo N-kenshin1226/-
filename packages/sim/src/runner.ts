@@ -111,6 +111,11 @@ export function runBot(
         if (e.report.restDay) pushFirst("restDay", "休養日");
         if (e.report.overwork.became) pushFirst("overwork", "オーバーワーク");
         for (const l of e.report.lines) pushFirst(`grow:${l.kind}:${l.id}`, `${l.id} の成長`);
+        // 初めての持ち越し（F-01：上限を超えても消えないことが目に見える）
+        if (e.report.lines.some((l) => l.carried !== undefined)) pushFirst("carryover", "持ち越し");
+      } else if (e.type === "skillRankUp") {
+        // ランク帯を越えた節目（F-01。「最初のランクアップは3日以内」の計測に使う）
+        pushFirst(`rankup:${e.skill}:${e.toRank}`, `ランクアップ ${e.skill}`);
       } else if (e.type === "slept") {
         pushFirst("slept", "初めての睡眠");
       }

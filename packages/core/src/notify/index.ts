@@ -49,7 +49,7 @@ export function rankOf(
     case "npcEvent":
       return "B";
     default:
-      return null; // slept / wakeReport / gainApplied / actionPerformed
+      return null; // slept / wakeReport / gainApplied / actionPerformed / skillRankUp（F-01。起床ログの行で済ませ、別の通知は出さない）
   }
 }
 

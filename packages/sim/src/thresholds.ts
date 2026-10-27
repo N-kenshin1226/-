@@ -45,6 +45,19 @@ export const thresholdsSchema = z
           .strict(),
         /** 単一ルーチン型と多様型の成長差（合計スキル増分の比） */
         policyGapMax: z.number().min(1),
+        /**
+         * F-01「成長の爽快感」：
+         * - 初日に3回以上の行動で主スキルが翌朝これだけ伸びる（目に見える初日の伸び）
+         * - 最初のランクアップがこの日数以内に来る（節目が早く見える）
+         */
+        earlyGrowth: z
+          .object({
+            dayOneMinGain: z.number().nonnegative(),
+            dayOneBots: z.array(z.string()).min(1),
+            firstRankUpDays: z.number().int().positive(),
+            rankUpBots: z.array(z.string()).min(1),
+          })
+          .strict(),
         /** 簡易判定のみ型の収益・経験が手動に対しての割合上限 */
         simpleRevenueShare: z.union([
           disabled,

@@ -17,3 +17,17 @@ export async function skipIntro(page: Page): Promise<void> {
   }
   await expect(page.getByTestId("menu")).toBeVisible();
 }
+
+/**
+ * F-02 の通知窓（A＝加護の窓 / S＝帯）が開いていたら畳む。
+ * モーダルなので、開いたままだと背面の操作が効かない
+ */
+export async function dismissFx(page: Page): Promise<void> {
+  for (const id of ["notice-a", "notice-s"]) {
+    const el = page.getByTestId(id);
+    while (await el.isVisible().catch(() => false)) {
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(150);
+    }
+  }
+}

@@ -67,7 +67,30 @@ export const balanceSchema = z
         nightlyCapPerSkill: z.number().positive(),
         /** 1晩の全スキル合計の定着上限 */
         nightlyCapTotal: z.number().positive(),
-        carryoverRatio: z.number().min(0).max(1),
+        /**
+         * 合計上限にランク係数を掛ける集中度の下限（F-01、0〜1）。
+         * その晩の未定着のうち最大の技能のシェアがこれ以上なら、
+         * その技能のランク係数が nightlyCapTotal にも掛かる（集中した夜はよく定着する）
+         */
+        focusShare: z.number().min(0).max(1),
+        /**
+         * スキルのランク帯（docs/02 §1 のランク表）と定着上限倍率（F-01）。
+         * at は value の下限（昇順・先頭 0）、capFactor はその帯の定着上限倍率。
+         * 上限を超えた未定着経験は全量翌日に持ち越される（消失しない）
+         */
+        skillRanks: z
+          .array(
+            z
+              .object({
+                at: z.number().nonnegative(),
+                capFactor: z.number().positive(),
+              })
+              .strict(),
+          )
+          .min(2)
+          .refine((r) => r[0]!.at === 0 && r.every((x, i) => i === 0 || x.at > r[i - 1]!.at), {
+            message: "sleep.skillRanks は先頭 at:0 の昇順で",
+          }),
         innFactors: z
           .object({
             cheap: z.number().positive(),

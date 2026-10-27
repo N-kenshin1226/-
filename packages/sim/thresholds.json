@@ -4,6 +4,12 @@
     "mainSkillAt3h": { "minutes": 180, "min": 25, "max": 40, "bots": ["single"] },
     "mainSkillByMid": { "marksMinutes": [600, 900], "min": 40, "bots": ["single"] },
     "policyGapMax": 1.3,
+    "earlyGrowth": {
+      "dayOneMinGain": 2,
+      "dayOneBots": ["single"],
+      "firstRankUpDays": 3,
+      "rankUpBots": ["single"]
+    },
     "simpleRevenueShare": {
       "enabled": false,
       "reason": "M0 には収益システムがない。M1 の作品台帳・報酬で測れるようになったら有効化する"
