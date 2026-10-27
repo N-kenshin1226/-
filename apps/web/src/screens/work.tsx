@@ -1,7 +1,28 @@
 /** 仕事画面とミニゲーム（手動プレイ）の皮（UI-01：世界の窓＋コマンド列） */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { playSfx } from "../fx/sound.js";
-import type { ActionEvent, GameState } from "@trace/core";
+import {
+  BeatRail,
+  ClashLine,
+  FxPopsLayer,
+  MG_RAIL_Y,
+  OpponentFace,
+  PushGauge,
+  QualityMeter,
+  ResultReveal,
+  ShakeBox,
+  SparkBurst,
+  useFxPops,
+} from "../fx/minigame.js";
+import {
+  beatPhase,
+  clashDelta,
+  comboCount,
+  negoMood,
+  railXPct,
+  type BeatMark,
+} from "../fx/motion.js";
+import type { ActionEvent, DealCard, GameState } from "@trace/core";
 import { balance } from "@trace/content";
 import {
   crisisOrders,
@@ -31,6 +52,7 @@ import {
   Kicker,
   WorldFrame,
   pos,
+  useHotkeys,
   type Act,
   type MenuEntry,
   type Push,
@@ -237,6 +259,15 @@ export function WorkModeScreen({
 }
 
 // ---- ミニゲーム（手動） ----
+/** タイミング系の決定ボタンの名（鍛冶=打つ・演奏=奏でる・釣り=掛ける） */
+function pressLabelOf(kind: MinigameKind): string {
+  return kind === "performance"
+    ? t.text.performancePress
+    : kind === "fishing"
+      ? t.text.fishingPress
+      : "打つ";
+}
+
 export function MinigameScreen({
   state,
   kind,
@@ -267,6 +298,14 @@ export function MinigameScreen({
     doneRef.current = true;
     playSfx(res.quality >= order.targetQuality ? "fanfare" : "notice");
   }, [res.done, res.quality, order.targetQuality]);
+  const quit = () =>
+    setScreen(
+      occasion !== undefined
+        ? { name: "occasion" }
+        : finale !== undefined
+          ? { name: "crisis" }
+          : { name: "work" },
+    );
   const startLine = isTimingKind(kind)
     ? tpl(
         kind === "performance"
@@ -336,23 +375,40 @@ export function MinigameScreen({
     {
       id: "minigame-quit",
       label: "やめる",
-      onPick: () =>
-        setScreen(
-          occasion !== undefined
-            ? { name: "occasion" }
-            : finale !== undefined
-              ? { name: "crisis" }
-              : { name: "work" },
-        ),
+      onPick: quit,
     },
   ];
+
+  // F-03：遊んでいる間はミニゲームの皮がキーを握る（Space/Enter・矢印・Esc）。
+  // コマンド列は結果が出てから Enter を受ける（自動的に「納める」側に乗る）
+  const hints: (readonly [string, string])[] = res.done
+    ? [
+        ["Enter", "確定"],
+        ["Esc", "戻る"],
+      ]
+    : isTimingKind(kind)
+      ? [
+          ["Space・Enter", pressLabelOf(kind)],
+          ["Esc", "やめる"],
+        ]
+      : isBoardKind(kind)
+        ? [
+            ["↑↓←→", "マスを選ぶ"],
+            ["Enter・Space", kind === "appraisal" ? "鑑定する" : "掘る"],
+            ["Esc", "やめる"],
+          ]
+        : [
+            ["←→", "札を選ぶ"],
+            ["Enter・Space", "出す"],
+            ["Esc", "やめる"],
+          ];
 
   return (
     <div data-testid="minigame" className="scene">
       <WorldFrame
         style={{ ...pos({ left: 300, top: 130, width: 680, bottom: 200 }), padding: "16px 4px" }}
       >
-        <div style={{ margin: "2px 14px 8px" }}>
+        <div style={{ margin: "2px 14px 4px" }}>
           <Kicker text="WORK" />
           <div
             style={{
@@ -367,83 +423,97 @@ export function MinigameScreen({
           </div>
         </div>
         <div style={{ margin: "0 16px" }}>
-          {isTimingKind(kind) && <TimingView kind={kind} gs={gs as TimingState} onTick={setGs} />}
-          {isBoardKind(kind) && (
-            <BoardView kind={kind} name={order.name} gs={gs as BoardState} onTick={setGs} />
+          {/* F-03：品質が目に見えて積み上がる（core の result を各拍に映す） */}
+          <QualityMeter value={res.quality} target={order.targetQuality} />
+          {isTimingKind(kind) && (
+            <TimingView kind={kind} gs={gs as TimingState} onTick={setGs} onQuit={quit} />
           )}
-          {kind === "negotiation" && <NegotiationView gs={gs as DealState} onTick={setGs} />}
+          {isBoardKind(kind) && (
+            <BoardView
+              kind={kind}
+              name={order.name}
+              gs={gs as BoardState}
+              onTick={setGs}
+              onQuit={quit}
+            />
+          )}
+          {kind === "negotiation" && (
+            <NegotiationView gs={gs as DealState} onTick={setGs} onQuit={quit} />
+          )}
         </div>
-        {res.done && (
-          <div
-            data-testid="minigame-done"
-            style={{ margin: "8px 16px", padding: "8px 12px", border: `1px solid ${W.frame}` }}
-          >
-            <span
-              style={{
-                fontWeight: 800,
-                fontSize: 17,
-                color: theme.colors.special,
-                fontFamily: theme.font.mincho,
-              }}
-            >
-              {res.detail}（品質 {res.quality}
-              {res.flags.length > 0 ? `・${res.flags.join("・")}` : ""}）
-            </span>
-          </div>
-        )}
-        <CommandMenu
-          entries={entries}
-          onBack={() =>
-            setScreen(
-              occasion !== undefined
-                ? { name: "occasion" }
-                : finale !== undefined
-                  ? { name: "crisis" }
-                  : { name: "work" },
-            )
-          }
-        />
+        {res.done && <ResultReveal detail={res.detail} quality={res.quality} flags={res.flags} />}
+        <CommandMenu entries={entries} onBack={quit} auto={res.done} />
       </WorldFrame>
-      <HintBar
-        items={[
-          ["Space", "打つ"],
-          ["↑↓", "選択"],
-          ["Enter", "決定"],
-          ["Esc", "やめる"],
-        ]}
-      />
+      <HintBar items={hints} />
     </div>
   );
 }
 
-/** タイミング系の皮の共通画面（鍛冶・演奏・釣り）。拍に合わせて押すだけ */
+/** タイミング系の皮の共通画面（鍛冶・演奏・釣り）。動く拍に合わせて押す */
 function TimingView({
   kind,
   gs,
   onTick,
+  onQuit,
 }: {
   kind: MinigameKind;
   gs: TimingState;
   onTick: (s: TimingState) => void;
+  onQuit: () => void;
 }) {
   const startRef = useRef<number | null>(null);
-  const [, force] = useState(0);
+  const [now, setNow] = useState(0);
+  /** 各拍の成否（core は命中数だけ持つ。印は表示側で覚える） */
+  const [marks, setMarks] = useState<BeatMark[]>([]);
+  /** 命中の火花を出す拍の番号（外れでは出さない） */
+  const [spark, setSpark] = useState<{ i: number; x: number; key: number } | null>(null);
+  const [pulse, setPulse] = useState(0);
+  const { pops, push } = useFxPops();
+  const gsRef = useRef(gs);
+  gsRef.current = gs;
+  const sparkKey = useRef(0);
+
   useEffect(() => {
     startRef.current = performance.now();
-    const id = setInterval(() => force((x) => x + 1), 50);
-    return () => clearInterval(id);
+    let raf = 0;
+    const loop = (t: number) => {
+      setNow(t);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, []);
-  const elapsed = startRef.current === null ? 0 : performance.now() - startRef.current;
-  const next = gs.beats[gs.cursor];
-  const near = next !== undefined && Math.abs(elapsed - next) <= gs.halfWidth;
-  const pressLabel =
-    kind === "performance"
-      ? t.text.performancePress
-      : kind === "fishing"
-        ? t.text.fishingPress
-        : "打つ";
+  const elapsed = startRef.current === null ? 0 : now - startRef.current;
+  const phase = beatPhase(elapsed, gs.beats, gs.halfWidth, gs.cursor);
+
+  /** 拍を打つ（Space・Enter・クリックのどれでも） */
+  const press = useCallback(() => {
+    const cur = gsRef.current;
+    if (cur.done || startRef.current === null) return;
+    const at = performance.now() - startRef.current;
+    const nxt = tickMinigame(kind, cur, { at }) as TimingState;
+    const hit = nxt.hits > cur.hits;
+    const bi = cur.cursor;
+    const bx = railXPct(cur.beats[bi] ?? at, cur.beats);
+    // 連打は常に最新の状態に対して判定する（描画を待たない）
+    gsRef.current = nxt;
+    setMarks((m) => [...m, hit ? "hit" : "miss"]);
+    push(hit ? t.text.workHit : t.text.workMiss, hit ? "hit" : "miss", bx);
+    // 命中：火花＋芯の音＋小さな揺れ。外れ：乾いた一拍だけ
+    playSfx(hit ? "hit" : "miss");
+    if (hit) {
+      setSpark({ i: bi, x: bx, key: ++sparkKey.current });
+      setPulse((p) => p + 1);
+    }
+    onTick(nxt);
+  }, [kind, onTick, push]);
+
+  // F-03：遊んでいる間は Space・Enter・Esc を皮が握る（コマンド列は auto=false）
+  useHotkeys({ " ": press, enter: press, escape: onQuit }, !gs.done);
+
+  const combo = comboCount(marks);
   return (
-    <div style={{ marginTop: 4 }}>
+    <div style={{ marginTop: 4, position: "relative" }}>
       <div style={{ fontSize: 13, color: W.dim }}>
         {tpl(
           kind === "performance"
@@ -451,37 +521,38 @@ function TimingView({
             : kind === "fishing"
               ? t.text.fishingBeat
               : t.text.workBeat,
-          { n: gs.cursor + 1 },
+          { n: Math.min(gs.cursor + 1, gs.beats.length) },
         )}
-        （{gs.hits} 命中 / 判定窓 ±{Math.round(gs.halfWidth)}
-        ms）
-      </div>
-      <div style={{ letterSpacing: 6, fontSize: 22, margin: "8px 0" }}>
-        {gs.beats.map((b, i) => (
-          <span
-            key={i}
-            style={{
-              color:
-                i < gs.cursor
-                  ? theme.colors.special
-                  : i === gs.cursor && near
-                    ? theme.colors.good
-                    : theme.colors.world.dim,
-            }}
-          >
-            ●
+        （{gs.hits} 命中 / 判定窓 ±{Math.round(gs.halfWidth)}ms）
+        {combo >= 2 && (
+          <span data-testid="mg-combo" style={{ marginLeft: 12, color: theme.colors.special }}>
+            {tpl(t.text.workCombo, { n: combo })}
           </span>
-        ))}
+        )}
       </div>
+      <ShakeBox pulse={pulse}>
+        <div style={{ position: "relative" }}>
+          <BeatRail gs={gs} elapsed={elapsed} marks={marks} />
+          {spark !== null && (
+            <SparkBurst
+              key={spark.key}
+              seedIndex={spark.i}
+              // レールの上マージン 6px + 芯の高さ
+              style={{ left: `${spark.x}%`, top: MG_RAIL_Y + 6, position: "absolute" }}
+            />
+          )}
+        </div>
+      </ShakeBox>
+      <FxPopsLayer pops={pops} />
       <button
         type="button"
         data-testid={`${kind}-hit`}
+        data-armed={phase.armed ? "1" : "0"}
         disabled={gs.done}
-        onClick={() => {
-          const nxt = tickMinigame(kind, gs, { at: elapsed }) as TimingState;
-          // F-02：命中は槌の芯、外れは乾いた一拍
-          playSfx(nxt.hits > gs.hits ? "hit" : "miss");
-          onTick(nxt);
+        onClick={(e) => {
+          press();
+          // クリック後のフォーカス残りで Space/Enter が二度効かないよう外す
+          e.currentTarget.blur();
         }}
         style={{
           minHeight: 44,
@@ -496,28 +567,95 @@ function TimingView({
           cursor: "pointer",
         }}
       >
-        {pressLabel}
+        {pressLabelOf(kind)}
       </button>
     </div>
   );
 }
 
-/** 盤面推理系の皮の共通画面（採掘・鑑定）。マスを1つずつ開く */
+/** 盤面推理系の皮の共通画面（採掘・鑑定）。マスを1つずつ開く。開けるたび手応えあり */
 function BoardView({
   kind,
   name,
   gs,
   onTick,
+  onQuit,
 }: {
   kind: MinigameKind;
   /** 注文の名（{name} の差し込み元。テンプレートを素のまま出さない） */
   name: string;
   gs: BoardState;
   onTick: (s: BoardState) => void;
+  onQuit: () => void;
 }) {
+  const [focus, setFocus] = useState(0);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+  const gsRef = useRef(gs);
+  gsRef.current = gs;
+  /** 直近に開けたマス（開ける瞬間のアニメ対象） */
+  const [lastIdx, setLastIdx] = useState<number | null>(null);
+  /** 空地の手がかり数の写し（core が出したヒントをそのマスに残す。隠し情報は増やさない） */
+  const [hints, setHints] = useState<Record<number, number>>({});
+  const [pulse, setPulse] = useState(0);
+  const { pops, push } = useFxPops();
   const foundNoun = kind === "appraisal" ? "真品" : "鉱石";
+
+  const dig = useCallback(
+    (i: number) => {
+      const cur = gsRef.current;
+      if (cur.done) return;
+      const c = cur.cells[i];
+      if (c === undefined || c.revealed) return;
+      const nxt = tickMinigame(kind, cur, {
+        x: i % cur.width,
+        y: Math.floor(i / cur.width),
+      }) as BoardState;
+      gsRef.current = nxt;
+      // クリックで開けたマスをカーソル位置に合わせる（続けて Enter で隣を掘れる）
+      setFocus(i);
+      setLastIdx(i);
+      if (c.kind === "ore") {
+        // 鉱石・真品：光る＋小気味よい音＋収穫の浮き文字
+        playSfx("coin");
+        push(
+          tpl(kind === "appraisal" ? t.text.appraisalFound : t.text.miningOre, {
+            found: nxt.ores,
+            ores: nxt.ores,
+            total: nxt.oresTotal,
+          }),
+          "coin",
+        );
+      } else if (c.kind === "rock") {
+        // 危ないマス：ひび・鈍い音・揺れ
+        playSfx("miss");
+        push(kind === "appraisal" ? t.text.appraisalMiss : t.text.miningRock, "warn");
+        setPulse((p) => p + 1);
+      } else {
+        playSfx("tag");
+        // 空地の手がかりはマスの中に残す（core が今回返したヒントの写し）
+        if (nxt.lastHint !== null) setHints((h) => ({ ...h, [i]: nxt.lastHint! }));
+      }
+      onTick(nxt);
+    },
+    [kind, onTick, push],
+  );
+
+  useHotkeys(
+    {
+      arrowleft: () => setFocus((f) => Math.max(0, f - 1)),
+      arrowright: () => setFocus((f) => Math.min(gs.cells.length - 1, f + 1)),
+      arrowup: () => setFocus((f) => Math.max(0, f - gs.width)),
+      arrowdown: () => setFocus((f) => Math.min(gs.cells.length - 1, f + gs.width)),
+      " ": () => dig(focusRef.current),
+      enter: () => dig(focusRef.current),
+      escape: onQuit,
+    },
+    !gs.done,
+  );
+
   return (
-    <div style={{ marginTop: 4 }}>
+    <div style={{ marginTop: 4, position: "relative" }}>
       <div style={{ fontSize: 13, color: W.dim }}>
         {gs.lastHint === null
           ? tpl(kind === "appraisal" ? t.text.appraisalStart : t.text.miningStart, { name })
@@ -527,56 +665,159 @@ function BoardView({
             })}
         （{foundNoun} {gs.ores}/{gs.oresTotal}）
       </div>
-      <div
-        data-testid={`${kind}-board`}
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${gs.width}, 36px)`,
-          gap: 4,
-          margin: "8px 0",
-        }}
-      >
-        {gs.cells.map((c, i) => {
-          const x = i % gs.width;
-          const y = Math.floor(i / gs.width);
-          const mark = !c.revealed ? "？" : c.kind === "ore" ? "◆" : c.kind === "rock" ? "▲" : "・";
-          const color =
-            c.kind === "ore" && c.revealed
-              ? theme.colors.special
-              : c.kind === "rock" && c.revealed
-                ? theme.colors.bad
-                : theme.colors.world.dim;
-          return (
-            <button
-              key={i}
-              data-testid={`cell-${x}-${y}`}
-              disabled={c.revealed || gs.done}
-              onClick={() => {
-                const nxt = tickMinigame(kind, gs, { x, y }) as BoardState;
-                // F-02：鉱石・真品は小気味よい音、ハズレの石は重い音
-                playSfx(c.kind === "ore" ? "coin" : c.kind === "rock" ? "miss" : "tag");
-                onTick(nxt);
-              }}
-              className={c.revealed ? "board-cell revealed" : "board-cell"}
-              style={{ color }}
-            >
-              {mark}
-            </button>
-          );
-        })}
-      </div>
+      <ShakeBox pulse={pulse}>
+        <div
+          data-testid={`${kind}-board`}
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${gs.width}, 36px)`,
+            gap: 4,
+            margin: "8px 0",
+            width: "fit-content",
+          }}
+        >
+          {gs.cells.map((c, i) => {
+            const x = i % gs.width;
+            const y = Math.floor(i / gs.width);
+            const mark = !c.revealed
+              ? "？"
+              : c.kind === "ore"
+                ? "◆"
+                : c.kind === "rock"
+                  ? "▲"
+                  : "・";
+            const color =
+              c.kind === "ore" && c.revealed
+                ? theme.colors.special
+                : c.kind === "rock" && c.revealed
+                  ? theme.colors.bad
+                  : theme.colors.world.dim;
+            const revCls =
+              i === lastIdx
+                ? c.kind === "ore"
+                  ? " mg-rev-ore"
+                  : c.kind === "rock"
+                    ? " mg-rev-rock"
+                    : " mg-rev-empty"
+                : "";
+            return (
+              <button
+                key={i}
+                data-testid={`cell-${x}-${y}`}
+                disabled={c.revealed || gs.done}
+                onClick={(e) => {
+                  dig(i);
+                  e.currentTarget.blur();
+                }}
+                className={`board-cell${c.revealed ? " revealed" : ""}${revCls}${i === focus && !c.revealed && !gs.done ? " mg-focus" : ""}`}
+                style={{ color, position: "relative" }}
+              >
+                {mark}
+                {hints[i] !== undefined && <span className="mg-cell-hint">{hints[i]}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </ShakeBox>
+      <FxPopsLayer pops={pops} />
     </div>
   );
 }
 
-function NegotiationView({ gs, onTick }: { gs: DealState; onTick: (s: DealState) => void }) {
+/** 駆け引き系の皮（交渉）。相手の表情と押し合いの針を見せる */
+function NegotiationView({
+  gs,
+  onTick,
+  onQuit,
+}: {
+  gs: DealState;
+  onTick: (s: DealState) => void;
+  onQuit: () => void;
+}) {
+  const [focus, setFocus] = useState(0);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+  const gsRef = useRef(gs);
+  gsRef.current = gs;
+  /** 直近の応酬（出した札×相手の札・与えた/被った） */
+  const [clash, setClash] = useState<{
+    you: DealCard;
+    opp: DealCard | undefined;
+    dealt: number;
+    taken: number;
+    key: number;
+  } | null>(null);
+  const { pops, push } = useFxPops();
   const topicName = (id: string) =>
     balance.minigame.negotiation.topics.find((x) => x.id === id)?.name ?? id;
+  const hpMax = balance.minigame.negotiation.hp;
+  const mood = negoMood(gs.playerHp, gs.opponentHp, hpMax, gs.done, gs.won);
+  const edgeText =
+    mood === "ahead"
+      ? t.text.negoEdgeWin
+      : mood === "behind"
+        ? t.text.negoEdgeLose
+        : t.text.negoEdgeEven;
+
+  const play = useCallback(
+    (i: number) => {
+      const cur = gsRef.current;
+      if (cur.done) return;
+      const card = cur.hand[i];
+      if (card === undefined) return;
+      const opp = cur.opponentDeck[0];
+      const nxt = tickMinigame("negotiation", cur, { hand: i }) as DealState;
+      gsRef.current = nxt;
+      const d = clashDelta(cur, nxt);
+      setClash({ you: card, opp, dealt: d.dealt, taken: d.taken, key: nxt.round });
+      // F-02：切った手が相手に刺されば命中音、返り討ちなら重い音
+      playSfx(
+        nxt.opponentHp < cur.opponentHp ? "hit" : nxt.playerHp < cur.playerHp ? "miss" : "tag",
+      );
+      if (d.dealt > 0) push(`あいて −${d.dealt}`, "hit", 20);
+      if (d.taken > 0) push(`こちら −${d.taken}`, "warn", 78);
+      // 手札が減った分、カーソルを範囲内に収める
+      setFocus((f) => Math.min(f, Math.max(0, nxt.hand.length - 1)));
+      onTick(nxt);
+    },
+    [onTick, push],
+  );
+
+  const keymap: Record<string, () => void> = {
+    arrowleft: () => setFocus((f) => Math.max(0, f - 1)),
+    arrowright: () => setFocus((f) => Math.min(gs.hand.length - 1, f + 1)),
+    " ": () => play(focusRef.current),
+    enter: () => play(focusRef.current),
+    escape: onQuit,
+  };
+  // 数字キーでも札を出せる（手札の並びのまま 1〜9）
+  gs.hand.forEach((_, i) => {
+    keymap[String(i + 1)] = () => play(i);
+  });
+  useHotkeys(keymap, !gs.done);
+
   return (
-    <div style={{ marginTop: 4 }} data-testid="nego">
-      <div style={{ fontSize: 13, color: W.dim }}>
-        {tpl(t.text.negoHp, { player: gs.playerHp, opponent: gs.opponentHp })}（{gs.round}R）
+    <div style={{ marginTop: 4, position: "relative" }} data-testid="nego">
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <OpponentFace mood={mood} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, color: W.dim }}>
+            {tpl(t.text.negoHp, { player: gs.playerHp, opponent: gs.opponentHp })}（{gs.round}R）
+          </div>
+          <PushGauge player={gs.playerHp} opponent={gs.opponentHp} max={hpMax} />
+          <div style={{ fontSize: 12, color: W.dim, letterSpacing: "0.08em" }}>{edgeText}</div>
+        </div>
       </div>
+      {clash !== null && (
+        <ClashLine
+          key={clash.key}
+          you={clash.you}
+          opp={clash.opp}
+          dealt={clash.dealt}
+          taken={clash.taken}
+          topicName={topicName}
+        />
+      )}
       <div style={{ fontSize: 13, color: W.dim }}>
         {tpl(t.text.negoPreview, {
           preview: gs.preview.map((c) => `${topicName(c.topic)}${c.power}`).join(" / ") || "―",
@@ -590,33 +831,17 @@ function NegotiationView({ gs, onTick }: { gs: DealState; onTick: (s: DealState)
             type="button"
             data-testid={`hand-${i}`}
             disabled={gs.done}
-            onClick={() => {
-              const nxt = tickMinigame("negotiation", gs, { hand: i }) as DealState;
-              // F-02：切った手が相手に刺されば命中音、返り討ちなら重い音
-              playSfx(
-                nxt.opponentHp < gs.opponentHp
-                  ? "hit"
-                  : nxt.playerHp < gs.playerHp
-                    ? "miss"
-                    : "tag",
-              );
-              onTick(nxt);
+            onClick={(e) => {
+              play(i);
+              e.currentTarget.blur();
             }}
-            style={{
-              minHeight: 44,
-              padding: "0 16px",
-              border: `1px solid ${W.frame}`,
-              background: "rgba(24,24,38,.9)",
-              color: W.text,
-              fontFamily: theme.font.mincho,
-              fontSize: 15,
-              cursor: "pointer",
-            }}
+            className={`nego-card${i === focus && !gs.done ? " focus" : ""}`}
           >
             {topicName(c.topic)} {c.power}
           </button>
         ))}
       </div>
+      <FxPopsLayer pops={pops} />
     </div>
   );
 }

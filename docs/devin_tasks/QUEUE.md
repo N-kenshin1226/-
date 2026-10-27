@@ -12,7 +12,7 @@
 | S-01 | [S-01_audio.md](S-01_audio.md) | P-01 | todo | **最優先（刺激）**。BGM・環境音・効果音 |
 | F-01 | [F-01_growth_feel.md](F-01_growth_feel.md) | ― | in_progress | **最優先（刺激）**。成長の爽快感（定着上限・初期値・ランクアップ） |
 | F-02 | [F-02_juice.md](F-02_juice.md) | ― | done | **最優先（刺激）**。演出と効果音。B=右上の札/A=加護の窓＋音/S=帯（1日1回・終幕は例外）。起床ログの数値・ゲージ・紋章の動き、Web Audio生成音、環境設定（音量・演出を短く）、演出フックは `apps/web/src/fx/`（F-03/F-04 は playSfx と CountUp 等を再利用） |
-| F-03 | [F-03_minigame_motion.md](F-03_minigame_motion.md) | F-02 | todo | **最優先（刺激）**。ミニゲームに動きと手応え |
+| F-03 | [F-03_minigame_motion.md](F-03_minigame_motion.md) | F-02 | done | **最優先（刺激）**。ミニゲームに動きと手応え。拍レール（針・判定窓・縮む輪・成否の印）・命中の火花/揺れ/コンボ、盤面の開ける手応え（鉱石の閃き・岩のひび・手がかり残し）、交渉の相手の表情と押し合いゲージ、品質の積み上げメーター、結果のカウントアップ＋旗の章。Space/Enter/クリック対応・結果後のカーソルは「納める」側 |
 | F-04 | [F-04_combat_tension.md](F-04_combat_tension.md) | F-02 | todo | **最優先（刺激）**。戦闘の駆け引き |
 | F-05 | [F-05_daily_events.md](F-05_daily_events.md) | ― | in_progress | **最優先（刺激）**。日々の出来事・勝負所の絞り込み |
 | K-01 | [K-01_skills.md](K-01_skills.md) | ― | todo | **最優先（刺激）**。技能を約45種に（死んだ技能を作らない） |

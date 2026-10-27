@@ -743,6 +743,461 @@ button {
   animation: coinFlash var(--t-fx-coin-flash-ms) ease-out;
 }
 
+/* ── F-03: ミニゲームの動き ── */
+/* 拍レール（タイミング系）：針・判定窓・縮む輪・成否の印 */
+.mg-rail {
+  user-select: none;
+}
+.mg-rail-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--t-world-edge) 12%,
+    var(--t-world-edge) 88%,
+    transparent
+  );
+}
+.mg-window {
+  position: absolute;
+  border: 1px solid rgba(159, 217, 168, 0.4);
+  background: rgba(159, 217, 168, 0.07);
+  border-radius: 3px;
+}
+.mg-window.on {
+  border-color: var(--t-good);
+  background: rgba(159, 217, 168, 0.16);
+  box-shadow: 0 0 12px rgba(159, 217, 168, 0.25);
+}
+.mg-beat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  line-height: 1;
+  color: var(--t-world-dim);
+}
+.mg-beat.cur {
+  font-size: 17px;
+  color: var(--t-world-hi);
+}
+.mg-beat.hit {
+  color: var(--t-special);
+  text-shadow: 0 0 8px rgba(232, 199, 127, 0.7);
+}
+.mg-beat.miss {
+  color: var(--t-bad);
+  font-size: 15px;
+}
+.mg-ring {
+  position: absolute;
+  border: 2px solid var(--t-world-frame);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.mg-ring.armed {
+  border-color: var(--t-good);
+  box-shadow: 0 0 14px rgba(159, 217, 168, 0.55);
+}
+.mg-ring.late {
+  border-color: var(--t-bad);
+}
+.mg-playhead {
+  position: absolute;
+  width: 2px;
+  height: 44px;
+  margin-left: -1px;
+  background: linear-gradient(180deg, var(--t-world-light), rgba(232, 199, 127, 0.15));
+  pointer-events: none;
+}
+
+/* 命中の火花：散る線＋ひろがる輪 */
+.mg-spark {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.mg-spark::after {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--t-special);
+  border-radius: 50%;
+  animation: mgSparkRing var(--t-fx-spark-ms) ease-out forwards;
+}
+.mg-spark-line {
+  position: absolute;
+  left: -1px;
+  top: -8px;
+  width: 2px;
+  height: 10px;
+  background: var(--t-special);
+  animation: mgSparkFly var(--t-fx-spark-ms) ease-out forwards;
+}
+@keyframes mgSparkRing {
+  from {
+    transform: scale(0.3);
+    opacity: 0.95;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@keyframes mgSparkFly {
+  from {
+    transform: translate(0, 0) scaleY(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(calc(var(--dx) * 18px), calc(var(--dy) * 18px)) scaleY(0.3);
+    opacity: 0;
+  }
+}
+
+/* 命中の一拍に画面が小さく揺れる */
+@keyframes mgShake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(3px, -1px);
+  }
+  50% {
+    transform: translate(-2px, 1px);
+  }
+  75% {
+    transform: translate(1px, 0);
+  }
+}
+.mg-shake {
+  animation: mgShake ease-out;
+}
+
+/* 判定・収穫の浮き文字 */
+.mg-pops {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 6;
+}
+.mg-float {
+  position: absolute;
+  top: 26%;
+  transform: translateX(-50%);
+  font-family: var(--t-font-mincho);
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+  animation: mgFloat ease-out forwards;
+}
+.mg-float-hit {
+  color: var(--t-special);
+  text-shadow: 0 0 14px rgba(232, 199, 127, 0.8);
+}
+.mg-float-miss {
+  color: var(--t-bad);
+}
+.mg-float-coin {
+  color: var(--t-grow);
+  text-shadow: 0 0 12px rgba(240, 194, 106, 0.7);
+}
+.mg-float-warn {
+  color: var(--t-warn);
+}
+.mg-float-plain {
+  color: var(--t-world-dim);
+}
+@keyframes mgFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.85);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.06);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -26px);
+  }
+}
+
+/* 品質の積み上げゲージ */
+.mg-qbar {
+  height: 10px;
+  background: var(--t-bar-off);
+  border: 1px solid var(--t-cell-edge);
+}
+.mg-qbar-v {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(180deg, #f3d48e, #b8873a);
+  transition: width 0.3s ease-out;
+}
+.mg-qbar-v.reached {
+  background: linear-gradient(180deg, #b7e4a8, #5f9f6e);
+}
+.mg-qbar-tick {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--t-world-light);
+  opacity: 0.85;
+}
+
+/* 結果の見せ場 */
+.mg-result {
+  position: relative;
+  margin: 8px 16px;
+  padding: 12px 16px 10px;
+  border: 1px solid var(--t-world-frame);
+  background: linear-gradient(180deg, rgba(40, 30, 16, 0.6), rgba(16, 12, 8, 0.6));
+  cursor: pointer;
+  animation: mgResultIn ease-out;
+}
+@keyframes mgResultIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mg-result-detail {
+  font-size: 14px;
+  color: var(--t-world-dim);
+  animation: mgResultIn ease-out both;
+}
+.mg-result-q {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 2px;
+}
+.mg-result-qlabel {
+  font-family: var(--t-font-sys);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--t-world-dim);
+}
+.mg-result-qnum {
+  font-family: var(--t-font-en);
+  font-size: 34px;
+  color: var(--t-world-hi);
+  text-shadow: 0 0 18px rgba(232, 199, 127, 0.45);
+}
+.mg-result-flags {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.mg-flag {
+  padding: 2px 12px;
+  border: 1px solid var(--t-special);
+  color: var(--t-special);
+  font-family: var(--t-font-mincho);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  text-shadow: 0 0 10px rgba(232, 199, 127, 0.6);
+  animation: mgFlagIn 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes mgFlagIn {
+  from {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.mg-result-skip {
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  font-size: 11px;
+  color: var(--t-world-dim);
+  letter-spacing: 0.1em;
+}
+
+/* 盤面系：開ける手応え */
+.board-cell.mg-focus {
+  border-color: var(--t-world-light);
+  box-shadow: inset 0 0 0 1px var(--t-world-light);
+}
+.board-cell.mg-rev-ore {
+  animation: mgRevOre 0.5s ease-out;
+}
+@keyframes mgRevOre {
+  0% {
+    box-shadow: 0 0 0 0 rgba(232, 199, 127, 0.9);
+    background: #4a3a1a;
+  }
+  60% {
+    box-shadow: 0 0 16px 4px rgba(232, 199, 127, 0.5);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+.board-cell.mg-rev-rock {
+  animation: mgRevRock 0.55s ease-out;
+}
+@keyframes mgRevRock {
+  0% {
+    background: #5a2020;
+    box-shadow: 0 0 0 0 rgba(232, 139, 120, 0.8);
+  }
+  30% {
+    transform: translate(1px, -1px);
+    box-shadow: 0 0 18px 4px rgba(232, 139, 120, 0.55);
+  }
+  60% {
+    transform: translate(-1px, 1px);
+  }
+  100% {
+    transform: none;
+    box-shadow: none;
+  }
+}
+.board-cell.mg-rev-empty {
+  animation: mgRevEmpty 0.4s ease-out;
+}
+@keyframes mgRevEmpty {
+  from {
+    opacity: 0.3;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 開けた空地の手がかり数（セルの中に小さく） */
+.mg-cell-hint {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-family: var(--t-font-en);
+  font-size: 11px;
+  color: var(--t-bless-glow);
+  pointer-events: none;
+}
+
+/* 交渉：相手の顔・押し合いゲージ・応酬の見せ */
+.mg-face {
+  transition: transform 0.3s;
+}
+.mg-push {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 11px;
+  color: var(--t-world-dim);
+  font-family: var(--t-font-sys);
+}
+.mg-push-bar {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  background: var(--t-bar-off);
+  border: 1px solid var(--t-cell-edge);
+}
+.mg-push-center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--t-world-edge);
+}
+.mg-push-needle {
+  position: absolute;
+  top: -4px;
+  width: 10px;
+  height: 14px;
+  margin-left: -5px;
+  background: linear-gradient(180deg, #f3d48e, #b8873a);
+  border: 1px solid var(--t-cell-on-edge);
+  transition: left 0.35s ease-out;
+}
+.mg-clash {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  font-family: var(--t-font-mincho);
+  font-size: 15px;
+}
+.mg-clash-card {
+  padding: 3px 10px;
+  border: 1px solid var(--t-world-edge);
+  background: rgba(24, 24, 38, 0.9);
+}
+.mg-clash-card.you {
+  border-color: var(--t-world-frame);
+  color: var(--t-world-hi);
+  animation: mgCardIn ease-out;
+}
+.mg-clash-card.opp {
+  color: var(--t-world-text);
+  animation: mgCardIn ease-out;
+}
+@keyframes mgCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mg-clash-x {
+  color: var(--t-world-dim);
+}
+.mg-clash-dmg {
+  font-family: var(--t-font-en);
+  font-size: 14px;
+}
+/* 手札の選択中（キーボード操作のカーソル） */
+.nego-card {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--t-world-edge);
+  background: rgba(24, 24, 38, 0.9);
+  color: var(--t-world-text);
+  font-family: var(--t-font-mincho);
+  font-size: 15px;
+  cursor: pointer;
+}
+.nego-card.focus {
+  border-color: var(--t-world-light);
+  color: var(--t-world-hi);
+  box-shadow: 0 0 10px rgba(232, 199, 127, 0.3);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .screen-fade,
   .notice-in,
@@ -753,7 +1208,18 @@ button {
   .seg.g.in,
   .crest-out,
   .crest-in,
-  .coin-flash {
+  .coin-flash,
+  .mg-shake,
+  .mg-float,
+  .mg-spark::after,
+  .mg-spark-line,
+  .mg-result,
+  .mg-result-detail,
+  .mg-flag,
+  .mg-clash-card,
+  .board-cell.mg-rev-ore,
+  .board-cell.mg-rev-rock,
+  .board-cell.mg-rev-empty {
     animation: none;
   }
   .fx-tag.out {

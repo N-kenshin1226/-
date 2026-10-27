@@ -110,6 +110,25 @@ export const theme = {
     crestSwapMs: 500,
     /** 所持金の増減を拾う光の演出（ms） */
     coinFlashMs: 700,
+    /**
+     * ミニゲームの手応え（F-03）：命中の火花・揺れ・判定テキストの浮き・
+     * 札の飛び込み・結果パネルの見せ場。それぞれ「演出を短く」で短い側へ
+     */
+    /** 命中の火花が散る時間（ms） */
+    sparkMs: 460,
+    sparkShortMs: 240,
+    /** 命中の一拍に画面が小さく揺れる時間（ms） */
+    shakeMs: 190,
+    shakeShortMs: 110,
+    /** 判定・収穫の浮き文字が消えるまでの時間（ms） */
+    floatMs: 720,
+    floatShortMs: 400,
+    /** 出した札が場に収まる時間（ms。交渉） */
+    cardMs: 260,
+    cardShortMs: 130,
+    /** 結果パネルの開き・品質の数字の立ち上がり（ms） */
+    revealMs: 420,
+    revealShortMs: 220,
     /** 効果音の既定音量（0〜1）。設定画面で変更・永続化される */
     defaultVolume: 0.6,
   },

@@ -75,6 +75,10 @@ export const cliTextSchema = z
         workModePrompt: z.string(),
         workStart: z.string(),
         workBeat: z.string(),
+        /** タイミング系の拍の判定（F-03。命中・外れの浮き文字・{n}連続命中のコンボ） */
+        workHit: z.string(),
+        workMiss: z.string(),
+        workCombo: z.string(),
         workSimple: z.string(),
         workResult: z.string(),
         workResultTier: z.string(),
@@ -91,6 +95,10 @@ export const cliTextSchema = z
         negoPrompt: z.string(),
         negoWon: z.string(),
         negoLost: z.string(),
+        /** 交渉の押し合いの局面（F-03。こちら優勢・あいて優勢・互角の3態） */
+        negoEdgeWin: z.string(),
+        negoEdgeLose: z.string(),
+        negoEdgeEven: z.string(),
         /** 演奏（タイミングの皮）の開始・拍・決定ボタン・結果の一行 */
         performanceStart: z.string(),
         performanceBeat: z.string(),
