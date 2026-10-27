@@ -40,6 +40,8 @@ export type Screen =
   | { name: "society" }
   | { name: "mentor" }
   | { name: "status" }
+  /** 演出・効果音の設定（F-02）：音量・演出の長さ。localStorage に保存する */
+  | { name: "settings" }
   /** 引退の確認（T-40） */
   | { name: "retire" }
   /** セーブ削除の最終確認（UI-01。記録を消す操作は必ず確認を挟む） */

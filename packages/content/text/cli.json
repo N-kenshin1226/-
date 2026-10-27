@@ -285,6 +285,7 @@
     "vowLine": "  {index}) {name} ― {desc}",
     "vowChosen": "――誓約を背負った：{names}",
     "moneyPaid": "――報酬 {amount}G を受け取った。",
+    "workDelivered": "――《{name}》を納めた。",
     "bookShopHeader": "── 書店《古紙堂》（所持金 {money}G）",
     "bookPick": "どの書物ですか（未所持は購入、所持は読む）",
     "bookLine": "  {i}) {mark} 《{name}》 {price}G ― {desc}",

@@ -29,6 +29,12 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
   await expect(page.getByTestId("log")).toContainText("品質");
+  // F-02：初めての作品は自己ベスト（ティア更新）としてAの窓で届く ―― 畳んで進む
+  const best = page.getByTestId("notice-a");
+  if (await best.isVisible().catch(() => false)) {
+    await expect(best).toContainText("自己ベスト");
+    await best.click();
+  }
 
   await page.getByTestId("menu-sleep").click();
   await page.getByTestId("inn-cheap").click();
@@ -94,6 +100,9 @@ test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）
   await page.getByTestId("abyss-commit").click();
   await expect(page.getByTestId("log")).toContainText("到達：第1層");
   await expect(page.getByTestId("log")).toContainText("自己ベスト更新");
+  // F-02：深層の自己ベストはAの窓で届く ―― 畳んでから記録へ進む
+  const best = page.getByTestId("notice-a");
+  if (await best.isVisible().catch(() => false)) await best.click();
 
   // 街の記録に深層の自己ベストが残る（counters 由来の派生表示）
   await page.getByTestId("menu-records").click();

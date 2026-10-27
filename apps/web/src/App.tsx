@@ -16,6 +16,7 @@ import {
 } from "@trace/core";
 import { balance, titles } from "@trace/content";
 import {
+  applySessionCap,
   bioLines,
   cfg,
   crisisSceneHaze,
@@ -32,10 +33,12 @@ import {
   saveGame,
   skillList,
   t,
+  tagsOf,
   tpl,
   wakeLines,
   type FateChoice,
 } from "./game.js";
+import { FxTagLayer, MoneyCount, type FxTagItem } from "./fx/fx.js";
 import {
   CellGauge,
   Candles,
@@ -63,6 +66,7 @@ import { MentorScreen, SocietyScreen } from "./screens/society.js";
 import { HeirScreen, RebirthScreen, RetireScreen, SuccessionScreen } from "./screens/end.js";
 import { EndingScreen } from "./screens/ending.js";
 import { NewsScreen, NoticeOverlay, WakeScreen } from "./screens/daily.js";
+import { SettingsScreen } from "./screens/settings.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
 
 /** セーブ削除の確認画面（UI-01：記録を消す操作は必ず確認を挟む） */
@@ -88,6 +92,7 @@ function sceneOf(s: Screen): SceneKind {
     case "heir":
       return "dawn";
     case "status":
+    case "settings":
       return "plain";
     case "news":
     case "lore":
@@ -149,6 +154,11 @@ export function App() {
   const [screen, setScreen] = useState<Screen>({ name: "menu" });
   /** 通知の積み重ね（S=中央の帯・A=光る窓。1枚ずつ捌く） */
   const [notices, setNotices] = useState<NoticeData[]>([]);
+  /** B通知の札の重なり（F-02。右上に滑り込み、数秒で消える） */
+  const [tagItems, setTagItems] = useState<FxTagItem[]>([]);
+  const tagKey = useRef(0);
+  /** Sの帯を最後に出した日（F-02「Sは1日1回まで」D-13。新しい生では null に戻す） */
+  const sDay = useRef<number | null>(null);
 
   useEffect(() => {
     const g = loadGame();
@@ -165,6 +175,15 @@ export function App() {
 
   const push = useCallback((lines: string | string[]) => {
     setLog((l) => [...l, ...(Array.isArray(lines) ? lines : [lines])].slice(-160));
+  }, []);
+
+  /** B通知の札を畳む（クリック・寿命どちらからも。退場フェードを挟んでから消す） */
+  const dismissTag = useCallback((key: number) => {
+    setTagItems((items) => items.map((it) => (it.key === key ? { ...it, leaving: true } : it)));
+    window.setTimeout(
+      () => setTagItems((items) => items.filter((it) => it.key !== key)),
+      theme.fx.tagFadeMs,
+    );
   }, []);
 
   const stateRef = useRef<GameState | null>(null);
@@ -209,9 +228,23 @@ export function App() {
       } else {
         push(opts?.format?.(res.events) ?? eventLines(res.events, res.state));
       }
-      // S/Aの出来事は通知を重ねる（03 §6：S=画面全体の帯・A=光る窓）
-      const ns = noticesOf(res.events, res.state);
-      if (ns.length > 0) setNotices((q) => [...q, ...ns]);
+      // S/Aの出来事は通知を重ねる（03 §6：S=画面全体の帯・A=光る窓）。
+      // Sの帯は1日1回まで（D-13・F-02）：同日に重なった分はAの窓に畳む
+      const capped = applySessionCap(
+        noticesOf(res.events, res.state),
+        sDay.current === res.state.time.day,
+      );
+      if (capped.sShown) sDay.current = res.state.time.day;
+      if (capped.notices.length > 0) setNotices((q) => [...q, ...capped.notices]);
+      // Bの出来事は右上の札へ（F-02。滑り込んで数秒で消える。重なりは tagMax まで）
+      const tags = tagsOf(res.events, res.state);
+      if (tags.length > 0)
+        setTagItems((items) =>
+          [
+            ...items,
+            ...tags.map((tag): FxTagItem => ({ key: ++tagKey.current, tag, leaving: false })),
+          ].slice(-theme.fx.tagMax),
+        );
       saveGame(res.state);
       stateRef.current = res.state;
       setState(res.state);
@@ -225,6 +258,8 @@ export function App() {
   const startNew = (originId?: string) => {
     const s = newSession(originId, fate);
     saveGame(s);
+    stateRef.current = s;
+    sDay.current = null; // 新しい生：Sの帯の日予算も新しく数える
     setState(s);
     setLog([t.text.banner, "", t.text.intro]);
     setScreen({ name: "menu" });
@@ -257,9 +292,11 @@ export function App() {
   const resetSave = useCallback(() => {
     clearSaves();
     stateRef.current = null;
+    sDay.current = null;
     setState(null);
     setLog([]);
     setNotices([]);
+    setTagItems([]);
     setScreen({ name: "menu" });
   }, []);
 
@@ -283,6 +320,7 @@ export function App() {
       const next = nextLife(prev, originId, legacy, fate, lostFlags);
       saveGame(next);
       stateRef.current = next;
+      sDay.current = null;
       setState(next);
       const lines = [t.text.rebirthStart];
       const bonus = Object.entries(legacy.potentialBonus)
@@ -339,6 +377,7 @@ export function App() {
       const { state: next, kind, legacy } = heirLife(prev, originId, vows);
       saveGame(next);
       stateRef.current = next;
+      sDay.current = null;
       setState(next);
       const lines = [
         tpl(t.text.heirStart, {
@@ -435,6 +474,8 @@ export function App() {
             pointerEvents: "none",
           }}
         />
+        {/* B通知の札：右上に重ねる（F-02。画面の窓より上・S/Aの帯より下） */}
+        <FxTagLayer items={tagItems} onDismiss={dismissTag} />
         {notice !== undefined && (
           <NoticeOverlay
             state={state}
@@ -507,7 +548,8 @@ function TopChrome({ state }: { state: GameState }) {
             letterSpacing: "0.04em",
           }}
         >
-          {state.player.money}
+          {/* 所持金は増減の瞬間に数がめくれて光る（F-02：報酬の実感） */}
+          <MoneyCount value={state.player.money} />
           <span style={{ fontFamily: theme.font.sys, fontSize: 11, color: theme.colors.world.dim }}>
             {" "}
             銅貨
@@ -627,6 +669,8 @@ function ScreenView(props: {
       return <MentorScreen state={state} act={act} back={toMenu} />;
     case "status":
       return <StatusScreen state={state} back={toMenu} />;
+    case "settings":
+      return <SettingsScreen back={toMenu} />;
     case "retire":
       return <RetireScreen onRetire={onRetire} back={toMenu} />;
     case "reset":

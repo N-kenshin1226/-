@@ -8,6 +8,7 @@
  *   RankCrest … 盾形の紋章に階級の頭文字（見・初・一・熟・達・極）
  */
 import type { CSSProperties } from "react";
+import { theme } from "../theme.js";
 
 /** 蝋燭1本分のSVG（灯っている=金の炎、消えた=芯だけ） */
 function Candle({ lit }: { lit: boolean }) {
@@ -52,25 +53,36 @@ export function CellGauge({
 
 /**
  * 起床ログの区切りゲージ（加護の窓用）。from→to を 0〜scale でマスに写す。
- * 定着分は青白（.f）、伸び分は金（.g）
+ * 定着分は青白（.f）、伸び分は金（.g）。
+ * animate=true で伸び分のマスが左から順に光って伸びる（F-02。表示だけの動き）
  */
 export function SegGauge({
   from,
   to,
   scale = 100,
   cells = 20,
+  animate = false,
 }: {
   from: number;
   to: number;
   scale?: number;
   cells?: number;
+  animate?: boolean;
 }) {
   const f = Math.round((from / scale) * cells);
   const t = Math.max(f + (to > from ? 1 : 0), Math.round((to / scale) * cells));
   return (
     <div style={{ display: "flex", gap: 2 }}>
       {Array.from({ length: cells }, (_, i) => (
-        <span key={i} className={i < f ? "seg f" : i < t ? "seg g" : "seg"} />
+        <span
+          key={i}
+          className={i < f ? "seg f" : i < t ? `seg g${animate ? " in" : ""}` : "seg"}
+          style={
+            animate && i >= f && i < t
+              ? { animationDelay: `${(i - f) * theme.fx.segStaggerMs}ms` }
+              : undefined
+          }
+        />
       ))}
     </div>
   );

@@ -1,5 +1,6 @@
 /** 仕事画面とミニゲーム（手動プレイ）の皮（UI-01：世界の窓＋コマンド列） */
 import { useEffect, useRef, useState } from "react";
+import { playSfx } from "../fx/sound.js";
 import type { ActionEvent, GameState } from "@trace/core";
 import { balance } from "@trace/content";
 import {
@@ -259,6 +260,13 @@ export function MinigameScreen({
     startMinigame(kind, state),
   );
   const res = minigameResult(kind, gs);
+  // 結果が出た一拍の音（F-02）：目標を超えた出来なら扇、届かなければ窓の開く音
+  const doneRef = useRef(false);
+  useEffect(() => {
+    if (!res.done || doneRef.current) return;
+    doneRef.current = true;
+    playSfx(res.quality >= order.targetQuality ? "fanfare" : "notice");
+  }, [res.done, res.quality, order.targetQuality]);
   const startLine = isTimingKind(kind)
     ? tpl(
         kind === "performance"
@@ -465,7 +473,12 @@ function TimingView({
         type="button"
         data-testid={`${kind}-hit`}
         disabled={gs.done}
-        onClick={() => onTick(tickMinigame(kind, gs, { at: elapsed }) as TimingState)}
+        onClick={() => {
+          const nxt = tickMinigame(kind, gs, { at: elapsed }) as TimingState;
+          // F-02：命中は槌の芯、外れは乾いた一拍
+          playSfx(nxt.hits > gs.hits ? "hit" : "miss");
+          onTick(nxt);
+        }}
         style={{
           minHeight: 44,
           padding: "0 34px",
@@ -530,7 +543,12 @@ function BoardView({
               key={i}
               data-testid={`cell-${x}-${y}`}
               disabled={c.revealed || gs.done}
-              onClick={() => onTick(tickMinigame(kind, gs, { x, y }) as BoardState)}
+              onClick={() => {
+                const nxt = tickMinigame(kind, gs, { x, y }) as BoardState;
+                // F-02：鉱石・真品は小気味よい音、ハズレの石は重い音
+                playSfx(c.kind === "ore" ? "coin" : c.kind === "rock" ? "miss" : "tag");
+                onTick(nxt);
+              }}
               className={c.revealed ? "board-cell revealed" : "board-cell"}
               style={{ color }}
             >
@@ -564,7 +582,18 @@ function NegotiationView({ gs, onTick }: { gs: DealState; onTick: (s: DealState)
             type="button"
             data-testid={`hand-${i}`}
             disabled={gs.done}
-            onClick={() => onTick(tickMinigame("negotiation", gs, { hand: i }) as DealState)}
+            onClick={() => {
+              const nxt = tickMinigame("negotiation", gs, { hand: i }) as DealState;
+              // F-02：切った手が相手に刺されば命中音、返り討ちなら重い音
+              playSfx(
+                nxt.opponentHp < gs.opponentHp
+                  ? "hit"
+                  : nxt.playerHp < gs.playerHp
+                    ? "miss"
+                    : "tag",
+              );
+              onTick(nxt);
+            }}
             style={{
               minHeight: 44,
               padding: "0 16px",

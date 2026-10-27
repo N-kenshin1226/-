@@ -123,11 +123,17 @@ test("勝負所の行事：打診 → 請け → 大取引に勝つ → 記録�
   await expect(page.getByTestId("minigame-done")).toBeVisible();
   await page.getByTestId("minigame-commit").click();
 
-  // 結果：勝ちはAランクの通知（光る窓）として届く
+  // 結果：勝ちはAランクの通知（光る窓）として届く。
+  // F-02で同日のA称号（大取引を制した者 等）も窓に重なるので、続く窓も畳む
   const notice = page.getByTestId("notice-a");
   await expect(notice).toBeVisible();
   await expect(notice).toContainText("行商の大取引");
   await notice.click();
+  for (let i = 0; i < 4; i++) {
+    const n = page.locator('[data-testid="notice-a"], [data-testid="notice-s"]');
+    if ((await n.count()) === 0) break;
+    await n.first().click();
+  }
 
   // 記録に残る（街の記録の「勝負所」欄）
   await expect(page.getByTestId("menu")).toBeVisible();

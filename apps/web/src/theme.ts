@@ -89,6 +89,30 @@ export const theme = {
     bless:
       "inset 0 0 0 1px #050a10, inset 0 0 0 3px #8fc7d4, inset 0 0 0 4px #17323d, 0 0 50px rgba(111,208,227,.18), 0 12px 40px rgba(0,0,0,.7)",
   },
+  /**
+   * 演出の数値（F-02）。アニメーション時間・札の寿命・音量の既定など、
+   * 見た目だけの可調値はここに集める（ゲームの数値は balance.json、ここでは置かない）
+   */
+  fx: {
+    /** B通知の札が画面に残る時間（ms）。設定「演出を短く」で tagLifeShortMs になる */
+    tagLifeMs: 3400,
+    tagLifeShortMs: 1900,
+    /** 札の退場フェード（寿命のあとに付け足す分。タグ側の CSS transition と合わせる） */
+    tagFadeMs: 240,
+    /** 同時に重ねて出せる札の上限（溢れた分は古いものから消える） */
+    tagMax: 5,
+    /** 起床ログの数値カウントアップ（例 25.1 → 26.8 を約1秒で） */
+    countUpMs: 1000,
+    countUpShortMs: 450,
+    /** 区切りゲージが伸びる演出：1マスごとの点灯遅延（ms） */
+    segStaggerMs: 45,
+    /** 熟練の階級が変わったときの紋章の入れ替わり（ms） */
+    crestSwapMs: 500,
+    /** 所持金の増減を拾う光の演出（ms） */
+    coinFlashMs: 700,
+    /** 効果音の既定音量（0〜1）。設定画面で変更・永続化される */
+    defaultVolume: 0.6,
+  },
   /** コマンド行の高さ（決まりごと: 44px 以上） */
   cmdHeight: 44,
 } as const;
@@ -116,4 +140,9 @@ export function applyThemeVars(): void {
   }
   for (const [k, v] of Object.entries(theme.font)) el.style.setProperty(`--t-font-${k}`, v);
   for (const [k, v] of Object.entries(theme.frame)) el.style.setProperty(`--t-frame-${k}`, v);
+  // 演出時間（*Ms）も CSS 変数に落とす：app.css の keyframes/transition が
+  // ここの値だけを見る（時間の二重定義を防ぐ）
+  for (const [k, v] of Object.entries(theme.fx)) {
+    if (k.endsWith("Ms")) el.style.setProperty(`--t-fx-${kebab(k)}`, `${v}ms`);
+  }
 }

@@ -59,11 +59,16 @@ test("遺物を選んで継承できる", async ({ page }) => {
   await page.goto("/?seed=e2e-artifact");
   await page.getByTestId("origin-wanderer").click();
 
-  // 《釘の束》を簡易判定で1本作る
+  // 《釘の束》を簡易判定で1本作る（F-02：初めての作品は自己ベストのA窓が重なる）
   await page.getByTestId("menu-work").click();
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
   await expect(page.getByTestId("log")).toContainText("品質");
+  for (let i = 0; i < 4; i++) {
+    const n = page.locator('[data-testid="notice-a"], [data-testid="notice-s"]');
+    if ((await n.count()) === 0) break;
+    await n.first().click();
+  }
 
   await page.getByTestId("menu-retire").click();
   await page.getByTestId("retire-yes").click();
