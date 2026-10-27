@@ -102,7 +102,12 @@
       "retire": "引退した",
       "depart": "街を離れた",
       "leave": "街を離れた",
-      "die": "亡くなった"
+      "die": "亡くなった",
+      "away": "今日はいない"
+    },
+    "enemyTraitNames": {
+      "strong": "精悍な",
+      "timid": "臆病な"
     }
   },
   "text": {
@@ -152,7 +157,10 @@
       "rusted": "――《{name}》が錆びついている（-{loss}）",
       "relearning": "――身体が覚えている。《{name}》の再習得が速い。",
       "agingWarn": "――近ごろ、身体の奥に小さな軋みを覚える。老いの兆しが見え始めている。",
-      "agingSevere": "――身体が思うように動かない朝がある。老いは確かに進んでいる。"
+      "agingSevere": "――身体が思うように動かない朝がある。老いは確かに進んでいる。",
+      "insight": "――今日は妙に冴えている。何をしても上達が速い気がする。",
+      "conditionGood": "――目覚めが良い。身体が軽い。",
+      "conditionPoor": "――どうも調子が出ない。身体が重い。"
     },
     "titleGainedFallback": "――称号《{name}》を獲得しました。",
     "skillUnlocked": "――身体が理屈を掴んだ。《{name}》を鍛えられるようになった。",
@@ -322,6 +330,7 @@
     "mentorApprenticed": "――{name} の門下に入った。",
     "mentorLocked": "――まだ弟子にしてもらえない。見込みがないと言われた。",
     "mentorLeft": "――{name} の門を出た。",
+    "mentorAway": "――{name} は今日いないようだ。",
     "mentorTrainResult": "《{name}》の稽古（難度 {difficulty}・礼金 {fee}G）―― 経験 +{amount}（未定着）",
     "mentorSecret": "――秘伝を教わった。",
     "uniqueName": "《強個体》{name}",

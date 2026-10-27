@@ -72,12 +72,15 @@ import {
   incidentDef,
   incidentPendingChoice,
   incidentSpeaker,
+  npcAway,
   npcGoneReason,
   npcLifeRecent,
   npcLifeToday,
   occasionDef,
   occasionOffers,
   occasionSpeaker,
+  rollIndividual,
+  marketFactor,
   weatherOf,
   withWorldMods,
   worldFactor,
@@ -93,6 +96,7 @@ import {
   type DealInput,
   type DealState,
   type EnemyDef,
+  type EnemyTrait,
   type GameState,
   type HeirKind,
   type IncidentOffer,
@@ -292,6 +296,18 @@ export const cfg: StepConfig = {
         )[index]?.name;
       }
       return voices.npcs.find((n) => n.id === npcId)?.name;
+    },
+  },
+  /**
+   * 揺らぎ（R-01）：経験・仕事・市場・人・体調の決定的な揺らぎ。
+   * 文面（冴え・体調の起床行）は cli.json から注入する
+   */
+  variance: {
+    ...balance.variance,
+    texts: {
+      insight: cliText.text.wake.insight,
+      conditionGood: cliText.text.wake.conditionGood,
+      conditionPoor: cliText.text.wake.conditionPoor,
     },
   },
 };
@@ -762,6 +778,11 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         if (e.flag !== undefined) lines.push(t.text.mentorSecret);
         return lines;
       }
+      case "mentorAway": {
+        // R-01：師匠が今日は街にいない（人の揺らぎ）
+        const name = mentors.mentors.find((m) => m.id === e.id)?.name ?? e.id;
+        return [tpl(t.text.mentorAway, { name })];
+      }
       case "tierUp":
         return [tpl(t.text.workResultTier, { tier: e.tier })];
       // 世界の危機（W-01）：季節の変わり目の出来事を定型文で出す。
@@ -1224,7 +1245,12 @@ export function abyssFloorEnemy(run: AbyssRun): EnemyJson {
 }
 export { endRun, killFloor, spendLight };
 
-export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
+export function beginCombat(
+  state: GameState,
+  enemy: EnemyJson,
+  /** 個体差の抽選鍵（深層はラン×層で別々に渡す。省略時は日付×敵種×行動序数） */
+  encounterKey?: string,
+): CombatState {
   // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
   const fx = damageFactor(
     [
@@ -1240,22 +1266,46 @@ export function beginCombat(state: GameState, enemy: EnemyJson): CombatState {
     enemy.id,
   );
   // 運命の傾向・誓約の世界補正（T-45/T-46。戦乱の世・強敵の誓で敵が強くなる）
-  const def = worldEnemyDef(state, enemy);
+  const def = worldEnemyDef(state, enemy, encounterKey);
   return startCombat(def, cfg.combat, state.player, fx);
 }
 
 /**
- * 敵に世界補正を掛ける（傾向・誓約 T-45/T-46 ＋ 危機の段階の影響 W-01）。
- * 危機由来の強化は傾向・誓約の係数に掛け合わされる
+ * 個体差の抽選鍵（R-01）：出会いごとに決まる。既定は日×敵種×行動序数
+ * （同じ日の同じ種の再戦は別の個体として抽選される）。深層など別の
+ * 遭遇文脈では呼び出し側が鍵を渡す
  */
-function worldEnemyDef(state: GameState, enemy: EnemyJson): EnemyDef {
+function individualKey(state: GameState, enemy: EnemyJson, encounterKey?: string): string {
+  return `${state.seed}:ind:${encounterKey ?? `${state.time.day}:${enemy.id}:${state.counters["action.total"] ?? 0}`}`;
+}
+
+/** 個体差の対象か（強個体 uniqueVariant は固定の特別な相手なので重ねない） */
+function individualApplies(enemy: EnemyJson): boolean {
+  return (
+    cfg.combat.individual !== undefined &&
+    !("uniqueVariant" in enemy && enemy.uniqueVariant === true)
+  );
+}
+
+/**
+ * 敵に世界補正を掛ける（傾向・誓約 T-45/T-46 ＋ 危機の段階の影響 W-01）。
+ * 危機由来の強化は傾向・誓約の係数に掛け合わされる。
+ * その上で個体差（R-01）を出会いごとの決定的な抽選で掛ける
+ */
+function worldEnemyDef(state: GameState, enemy: EnemyJson, encounterKey?: string): EnemyDef {
   const fate = worldMods(state, cfg.tendency, cfg.vows);
   const cm = crisisEnemyMods(state, cfg.crisis, { id: enemy.id, area: enemy.area });
-  return withWorldMods(toEnemyDef(enemy), {
+  const base = withWorldMods(toEnemyDef(enemy), {
     ...fate,
     enemyHpFactor: (fate.enemyHpFactor ?? 1) * cm.enemyHpFactor,
     enemyPowerFactor: (fate.enemyPowerFactor ?? 1) * cm.enemyPowerFactor,
   });
+  if (!individualApplies(enemy)) return base;
+  return rollIndividual(
+    base,
+    createRng(individualKey(state, enemy, encounterKey)),
+    cfg.combat.individual!,
+  ).def;
 }
 
 export function playCombatTurn(
@@ -1265,20 +1315,78 @@ export function playCombatTurn(
   state: GameState,
   /** 逃走判定などの乱数源（深層はラン×層で別々に渡す。省略時は日付×行動） */
   seed?: string,
+  /** 個体差の抽選鍵（beginCombat と同じものを渡すこと） */
+  encounterKey?: string,
 ): CombatState {
   const ctx = combatCtx(state);
   // beginCombat と同じ世界補正を敵に掛ける（T-45/T-46。ターン解決も同じ強さでないと不整合）
-  const def = worldEnemyDef(state, enemy);
+  const def = worldEnemyDef(state, enemy, encounterKey);
   return combatTurn(cs, action, def, cfg.combat, seed === undefined ? ctx : { ...ctx, seed });
 }
 
 /**
  * 戦闘画面が使う、世界補正済みの敵定義（F-04）。
  * beginCombat/playCombatTurn と同じ def を返すので、表示（予兆の名前・次行動）が
- * 解決側とずれない
+ * 解決側とずれない。個体差（R-01）も同じ鍵で掛かっている
  */
-export function enemyDefOf(state: GameState, enemy: EnemyJson): EnemyDef {
-  return worldEnemyDef(state, enemy);
+export function enemyDefOf(state: GameState, enemy: EnemyJson, encounterKey?: string): EnemyDef {
+  return worldEnemyDef(state, enemy, encounterKey);
+}
+
+/**
+ * 個体差の気質（R-01）：精悍（strong）・臆病（timid）・普通（normal）。
+ * worldEnemyDef と同じ抽選鍵で引くので表示と解決が一致する
+ */
+export function enemyTraitOf(
+  state: GameState,
+  enemy: EnemyJson,
+  encounterKey?: string,
+): EnemyTrait {
+  if (!individualApplies(enemy)) return "normal";
+  return rollIndividual(
+    toEnemyDef(enemy),
+    createRng(individualKey(state, enemy, encounterKey)),
+    cfg.combat.individual!,
+  ).trait;
+}
+
+/** 個体差の気質に応じた表示名（精悍な狼・臆病な狼。normal は素の名） */
+export function enemyDisplayName(
+  state: GameState,
+  enemy: EnemyJson,
+  encounterKey?: string,
+): string {
+  const trait = enemyTraitOf(state, enemy, encounterKey);
+  const adj = trait === "normal" ? undefined : t.display.enemyTraitNames[trait];
+  return adj === undefined ? enemy.name : `${adj}${enemy.name}`;
+}
+
+/**
+ * 師匠が今日は街にいないか（R-01、人の揺らぎ）。step の apprentice/trainWithMentor
+ * と同じ抽選 —— この日に会おうとしてもいない。歳月・危機の退場（mentorAbsent）
+ * とは別系統で、今日だけの不在
+ */
+export function mentorAwayToday(state: GameState, def: { id: string; npc?: string }): boolean {
+  const v = cfg.variance;
+  if (v === undefined) return false;
+  return npcAway(state.seed, state.time.day, def.npc ?? def.id, v.npc);
+}
+
+/**
+ * 今日の市場の相場係数（R-01。日×種目のジッター＋季節波）。
+ * 注文画面の「相場▲/相場▼」の印に使う —— 表示用なので step 内の報酬計算と同じ式
+ */
+export function marketFactorOf(state: GameState, kind: string): number {
+  const v = cfg.variance;
+  if (v === undefined) return 1;
+  return marketFactor(
+    state.seed,
+    state.time.day,
+    kind,
+    describe(state.time, cfg.time).season,
+    cfg.time.seasonsPerYear,
+    v.market,
+  );
 }
 
 export { combatResult, combatIntent, telegraphLines, suggestGoals, sleepQuality };

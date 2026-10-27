@@ -46,14 +46,38 @@
     "nightlyCapTotal": 1.7,
     "focusShare": 0.5,
     "skillRanks": [
-      { "at": 0, "capFactor": 2.0 },
-      { "at": 10, "capFactor": 1.5 },
-      { "at": 25, "capFactor": 1.2 },
-      { "at": 40, "capFactor": 1.1 },
-      { "at": 60, "capFactor": 1.0 },
-      { "at": 80, "capFactor": 1.0 },
-      { "at": 95, "capFactor": 1.0 },
-      { "at": 100, "capFactor": 1.0 }
+      {
+        "at": 0,
+        "capFactor": 2.0
+      },
+      {
+        "at": 10,
+        "capFactor": 1.5
+      },
+      {
+        "at": 25,
+        "capFactor": 1.2
+      },
+      {
+        "at": 40,
+        "capFactor": 1.1
+      },
+      {
+        "at": 60,
+        "capFactor": 1.0
+      },
+      {
+        "at": 80,
+        "capFactor": 1.0
+      },
+      {
+        "at": 95,
+        "capFactor": 1.0
+      },
+      {
+        "at": 100,
+        "capFactor": 1.0
+      }
     ],
     "innFactors": {
       "cheap": 0.8,
@@ -153,6 +177,41 @@
     "tailwindBoostK": 0.5,
     "drawMin": 1,
     "drawMax": 2
+  },
+  "variance": {
+    "gain": {
+      "spread": 0.2,
+      "skillDampK": 1.5,
+      "insightChance": 0.035,
+      "insightFactor": 1.35
+    },
+    "work": {
+      "critChance": 0.08,
+      "failChance": 0.08,
+      "skillDampK": 1.0,
+      "critFactor": 1.6,
+      "failFactor": 0.5,
+      "critFlag": "会心作",
+      "failFlag": "失敗作",
+      "materialSpread": 0.12,
+      "moodGoodChance": 0.08,
+      "moodBadChance": 0.08,
+      "moodGoodFactor": 1.3,
+      "moodBadFactor": 0.75
+    },
+    "market": {
+      "dailySpread": 0.15,
+      "seasonalAmp": 0.25
+    },
+    "npc": {
+      "awayChance": 0.06
+    },
+    "condition": {
+      "goodChance": 0.18,
+      "poorChance": 0.15,
+      "goodFactor": 1.15,
+      "poorFactor": 0.85
+    }
   },
   "sim": {
     "minutesPerAction": 3,
@@ -305,6 +364,20 @@
       "powerFactor": 1.5,
       "challengeBonus": 10,
       "agilityBonus": 2
+    },
+    "individual": {
+      "strongChance": 0.12,
+      "timidChance": 0.12,
+      "strongHpFactor": 1.25,
+      "strongPowerFactor": 1.2,
+      "strongChallengeBonus": 4,
+      "strongAgilityBonus": 1,
+      "timidPowerFactor": 0.7,
+      "timidIntervalFactor": 1.35,
+      "timidChallengeBonus": -3,
+      "hpJitter": 0.1,
+      "powerJitter": 0.1,
+      "agilityJitter": 2
     }
   },
   "society": {

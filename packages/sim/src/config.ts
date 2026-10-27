@@ -186,6 +186,18 @@ export function stepConfig(): StepConfig {
         return voices.npcs.find((n) => n.id === npcId)?.name;
       },
     },
+    /**
+     * 揺らぎ（R-01）：経験・仕事・市場・人・体調の決定的な揺らぎ。
+     * 文面は cli.json から注入する
+     */
+    variance: {
+      ...balance.variance,
+      texts: {
+        insight: cliText.text.wake.insight,
+        conditionGood: cliText.text.wake.conditionGood,
+        conditionPoor: cliText.text.wake.conditionPoor,
+      },
+    },
   };
 }
 

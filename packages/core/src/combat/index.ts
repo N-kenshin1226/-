@@ -1,4 +1,5 @@
 import { ctxRng, type MiniGameCtx } from "../minigame/types.js";
+import type { Rng } from "../rng/index.js";
 
 /**
  * 予兆を読むCT制戦闘（docs/03_world_systems.md §4）。
@@ -123,6 +124,8 @@ export interface CombatConfig {
 
   /** 強化版ユニーク（T-44）。省略時は強個体なし */
   unique?: UniqueConfig;
+  /** 個体差（R-01）。省略時は個体差なし */
+  individual?: IndividualConfig;
 }
 
 export type CombatAction = "attack" | "defend" | "observe" | "flee";
@@ -657,4 +660,108 @@ export function canFightUnique(
   u: UniqueConfig,
 ): boolean {
   return (state.counters[`kill.species.${enemyId}`] ?? 0) >= u.afterKills;
+}
+
+/* ── R-01：個体差 ──────────────────────────────────────────── */
+
+/**
+ * 同じ種でも個体で違う（R-01）。「ちょっと強い狼」や「臆病な狼」が
+ * 出会いごとに決定的に決まる。ユニーク（afterKills で解禁される固定の
+ * 強個体）とは別系統で、こちらは遭遇のたびに揺らぐ。
+ */
+export interface IndividualConfig {
+  /** 強い個体（精悍）の出る確率 */
+  strongChance: number;
+  /** 臆病な個体の出る確率 */
+  timidChance: number;
+  /** 強い個体の HP・攻撃威力の倍率と挑戦差・敏捷の加算 */
+  strongHpFactor: number;
+  strongPowerFactor: number;
+  strongChallengeBonus: number;
+  strongAgilityBonus: number;
+  /** 臆病な個体：威力が下がり行動間隔が伸びる。挑戦差も下がる */
+  timidPowerFactor: number;
+  timidIntervalFactor: number;
+  timidChallengeBonus: number;
+  /**
+   * 普通の個体にも掛かる小さなジッター（±の半幅）。HP・威力は倍率、
+   * 敏捷は加減算の幅。期待値はいずれも元の値
+   */
+  hpJitter: number;
+  powerJitter: number;
+  agilityJitter: number;
+}
+
+/** 個体の気質（表示用。normal は素の敵） */
+export type EnemyTrait = "strong" | "timid" | "normal";
+
+/**
+ * 個体差を敵定義に適用する。遭遇のたびに呼び、渡す乱数は
+ * 出会い（seed×日×敵種×行動番号）の独立した列にすること。
+ * 行動パターンは変えず、数値だけを動かす（enhancedEnemy と同じ方針）
+ */
+export function rollIndividual(
+  def: EnemyDef,
+  rng: Rng,
+  cfg: IndividualConfig,
+): { def: EnemyDef; trait: EnemyTrait } {
+  const scaleMoves = (f: number): Record<string, EnemyMove> =>
+    Object.fromEntries(
+      Object.entries(def.moves).map(([k, m]) => [
+        k,
+        { ...m, power: Math.max(1, Math.round(m.power * f)) },
+      ]),
+    );
+  const u = rng.next();
+  if (u < cfg.strongChance) {
+    return {
+      trait: "strong",
+      def: {
+        ...def,
+        hp: Math.round(def.hp * cfg.strongHpFactor),
+        challenge: def.challenge + cfg.strongChallengeBonus,
+        agility: def.agility + cfg.strongAgilityBonus,
+        attack: {
+          ...def.attack,
+          power: Math.max(1, Math.round(def.attack.power * cfg.strongPowerFactor)),
+        },
+        moves: scaleMoves(cfg.strongPowerFactor),
+      },
+    };
+  }
+  if (u > 1 - cfg.timidChance) {
+    return {
+      trait: "timid",
+      def: {
+        ...def,
+        challenge: def.challenge + cfg.timidChallengeBonus,
+        attack: {
+          ...def.attack,
+          power: Math.max(1, Math.round(def.attack.power * cfg.timidPowerFactor)),
+        },
+        moves: scaleMoves(cfg.timidPowerFactor),
+        intervalTicks: Math.round(def.intervalTicks * cfg.timidIntervalFactor),
+      },
+    };
+  }
+  /* 普通の個体にも小さな揺らぎ（対称三角分布で中央寄り、期待値は元の値） */
+  const jit = (): number => rng.next() + rng.next() - 1;
+  const hpF = 1 + jit() * cfg.hpJitter;
+  const pwF = 1 + jit() * cfg.powerJitter;
+  const agiD = Math.round(jit() * cfg.agilityJitter);
+  return {
+    trait: "normal",
+    def: {
+      ...def,
+      hp: Math.max(1, Math.round(def.hp * hpF)),
+      agility: Math.max(0, def.agility + agiD),
+      attack: { ...def.attack, power: Math.max(1, Math.round(def.attack.power * pwF)) },
+      moves: Object.fromEntries(
+        Object.entries(def.moves).map(([k, m]) => [
+          k,
+          { ...m, power: Math.max(1, Math.round(m.power * pwF)) },
+        ]),
+      ),
+    },
+  };
 }

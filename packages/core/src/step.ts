@@ -23,7 +23,12 @@ import {
   updateOverwork,
   type BodyConfig,
 } from "./growth/body.js";
-import { consolidateSleep, type InnRank, type SleepConfig } from "./growth/consolidate.js";
+import {
+  consolidateSleep,
+  sleepQuality,
+  type InnRank,
+  type SleepConfig,
+} from "./growth/consolidate.js";
 import { computeGain, recentRepeats, type GainConfig } from "./growth/gain.js";
 import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js";
 import {
@@ -54,7 +59,18 @@ import {
   type OccasionsConfig,
 } from "./occasions/index.js";
 import { unlockSkills } from "./skills/index.js";
-import { restoreRng } from "./rng/index.js";
+import { createRng, restoreRng } from "./rng/index.js";
+import {
+  gainVarianceFactor,
+  insightOf,
+  marketFactor,
+  materialFactor,
+  npcAway,
+  customerMoodFactor,
+  rollCondition,
+  workTwist,
+  type VarianceConfig,
+} from "./variance/index.js";
 import { weatherOf, weatherPriceFactor, type WeatherConfig } from "./weather/index.js";
 import type { CrisisFieldId, GameState, SkillId } from "./state/types.js";
 import {
@@ -154,6 +170,13 @@ export interface StepConfig {
    * 天候の係数が乗り、(c) 起床レポートに今日の空の風景の行が載る
    */
   weather?: WeatherConfig;
+  /**
+   * 揺らぎ（R-01、docs/devin_tasks/R-01_randomness.md。balance.variance）。
+   * 指定すると経験・仕事・市場・人・体調に決定的な揺らぎが掛かる。
+   * 分布は誰に対しても同じ（期待値1のノイズ）で、技量が高いほど安定する。
+   * すべて seed×日付×用途の独立した乱数列から引く —— state.rng は消費しない
+   */
+  variance?: VarianceConfig;
 }
 
 export type Command =
@@ -322,6 +345,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // コンテンツ設定。天候表が無い世界では {weather} 条件は成立しない
   const condEnv: CondEnv = cfg.weather !== undefined ? { weather: cfg.weather } : {};
 
+  // R-01 経験の揺らぎ：定着前の経験1回ごとに seed×日×行動序数×回目の独立した
+  // 乱数を引く。行動序数（action.total）で日をまたいでも同じ乱数を再引きせず、
+  // 回目（seq）で1行動に複数スキルへ入る分（戦闘・深層）もそれぞれ別の抽選になる。
+  // 「冴え」の日はその日全部の経験に同じ係数が掛かる
+  let gainRollSeq = 0;
+  const gainFactor = (skill: number): number => {
+    const v = cfg.variance?.gain;
+    if (v === undefined) return 1;
+    const key = `${next.seed}:gv:${next.time.day}:${next.counters["action.total"] ?? 0}:${gainRollSeq++}`;
+    return (
+      gainVarianceFactor(createRng(key), skill, v) * insightOf(next.seed, next.time.day, v).factor
+    );
+  };
+
   switch (command.type) {
     case "wait": {
       next.time = advanceTime(next.time, cfg.time);
@@ -345,6 +382,23 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       // 今日の行動が終わる前に未定着経験を定着させ、起床ログを作る
       const isRest = command.type === "rest";
+
+      // R-01 体調の揺らぎ：目覚める日の「調子」を日×世界シードで抽選し、
+      // 睡眠の質と疲労で良い/悪いの重みを傾ける。結果は今晩の定着の質に係数として効く
+      const baseQuality = isRest
+        ? cfg.body.restQuality
+        : sleepQuality(command.inn ?? "normal", command.dinner ?? false, cfg.sleep);
+      const condition =
+        cfg.variance !== undefined
+          ? rollCondition(
+              next.seed,
+              sleepTime(next.time).day,
+              baseQuality,
+              next.player.fatigue,
+              cfg.variance.condition,
+            )
+          : { kind: "normal" as const, factor: 1 };
+
       const { state: rested, report } = consolidateSleep(
         next,
         isRest ? "normal" : (command.inn ?? "normal"),
@@ -353,11 +407,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         {
           capFactor,
           skillFactor: band?.skillFactor,
-          ...(isRest ? { qualityOverride: cfg.body.restQuality } : {}),
+          ...(isRest || cfg.variance !== undefined
+            ? { qualityOverride: baseQuality * condition.factor }
+            : {}),
           names: cfg.skillNames,
         },
       );
       next = rested;
+      // 体調の行は「驚き」の列に載せる（加齢の兆候と同じ扱い）
+      if (condition.kind === "good" && cfg.variance?.texts?.conditionGood !== undefined) {
+        report.surprises.push(cfg.variance.texts.conditionGood);
+      }
+      if (condition.kind === "poor" && cfg.variance?.texts?.conditionPoor !== undefined) {
+        report.surprises.push(cfg.variance.texts.conditionPoor);
+      }
 
       // 身体側の定着：負荷 → 基礎能力、疲労回復、休養日の素質回復
       const bodyRes = consolidateBody(next, report.quality, cfg.body, {
@@ -405,6 +468,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (cfg.weather !== undefined) {
         const w = weatherOf(next.seed, next.time.day, cfg.weather, cfg.time);
         report.weather = { id: w.kind.id, name: w.kind.name, line: w.line };
+      }
+
+      // R-01 「冴え」の日：新しい日の冴えを seed+day から導出し、起床レポートに載せる。
+      // 効果は gainFactor がその日の経験に掛ける係数として効く
+      if (cfg.variance !== undefined && cfg.variance.texts?.insight !== undefined) {
+        if (insightOf(next.seed, next.time.day, cfg.variance.gain).active) {
+          report.surprises.push(cfg.variance.texts.insight);
+        }
       }
 
       // 加齢（T-36）：新しい朝の年齢で「老いの兆候」と老衰死を判定する（06 §1）
@@ -487,7 +558,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         },
         cfg.gain,
       );
-      skill.pending += amount;
+      // R-01：同じ訓練でも経験に揺らぎが掛かる（技量が高いほど安定。冴えの日は底上げ）
+      const applied = amount * gainFactor(skill.value);
+      skill.pending += applied;
       skill.lastUsedDay = next.time.day;
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "train", cfg.body);
@@ -498,24 +571,49 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         target: command.skill,
         variant: String(command.difficulty),
       });
-      events.push({ type: "gainApplied", skill: command.skill, amount });
+      events.push({ type: "gainApplied", skill: command.skill, amount: applied });
       break;
     }
     case "work": {
       // 技能を使う仕事。作品が台帳に載り、ティア更新なら大きな経験ボーナス
+      const skill = next.player.skills[command.kind];
+      const skillValue = skill?.value ?? 0;
+
+      // R-01 仕事の揺らぎ：素材の質（日×種目で決まる）と思わぬ出来栄え
+      // （会心作/失敗作。技量が高いほど出にくい）を品質と旗に反映する。
+      // 手動プレイなど既に旗の付いた作品には重ねない（会心と失敗が矛盾しないように）
+      let quality = command.quality;
+      let workFlags = [...(command.flags ?? [])];
+      if (cfg.variance !== undefined) {
+        const v = cfg.variance.work;
+        quality *= materialFactor(next.seed, next.time.day, command.kind, v);
+        if (workFlags.length === 0) {
+          const twist = workTwist(
+            next.seed,
+            next.time.day,
+            `${next.counters["action.work"] ?? 0}:${command.order ?? command.kind}`,
+            skillValue,
+            v,
+          );
+          if (twist.flag !== undefined) {
+            quality *= twist.factor;
+            workFlags = [twist.flag];
+          }
+        }
+        quality = Math.max(0, Math.min(100, quality));
+      }
+
       const recorded = recordWork(
         next,
         {
           kind: command.kind,
-          quality: command.quality,
+          quality,
           ...(command.order !== undefined ? { order: command.order } : {}),
-          ...(command.flags !== undefined ? { flags: command.flags } : {}),
+          ...(workFlags.length > 0 ? { flags: workFlags } : {}),
         },
         cfg.ledger,
       );
       next = recorded.state;
-      const skill = next.player.skills[command.kind];
-      const skillValue = skill?.value ?? 0;
       const repeats = recentRepeats(next.actionLog, "work", command.kind, cfg.gain.noveltyWindow);
       // 称号・認定職・師匠・読了書物の効果（T-35・T-27・T-26）：M 項の修正と報酬の値段変化
       const effects = [
@@ -541,8 +639,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         },
         cfg.gain,
       );
+      // R-01：仕事の経験にも揺らぎが掛かる
+      const applied = amount * gainFactor(skillValue);
       if (skill) {
-        skill.pending += amount + (recorded.tierUp ? cfg.ledger.tierUpBonusPending : 0);
+        skill.pending += applied + (recorded.tierUp ? cfg.ledger.tierUpBonusPending : 0);
         skill.lastUsedDay = next.time.day;
       }
       next.time = advanceTime(next.time, cfg.time);
@@ -554,14 +654,32 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         target: command.kind,
         ...(command.order !== undefined ? { variant: command.order } : {}),
       });
-      events.push({ type: "gainApplied", skill: command.kind, amount });
+      events.push({ type: "gainApplied", skill: command.kind, amount: applied });
       events.push({ type: "workRecorded", work: recorded.work });
       if (recorded.tierUp) {
         events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
       }
       // 報酬が入る（注文の約定額があればそれ、無ければ市場価値。認定の値段変化と
       // 傾向・誓約の報酬係数（T-45/T-46）、危機の物価変動（W-01）、
-      // 天候の日替わり係数（X-13、03 §2「日替わりの要因」の1枠）を乗せる）
+      // 天候の日替わり係数（X-13）、そして市場の日次・季節の相場と客の機嫌
+      // （R-01）を乗せる）
+      const variancePay =
+        cfg.variance !== undefined
+          ? marketFactor(
+              next.seed,
+              next.time.day,
+              command.kind,
+              describeTime(next.time, cfg.time).season,
+              cfg.time.seasonsPerYear,
+              cfg.variance.market,
+            ) *
+            customerMoodFactor(
+              next.seed,
+              next.time.day,
+              command.order ?? command.kind,
+              cfg.variance.work,
+            )
+          : 1;
       const pay = Math.max(
         0,
         Math.round(
@@ -569,7 +687,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             priceFactor(effects, command.kind) *
             worldFactor(fate, "rewardFactor") *
             crisisPriceFactor(next, cfg.crisis, command.kind) *
-            weatherPriceFactor(next, cfg.weather, cfg.time, command.kind),
+            weatherPriceFactor(next, cfg.weather, cfg.time, command.kind) *
+            variancePay,
         ),
       );
       next = {
@@ -636,9 +755,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           },
           cfg.gain,
         );
-        skill.pending += amount;
+        const applied = amount * gainFactor(skill.value);
+        skill.pending += applied;
         skill.lastUsedDay = next.time.day;
-        events.push({ type: "gainApplied", skill: skillId, amount });
+        events.push({ type: "gainApplied", skill: skillId, amount: applied });
       }
 
       next.time = advanceTime(next.time, cfg.time);
@@ -744,9 +864,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             },
             cfg.gain,
           );
-          skill.pending += amount;
+          const applied = amount * gainFactor(skill.value);
+          skill.pending += applied;
           skill.lastUsedDay = next.time.day;
-          events.push({ type: "gainApplied", skill: skillId, amount });
+          events.push({ type: "gainApplied", skill: skillId, amount: applied });
         }
         inRun.set(fight.enemyId, (inRun.get(fight.enemyId) ?? 0) + 1);
         // 行動ログの kind は "combat"（新規性・新聞の記事分類を共有）、variant で深層を区別
@@ -897,6 +1018,16 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     }
     case "apprentice": {
       // 弟子入り：行動は消費しない（会話の一瞬。認定の受諾と同じ扱い）
+      // R-01：その師匠が今日街にいない日は弟子入りも叶わない
+      const def = cfg.mentors?.mentors.find((m) => m.id === command.id);
+      if (
+        def !== undefined &&
+        cfg.variance !== undefined &&
+        npcAway(next.seed, next.time.day, def.npc ?? def.id, cfg.variance.npc)
+      ) {
+        events.push({ type: "mentorAway", id: command.id });
+        break;
+      }
       const res = apprentice(next, command.id, cfg.mentors, cfg.time, condEnv);
       if (!res.ok) break;
       next = res.state;
@@ -915,6 +1046,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 担当スキル不明は何も起きない（readBook と同じく時間も進めない）
       const mentor = currentMentor(next, cfg.mentors);
       if (mentor === null) break;
+      // R-01：師匠にも街にいない日がある。その日の稽古は叶わない（行動も消費しない）
+      if (
+        cfg.variance !== undefined &&
+        npcAway(next.seed, next.time.day, mentor.npc ?? mentor.id, cfg.variance.npc)
+      ) {
+        events.push({ type: "mentorAway", id: mentor.id });
+        break;
+      }
       if (!canAct(next.time, cfg.time)) break;
       if (next.player.money < mentor.fee) break;
       const skill = next.player.skills[mentor.skill];
@@ -955,7 +1094,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         },
         cfg.gain,
       );
-      skill.pending += amount;
+      const applied = amount * gainFactor(skill.value);
+      skill.pending += applied;
       skill.lastUsedDay = next.time.day;
 
       // 礼金と素質回復・秘伝フラグ（gain の後に清算する）
@@ -971,7 +1111,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         target: mentor.skill,
         variant: String(command.difficulty),
       });
-      events.push({ type: "gainApplied", skill: mentor.skill, amount });
+      events.push({ type: "gainApplied", skill: mentor.skill, amount: applied });
       events.push({
         type: "mentorTrained",
         id: mentor.id,

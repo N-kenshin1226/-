@@ -20,6 +20,7 @@ import {
   endRun,
   enemyAreas,
   enemyDefOf,
+  enemyDisplayName,
   eventLines,
   killFloor,
   newAbyssRun,
@@ -105,12 +106,15 @@ function CombatArena({
   enemy,
   def,
   playback,
+  foeName,
 }: {
   cs: CombatState;
   enemy: EnemyJson;
   /** 世界補正済みの敵定義（enemyDefOf。意図の表示に使う） */
   def: ReturnType<typeof enemyDefOf>;
   playback: Playback;
+  /** 個体差込みの表示名（精悍な狼・臆病な狼。R-01） */
+  foeName?: string;
 }) {
   const hp = displayedHp(cs, playback);
   const last = playback.last;
@@ -134,7 +138,7 @@ function CombatArena({
       <div className="cbt-names">
         <span className="cbt-name">{t.text.combatYou}</span>
         <span className="cbt-name foe">
-          {enemy.name}
+          {foeName ?? enemy.name}
           {"uniqueVariant" in enemy && enemy.uniqueVariant ? "（強個体）" : ""}
         </span>
       </div>
@@ -197,8 +201,12 @@ export function HuntScreen({
         return [
           {
             id: `enemy-${e.id}`,
-            label: tp !== undefined ? `${t.text.touchpointTag}${e.name}` : e.name,
-            sub: `挑戦差 ${e.challenge}`,
+            // R-01：今日のこの出会いの個体（精悍な・臆病な）と個体差込みの挑戦差を示す
+            label:
+              tp !== undefined
+                ? `${t.text.touchpointTag}${enemyDisplayName(state, e)}`
+                : enemyDisplayName(state, e),
+            sub: `挑戦差 ${Math.round(enemyDefOf(state, e).challenge)}`,
             onPick: () =>
               setScreen({
                 name: "combat",
@@ -282,16 +290,18 @@ export function CombatScreen({
   const [cs, setCs] = useState<CombatState>(() => beginCombat(state, enemy));
   /** 世界補正込みの敵定義（意図の表示が解決側と一致するよう同じものを使う） */
   const def = useMemo(() => enemyDefOf(state, enemy), [state, enemy]);
+  // R-01 個体差：今日の出会いの個体の表示名（精悍な狼・臆病な狼）
+  const foeName = useMemo(() => enemyDisplayName(state, enemy), [state, enemy]);
   const [announced, setAnnounced] = useState(false);
   // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
 
   useEffect(() => {
     if (!announced) {
-      push(tpl(t.text.combatStart, { name: enemy.name }));
+      push(tpl(t.text.combatStart, { name: foeName }));
       setAnnounced(true);
     }
-  }, [announced, enemy.name, push]);
+  }, [announced, foeName, push]);
 
   const doAction = (a: CombatAction) => {
     // 再生中の入力は「早送り」（残りを一気に出す。連打でも演出を待たされない）
@@ -364,9 +374,10 @@ export function CombatScreen({
     act({
       type: "combat",
       enemyId: enemy.id,
-      // 危機由来の強化分も挑戦差に乗る（W-01。強い敵ほど経験になる）
+      // 個体差（R-01）と危機由来の強化分も挑戦差に乗る（強い敵ほど経験になる。
+      // def は beginCombat と同じ世界補正・個体差込みの定義）
       difficulty:
-        enemy.challenge +
+        def.challenge +
         crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id, area: enemy.area }),
       won: r.won,
       fled: r.fled,
@@ -442,7 +453,7 @@ export function CombatScreen({
           <Kicker text="COMBAT" />
         </div>
         <IntentLine cs={cs} def={def} />
-        <CombatArena cs={cs} enemy={enemy} def={def} playback={playback} />
+        <CombatArena cs={cs} enemy={enemy} def={def} playback={playback} foeName={foeName} />
         <CommandMenu entries={entries} onBack={() => setScreen({ name: "menu" })} />
       </WorldFrame>
       <HintBar
@@ -476,13 +487,15 @@ export function AbyssScreen({
   const [cs, setCs] = useState<CombatState | null>(null);
   /** 現在戦っている層の敵（撃破で run.floor が進んでも表示が変わらないよう保持する） */
   const [enemy, setEnemy] = useState<EnemyJson | null>(null);
+  /** その層の個体差の抽選鍵（R-01。層が進むたびに dive で立て直す） */
+  const [encKey, setEncKey] = useState("");
   const [loss, setLoss] = useState<{ enemyId: string; difficulty: number } | null>(null);
   // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
   /** 戦闘中の敵の世界補正済み定義（意図の表示用。解決側と同じものを使う） */
   const abyssDef = useMemo(
-    () => (enemy === null ? null : enemyDefOf(state, enemy)),
-    [state, enemy],
+    () => (enemy === null ? null : enemyDefOf(state, enemy, encKey)),
+    [state, enemy, encKey],
   );
 
   const endLine = (end: NonNullable<AbyssRun["end"]>) =>
@@ -496,10 +509,12 @@ export function AbyssScreen({
 
   const dive = () => {
     const e = abyssFloorEnemy(run);
+    const key = `${run.seed}:f${run.floor}`;
     push(tpl(t.text.abyssFloor, { floor: run.floor }));
-    push(tpl(t.text.combatStart, { name: e.name }));
+    push(tpl(t.text.combatStart, { name: enemyDisplayName(state, e, key) }));
     setEnemy(e);
-    setCs(beginCombat(state, e));
+    setEncKey(key);
+    setCs(beginCombat(state, e, key));
     playback.queue([]);
   };
 
@@ -512,14 +527,15 @@ export function AbyssScreen({
     }
     // 逃走判定の乱数はラン×層で分ける（同じ行動時刻の連戦で同じ結果にしない）
     const prevLen = cs.log.length;
-    const next = playCombatTurn(cs, a, enemy, state, `${run.seed}:f${run.floor}`);
+    const next = playCombatTurn(cs, a, enemy, state, `${run.seed}:f${run.floor}`, encKey);
     playback.queue(next.log.slice(prevLen));
     setCs(next);
     const r = combatResult(next);
     let cur = { ...run, kills: [...run.kills] };
-    // 危機由来の強化分を層の難易度に乗せる（深層の敵はエリアを持たないので id だけで見る）
+    // 個体差・危機由来の強化分を層の難易度に乗せる（深層の敵はエリアを持たないので id だけで見る）
     const difficulty =
-      enemy.challenge + crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id });
+      (abyssDef?.challenge ?? enemy.challenge) +
+      crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id });
     if (r.won) {
       // 最後の灯りで倒しても層は刻む（灯り切れはそのあとで閉じる）
       cur = killFloor(cur, { enemyId: enemy.id, difficulty });
@@ -610,7 +626,13 @@ export function AbyssScreen({
         {cs !== null && enemy !== null && abyssDef !== null && (
           <>
             <IntentLine cs={cs} def={abyssDef} />
-            <CombatArena cs={cs} enemy={enemy} def={abyssDef} playback={playback} />
+            <CombatArena
+              cs={cs}
+              enemy={enemy}
+              def={abyssDef}
+              playback={playback}
+              foeName={enemyDisplayName(state, enemy, encKey)}
+            />
             {cs.done && cs.won && (
               <p style={{ margin: "0 16px 8px", fontSize: 13, color: theme.colors.special }}>
                 {tpl(t.text.abyssCleared, { name: enemy.name })}

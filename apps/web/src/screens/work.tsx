@@ -29,6 +29,7 @@ import {
   eventLines,
   isBoardKind,
   isTimingKind,
+  marketFactorOf,
   minigameResult,
   orderList,
   showdownOrderOf,
@@ -79,11 +80,17 @@ export function workResultLines(
   const tierUp = events.find(
     (e): e is Extract<ActionEvent, { type: "tierUp" }> => e.type === "tierUp",
   );
+  // R-01：納めた作品の実際の品質・旗は台帳の記録（素材の質・会心作/失敗作の揺らぎ込み）
+  const recorded = events.find(
+    (e): e is Extract<ActionEvent, { type: "workRecorded" }> => e.type === "workRecorded",
+  );
+  const shownQuality = Math.round(recorded?.work.quality ?? quality);
+  const shownFlags = recorded?.work.flags ?? flags;
   return [
     tpl(t.text.workResult, {
       name: order.name,
-      quality,
-      flags: flags.length > 0 ? flags.join("・") : "―",
+      quality: shownQuality,
+      flags: shownFlags.length > 0 ? shownFlags.join("・") : "―",
       amount: (gain?.amount ?? 0).toFixed(1),
     }),
     ...(tierUp ? [tpl(t.text.workResultTier, { tier: tierUp.tier })] : []),
@@ -134,10 +141,13 @@ export function WorkScreen({
       const kind = skillList.find((s) => s.id === o.kind)?.name ?? o.kind;
       const isSpecial = "special" in o && o.special === true;
       const isShowdown = showdown !== null && o.id === showdown.id;
+      // R-01 市場の揺らぎ：日×種目の相場が動く。大きく振れた日は印を出す
+      const market = marketFactorOf(state, o.kind);
+      const trend = market >= 1.05 ? "・相場▲" : market <= 0.95 ? "・相場▼" : "";
       return {
         id: `order-${o.id}`,
         label: isShowdown ? `${t.text.showdownTag}${o.name}` : o.name,
-        sub: `${kind}・目標${o.targetQuality}・${o.rewardMoney}G`,
+        sub: `${kind}・目標${o.targetQuality}・${o.rewardMoney}G${trend}`,
         gold: isSpecial || isShowdown,
         onPick: () => setScreen({ name: "workMode", order: o }),
       };

@@ -13,6 +13,7 @@ import {
   cfg,
   condEnv,
   eventLines,
+  mentorAwayToday,
   mentorList,
   offerName,
   pinnacleList,
@@ -194,7 +195,10 @@ export function MentorScreen({
 
   if (current) {
     const recommended = Math.round(state.player.skills[current.skill]?.value ?? 0) + 10;
-    const canTrain = canAct(state.time, cfg.time) && state.player.money >= current.fee;
+    // R-01：師匠にも街にいない日がある —— その日の稽古は叶わない
+    const awayToday = mentorAwayToday(state, current);
+    const canTrain =
+      canAct(state.time, cfg.time) && state.player.money >= current.fee && !awayToday;
     const formatTrain = (ev: ActionEvent[], difficulty: number): string[] => {
       const gain = ev.find((e) => e.type === "gainApplied");
       return [
@@ -249,6 +253,11 @@ export function MentorScreen({
             })}
             sub={current.desc}
           />
+          {awayToday && (
+            <p style={{ margin: "0 16px 6px", fontSize: 13, color: theme.colors.warn }}>
+              {tpl(t.text.mentorAway, { name: current.name })}
+            </p>
+          )}
           {state.player.money < current.fee && (
             <p style={{ margin: "0 16px 6px", fontSize: 13, color: theme.colors.warn }}>
               {t.text.bookTooPoor}
@@ -277,12 +286,16 @@ export function MentorScreen({
       const ok = canApprentice(state, m.id, cfg.mentors, cfg.time, condEnv);
       // 歳月・危機で街に居なくなった師は「引退した」などの印で示す（X-12）
       const gone = mentorAbsent(state, m);
+      // R-01：退場とは別に「今日はいない」日もある（人の揺らぎ）
+      const away = gone === null && mentorAwayToday(state, m);
       const mark =
         gone !== null
           ? tpl(t.text.mentorGone, { reason: t.display.npcGoneNames[gone] ?? gone })
-          : ok
-            ? t.text.mentorMarkOk
-            : t.text.mentorMarkNg;
+          : away
+            ? tpl(t.text.mentorGone, { reason: t.display.npcGoneNames["away"] ?? "away" })
+            : ok
+              ? t.text.mentorMarkOk
+              : t.text.mentorMarkNg;
       return [
         {
           id: `mentor-${m.id}`,
@@ -290,7 +303,7 @@ export function MentorScreen({
           sub: `稽古 ${m.fee}G・${mark}`,
           onPick: () => {},
         },
-        ...(ok
+        ...(ok && !away
           ? [
               {
                 id: `mentor-apprentice-${m.id}`,

@@ -113,7 +113,7 @@ import {
   wakeBlock,
 } from "./render.js";
 import { booksMenu, loreMenu, mentorMenu, recordsMenu, societyMenu } from "./menus.js";
-import { combatGainLines, fightEnemy, runAbyss, type CombatIo } from "./combat.js";
+import { combatGainLines, fightEnemy, indivEnemyDef, runAbyss, type CombatIo } from "./combat.js";
 import { specialOrderOf, type SpecialOrder } from "./town.js";
 
 export interface PlayCliOptions {
@@ -1527,13 +1527,12 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       }
       const enemy = picked.def;
       const isUnique = picked.unique;
-      // 逃走判定の乱数は従来どおり「この日何度目の戦闘か」で決める
-      const cs = await fightEnemy(
-        combatIo,
-        enemy,
-        `${state.seed}-combat-${state.counters["action.combat"] ?? 0}`,
-        state,
-      );
+      // 逃走判定の乱数は従来どおり「この日何度目の戦闘か」で決める。
+      // R-01 個体差は同じ鍵で抽選される（強個体は固定の特別な相手なので個体差なし）
+      const encSeed = `${state.seed}-combat-${state.counters["action.combat"] ?? 0}`;
+      const cs = await fightEnemy(combatIo, enemy, encSeed, state, {
+        individual: !isUnique,
+      });
       if (cs === null) return state;
       const r = combatResult(cs);
       const res = step(
@@ -1541,9 +1540,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         {
           type: "combat",
           enemyId: enemy.id,
-          // 危機由来の強化分も挑戦差に乗る（W-01。強い敵ほど経験になる）
+          // 個体差（R-01）と危機由来の強化分も挑戦差に乗る（強い敵ほど経験になる）
           difficulty:
-            enemy.challenge +
+            indivEnemyDef(state, enemy, encSeed, cfg, !isUnique).def.challenge +
             crisisEnemyChallengeBonus(state, cfg.crisis, {
               id: enemy.id,
               area: enemy.area,

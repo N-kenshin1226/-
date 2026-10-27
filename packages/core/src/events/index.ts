@@ -133,6 +133,11 @@ export type ActionEvent =
       recovered: { skill: string; amount: number }[];
       flag?: string;
     }
+  /**
+   * 師匠が今日は街にいなかった（R-01、人の揺らぎ。弟子入り・師匠の稽古を
+   * 選んだが叶わなかったときに出る。行動は消費しない。id は師匠の id）
+   */
+  | { type: "mentorAway"; id: string }
   // ---- 世界の危機（docs/08、W-01） ----
   /** 世界の危機が抽選された（世界生成時。v15 以前のセーブでは次の季節の変わり目） */
   | { type: "crisisDrawn" }

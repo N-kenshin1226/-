@@ -303,6 +303,30 @@ export const balanceSchema = z
             agilityBonus: z.number().nonnegative(),
           })
           .strict(),
+        /**
+         * R-01：個体差。同じ種でも個体ごとに強さ・気質が揺らぐ
+         * （遭遇ごとに世界シードから決定的に抽選。ユニークとは別系統）
+         */
+        individual: z
+          .object({
+            /** 強い個体・臆病な個体の出る確率 */
+            strongChance: z.number().min(0).max(1),
+            timidChance: z.number().min(0).max(1),
+            /** 強い個体：HP・威力の倍率と挑戦差・敏捷の加算 */
+            strongHpFactor: z.number().min(1),
+            strongPowerFactor: z.number().min(1),
+            strongChallengeBonus: z.number().nonnegative(),
+            strongAgilityBonus: z.number().nonnegative(),
+            /** 臆病な個体：威力が下がり・行動間隔が伸び・挑戦差が下がる */
+            timidPowerFactor: z.number().min(0).max(1),
+            timidIntervalFactor: z.number().min(1),
+            timidChallengeBonus: z.number().max(0),
+            /** 普通の個体にも掛かる小さなジッター（±の半幅） */
+            hpJitter: z.number().min(0).max(1),
+            powerJitter: z.number().min(0).max(1),
+            agilityJitter: z.number().nonnegative(),
+          })
+          .strict(),
       })
       .strict(),
     /** docs/03 §2 ミニゲーム。各エンジン・皮の係数 */
@@ -704,6 +728,78 @@ export const balanceSchema = z
         kindGapDays: z.number().int().nonnegative(),
         /** 出来事の起きない日がこの日数続いたら、その日は確実に起きる（F-05「3日に1回以上」） */
         pityGapDays: z.number().int().positive(),
+      })
+      .strict(),
+    /**
+     * R-01：リアルな揺らぎ（docs/devin_tasks/R-01_randomness.md）。
+     * 経験・仕事・市場・人・体調の決定的な揺らぎ。core/variance の
+     * VarianceConfig に対応（起床ログの文面 texts は cli.json から注入する）。
+     * 分布は誰に対しても同じで期待値1のノイズ。技量が高いほど安定する
+     */
+    variance: z
+      .object({
+        /** 経験の揺らぎ：技量0での半幅 spread が skillDamp 係数で縮む */
+        gain: z
+          .object({
+            /** 変動の半幅（技量0。実際の半幅は spread*(1-skill/100)^skillDampK） */
+            spread: z.number().min(0).max(1),
+            /** 技量で半幅が縮む指数 */
+            skillDampK: z.number().positive(),
+            /** 「妙に冴えている」日の確率と経験倍率 */
+            insightChance: z.number().min(0).max(1),
+            insightFactor: z.number().min(1),
+          })
+          .strict(),
+        /** 仕事・製作の揺らぎ：会心作/失敗作・素材の質・客の機嫌 */
+        work: z
+          .object({
+            /** 会心作・失敗作の確率の上限（技量 damp が掛かる） */
+            critChance: z.number().min(0).max(1),
+            failChance: z.number().min(0).max(1),
+            /** 確率側の技量 damp の指数 */
+            skillDampK: z.number().positive(),
+            /** 品質の倍率 */
+            critFactor: z.number().min(1),
+            failFactor: z.number().min(0).max(1),
+            /** 作品に付く旗（結果行に出る） */
+            critFlag: z.string().min(1),
+            failFlag: z.string().min(1),
+            /** 素材の質の揺らぎの半幅（日×種目で決まる） */
+            materialSpread: z.number().min(0).max(1),
+            /** 客の機嫌の確率と係数 */
+            moodGoodChance: z.number().min(0).max(1),
+            moodBadChance: z.number().min(0).max(1),
+            moodGoodFactor: z.number().min(1),
+            moodBadFactor: z.number().min(0).max(1),
+          })
+          .strict(),
+        /** 市場の相場：日次ジッターと季節波 */
+        market: z
+          .object({
+            /** 日次の相場の揺らぎの半幅（日×種目） */
+            dailySpread: z.number().min(0).max(1),
+            /** 季節波の振幅（種目ごとに旬の位相が決まる） */
+            seasonalAmp: z.number().min(0).max(1),
+          })
+          .strict(),
+        /** 人の揺らぎ：街にいない日 */
+        npc: z
+          .object({
+            /** NPC がその日街にいない確率（師匠もこの抽選を受ける） */
+            awayChance: z.number().min(0).max(1),
+          })
+          .strict(),
+        /** 体調の揺らぎ：朝の調子が睡眠の質・疲労で傾く */
+        condition: z
+          .object({
+            /** 好調・不調になる基準確率（睡眠の質・疲労で重みが傾く） */
+            goodChance: z.number().min(0).max(1),
+            poorChance: z.number().min(0).max(1),
+            /** 体調が定着の質に掛かる係数 */
+            goodFactor: z.number().min(1),
+            poorFactor: z.number().min(0).max(1),
+          })
+          .strict(),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

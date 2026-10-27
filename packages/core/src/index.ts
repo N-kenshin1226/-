@@ -108,6 +108,7 @@ export {
   evadeChance,
   hitChance,
   playerCombatStats,
+  rollIndividual,
   startCombat,
   telegraphLines,
   turn as combatTurn,
@@ -122,8 +123,33 @@ export type {
   EnemyDef,
   EnemyMove,
   EnemyPatternStep,
+  EnemyTrait,
+  IndividualConfig,
   Telegraph,
 } from "./combat/index.js";
+export {
+  customerMoodFactor,
+  gainSpread,
+  gainVarianceFactor,
+  insightOf,
+  marketFactor,
+  materialFactor,
+  npcAway,
+  rollCondition,
+  skillDamp,
+  workTwist,
+} from "./variance/index.js";
+export type {
+  ConditionVarianceConfig,
+  DayCondition,
+  GainVarianceConfig,
+  MarketVarianceConfig,
+  NpcVarianceConfig,
+  VarianceConfig,
+  VarianceTexts,
+  WorkTwist,
+  WorkVarianceConfig,
+} from "./variance/index.js";
 export { worldFactor, worldMods, withWorldMods } from "./fate/index.js";
 export type { TendencyDefs, VowDef, WorldMods } from "./fate/index.js";
 export type {

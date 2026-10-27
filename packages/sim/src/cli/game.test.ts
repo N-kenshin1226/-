@@ -187,8 +187,9 @@ describe("T-20 街のプレイループ", () => {
     expect(state!.time.day).toBe(7);
     expect(state!.ledger.length).toBeGreaterThanOrEqual(7);
     expect(state!.lore.read.length).toBeGreaterThanOrEqual(1);
-    // 報酬（釘15G）− 宿代（8G）で所持金が増える
-    expect(state!.player.money).toBe(40 + 7 * 7);
+    // 報酬（釘15G）− 宿代（8G）に市場・客の機嫌の揺らぎ（R-01）が乗って所持金が増える
+    // （日×種目の決定的な相場なので、このシードの合計は確定値）
+    expect(state!.player.money).toBe(124);
     expect(text).toContain("街の記録");
     expect(text).toContain("街の新聞");
     expect(text).toContain("報酬");

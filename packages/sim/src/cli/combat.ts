@@ -4,12 +4,14 @@ import {
   activeEffects,
   combatResult,
   combatTurn,
+  createRng,
   crisisEnemyChallengeBonus,
   crisisEnemyMods,
   damageFactor,
   endRun,
   floorEnemy,
   killFloor,
+  rollIndividual,
   spendLight,
   startCombat,
   startRun,
@@ -19,6 +21,8 @@ import {
   type ActionEvent,
   type CombatAction,
   type CombatState,
+  type EnemyDef,
+  type EnemyTrait,
   type GameState,
   type StepConfig,
   type StepResult,
@@ -48,6 +52,40 @@ export interface CombatIo {
 }
 
 /**
+ * 世界補正＋個体差込みの敵定義（R-01）。seed は遭遇の鍵
+ * （狩りは日付×行動、深層はラン×層、勝負所は行事ごと）——
+ * 同じ鍵なら必ず同じ個体になる（決定的）
+ */
+export function indivEnemyDef(
+  st: GameState,
+  enemy: EnemyJson,
+  seed: string,
+  cfg: StepConfig,
+  individual = true,
+): { def: EnemyDef; trait: EnemyTrait } {
+  // 運命の傾向・誓約の世界補正（T-45/T-46）：戦乱の世や強敵の誓で敵の基礎値が上がる。
+  // 攻撃側の傾向効果（workGainFactor など）は step 側のゲイン経路に乗る。
+  // 世界の危機（W-01）の段階の影響も掛け合わせる（霧に覆われた森の敵が強くなる等）
+  const fate = worldMods(st, balance.tendency, vows.vows);
+  const cm = crisisEnemyMods(st, cfg.crisis, { id: enemy.id, area: enemy.area });
+  const base = withWorldMods(enemy, {
+    ...fate,
+    enemyHpFactor: (fate.enemyHpFactor ?? 1) * cm.enemyHpFactor,
+    enemyPowerFactor: (fate.enemyPowerFactor ?? 1) * cm.enemyPowerFactor,
+  });
+  const ind = balance.combat.individual;
+  if (!individual || ind === undefined) return { def: base, trait: "normal" };
+  return rollIndividual(base, createRng(`${st.seed}:ind:${seed}`), ind);
+}
+
+/** 個体差の気質込みの表示名（精悍な狼・臆病な狼。normal は素の名） */
+export function indivName(t: CliText, enemy: EnemyJson, trait: EnemyTrait): string {
+  if (trait === "normal") return enemy.name;
+  const adj = t.display.enemyTraitNames[trait];
+  return adj === undefined ? enemy.name : `${adj}${enemy.name}`;
+}
+
+/**
  * CT戦闘を対話的に回す（狩り・深層の共通部品）。
  * seed は逃走判定などの乱数源（狩りは日付×行動、深層はラン×層で別々に与える）。
  * opts.spend はプレイヤー行動ごとの消費（深層の灯り）。opts.aborted() が true なら
@@ -58,7 +96,7 @@ export async function fightEnemy(
   enemy: EnemyJson,
   seed: string,
   st: GameState,
-  opts?: { spend?: () => void; aborted?: () => boolean },
+  opts?: { spend?: () => void; aborted?: () => boolean; individual?: boolean },
 ): Promise<CombatState | null> {
   const { out, outAll, ask, t, cfg } = io;
   // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
@@ -69,18 +107,17 @@ export async function fightEnemy(
     ],
     enemy.id,
   );
-  // 運命の傾向・誓約の世界補正（T-45/T-46）：戦乱の世や強敵の誓で敵の基礎値が上がる。
-  // 攻撃側の傾向効果（workGainFactor など）は step 側のゲイン経路に乗る。
-  // 世界の危機（W-01）の段階の影響も掛け合わせる（霧に覆われた森の敵が強くなる等）
-  const fate = worldMods(st, balance.tendency, vows.vows);
-  const cm = crisisEnemyMods(st, cfg.crisis, { id: enemy.id, area: enemy.area });
-  const worldEnemy = withWorldMods(enemy, {
-    ...fate,
-    enemyHpFactor: (fate.enemyHpFactor ?? 1) * cm.enemyHpFactor,
-    enemyPowerFactor: (fate.enemyPowerFactor ?? 1) * cm.enemyPowerFactor,
-  });
+  // R-01 個体差：この出会いの個体を決定的に抽選（indivEnemyDef と同じ鍵）
+  const { def: worldEnemy, trait } = indivEnemyDef(
+    st,
+    enemy,
+    seed,
+    cfg,
+    opts?.individual !== false,
+  );
+  const foeName = indivName(t, enemy, trait);
   let cs = startCombat(worldEnemy, balance.combat, st.player, atkFactor);
-  out(tpl(t.text.combatStart, { name: enemy.name }));
+  out(tpl(t.text.combatStart, { name: foeName }));
   let printed = 0;
   while (!cs.done && !(opts?.aborted?.() ?? false)) {
     outAll(telegraphLines(cs, worldEnemy, balance.combat));
@@ -88,7 +125,7 @@ export async function fightEnemy(
       tpl(t.text.combatStatus, {
         playerHp: Math.max(0, cs.playerHp),
         playerMax: cs.playerHpMax,
-        enemy: enemy.name,
+        enemy: foeName,
         enemyHp: Math.max(0, cs.enemyHp),
       }),
     );
@@ -151,12 +188,15 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
     });
     if (cs === null) return null;
     const r = combatResult(cs);
+    // 個体差（R-01）込みの挑戦差 —— fightEnemy と同じ抽選鍵で引く
+    const foeChallenge =
+      indivEnemyDef(state, enemy, `${run.seed}:f${floor}`, cfg).def.challenge +
+      crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id });
     if (r.won) {
       // 倒した層を刻む。最後の灯りで倒しても層は数える（灯り切れはそのあとで閉じる）
       run = killFloor(run, {
         enemyId: enemy.id,
-        difficulty:
-          enemy.challenge + crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id }),
+        difficulty: foeChallenge,
       });
       if (!run.done) {
         // 層の合間だけ引き返せる。戦闘中の離脱は「逃げる」で
@@ -169,8 +209,7 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
     } else {
       loss = {
         enemyId: enemy.id,
-        difficulty:
-          enemy.challenge + crisisEnemyChallengeBonus(state, cfg.crisis, { id: enemy.id }),
+        difficulty: foeChallenge,
       };
       if (r.died) run = endRun(run, "died");
       else if (r.fled) run = endRun(run, "fled");

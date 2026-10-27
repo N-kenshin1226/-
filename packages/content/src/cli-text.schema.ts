@@ -50,6 +50,8 @@ export const cliTextSchema = z
          * depart・leave 街を離れた / die 亡くなった）
          */
         npcGoneNames: z.record(z.string(), z.string()),
+        /** 敵の個体差の気質（R-01。combat の EnemyTrait → 名前の前に付く形容） */
+        enemyTraitNames: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -376,6 +378,8 @@ export const cliTextSchema = z
         mentorApprenticed: z.string(),
         mentorLocked: z.string(),
         mentorLeft: z.string(),
+        /** 師匠が今日は街にいなかった（R-01、人の揺らぎ。{name} は師匠の名） */
+        mentorAway: z.string(),
         mentorTrainResult: z.string(),
         mentorSecret: z.string(),
         dinnerPrompt: z.string(),
@@ -405,6 +409,12 @@ export const cliTextSchema = z
             agingWarn: z.string(),
             /** 老いの兆候：強い方（signSevereAt 超え。間隔を置いて繰り返す） */
             agingSevere: z.string(),
+            /** 「妙に冴えている」日の行（R-01。冴えの朝に出る） */
+            insight: z.string(),
+            /** 体調が良い日の行（R-01） */
+            conditionGood: z.string(),
+            /** 体調が悪い日の行（R-01） */
+            conditionPoor: z.string(),
             saved: z.string(),
           })
           .strict(),
