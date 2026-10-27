@@ -16,6 +16,9 @@
 | F-04 | [F-04_combat_tension.md](F-04_combat_tension.md) | F-02 | todo | **最優先（刺激）**。戦闘の駆け引き |
 | F-05 | [F-05_daily_events.md](F-05_daily_events.md) | ― | todo | **最優先（刺激）**。日々の出来事・勝負所の絞り込み |
 | K-01 | [K-01_skills.md](K-01_skills.md) | ― | todo | **最優先（刺激）**。技能を約45種に（死んだ技能を作らない） |
+| K-02 | [K-02_arts.md](K-02_arts.md) | K-01, F-04 | todo | **最優先（刺激）**。武技約60・気力/魔力・状態異常・耐性・8+4枠の構成 |
+| M-01 | [M-01_magic.md](M-01_magic.md) | K-02 | todo | **最優先（刺激）**。魔法（6属性・無属性・生活・治癒）・詠唱・付与 |
+| K-03 | [K-03_evolution.md](K-03_evolution.md) | M-01 | todo | **最優先（刺激）**。技の進化・合成・ユニークスキル |
 | P-02 | [P-02_more_actions.md](P-02_more_actions.md) | P-01, F-05, K-01 | todo | **最優先（刺激）**。行動の種類を増やす（散策・人付き合い・市場・採集・料理・賭け・旅など） |
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
 | W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | done | 危機の筋書きと世界の備え（docs/08_world_crisis.md） |
