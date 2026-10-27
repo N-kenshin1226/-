@@ -90,4 +90,4 @@
 | X-11 | [X-11_hidden_elements.md](X-11_hidden_elements.md) | ― | done | Versteckte Entdeckungen: Zeit/Mond/Ort-Bedingungen + garantierte Hinweise (03 §5) |
 | X-12 | [X-12_npc_lifecycle.md](X-12_npc_lifecycle.md) | T-27, T-47 | done | NPCの歳月：師匠・ライバル・住人の物語が進み、終わる（07 §3） |
 | X-13 | [X-13_weather.md](X-13_weather.md) | T-27, T-45 | doing |
-| X-14 | [X-14_pinnacle_balance.md](X-14_pinnacle_balance.md) | T-16, T-45 | doing |
+| X-14 | [X-14_pinnacle_balance.md](X-14_pinnacle_balance.md) | T-16, T-45 | done |
