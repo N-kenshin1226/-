@@ -1,5 +1,6 @@
 import { evaluate, type Cond } from "../conditions/index.js";
 import type { ActionEvent } from "../events/index.js";
+import { npcGoneReason } from "../npclife/index.js";
 import { reachedPinnacles, routeProgress, type PinnacleRouteDef } from "../pinnacle/index.js";
 import { createRng, type Rng } from "../rng/index.js";
 import { drawRivalCast, playerScore, type RivalsConfig } from "../rivals/index.js";
@@ -440,7 +441,7 @@ export function crisisSeasonTurn(
   const rc = cfg.involvement?.rivals;
   const champions =
     rc !== undefined
-      ? crisisRivals({ ...state, crisis: next }, cfg).filter((r) => r.stage === 4)
+      ? crisisRivals({ ...state, crisis: next }, cfg).filter((r) => r.stage === 4 && !r.gone)
       : [];
   const firstUnresolved = finales0.find((f) => !f.resolved);
   for (const f of finales0) {
@@ -1129,6 +1130,8 @@ export interface CrisisRival {
   /** 現在の関与スコア（伸び×境界の回数） */
   score: number;
   stage: CrisisInvolvementStage;
+  /** 街に居ない（X-12：引退・旅立ち・亡くなったライバルは決着に名乗りを上げない） */
+  gone: boolean;
 }
 
 export function crisisRivals(state: GameState, cfg: CrisisConfig | undefined): CrisisRival[] {
@@ -1157,6 +1160,7 @@ export function crisisRivals(state: GameState, cfg: CrisisConfig | undefined): C
       growth,
       score,
       stage: crisisInvolvementStage(score, inv),
+      gone: npcGoneReason(state, crisisRivalRef(index)) !== null,
     };
   });
 }

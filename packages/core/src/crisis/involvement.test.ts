@@ -684,6 +684,38 @@ describe("世界は主人公を待たない（自律的な決着とライバル�
     // 英雄の記録はライバルの名で解ける（抽選順の index → 名＋二つ名）
     expect(hero && "index" in hero && Number.isInteger(hero.index)).toBe(true);
   });
+
+  it("街を去ったライバルは決着に名乗りを上げない（X-12：英雄の記録も残らない）", () => {
+    // 全ライバルに退場の印を立てた世界：英雄の適性があっても champions は空。
+    // 決着そのものは勢力の備えで成る（世界は主人公を待たない —— 居ない者は担えない）
+    let g = startWorld("w-inv-rgone");
+    g = {
+      ...g,
+      flags: {
+        ...g.flags,
+        "npc.gone.rival.0": true,
+        "npc.gone.rival.1": true,
+        "npc.gone.rival.2": true,
+        "npc.gone.rival.3": true,
+      },
+    };
+    const rs = crisisRivals(profile(g, { boundaries: 5 }), cfg.crisis);
+    expect(rs.every((r) => r.gone)).toBe(true);
+    expect(rs.some((r) => r.stage === 4)).toBe(true); // 段階は届いていても居ない
+
+    let s = g;
+    let heroEvent = false;
+    for (let i = 0; i < 12; i++) {
+      const res = step(s, { type: "rest" }, cfg);
+      s = res.state;
+      if (res.events.some((e) => e.type === "crisisRivalHero")) heroEvent = true;
+    }
+    expect(heroEvent).toBe(false);
+    expect(s.counters["crisis.rival.hero"]).toBeUndefined();
+    expect(s.crisis!.log.some((l) => l.kind === "rival.hero")).toBe(false);
+    // 決着は勢力だけで成る（f1 の備えは届くので resolved のまま）
+    expect(s.crisis!.finales.find((f) => f.id === "finale.f1")?.resolved).toBe(true);
+  });
 });
 
 describe("決定性（同じ世界・同じ行いは同じ結果）", () => {

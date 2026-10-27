@@ -1,4 +1,5 @@
 import { evaluate, type Cond } from "../conditions/index.js";
+import { npcGoneReason } from "../npclife/index.js";
 import { createRng } from "../rng/index.js";
 import { drawRivalCast, type RivalsConfig, type RivalNamePool } from "../rivals/index.js";
 import type { GameState } from "../state/types.js";
@@ -139,7 +140,18 @@ export function occasionOffers(state: GameState, cfg: OccasionsConfig): Occasion
     }));
 }
 
-/** その日に候補に挙がるか（条件・周期・再提示間隔・同種の間隔） */
+/**
+ * 打診を運ぶ者が街に居ないか（X-12：引退・旅立ち・亡くなった者は打診を運ばない ——
+ * 持ちかけは人物から届くので、居ない者の分の行事はその日の候補に挙がらない）
+ */
+function speakerGone(sp: OccasionSpeaker, state: GameState, cfg: OccasionsConfig): boolean {
+  if (sp.kind === "npc") return npcGoneReason(state, sp.id) !== null;
+  if (cfg.rivals === undefined) return false;
+  const cast = drawRivalCast(state.seed, cfg.rivals, cfg.rivals);
+  return npcGoneReason(state, `rival.${sp.index % cast.length}`) !== null;
+}
+
+/** その日に候補に挙がるか（条件・周期・再提示間隔・同種の間隔・話者の在否） */
 function eligible(
   def: OccasionDef,
   state: GameState,
@@ -147,6 +159,7 @@ function eligible(
   time: TimeConfig,
 ): boolean {
   const day = state.time.day;
+  if (speakerGone(def.speaker, state, cfg)) return false;
   if (def.every !== undefined) {
     const offset = def.every.offset ?? 0;
     if (day < offset || (day - offset) % def.every.days !== 0) return false;

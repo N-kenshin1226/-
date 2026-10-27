@@ -374,6 +374,37 @@ describe("届く条件（提示条件・周期・間隔）", () => {
     }
   });
 
+  it("打診を運ぶ者が街に居なければ、その者の行事は届かない（X-12の歳月）", () => {
+    // occ.free は npc.fenn の打診。居ない者は打診を運べない
+    const freeOnly: StepConfig = {
+      ...cfgBase,
+      occasions: occConfig({ occasions: [OCCASIONS[3]!] }),
+    };
+    const alive = step(startWorld("w-occ-gone"), { type: "wait" }, freeOnly);
+    expect(occasionOffers(alive.state, freeOnly.occasions!).map((o) => o.def.id)).toEqual([
+      "occ.free",
+    ]);
+    let g = startWorld("w-occ-gone");
+    g = { ...g, flags: { ...g.flags, "npc.gone.npc.fenn": true } };
+    const res = step(g, { type: "wait" }, freeOnly);
+    expect(occasionOffers(res.state, freeOnly.occasions!)).toEqual([]);
+    expect(res.events.some((e) => e.type === "occasionOffered")).toBe(false);
+
+    // ライバルの打診も同じ：果たし合いを持ちかける rival.0 が去っていれば届かない
+    const duelOnly: StepConfig = {
+      ...cfgBase,
+      occasions: occConfig({ occasions: [OCCASIONS[1]!] }),
+    };
+    let g2 = startWorld("w-occ-gone-rival");
+    g2 = {
+      ...g2,
+      counters: { ...g2.counters, "action.combat": 3 },
+      flags: { ...g2.flags, "npc.gone.rival.0": true },
+    };
+    const res2 = step(g2, { type: "wait" }, duelOnly);
+    expect(occasionOffers(res2.state, duelOnly.occasions!)).toEqual([]);
+  });
+
   it("同じ種類の行事は kindGapDays の間は続かない", () => {
     // 同種 kind "exhibition" の2行事を用意（どちらも fair に近い種類）
     const sameKind: OccasionDef[] = [
