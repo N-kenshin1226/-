@@ -12,7 +12,7 @@ import {
   type GameState,
   type InnRank,
 } from "@trace/core";
-import { titles } from "@trace/content";
+import { SKILL_CATEGORIES, titles } from "@trace/content";
 import {
   bioLines,
   bookList,
@@ -30,6 +30,8 @@ import {
   societyDefs,
   t,
   tpl,
+  weaponDefs,
+  weaponList,
 } from "../game.js";
 import {
   BlessingWindow,
@@ -349,8 +351,82 @@ export function BookScreen({ state, act, back }: { state: GameState; act: Act; b
   );
 }
 
+// ---- 武器屋（K-01） ----
+// 棚に並ぶのは「売り物（price あり）」と「すでに持っている武器」。素手など
+// 売り物でないものは持っていなければ並ばない。買う・持ち替えるは行動を消費しない
+export function ArmsScreen({ state, act, back }: { state: GameState; act: Act; back: () => void }) {
+  const owned = state.player.weapons;
+  const equipped = state.player.weapon;
+  const skillName = (id: string) => skillList.find((s) => s.id === id)?.name ?? id;
+  const entries: MenuEntry[] = weaponList.flatMap((w): MenuEntry[] => {
+    const has = owned.includes(w.id);
+    const isEq = equipped === w.id;
+    if (!has && w.price === undefined) return [];
+    const mark = isEq ? t.text.armsEquippedTag : has ? t.text.armsOwnedTag : `${w.price ?? 0}G`;
+    return [
+      {
+        id: isEq ? `arms-eq-${w.id}` : has ? `arms-use-${w.id}` : `arms-buy-${w.id}`,
+        label: `《${w.name}》`,
+        sub: `${w.desc}（${mark}・${skillName(w.skill)}）`,
+        disabled: isEq || (!has && state.player.money < (w.price ?? 0)),
+        onPick: () => {
+          if (!has) act({ type: "buyWeapon", id: w.id });
+          else act({ type: "equipWeapon", id: w.id });
+        },
+      },
+    ];
+  });
+  return (
+    <div data-testid="screen-arms" className="scene">
+      <Paper
+        style={{ ...pos({ left: 300, top: 90, width: 680, height: 520 }), padding: "26px 34px" }}
+      >
+        <div
+          style={{
+            textAlign: "center",
+            borderBottom: `3px double ${theme.colors.paper.text}`,
+            paddingBottom: 8,
+            marginBottom: 12,
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontFamily: theme.font.mincho,
+              fontWeight: 800,
+              fontSize: 28,
+              letterSpacing: "0.2em",
+              color: theme.colors.paper.head,
+            }}
+          >
+            武器の棚
+          </p>
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: theme.colors.paper.dim }}>
+            {tpl(t.text.armsHeader, {
+              money: state.player.money,
+              equipped: weaponDefs[equipped]?.name ?? equipped,
+            })}
+          </p>
+        </div>
+        <div className="scroll" style={{ height: "78%", overflowY: "auto" }}>
+          <CommandMenu paper entries={entries} onBack={back} />
+        </div>
+      </Paper>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "買う／持ち替える"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
+  );
+}
+
 // ---- 能力（Status見本） ----
 const TABS = ["技能", "称号", "経歴", "年代記"] as const;
+/** 分野の並び（K-01。コンテンツ定義の分野順で棚を並べる） */
+const SKILL_CATEGORY_ORDER = SKILL_CATEGORIES;
 
 export function StatusScreen({ state, back }: { state: GameState; back: () => void }) {
   const [tab, setTab] = useState(0);
@@ -427,81 +503,106 @@ export function StatusScreen({ state, back }: { state: GameState; back: () => vo
             corners={["tr", "bl"]}
           >
             <div className="scroll b" style={{ height: "100%", overflowY: "auto" }}>
-              {unlocked.map((s, i) => {
-                const st = state.player.skills[s.id]!;
-                const band = skillBandOf(st.value);
-                const chip = skillChip(state, s.id);
+              {/* 分野ごとの棚（K-01）：武技・身のこなし・職人…の見出しで束ねる */}
+              {SKILL_CATEGORY_ORDER.map((cat) => {
+                const un = unlocked.filter((s) => s.category === cat);
+                const lk = locked.filter((s) => s.category === cat);
+                if (un.length === 0 && lk.length === 0) return null;
                 return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className={i === focus ? "srow on" : "srow"}
-                    onMouseEnter={() => setFocus(i)}
-                    onClick={() => setFocus(i)}
-                  >
-                    <RankCrest letter={band.crest} />
-                    <span>
-                      <span
-                        style={{
-                          fontFamily: theme.font.mincho,
-                          fontSize: 19,
-                          color: "#eaf8fb",
-                        }}
-                      >
-                        {s.name}
-                      </span>{" "}
-                      <span style={{ fontSize: 12, color: B.dim }}>{band.name}</span>
-                      <div style={{ marginTop: 5, maxWidth: 320 }}>
-                        <SkillBar value={st.value} pending={st.pending} bless />
-                      </div>
-                    </span>
-                    <span
+                  <div key={cat}>
+                    <div
+                      className="srow"
                       style={{
+                        padding: "8px 10px 4px",
                         fontFamily: theme.font.en,
-                        fontSize: 22,
-                        fontWeight: 700,
-                        textAlign: "right",
-                        color: "#eaf8fb",
+                        fontSize: 12,
+                        letterSpacing: "0.25em",
+                        color: B.dim,
+                        borderBottom: `1px solid ${B.frame}`,
+                        marginBottom: 4,
                       }}
                     >
-                      {st.value.toFixed(1)}
-                    </span>
-                    <StChip tone={chip.tone}>{chip.text}</StChip>
-                  </button>
+                      ── {t.display.skillCategories[cat] ?? cat} ──
+                    </div>
+                    {un.map((s) => {
+                      const i = unlocked.indexOf(s);
+                      const st = state.player.skills[s.id]!;
+                      const band = skillBandOf(st.value);
+                      const chip = skillChip(state, s.id);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={i === focus ? "srow on" : "srow"}
+                          onMouseEnter={() => setFocus(i)}
+                          onClick={() => setFocus(i)}
+                        >
+                          <RankCrest letter={band.crest} />
+                          <span>
+                            <span
+                              style={{
+                                fontFamily: theme.font.mincho,
+                                fontSize: 19,
+                                color: "#eaf8fb",
+                              }}
+                            >
+                              {s.name}
+                            </span>{" "}
+                            <span style={{ fontSize: 12, color: B.dim }}>{band.name}</span>
+                            <div style={{ marginTop: 5, maxWidth: 320 }}>
+                              <SkillBar value={st.value} pending={st.pending} bless />
+                            </div>
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: theme.font.en,
+                              fontSize: 22,
+                              fontWeight: 700,
+                              textAlign: "right",
+                              color: "#eaf8fb",
+                            }}
+                          >
+                            {st.value.toFixed(1)}
+                          </span>
+                          <StChip tone={chip.tone}>{chip.text}</StChip>
+                        </button>
+                      );
+                    })}
+                    {/* 未発見の技能（？？？ 行。世界はまだ教えてくれない） */}
+                    {lk.map((s) => (
+                      <div key={s.id} className="srow" style={{ opacity: 0.55 }}>
+                        <RankCrest letter="？" unknown />
+                        <span>
+                          <span
+                            style={{
+                              fontFamily: theme.font.mincho,
+                              fontSize: 19,
+                              color: theme.colors.muted,
+                            }}
+                          >
+                            ？？？
+                          </span>
+                          <div style={{ marginTop: 5, maxWidth: 320 }}>
+                            <SkillBar value={0} bless />
+                          </div>
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: theme.font.en,
+                            fontSize: 22,
+                            fontWeight: 700,
+                            textAlign: "right",
+                            color: theme.colors.muted,
+                          }}
+                        >
+                          ―
+                        </span>
+                        <StChip>未発見</StChip>
+                      </div>
+                    ))}
+                  </div>
                 );
               })}
-              {/* 未発見の技能（？？？ 行。世界はまだ教えてくれない） */}
-              {locked.map((s) => (
-                <div key={s.id} className="srow" style={{ opacity: 0.55 }}>
-                  <RankCrest letter="？" unknown />
-                  <span>
-                    <span
-                      style={{
-                        fontFamily: theme.font.mincho,
-                        fontSize: 19,
-                        color: theme.colors.muted,
-                      }}
-                    >
-                      ？？？
-                    </span>
-                    <div style={{ marginTop: 5, maxWidth: 320 }}>
-                      <SkillBar value={0} bless />
-                    </div>
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: theme.font.en,
-                      fontSize: 22,
-                      fontWeight: 700,
-                      textAlign: "right",
-                      color: theme.colors.muted,
-                    }}
-                  >
-                    ―
-                  </span>
-                  <StChip>未発見</StChip>
-                </div>
-              ))}
             </div>
           </BlessingWindow>
           {/* 下：選んだ技能の説明（見本の「説明」窓） */}

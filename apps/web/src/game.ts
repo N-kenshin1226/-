@@ -82,6 +82,7 @@ import {
   rollIndividual,
   marketFactor,
   weatherOf,
+  weaponDefOf,
   withWorldMods,
   worldFactor,
   worldMods,
@@ -140,16 +141,24 @@ import {
   titles,
   voices,
   vows,
+  weapons,
   weather,
   type EnemyJson,
   type Order,
   type Origin,
   type PlaceJson,
   type VoiceNpc,
+  type WeaponJson,
 } from "@trace/content";
 import type { SoundId } from "./fx/sound.js";
 
 export const t = cliText;
+
+/** 武器の定義表（K-01、weapons.json → id 引き。武器屋・戦闘・新規開始で共有） */
+export const weaponList = weapons.weapons;
+export const weaponDefs: Record<string, WeaponJson> = Object.fromEntries(
+  weapons.weapons.map((w) => [w.id, w]),
+);
 
 export const cfg: StepConfig = {
   time: balance.time,
@@ -176,7 +185,21 @@ export const cfg: StepConfig = {
     },
   },
   ledger: balance.ledger,
-  combat: balance.combat,
+  /**
+   * 戦闘（K-01）：武器表（weapons.json）と技能リンク（balance.links）を注入する。
+   * 武器技能の選択・武器ごとの補正・戦闘中の持ち替え・リンク係数が効く
+   */
+  combat: {
+    ...balance.combat,
+    weapons: weaponDefs,
+    links: balance.links,
+  },
+  /** 技能リンク（K-01、balance.links）：step の各フック（仕事・移動・読書・危機…）が引く */
+  links: balance.links,
+  /** 武器の定義表（K-01、weapons.json）：購入・持ち替え・戦闘経験の解決に使う */
+  weapons: weaponDefs,
+  /** 旧セーブに無い技能へ経験が入るときの新規レコードの素質（K-01） */
+  initialSkillPotential: balance.player.initialPotential,
   society: {
     standings: society.standings,
     professions: society.professions,
@@ -514,7 +537,13 @@ const SAVE_KEY = "trace.save.v1";
 export function loadGame(): GameState | null {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    return raw ? deserialize(raw) : null;
+    // K-01：旧セーブに無い技能はコンテンツの技能一覧で空レコードに補う
+    return raw
+      ? deserialize(raw, {
+          skillIds: skills.skills.map((s) => s.id),
+          initialPotential: balance.player.initialPotential,
+        })
+      : null;
   } catch {
     return null;
   }
@@ -571,6 +600,9 @@ const gameInit = (
   ...(flags !== undefined && flags.length > 0 ? { flags } : {}),
   // 世界の危機（W-01）：この世界の危機をシードから抽選する
   ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
+  // 初期装備の武器（K-01、weapons.json の initial/defaultWeapon）
+  initialWeapons: weapons.initial,
+  initialWeapon: weapons.defaultWeapon,
 });
 
 /** 新規開始のシード。?seed= で固定できる（e2e・リプレイ用）。それ以外は一意に */
@@ -806,6 +838,15 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       case "bookBought": {
         const name = books.books.find((b) => b.id === e.id)?.name ?? e.id;
         return [tpl(t.text.bookBought, { name })];
+      }
+      // 武器の購入・持ち替え（K-01）：武器の棚でのできごとを1行ずつ返す
+      case "weaponBought": {
+        const name = weaponDefs[e.id]?.name ?? e.id;
+        return [tpl(t.text.armsBought, { name })];
+      }
+      case "weaponEquipped": {
+        const name = weaponDefs[e.id]?.name ?? e.id;
+        return [tpl(t.text.armsEquipped, { name })];
       }
       case "bookRead": {
         const def = books.books.find((b) => b.id === e.id);
@@ -1207,10 +1248,12 @@ function boardEngineOf(kind: MinigameKind) {
   return kind === "appraisal" ? engines.appraisal : engines.mining;
 }
 
-function minigameCtx(state: GameState, kind: MinigameKind): MiniGameCtx {
-  const skillId = kind === "negotiation" ? "eloquence" : kind;
+function minigameCtx(state: GameState, kind: MinigameKind, skillId?: string): MiniGameCtx {
+  // K-01：皮と技能は別 —— 木工の注文を鍛冶の皮で遊ぶとき、
+  // 腕の根拠になるのは注文の技能（木工）であって皮の技能（鍛冶）ではない
+  const sid = skillId ?? (kind === "negotiation" ? "eloquence" : kind);
   return {
-    skill: state.player.skills[skillId]?.value ?? 0,
+    skill: state.player.skills[sid]?.value ?? 0,
     skills: Object.fromEntries(Object.entries(state.player.skills).map(([k, v]) => [k, v.value])),
     seed: `${state.seed}:${kind}:${state.time.day}:${state.time.action}`,
   };
@@ -1219,8 +1262,10 @@ function minigameCtx(state: GameState, kind: MinigameKind): MiniGameCtx {
 export function startMinigame(
   kind: MinigameKind,
   state: GameState,
+  /** 難度の根拠にする技能（K-01。省略時は皮の技能） */
+  skillId?: string,
 ): TimingState | BoardState | DealState {
-  const ctx = minigameCtx(state, kind);
+  const ctx = minigameCtx(state, kind, skillId);
   if (BOARD_KINDS.has(kind)) return boardEngineOf(kind).init(ctx);
   if (kind === "negotiation") return engines.negotiation.init(ctx);
   return timingEngineOf(kind).init(ctx);
@@ -1288,6 +1333,8 @@ function toEnemyDef(e: EnemyJson): EnemyDef {
     intervalTicks: e.intervalTicks,
     challenge: e.challenge,
     agility: e.agility,
+    // 獣（K-01）：beast.attack / beast.exp の技能リンクが効く印
+    ...(e.beast === true ? { beast: true as const } : {}),
     attack: e.attack,
     moves: e.moves,
     pattern: e.pattern,
@@ -1295,8 +1342,10 @@ function toEnemyDef(e: EnemyJson): EnemyDef {
 }
 
 function combatCtx(state: GameState): MiniGameCtx {
+  // K-01：ミニゲーム系乱数の「技能値」は装備中の武器の技能（持ち替えで変わる）
+  const weaponSkillId = weaponDefOf(cfg.combat, state.player.weapon).skill;
   return {
-    skill: state.player.skills.swordplay?.value ?? 0,
+    skill: state.player.skills[weaponSkillId]?.value ?? 0,
     skills: { observation: state.player.skills.observation?.value ?? 0 },
     seed: `${state.seed}:combat:${state.time.day}:${state.time.action}`,
   };

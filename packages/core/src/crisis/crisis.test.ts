@@ -181,7 +181,7 @@ const cfgBase: StepConfig = {
     baseHp: 30,
     hpPerEndurance: 2,
     attackBase: 5,
-    attackPerSwordplay: 0.15,
+    attackPerWeaponSkill: 0.15,
     attackPerStrength: 0.2,
     ctBase: 12,
     ctPerAgility: 0.15,
@@ -193,14 +193,14 @@ const cfgBase: StepConfig = {
     preciseObserve: 40,
     deathPendingFactor: 0.5,
     hitBase: 0.86,
-    hitPerSwordplay: 0.002,
+    hitPerWeaponSkill: 0.002,
     hitPerAgilityDiff: 0.012,
     hitMin: 0.45,
     hitMax: 0.98,
     varianceMin: 0.8,
     varianceMax: 1.25,
     critBase: 0.08,
-    critPerSwordplay: 0.002,
+    critPerWeaponSkill: 0.002,
     critFactor: 1.8,
     enemyCritBase: 0.05,
     enemyCritFactor: 1.6,
@@ -517,7 +517,7 @@ describe("セーブ移行（v15 → v16）", () => {
     v15["version"] = 15;
     delete v15["crisis"];
     const restored = deserialize(JSON.stringify(v15));
-    expect(restored.version).toBe(16);
+    expect(restored.version).toBe(17);
     expect(restored.crisis).toBeNull();
 
     // 次の季節の変わり目に抽選される（新しい世界と同じ危機になる）

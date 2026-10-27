@@ -18,6 +18,7 @@ import {
   titles,
   voices,
   vows,
+  weapons,
   weather,
 } from "@trace/content";
 import { loadHiddenCrises } from "@trace/content/hidden";
@@ -89,7 +90,18 @@ export function stepConfig(): StepConfig {
     ledger: balance.ledger,
     /** 継承（T-39）。遺物の gainVs 係数 */
     legacy: { artifactGainFactor: balance.legacy.artifactGainFactor },
-    combat: balance.combat,
+    /** 戦闘（K-01）：武器表と技能リンクを注入（武器技能・持ち替え・リンク係数が効く） */
+    combat: {
+      ...balance.combat,
+      weapons: Object.fromEntries(weapons.weapons.map((w) => [w.id, w])),
+      links: balance.links,
+    },
+    /** 技能リンク（K-01、balance.links）：仕事・移動・読書・危機などのフック */
+    links: balance.links,
+    /** 武器の定義表（K-01、weapons.json）：戦闘経験の武器技能解決に使う */
+    weapons: Object.fromEntries(weapons.weapons.map((w) => [w.id, w])),
+    /** 旧セーブに無い技能への経験用（K-01、balance.player.initialPotential） */
+    initialSkillPotential: balance.player.initialPotential,
     society: {
       standings: society.standings,
       professions: society.professions,

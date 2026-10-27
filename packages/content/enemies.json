@@ -21,7 +21,8 @@
         {
           "type": "attack"
         }
-      ]
+      ],
+      "beast": true
     },
     {
       "id": "wolf",
@@ -55,7 +56,8 @@
           "move": "pounce",
           "ticks": 8
         }
-      ]
+      ],
+      "beast": true
     },
     {
       "id": "boar",
@@ -89,7 +91,8 @@
           "move": "charge",
           "ticks": 8
         }
-      ]
+      ],
+      "beast": true
     },
     {
       "id": "bandit",

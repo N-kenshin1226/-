@@ -21,7 +21,7 @@ test("キーボードだけで1日遊べる（見取り図→ギルド→鍛錬�
   await expect(page.getByTestId("menu")).toBeVisible();
   await expect(page.getByTestId("map-pick")).toBeVisible();
 
-  // 場所の印は上から下へ並ぶ（教会→ギルド→市場→宿屋→酒場→自宅→鍛冶場→門）。
+  // 場所の印は上から下へ並ぶ（教会→ギルド→職工区→市場→宿屋→酒場→自宅→鍛冶場→門）。
   // ↓ でギルドへ進み Enter で向かう → 移動の幕を挟んで場所の画面が開く
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
@@ -51,10 +51,13 @@ test("キーボードだけで1日遊べる（見取り図→ギルド→鍛錬�
   await waitVeil(page);
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  // 宿屋へ（印は上から：教会→ギルド→市場→宿屋。3つ下）→ 場所の画面の先頭が「宿で眠る」
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("ArrowDown");
+  // 宿屋へ（印は pos の並び順。場所が増えても辿れるよう、選中行に宿屋が出るまで ↓ を送る）
+  for (let i = 0; i < 16; i++) {
+    const pick = await page.getByTestId("map-pick").textContent();
+    if (pick?.includes("宿屋")) break;
+    await page.keyboard.press("ArrowDown");
+  }
+  await expect(page.getByTestId("map-pick")).toContainText("宿屋");
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("place")).toHaveAttribute("data-place", "inn");
   await waitVeil(page);

@@ -1,0 +1,10 @@
+{
+  "id": "rumor.storyteller",
+  "kind": "npc",
+  "title": "語り部の噂",
+  "text": "宿のマルタが耳にした話では、旅の語り部は楽器を抱えて街から街へ渡り、一曲で酒場を泣かせ、一座で夜を明かすという。奏でる手と紡ぐ口、その両方が要る道らしい。",
+  "refs": ["npc.marta", "place.east_bridge"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.storyteller" }
+}

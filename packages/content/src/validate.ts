@@ -28,6 +28,7 @@ import { incidentsFileSchema } from "./incidents.schema.js";
 import { weatherFileSchema } from "./weather.schema.js";
 import { placesFileSchema } from "./places.schema.js";
 import { audioFileSchema } from "./audio.schema.js";
+import { weaponsFileSchema } from "./weapons.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -79,7 +80,229 @@ check("incidents.json", incidentsFileSchema);
 check("weather.json", weatherFileSchema);
 check("places.json", placesFileSchema);
 check("audio.json", audioFileSchema);
+check("weapons.json", weaponsFileSchema);
 check("crises/sample.json", crisesFileSchema);
+
+// 武器の突き合わせ（K-01）：武器が使う技能は skills.json に存在し、
+// 初期所持・初期装備は weapons.json に定義された id に限る
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const weaponsRaw = JSON.parse(readFileSync(join(root, "weapons.json"), "utf8")) as {
+    weapons?: { id?: string; skill?: string }[];
+    initial?: string[];
+    defaultWeapon?: string;
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const weaponIds = new Set((weaponsRaw.weapons ?? []).map((w) => w.id));
+  const bad: string[] = [];
+  for (const w of weaponsRaw.weapons ?? []) {
+    if (w.skill !== undefined && !skillIds.has(w.skill)) {
+      bad.push(`weapons.json ${w.id ?? "?"}: 未定義の技能 ${w.skill}`);
+    }
+  }
+  for (const id of weaponsRaw.initial ?? []) {
+    if (!weaponIds.has(id)) bad.push(`weapons.json initial: 未定義の武器 ${id}`);
+  }
+  if (weaponsRaw.defaultWeapon !== undefined && !weaponIds.has(weaponsRaw.defaultWeapon)) {
+    bad.push(`weapons.json defaultWeapon: 未定義の武器 ${weaponsRaw.defaultWeapon}`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 武器の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 武器の参照（weapons ↔ skills）");
+  }
+} catch (e) {
+  console.error(`✗ 武器の突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 技能と世界の結線（K-01「技能を増やす」）：balance.links のフックと係数の
+// 技能は実在するものに限り、全技能に「伸ばす行動」と「効く場面」があること。
+// 伸ばす行動：注文・師匠・出来事・武器の技能・定数系リンク（移動/読み/獣経験）。
+// 効く場面：注文・武器・係数リンク・条件DSL・効果キー・場所の仕事・危機の役割
+//   ※ 汎用の「訓練」は全技能に効くが、世界に根ざした導線を別途1つ要求する
+try {
+  const read = (name: string) =>
+    JSON.parse(readFileSync(join(root, name), "utf8")) as Record<string, unknown>;
+  const skillsRaw = read("skills.json") as { skills?: { id?: string; unlock?: unknown }[] };
+  const balanceRaw = read("balance.json") as {
+    links?: Record<string, { skills?: Record<string, number> }>;
+    crisis?: { involvement?: { roleSkills?: Record<string, string[]> } };
+    weather?: { orderPrice?: Record<string, Record<string, number>> };
+  };
+  const ordersRaw = read("orders.json") as { orders?: { kind?: string }[] };
+  const mentorsRaw = read("mentors.json") as {
+    mentors?: { skill?: string; effect?: Record<string, Record<string, unknown>> }[];
+  };
+  const booksRaw = read("books.json") as {
+    books?: {
+      potentialRecover?: Record<string, unknown>;
+      effect?: Record<string, Record<string, unknown>>;
+    }[];
+  };
+  const incidentsRaw = read("incidents.json") as {
+    incidents?: { choices?: { outcomes?: { gain?: { skill?: string } }[] }[] }[];
+  };
+  const weaponsRaw = read("weapons.json") as { weapons?: { skill?: string }[] };
+  const placesRaw = read("places.json") as {
+    places?: { actions?: { type?: string; kinds?: string[] }[] }[];
+  };
+  const tailwindsRaw = read("tailwinds.json") as { winds?: { target?: string }[] };
+  const occasionsRaw = read("occasions.json") as {
+    occasions?: { vessel?: { kind?: string; skill?: string } }[];
+  };
+
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+
+  /** 条件DSLを再帰的に辿って {skill} 参照を集める */
+  const collectCondSkills = (v: unknown, out: Set<string>): void => {
+    if (Array.isArray(v)) {
+      for (const x of v) collectCondSkills(x, out);
+      return;
+    }
+    if (typeof v !== "object" || v === null) return;
+    const rec = v as Record<string, unknown>;
+    for (const [key, val] of Object.entries(rec)) {
+      // {skill: id} は条件DSL固有のキー（他の同名キーはない）
+      if (key === "skill" && typeof val === "string") {
+        out.add(val);
+        continue;
+      }
+      collectCondSkills(val, out);
+    }
+  };
+
+  const condSkills = new Set<string>();
+  for (const name of [
+    "skills.json",
+    "titles.json",
+    "society.json",
+    "pinnacles.json",
+    "occasions.json",
+    "incidents.json",
+    "discoveries.json",
+    "vows.json",
+    "npc_lifecycle.json",
+    "books.json",
+    "mentors.json",
+    "crises/sample.json",
+  ]) {
+    try {
+      collectCondSkills(read(name), condSkills);
+    } catch {
+      // 読めないファイルは個別の check() が失敗を報告しているのでここでは飛ばす
+    }
+  }
+
+  const orderKinds = new Set((ordersRaw.orders ?? []).map((o) => o.kind));
+  const mentorSkills = new Set((mentorsRaw.mentors ?? []).map((m) => m.skill));
+  const incidentGains = new Set(
+    (incidentsRaw.incidents ?? []).flatMap((i) =>
+      (i.choices ?? []).flatMap((c) => (c.outcomes ?? []).map((o) => o.gain?.skill)),
+    ),
+  );
+  const weaponSkills = new Set((weaponsRaw.weapons ?? []).map((w) => w.skill));
+  const placeKinds = new Set(
+    (placesRaw.places ?? []).flatMap((p) =>
+      (p.actions ?? []).flatMap((a) => (a.type === "work" ? (a.kinds ?? []) : [])),
+    ),
+  );
+  const tailwindSkills = new Set((tailwindsRaw.winds ?? []).map((w) => w.target));
+  const vesselSkills = new Set(
+    (occasionsRaw.occasions ?? [])
+      .filter((o) => o.vessel?.kind === "minigame")
+      .map((o) => o.vessel?.skill),
+  );
+  const effectKeys = new Set<string>();
+  for (const b of booksRaw.books ?? []) {
+    for (const k of Object.keys(b.potentialRecover ?? {})) effectKeys.add(k);
+    for (const k of Object.keys(b.effect?.gainVs ?? {})) effectKeys.add(k);
+    for (const k of Object.keys(b.effect?.priceVs ?? {})) effectKeys.add(k);
+  }
+  for (const m of mentorsRaw.mentors ?? []) {
+    for (const k of Object.keys(m.effect?.gainVs ?? {})) effectKeys.add(k);
+    for (const k of Object.keys(m.effect?.priceVs ?? {})) effectKeys.add(k);
+  }
+  const roleSkills = new Set(
+    Object.values(balanceRaw.crisis?.involvement?.roleSkills ?? {}).flat(),
+  );
+  const weatherKinds = new Set(
+    Object.values(balanceRaw.weather?.orderPrice ?? {}).flatMap((m) => Object.keys(m)),
+  );
+
+  // リンクの検査：フックは core が読む名の一覧に限り、係数の技能は実在のものに限る
+  const LINK_HOOKS = new Set([
+    "combat.attack",
+    "combat.hit",
+    "combat.crit",
+    "combat.evade",
+    "combat.defend",
+    "combat.flee",
+    "combat.enemyPower",
+    "beast.attack",
+    "beast.exp",
+    "sleep.quality",
+    "death.keep",
+    "work.price",
+    "work.exp",
+    "travel.gain",
+    "read.gain",
+    "read.potential",
+    "crisis.contrib",
+    "mentor.fee",
+  ]);
+  const linkCoeffSkills = new Set<string>();
+  const linkFlatSkills = new Set<string>();
+  const bad: string[] = [];
+  for (const [hook, def] of Object.entries(balanceRaw.links ?? {})) {
+    if (!LINK_HOOKS.has(hook)) bad.push(`balance.links: 未定義のフック ${hook}`);
+    for (const k of Object.keys(def.skills ?? {})) {
+      if (!skillIds.has(k)) bad.push(`balance.links ${hook}: 未定義の技能 ${k}`);
+      if (hook.endsWith(".gain") || hook === "beast.exp") linkFlatSkills.add(k);
+      else linkCoeffSkills.add(k);
+    }
+  }
+
+  const actionSkills = new Set(
+    [...orderKinds, ...mentorSkills, ...incidentGains, ...weaponSkills, ...linkFlatSkills].filter(
+      (x): x is string => x !== undefined,
+    ),
+  );
+  const effectSkills = new Set(
+    [
+      ...orderKinds,
+      ...weaponSkills,
+      ...linkCoeffSkills,
+      ...condSkills,
+      ...effectKeys,
+      ...placeKinds,
+      ...roleSkills,
+      ...weatherKinds,
+      ...vesselSkills,
+      ...tailwindSkills,
+    ].filter((x): x is string => x !== undefined),
+  );
+
+  for (const s of skillsRaw.skills ?? []) {
+    const id = s.id ?? "?";
+    if (!actionSkills.has(id))
+      bad.push(`技能 ${id}: 伸ばす行動が無い（注文/師匠/出来事/武器/定数リンク）`);
+    if (!effectSkills.has(id))
+      bad.push(`技能 ${id}: 効く場面が無い（注文/武器/係数リンク/条件/効果キー）`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 技能と世界の結線が足りない:\n  ${bad.join("\n  ")}`);
+    failed = true;
+  } else {
+    console.log(`✓ 技能と世界の結線（${skillIds.size}技能に行動+効果）`);
+  }
+} catch (e) {
+  console.error(`✗ 技能と世界の結線の検査に失敗 (${String(e)})`);
+  failed = true;
+}
 
 // 音の割り当ての突き合わせ（S-01）：audio.json の assign が指す場所 id・
 // 情景キー・天候 id が実在すること（曲・環境音 id の存在はスキーマ側で検証済み）

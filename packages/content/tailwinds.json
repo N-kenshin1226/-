@@ -3,50 +3,632 @@
     {
       "id": "tw.smithing",
       "label": "《鍛冶》の伸び ↑",
-      "target": { "kind": "skill", "id": "smithing" },
+      "target": {
+        "kind": "skill",
+        "id": "smithing"
+      },
       "direction": "tailwind"
     },
     {
       "id": "tw.swordplay",
       "label": "《剣術》の伸び ↑",
-      "target": { "kind": "skill", "id": "swordplay" },
+      "target": {
+        "kind": "skill",
+        "id": "swordplay"
+      },
       "direction": "tailwind"
     },
     {
       "id": "tw.mining",
       "label": "《採掘》の伸び ↑",
-      "target": { "kind": "skill", "id": "mining" },
+      "target": {
+        "kind": "skill",
+        "id": "mining"
+      },
       "direction": "tailwind"
     },
     {
       "id": "tw.observation",
       "label": "《観察》の伸び ↑",
-      "target": { "kind": "skill", "id": "observation" },
+      "target": {
+        "kind": "skill",
+        "id": "observation"
+      },
       "direction": "tailwind"
     },
     {
       "id": "tw.eloquence",
       "label": "《弁舌》の伸び ↑",
-      "target": { "kind": "skill", "id": "eloquence" },
+      "target": {
+        "kind": "skill",
+        "id": "eloquence"
+      },
       "direction": "tailwind"
     },
     {
       "id": "tw.evasion",
       "label": "《回避》の伸び ↑",
-      "target": { "kind": "skill", "id": "evasion" },
+      "target": {
+        "kind": "skill",
+        "id": "evasion"
+      },
       "direction": "tailwind"
     },
     {
       "id": "hw.train",
       "label": "訓練での伸び ↓",
-      "target": { "kind": "action", "id": "train" },
+      "target": {
+        "kind": "action",
+        "id": "train"
+      },
       "direction": "headwind"
     },
     {
       "id": "hw.smithing",
       "label": "《鍛冶》の伸び ↓",
-      "target": { "kind": "skill", "id": "smithing" },
+      "target": {
+        "kind": "skill",
+        "id": "smithing"
+      },
       "direction": "headwind"
+    },
+    {
+      "id": "tw.dagger",
+      "label": "《短剣》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "dagger"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.spear",
+      "label": "《槍術》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "spear"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.axe",
+      "label": "《斧術》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "axe"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.archery",
+      "label": "《弓術》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "archery"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.throwing",
+      "label": "《投擲》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "throwing"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.brawl",
+      "label": "《格闘》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "brawl"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.shield",
+      "label": "《盾術》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "shield"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.stealth",
+      "label": "《隠密》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "stealth"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.acrobatics",
+      "label": "《軽業》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "acrobatics"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.riding",
+      "label": "《騎乗》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "riding"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.swimming",
+      "label": "《水泳》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "swimming"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.footwork",
+      "label": "《健脚》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "footwork"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.carpentry",
+      "label": "《木工》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "carpentry"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.leatherwork",
+      "label": "《革細工》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "leatherwork"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.tailoring",
+      "label": "《裁縫》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "tailoring"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.craft",
+      "label": "《細工》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "craft"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.alchemy",
+      "label": "《調合》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "alchemy"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.cooking",
+      "label": "《料理》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "cooking"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.brewing",
+      "label": "《醸造》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "brewing"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.logging",
+      "label": "《伐採》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "logging"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.gathering",
+      "label": "《採取》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "gathering"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.hunting",
+      "label": "《狩猟》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "hunting"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.fishing",
+      "label": "《釣り》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "fishing"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.farming",
+      "label": "《農耕》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "farming"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.appraisal",
+      "label": "《鑑定》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "appraisal"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.literacy",
+      "label": "《読み書き》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "literacy"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.arithmetic",
+      "label": "《算術》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "arithmetic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.medicine",
+      "label": "《医術》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "medicine"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.geography",
+      "label": "《地理》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "geography"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.zoology",
+      "label": "《動物知識》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "zoology"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.archaeology",
+      "label": "《古文書》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "archaeology"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.bargaining",
+      "label": "《値切り》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "bargaining"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.performance",
+      "label": "《演奏》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "performance"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.singing",
+      "label": "《歌唱》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "singing"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.leadership",
+      "label": "《統率》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "leadership"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.teaching",
+      "label": "《教授》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "teaching"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.gambling",
+      "label": "《賭博》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "gambling"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.etiquette",
+      "label": "《礼儀作法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "etiquette"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.intimidation",
+      "label": "《威圧》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "intimidation"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.prayer",
+      "label": "《祈祷》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "prayer"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.mana",
+      "label": "《魔力操作》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "mana"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.fire_magic",
+      "label": "《火魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "fire_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.water_magic",
+      "label": "《水魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "water_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.wind_magic",
+      "label": "《風魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "wind_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.earth_magic",
+      "label": "《土魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "earth_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.light_magic",
+      "label": "《光魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "light_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.dark_magic",
+      "label": "《闇魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "dark_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.void_magic",
+      "label": "《無属性魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "void_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.life_magic",
+      "label": "《生活魔法》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "life_magic"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.cure",
+      "label": "《治癒》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "cure"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.iaijutsu",
+      "label": "《居合》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "iaijutsu"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.parry",
+      "label": "《受け流し》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "parry"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.prospecting",
+      "label": "《鉱脈勘》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "prospecting"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.flourish",
+      "label": "《妙技》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "flourish"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.weapon_eye",
+      "label": "《武器目利き》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "weapon_eye"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.medicinal_meal",
+      "label": "《薬膳》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "medicinal_meal"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.hidden_weapon",
+      "label": "《暗器》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "hidden_weapon"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.storyteller",
+      "label": "《語り部》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "storyteller"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.merchant_eye",
+      "label": "《目利き商い》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "merchant_eye"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.lancer",
+      "label": "《騎槍》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "lancer"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.care_worker",
+      "label": "《施療》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "care_worker"
+      },
+      "direction": "tailwind"
+    },
+    {
+      "id": "tw.wayfarer",
+      "label": "《旅慣れ》の伸び ↑",
+      "target": {
+        "kind": "skill",
+        "id": "wayfarer"
+      },
+      "direction": "tailwind"
     }
   ]
 }

@@ -65,6 +65,8 @@ export type Screen =
   /** 深層ダンジョン（T-43）：層を下る連戦。進行は AbyssRun が持つ */
   | { name: "abyss" }
   | { name: "lore"; atomId?: string }
+  /** 武器屋（K-01）：武器の棚。購入と持ち替えは行動を消費しない */
+  | { name: "arms" }
   | { name: "book" }
   | { name: "records" }
   | { name: "society" }

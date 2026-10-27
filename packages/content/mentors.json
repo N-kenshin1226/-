@@ -6,10 +6,17 @@
       "name": "ガロ",
       "npc": "npc.garo",
       "skill": "swordplay",
-      "condition": { "skill": "swordplay", "gte": 10 },
+      "condition": {
+        "skill": "swordplay",
+        "gte": 10
+      },
       "fee": 15,
       "potentialRecover": 5,
-      "effect": { "gainVs": { "swordplay": 1.3 } },
+      "effect": {
+        "gainVs": {
+          "swordplay": 1.3
+        }
+      },
       "flag": "taught.garo_draw",
       "desc": "猟師。獣の気配と間合いの取り方を教える。弟子の間、剣術の伸びが上がる",
       "note": "剣の師。入門には剣術10以上"
@@ -19,10 +26,17 @@
       "name": "フェン",
       "npc": "npc.fenn",
       "skill": "mining",
-      "condition": { "skill": "mining", "gte": 10 },
+      "condition": {
+        "skill": "mining",
+        "gte": 10
+      },
       "fee": 12,
       "potentialRecover": 5,
-      "effect": { "gainVs": { "mining": 1.3 } },
+      "effect": {
+        "gainVs": {
+          "mining": 1.3
+        }
+      },
       "flag": "taught.fenn_vein",
       "desc": "採掘場のまとめ役。鉱脈の読み方と岩の逃がし方を教える。弟子の間、採掘の伸びが上がる",
       "note": "採掘の師。入門には採掘10以上"
@@ -32,10 +46,17 @@
       "name": "ノラ",
       "npc": "npc.nola",
       "skill": "eloquence",
-      "condition": { "skill": "eloquence", "gte": 15 },
+      "condition": {
+        "skill": "eloquence",
+        "gte": 15
+      },
       "fee": 18,
       "potentialRecover": 4,
-      "effect": { "gainVs": { "eloquence": 1.3 } },
+      "effect": {
+        "gainVs": {
+          "eloquence": 1.3
+        }
+      },
       "flag": "taught.nola_appraisal",
       "desc": "行商人。駆け引きの間合いと目利きのコツを教える。弟子の間、弁舌の伸びが上がる",
       "note": "弁舌の師。入門には弁舌15以上"
@@ -45,10 +66,17 @@
       "name": "クム",
       "npc": "npc.cum",
       "skill": "smithing",
-      "condition": { "skill": "smithing", "gte": 15 },
+      "condition": {
+        "skill": "smithing",
+        "gte": 15
+      },
       "fee": 15,
       "potentialRecover": 5,
-      "effect": { "gainVs": { "smithing": 1.3 } },
+      "effect": {
+        "gainVs": {
+          "smithing": 1.3
+        }
+      },
       "flag": "taught.cum_heat",
       "desc": "炭焼き。火色の読みと焼きの入れ方を教える。弟子の間、鍛冶の伸びが上がる",
       "note": "鍛冶の師。入門には鍛冶15以上"
@@ -58,13 +86,80 @@
       "name": "エデル",
       "npc": "npc.edel",
       "skill": "observation",
-      "condition": { "skill": "observation", "gte": 20 },
+      "condition": {
+        "skill": "observation",
+        "gte": 20
+      },
       "fee": 20,
       "potentialRecover": 4,
-      "effect": { "gainVs": { "observation": 1.35 } },
+      "effect": {
+        "gainVs": {
+          "observation": 1.35
+        }
+      },
       "flag": "taught.edel_vigil",
       "desc": "礼拝堂の番人。静けさの中で気配を見る目を教える。弟子の間、観察の伸びが上がる",
       "note": "観察の師。入門には観察20以上"
+    },
+    {
+      "id": "mentor.sado",
+      "name": "サド",
+      "npc": "npc.sado",
+      "skill": "shield",
+      "condition": {
+        "skill": "shield",
+        "gte": 10
+      },
+      "fee": 14,
+      "potentialRecover": 5,
+      "effect": {
+        "gainVs": {
+          "shield": 1.3
+        }
+      },
+      "flag": "taught.sado_wall",
+      "desc": "門番。盾の構えと、止まって受ける踏ん張りを教える。弟子の間、盾術の伸びが上がる",
+      "note": "盾術の師。入門には盾術10以上"
+    },
+    {
+      "id": "mentor.marta",
+      "name": "マルタ",
+      "npc": "npc.marta",
+      "skill": "cooking",
+      "condition": {
+        "skill": "cooking",
+        "gte": 10
+      },
+      "fee": 12,
+      "potentialRecover": 5,
+      "effect": {
+        "gainVs": {
+          "cooking": 1.3
+        }
+      },
+      "flag": "taught.marta_pot",
+      "desc": "宿の女主人。大鍋の塩梅と、摘んだ草の使い方を教える。弟子の間、料理の伸びが上がる",
+      "note": "料理の師。入門には料理10以上"
+    },
+    {
+      "id": "mentor.edel_prayer",
+      "name": "エデル（祈祷）",
+      "npc": "npc.edel",
+      "skill": "prayer",
+      "condition": {
+        "skill": "prayer",
+        "gte": 15
+      },
+      "fee": 16,
+      "potentialRecover": 4,
+      "effect": {
+        "gainVs": {
+          "prayer": 1.3
+        }
+      },
+      "flag": "taught.edel_rite",
+      "desc": "礼拝堂の番人。灯火の前での祈りの組み立て方を教える。弟子の間、祈祷の伸びが上がる",
+      "note": "祈祷の師。入門には祈祷15以上"
     }
   ]
 }

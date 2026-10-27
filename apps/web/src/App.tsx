@@ -66,7 +66,7 @@ import { TitleScreen } from "./screens/title.js";
 import { IntroScreen } from "./screens/intro.js";
 import { MenuScreen } from "./screens/menu.js";
 import { PlaceScreen } from "./screens/place.js";
-import { BookScreen, SleepScreen, StatusScreen, TrainScreen } from "./screens/town.js";
+import { ArmsScreen, BookScreen, SleepScreen, StatusScreen, TrainScreen } from "./screens/town.js";
 import { MinigameScreen, WorkModeScreen, WorkScreen } from "./screens/work.js";
 import { AbyssScreen, CombatScreen, HuntScreen } from "./screens/hunt.js";
 import { CrisisScreen } from "./screens/crisis.js";
@@ -924,6 +924,9 @@ function ScreenView(props: {
       return <LoreScreen state={state} atomId={screen.atomId} setScreen={setScreen} act={act} />;
     case "book":
       return <BookScreen state={state} act={act} back={toBack()} />;
+    case "arms":
+      // 武器屋（K-01）：鍛冶場の「武器を見る」から開く棚
+      return <ArmsScreen state={state} act={act} back={toBack()} />;
     case "records":
       return <RecordsScreen state={state} back={toBack()} />;
     case "society":

@@ -2,8 +2,16 @@ export { balance } from "./balance.js";
 export { balanceSchema } from "./balance.schema.js";
 export type { Balance } from "./balance.schema.js";
 export { skills } from "./skills.js";
-export { skillSchema, skillsFileSchema } from "./skills.schema.js";
-export type { Skill, SkillsFile } from "./skills.schema.js";
+export {
+  SKILL_CATEGORIES,
+  skillCategorySchema,
+  skillSchema,
+  skillsFileSchema,
+} from "./skills.schema.js";
+export type { Skill, SkillCategory, SkillsFile } from "./skills.schema.js";
+export { weapons } from "./weapons.js";
+export { weaponSchema, weaponsFileSchema } from "./weapons.schema.js";
+export type { WeaponJson, WeaponsFile } from "./weapons.schema.js";
 export { tailwinds } from "./tailwinds.js";
 export { tailwindsFileSchema } from "./tailwinds.schema.js";
 export type { TailwindDef, TailwindsFile } from "./tailwinds.schema.js";

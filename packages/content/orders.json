@@ -75,6 +75,513 @@
       "rewardMoney": 90,
       "note": "大金が動く鑑定。贋作を掴むな",
       "showdown": true
+    },
+    {
+      "id": "order.sword_test",
+      "kind": "swordplay",
+      "name": "試し斬りの立会い",
+      "targetQuality": 25,
+      "rewardMoney": 22,
+      "note": "新刃の切れ味を演武で示す"
+    },
+    {
+      "id": "order.stiletto_work",
+      "kind": "dagger",
+      "name": "短刀使いの指南",
+      "targetQuality": 25,
+      "rewardMoney": 22,
+      "note": "護身用の小技を教えてほしい"
+    },
+    {
+      "id": "order.pike_row",
+      "kind": "spear",
+      "name": "槍衾の演習",
+      "targetQuality": 30,
+      "rewardMoney": 30,
+      "note": "衛兵団の訓練に列を貸す"
+    },
+    {
+      "id": "order.log_splitter",
+      "kind": "axe",
+      "name": "大薪の割り分け",
+      "targetQuality": 30,
+      "rewardMoney": 26,
+      "note": "節の多い大木を斧で割る力仕事"
+    },
+    {
+      "id": "order.marksmanship",
+      "kind": "archery",
+      "name": "的射の披露",
+      "targetQuality": 30,
+      "rewardMoney": 30,
+      "note": "祭りの演目。的の芯を射抜く"
+    },
+    {
+      "id": "order.knife_throw",
+      "kind": "throwing",
+      "name": "投げ刃の余興",
+      "targetQuality": 25,
+      "rewardMoney": 24,
+      "note": "酒場の目玉芸。的を外すな"
+    },
+    {
+      "id": "order.tavern_bouncer",
+      "kind": "brawl",
+      "name": "酒場の荒事請負",
+      "targetQuality": 25,
+      "rewardMoney": 24,
+      "note": "酔客の揉め事を徒手で収める"
+    },
+    {
+      "id": "order.shield_wall",
+      "kind": "shield",
+      "name": "盾の壁の演習",
+      "targetQuality": 30,
+      "rewardMoney": 28,
+      "note": "門番隊の盾列訓練に加わる"
+    },
+    {
+      "id": "order.agile_watch",
+      "kind": "evasion",
+      "name": "身軽な夜番",
+      "targetQuality": 25,
+      "rewardMoney": 22,
+      "note": "倉庫の見張り。火の粉は躱してみせる"
+    },
+    {
+      "id": "order.scout_run",
+      "kind": "stealth",
+      "name": "偵察の使い",
+      "targetQuality": 30,
+      "rewardMoney": 32,
+      "note": "野盗の動きを気配を殺して探る"
+    },
+    {
+      "id": "order.tumbler_show",
+      "kind": "acrobatics",
+      "name": "軽業一座の助っ人",
+      "targetQuality": 25,
+      "rewardMoney": 26,
+      "note": "巡業の一座に人手が足りない"
+    },
+    {
+      "id": "order.mounted_courier",
+      "kind": "riding",
+      "name": "早馬の便り",
+      "targetQuality": 30,
+      "rewardMoney": 34,
+      "note": "隣街への急ぎの書状を届ける"
+    },
+    {
+      "id": "order.pearl_dive",
+      "kind": "swimming",
+      "name": "真珠貝の拾い",
+      "targetQuality": 30,
+      "rewardMoney": 34,
+      "note": "湖の底から貝を拾い上げる"
+    },
+    {
+      "id": "order.long_run",
+      "kind": "footwork",
+      "name": "使い走り",
+      "targetQuality": 20,
+      "rewardMoney": 18,
+      "note": "街じゅうを走り回る伝言の仕事"
+    },
+    {
+      "id": "order.beam_work",
+      "kind": "carpentry",
+      "name": "梁の仕上げ",
+      "targetQuality": 30,
+      "rewardMoney": 30,
+      "note": "建て替えの家の梁を削る"
+    },
+    {
+      "id": "order.leather_strap",
+      "kind": "leatherwork",
+      "name": "革紐の束",
+      "targetQuality": 25,
+      "rewardMoney": 24,
+      "note": "甲冑の留め具に使う紐を漉く"
+    },
+    {
+      "id": "order.festival_cloak",
+      "kind": "tailoring",
+      "name": "祭りの外套",
+      "targetQuality": 35,
+      "rewardMoney": 40,
+      "note": "秋祭りの役目衣装。仕立てが問われる"
+    },
+    {
+      "id": "order.hairpin",
+      "kind": "craft",
+      "name": "髪飾りの細工",
+      "targetQuality": 35,
+      "rewardMoney": 44,
+      "note": "細かな金細工。指先の技が要る"
+    },
+    {
+      "id": "order.salve",
+      "kind": "alchemy",
+      "name": "軟膏の調合",
+      "targetQuality": 30,
+      "rewardMoney": 34,
+      "note": "打ち身に効く膏薬を仕込む"
+    },
+    {
+      "id": "order.stew_batch",
+      "kind": "cooking",
+      "name": "宿の賄い仕込み",
+      "targetQuality": 25,
+      "rewardMoney": 22,
+      "note": "大鍋のシチュー。火加減と塩梅が肝心"
+    },
+    {
+      "id": "order.cellar_ale",
+      "kind": "brewing",
+      "name": "蔵の新酒",
+      "targetQuality": 35,
+      "rewardMoney": 42,
+      "note": "仕込み樽の管理。泡の出方を見極める"
+    },
+    {
+      "id": "order.timber_fell",
+      "kind": "logging",
+      "name": "木材の伐り出し",
+      "targetQuality": 30,
+      "rewardMoney": 30,
+      "note": "倒す向きを読んで大木を伐る"
+    },
+    {
+      "id": "order.herb_bundle",
+      "kind": "gathering",
+      "name": "薬草の束",
+      "targetQuality": 25,
+      "rewardMoney": 26,
+      "note": "森の縁の薬草を見分けて摘む"
+    },
+    {
+      "id": "order.venison",
+      "kind": "hunting",
+      "name": "鹿肉の納入",
+      "targetQuality": 35,
+      "rewardMoney": 40,
+      "note": "解体まで済ませて納める猟の仕事"
+    },
+    {
+      "id": "order.harvest_help",
+      "kind": "farming",
+      "name": "収穫の手伝い",
+      "targetQuality": 25,
+      "rewardMoney": 24,
+      "note": "麦の刈り取りと束ね。腰が鳴る"
+    },
+    {
+      "id": "order.lookout",
+      "kind": "observation",
+      "name": "見張りの日直",
+      "targetQuality": 20,
+      "rewardMoney": 18,
+      "note": "塔の上から異変を見逃さない"
+    },
+    {
+      "id": "order.copy_scroll",
+      "kind": "literacy",
+      "name": "写本の清書",
+      "targetQuality": 30,
+      "rewardMoney": 30,
+      "note": "擦れた文書を一字違わず清書する"
+    },
+    {
+      "id": "order.ledger_check",
+      "kind": "arithmetic",
+      "name": "帳簿の照合",
+      "targetQuality": 30,
+      "rewardMoney": 30,
+      "note": "店の入り出を突き合わせる算用の仕事"
+    },
+    {
+      "id": "order.house_call",
+      "kind": "medicine",
+      "name": "往診の代わり",
+      "targetQuality": 35,
+      "rewardMoney": 40,
+      "note": "寝込んだ患者を見て回る"
+    },
+    {
+      "id": "order.map_update",
+      "kind": "geography",
+      "name": "地図の書き直し",
+      "targetQuality": 30,
+      "rewardMoney": 32,
+      "note": "道の変わりを歩いて確かめる"
+    },
+    {
+      "id": "order.beast_notes",
+      "kind": "zoology",
+      "name": "獣の観察記録",
+      "targetQuality": 30,
+      "rewardMoney": 32,
+      "note": "森の獣の癖を記録に残す"
+    },
+    {
+      "id": "order.old_script",
+      "kind": "archaeology",
+      "name": "古文書の翻字",
+      "targetQuality": 40,
+      "rewardMoney": 46,
+      "note": "崩れかけた古い字を読み解く"
+    },
+    {
+      "id": "order.haggle_help",
+      "kind": "bargaining",
+      "name": "競りの助っ人",
+      "targetQuality": 25,
+      "rewardMoney": 26,
+      "note": "競り市で値を吊り上げる"
+    },
+    {
+      "id": "order.chapel_choir",
+      "kind": "singing",
+      "name": "礼拝の歌声",
+      "targetQuality": 25,
+      "rewardMoney": 22,
+      "note": "朝の礼拝で聖歌隊に加わる"
+    },
+    {
+      "id": "order.crew_lead",
+      "kind": "leadership",
+      "name": "作業班のまとめ",
+      "targetQuality": 35,
+      "rewardMoney": 42,
+      "note": "石切り場の一班を采配する"
+    },
+    {
+      "id": "order.kids_lesson",
+      "kind": "teaching",
+      "name": "子どもの読み聞かせ",
+      "targetQuality": 25,
+      "rewardMoney": 24,
+      "note": "教会の子らに字と話を教える"
+    },
+    {
+      "id": "order.table_keeper",
+      "kind": "gambling",
+      "name": "賭場の立会い",
+      "targetQuality": 30,
+      "rewardMoney": 34,
+      "note": "イカサマを見抜く目が要る"
+    },
+    {
+      "id": "order.ceremony_staff",
+      "kind": "etiquette",
+      "name": "式典の支度",
+      "targetQuality": 30,
+      "rewardMoney": 34,
+      "note": "領主の式典で立ち居を整える"
+    },
+    {
+      "id": "order.debt_collect",
+      "kind": "intimidation",
+      "name": "取立ての同行",
+      "targetQuality": 30,
+      "rewardMoney": 36,
+      "note": "黙っているだけでよい。居るだけ"
+    },
+    {
+      "id": "order.vigil_prayer",
+      "kind": "prayer",
+      "name": "徹夜の祈祷",
+      "targetQuality": 25,
+      "rewardMoney": 24,
+      "note": "病床の枕元で夜通し祈りを捧げる"
+    },
+    {
+      "id": "order.relic_tune",
+      "kind": "mana",
+      "name": "祭具の調律",
+      "targetQuality": 35,
+      "rewardMoney": 42,
+      "note": "祭具に残る魔素を整える細かい仕事"
+    },
+    {
+      "id": "order.forge_flame",
+      "kind": "fire_magic",
+      "name": "炉の火守",
+      "targetQuality": 35,
+      "rewardMoney": 42,
+      "note": "鍛冶場の炉の火を一定に保つ"
+    },
+    {
+      "id": "order.well_bless",
+      "kind": "water_magic",
+      "name": "井戸の清め",
+      "targetQuality": 35,
+      "rewardMoney": 40,
+      "note": "枯れかけた井戸に水の気を通す"
+    },
+    {
+      "id": "order.wind_read",
+      "kind": "wind_magic",
+      "name": "風の読み",
+      "targetQuality": 35,
+      "rewardMoney": 40,
+      "note": "旅立つ馬車のために風を占う"
+    },
+    {
+      "id": "order.soil_bless",
+      "kind": "earth_magic",
+      "name": "土の肥やし",
+      "targetQuality": 35,
+      "rewardMoney": 40,
+      "note": "痩せた畑に地の気を送る"
+    },
+    {
+      "id": "order.lamp_rite",
+      "kind": "light_magic",
+      "name": "灯火の加護",
+      "targetQuality": 40,
+      "rewardMoney": 48,
+      "note": "長夜の祭りの灯火に光を宿す"
+    },
+    {
+      "id": "order.seal_watch",
+      "kind": "dark_magic",
+      "name": "封印の見張り",
+      "targetQuality": 40,
+      "rewardMoney": 48,
+      "note": "古い封印のゆるみを闇の気で読む"
+    },
+    {
+      "id": "order.ward_check",
+      "kind": "void_magic",
+      "name": "結界の点検",
+      "targetQuality": 40,
+      "rewardMoney": 46,
+      "note": "街の結界石を巡って綻びを探す"
+    },
+    {
+      "id": "order.chores_magic",
+      "kind": "life_magic",
+      "name": "家事の小技",
+      "targetQuality": 25,
+      "rewardMoney": 22,
+      "note": "洗濯・掃除・火起こしを魔術で手伝う"
+    },
+    {
+      "id": "order.healing_day",
+      "kind": "cure",
+      "name": "施療の日",
+      "targetQuality": 40,
+      "rewardMoney": 50,
+      "note": "教会の施療院で病人を癒やす"
+    },
+    {
+      "id": "order.merc_blade",
+      "kind": "swordplay",
+      "name": "用心棒の荒稼ぎ",
+      "targetQuality": 60,
+      "rewardMoney": 120,
+      "note": "荷馬車を襲う賊を演武で退ける勝負",
+      "showdown": true
+    },
+    {
+      "id": "order.master_bow",
+      "kind": "archery",
+      "name": "百射百中の賭け",
+      "targetQuality": 55,
+      "rewardMoney": 100,
+      "note": "賭けのかかった的射。一射も外せない",
+      "showdown": true
+    },
+    {
+      "id": "order.grand_meal",
+      "kind": "cooking",
+      "name": "祝宴の膳",
+      "targetQuality": 55,
+      "rewardMoney": 110,
+      "note": "領主の祝宴を任される晴れの仕事",
+      "showdown": true
+    },
+    {
+      "id": "order.iai_show",
+      "kind": "iaijutsu",
+      "name": "居合の演舞",
+      "targetQuality": 50,
+      "rewardMoney": 90,
+      "note": "抜刀一瞬の冴えを見せる晴れの演目"
+    },
+    {
+      "id": "order.parry_demo",
+      "kind": "parry",
+      "name": "受け流しの指南",
+      "targetQuality": 40,
+      "rewardMoney": 60,
+      "note": "若手衛兵に力の逃がし方を伝える"
+    },
+    {
+      "id": "order.flourish_stage",
+      "kind": "flourish",
+      "name": "妙技の舞台",
+      "targetQuality": 45,
+      "rewardMoney": 80,
+      "note": "一座の目玉として妙技を披露する"
+    },
+    {
+      "id": "order.weapon_check",
+      "kind": "weapon_eye",
+      "name": "武器の見立て",
+      "targetQuality": 40,
+      "rewardMoney": 65,
+      "note": "隊の備えの武器を値踏みする"
+    },
+    {
+      "id": "order.medicinal_feast",
+      "kind": "medicinal_meal",
+      "name": "薬膳の献立",
+      "targetQuality": 45,
+      "rewardMoney": 80,
+      "note": "病床の者のための献立を作る"
+    },
+    {
+      "id": "order.hidden_dart",
+      "kind": "hidden_weapon",
+      "name": "密かな使い",
+      "targetQuality": 45,
+      "rewardMoney": 75,
+      "note": "見つからず届ける密かな仕事"
+    },
+    {
+      "id": "order.tale_night",
+      "kind": "storyteller",
+      "name": "語り部の夜",
+      "targetQuality": 50,
+      "rewardMoney": 90,
+      "note": "夜通し語りを聞かせる。一座を任される"
+    },
+    {
+      "id": "order.merchant_audit",
+      "kind": "merchant_eye",
+      "name": "蔵の査定",
+      "targetQuality": 45,
+      "rewardMoney": 85,
+      "note": "店の蔵の品を数えて値を付ける"
+    },
+    {
+      "id": "order.mounted_drill",
+      "kind": "lancer",
+      "name": "騎槍演武",
+      "targetQuality": 50,
+      "rewardMoney": 95,
+      "note": "馬の背で槍を構える演武を見せる"
+    },
+    {
+      "id": "order.care_round",
+      "kind": "care_worker",
+      "name": "施療の巡回",
+      "targetQuality": 45,
+      "rewardMoney": 80,
+      "note": "教会の施療院で病人を看て回る"
     }
   ]
 }

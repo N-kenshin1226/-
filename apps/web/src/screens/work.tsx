@@ -107,17 +107,40 @@ export function workResultLines(
 }
 
 // ---- 仕事 ----
-/** 注文の kind（スキルID）→ ミニゲームの皮。未対応の kind は交渉に倒す */
+/** 注文の kind（スキルID）→ ミニゲームの皮。技能そのものに皮があるものは直接対応 */
 const KIND_TO_MINIGAME: Record<string, MinigameKind> = {
   smithing: "smithing",
   performance: "performance",
+  singing: "performance",
   fishing: "fishing",
   mining: "mining",
+  logging: "mining",
   appraisal: "appraisal",
   eloquence: "negotiation",
+  bargaining: "negotiation",
+};
+/**
+ * 分野 → ミニゲームの皮（K-01、work kind→minigame 拡張）。
+ * 技能に固有の皮がなくても、分野から近い遊び方に倒す：
+ *   武技・身のこなし・職人は槌の拍（精密な一手）、採集は掘り盤面、
+ *   知・祈り・派生は鑑定（見極め）、人・魔法は口論（駆け引き）
+ */
+const CATEGORY_TO_MINIGAME: Record<string, MinigameKind> = {
+  combat: "fishing",
+  body: "fishing",
+  craft: "smithing",
+  gather: "mining",
+  knowledge: "appraisal",
+  prayer: "appraisal",
+  derived: "appraisal",
+  magic: "performance",
+  social: "negotiation",
 };
 function kindToMinigame(kind: string): MinigameKind {
-  return KIND_TO_MINIGAME[kind] ?? "negotiation";
+  const direct = KIND_TO_MINIGAME[kind];
+  if (direct !== undefined) return direct;
+  const cat = skillList.find((s) => s.id === kind)?.category;
+  return (cat !== undefined ? CATEGORY_TO_MINIGAME[cat] : undefined) ?? "negotiation";
 }
 
 export function WorkScreen({
@@ -321,7 +344,8 @@ export function MinigameScreen({
   act: Act;
 }) {
   const [gs, setGs] = useState<TimingState | BoardState | DealState>(() =>
-    startMinigame(kind, state),
+    // 難度の根拠は注文の技能（K-01。木工の注文は木工の腕で遊ぶ）
+    startMinigame(kind, state, order.kind),
   );
   const res = minigameResult(kind, gs);
   // 「勝負所です」の開始行はその日の勝負所の注文にだけ付く（F-05、03 §2「使い所の原則」）。

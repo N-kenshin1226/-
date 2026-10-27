@@ -1,0 +1,10 @@
+{
+  "id": "rumor.careworker",
+  "kind": "place",
+  "title": "施療の噂",
+  "text": "丘の礼拝堂には、かつて病で倒れた者を救い続けた施療師がいたという。薬を調合し、身体を看て、病人のそばを離れなかった。医の目と調合の手、その両方を備えた者の働きだったと伝えられる。",
+  "refs": ["npc.edel", "place.hill_chapel"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.careworker" }
+}

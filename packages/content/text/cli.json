@@ -108,6 +108,17 @@
     "enemyTraitNames": {
       "strong": "精悍な",
       "timid": "臆病な"
+    },
+    "skillCategories": {
+      "combat": "武技",
+      "body": "身のこなし",
+      "craft": "職人",
+      "gather": "採集",
+      "knowledge": "知",
+      "social": "人",
+      "prayer": "祈り",
+      "magic": "魔法",
+      "derived": "派生"
     }
   },
   "text": {
@@ -220,6 +231,14 @@
     "combatYou": "あなた",
     "combatPrompt": "行動（1)攻撃 2)防御 3)見切り 4)逃げる）",
     "combatWon": "――{name} を倒した。",
+    "armsHeader": "── 武器店（所持金 {money}G・装備：{equipped}）",
+    "armsLine": "  {i}) {mark} {name}（{skill}・威力 {power}・{price}G）― {desc}",
+    "armsBought": "――《{name}》を買った。",
+    "armsEquipped": "――《{name}》を構えた。",
+    "armsTooPoor": "――所持金が足りない。",
+    "combatWeaponLine": "（武器：{name}）",
+    "combatSwitchLabel": "武器を持ち替える",
+    "combatSwitched": "――《{name}》に持ち替えた。",
     "uniqueDefeated": "――際立つ個体を討ち取った。《{name}》の記録が図鑑に刻まれた。",
     "combatLost": "――力尽きた。……教会で目を覚ました。未定着の経験が半分失われた。",
     "deathByAge": "――天命に達した（{age}歳）。この生は静かに終わる。",
@@ -317,6 +336,8 @@
     "bookEffectDays": "――この書物の教えはあと {days} 日、身体に残る。",
     "bookAlreadyRead": "――この書物はすでに読み終えている。",
     "bookFlag": "――新たな知識を得た。",
+    "armsEquippedTag": "装備中",
+    "armsOwnedTag": "所持",
     "mentorHeaderCurrent": "── 師匠：《{name}》（《{skill}》の師・{days}日目の弟子）",
     "mentorHeaderNone": "── 師匠はいない",
     "mentorListLine": "  {i}) {name}（《{skill}》・稽古 {fee}G）{mark}",

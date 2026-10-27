@@ -1,4 +1,5 @@
 import { ctxRng, type MiniGameCtx } from "../minigame/types.js";
+import { linkSum, type SkillLinks } from "../links/index.js";
 import type { Rng } from "../rng/index.js";
 
 /**
@@ -54,18 +55,90 @@ export interface EnemyDef {
   challenge: number;
   /** 逃走の抵抗・命中回避の差分に使う敏捷相当値 */
   agility: number;
+  /** 獣か（K-01。beast.attack の技能リンクが与ダメージに乗る相手） */
+  beast?: true;
   attack: EnemyMove;
   moves: Record<string, EnemyMove>;
   pattern: EnemyPatternStep[];
+}
+
+/**
+ * 武器の定義（weapons.json、K-01「武器持ち替え」）。
+ * 武器ごとに使う技能・威力・行動間隔・命中/会心補正が違い、
+ * 戦闘中に1行動を消費して持ち替えられる
+ */
+export interface WeaponDef {
+  id: string;
+  name: string;
+  /** 対応する武器技能（この技能が攻撃・命中・会心に乗る） */
+  skill: string;
+  /** 攻撃力への加算 */
+  power: number;
+  /** 行動 CT への倍率（1=標準。大きいほど重くて遅い武器） */
+  ctFactor: number;
+  /** 会心率への加算（負も可） */
+  critBonus: number;
+  /** 命中率への加算（負も可） */
+  hitBonus: number;
+  /** 防御中の追加軽減（0〜0.9。盾系。combat.defend リンクと合算し 0.9 まで） */
+  defendBonus?: number;
+  /** 武器屋での値段（G。省略時は売り物に出さない） */
+  price?: number;
+}
+
+/** 武器表の無い cfg でも従来どおり動く素の剣（power 0・技能は剣術） */
+const FALLBACK_WEAPON: WeaponDef = {
+  id: "sword",
+  name: "剣",
+  skill: "swordplay",
+  power: 0,
+  ctFactor: 1,
+  critBonus: 0,
+  hitBonus: 0,
+};
+
+/**
+ * 装備武器の定義を解決する（K-01）。
+ * 未知・未指定の武器は既定の1本に倒す（表の先頭。content 側では initial
+ * の先頭＝素手ではなく defaultWeapon が実装備になるよう保証済み）
+ */
+export function weaponDefOf(cfg: CombatConfig, id: string | undefined): WeaponDef {
+  const table = cfg.weapons;
+  if (table !== undefined) {
+    if (id !== undefined && table[id] !== undefined) return table[id];
+    const first = Object.values(table)[0];
+    if (first !== undefined) return first;
+  }
+  return FALLBACK_WEAPON;
+}
+
+/** 技能リンク由来の戦闘係数（K-01、balance.links。startCombat で確定する） */
+export interface CombatLinkBonuses {
+  /** 与ダメージへの加算倍率（combat.attack） */
+  attack: number;
+  /** 命中率への加算（combat.hit） */
+  hit: number;
+  /** 会心率への加算（combat.crit） */
+  crit: number;
+  /** 回避率への加算（combat.evade） */
+  evade: number;
+  /** 防御中の追加軽減（combat.defend。武器の defendBonus と合算） */
+  defend: number;
+  /** 逃走成功率への加算（combat.flee） */
+  flee: number;
+  /** 敵の威力を減衰させる率（combat.enemyPower） */
+  enemyPower: number;
+  /** 獣への与ダメージ加算（beast.attack。獣でない敵には乗らない） */
+  beastAttack: number;
 }
 
 export interface CombatConfig {
   /** プレイヤー耐久 = base + endurance × perEndurance */
   baseHp: number;
   hpPerEndurance: number;
-  /** 攻撃力 = base + swordplay × perSwordplay + strength × perStrength */
+  /** 攻撃力 = (base + 武器技能 × perWeaponSkill + strength × perStrength + 武器の威力) × 補正 */
   attackBase: number;
-  attackPerSwordplay: number;
+  attackPerWeaponSkill: number;
   attackPerStrength: number;
   /** 行動1回の消費tick = max(ctMin, ctBase − agility × ctPerAgility) */
   ctBase: number;
@@ -84,9 +157,9 @@ export interface CombatConfig {
   deathPendingFactor: number;
 
   /* ── F-04：命中・会心・揺らぎ・対応行動 ── */
-  /** 攻撃の命中率 = base + 剣術 × perSwordplay + (敏捷 − 敵敏捷) × perAgilityDiff */
+  /** 攻撃の命中率 = base + 武器技能 × perWeaponSkill + (敏捷 − 敵敏捷) × perAgilityDiff + 武器補正 */
   hitBase: number;
-  hitPerSwordplay: number;
+  hitPerWeaponSkill: number;
   hitPerAgilityDiff: number;
   /** 命中率の上下限（hitMin〜hitMax にクランプ） */
   hitMin: number;
@@ -94,9 +167,9 @@ export interface CombatConfig {
   /** ダメージの揺らぎ（最終威力に掛ける一様乱数の範囲。敵・味方共通） */
   varianceMin: number;
   varianceMax: number;
-  /** 会心率 = base + 剣術 × perSwordplay。会心の倍率は critFactor */
+  /** 会心率 = base + 武器技能 × perWeaponSkill + 武器補正。会心の倍率は critFactor */
   critBase: number;
-  critPerSwordplay: number;
+  critPerWeaponSkill: number;
   critFactor: number;
   /** 敵の痛恨率・倍率（被弾側の揺らぎと緊張） */
   enemyCritBase: number;
@@ -126,9 +199,23 @@ export interface CombatConfig {
   unique?: UniqueConfig;
   /** 個体差（R-01）。省略時は個体差なし */
   individual?: IndividualConfig;
+  /**
+   * 武器の定義表（K-01、weapons.json）。指定すると武器技能の選択・
+   * 武器ごとの威力/間隔/補正・戦闘中の持ち替えが効く。
+   * 省略時は素の剣（技能=剣術・補正なし）で従来どおり動く
+   */
+  weapons?: Record<string, WeaponDef>;
+  /**
+   * 技能リンク（K-01、balance.links）。combat.*・beast.attack の
+   * フックを読み、技能値を命中・会心・回避・防御・逃走・与/被ダメージ
+   * の補正に変換する。省略時はリンク効果なし
+   */
+  links?: SkillLinks;
 }
 
-export type CombatAction = "attack" | "defend" | "observe" | "flee";
+/** プレイヤー行動。武器の持ち替え（K-01）はオブジェクト形の行動 */
+export type CombatAction =
+  "attack" | "defend" | "observe" | "flee" | { type: "switch"; weapon: string };
 
 export interface Telegraph {
   move: string;
@@ -145,6 +232,7 @@ export interface CombatEvent {
     | "playerDefend"
     | "playerObserve"
     | "playerFlee"
+    | "playerSwitch"
     | "enemyHit"
     | "enemyMiss"
     | "telegraph"
@@ -200,13 +288,36 @@ export interface CombatState {
   dodges: number;
   /** 大技を対応行動でいなした回数（受け止め＋見切り。F-04） */
   parries: number;
-  /** プレイヤーの導出値（startCombat で確定） */
+  /** プレイヤーの導出値（startCombat で確定。武器の持ち替えで更新される） */
   playerAttack: number;
   playerCt: number;
   playerObserve: number;
   playerAgility: number;
-  playerSwordplay: number;
+  /**
+   * 現在の武器が使う技能の値（K-01。命中・会心・攻撃力の係数の元。
+   * 武器の持ち替えで変わる —— 剣術一本ではない）
+   */
+  playerWeaponSkill: number;
   playerEvasion: number;
+  /* ── K-01：武器の持ち替えと技能リンク ── */
+  /** 装備中の武器ID（weapons のキー） */
+  playerWeapon: string;
+  /** 持ち替えられる武器ID（所持のうち定義のあるもの。装備中を含む） */
+  ownedWeapons: readonly string[];
+  /** 開始時の技能表（持ち替え時に武器技能を引き直す参照） */
+  playerSkills: Record<string, { value: number }>;
+  /** 開始時の筋力（持ち替え時の攻撃力を引き直す参照） */
+  playerStrength: number;
+  /** 与ダメージの総合倍率（称号等の attackFactor × combat.attack リンク） */
+  playerAttackFactor: number;
+  /** 武器係数を掛ける前の行動 CT（ctBase − 敏捷×ctPerAgility） */
+  playerBaseCt: number;
+  /** 現在の武器の命中・会心・防御補正（持ち替えで変わる） */
+  weaponHitBonus: number;
+  weaponCritBonus: number;
+  weaponDefendBonus: number;
+  /** 技能リンクの戦闘係数（balance.links。戦闘中は変わらない） */
+  links: CombatLinkBonuses;
   log: CombatEvent[];
 }
 
@@ -222,12 +333,30 @@ export interface CombatResult {
 const clamp = (lo: number, hi: number, v: number) => Math.min(hi, Math.max(lo, v));
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+/** 戦闘で使うプレイヤー情報の最小形（装備武器は v17〜。省略時は既定武器） */
+export interface CombatPlayer {
+  stats: Record<string, number>;
+  skills: Record<string, { value: number }>;
+  /** 装備中の武器ID（GameState.player.weapon） */
+  weapon?: string;
+  /** 所持武器ID（GameState.player.weapons。持ち替えの候補） */
+  weapons?: readonly string[];
+}
+
+/** 持ち替えられる武器の列（所持のうち定義のあるもの。装備中は必ず含む） */
+function ownedWeaponsOf(player: CombatPlayer, cfg: CombatConfig): string[] {
+  const equipped = weaponDefOf(cfg, player.weapon).id;
+  if (player.weapons === undefined) return [equipped];
+  const out = player.weapons.filter((id) => cfg.weapons?.[id] !== undefined || id === equipped);
+  return out.includes(equipped) ? out : [equipped, ...out];
+}
+
 /**
- * プレイヤー側の戦闘数値（stats + スキルから導出）。
+ * プレイヤー側の戦闘数値（stats + スキル + 装備武器 + 技能リンクから導出）。
  * attackFactor は称号などの与ダメージ倍率（effects の damageVs。既定1）
  */
 export function playerCombatStats(
-  player: { stats: Record<string, number>; skills: Record<string, { value: number }> },
+  player: CombatPlayer,
   cfg: CombatConfig,
   attackFactor = 1,
 ): {
@@ -236,32 +365,55 @@ export function playerCombatStats(
   ct: number;
   agility: number;
   observe: number;
-  swordplay: number;
+  /** 現在の武器が使う技能の値（K-01。剣術だけではない） */
+  weaponSkill: number;
   evasion: number;
+  /** 解決済みの装備武器定義 */
+  weapon: WeaponDef;
+  ownedWeapons: string[];
+  links: CombatLinkBonuses;
 } {
+  const weapon = weaponDefOf(cfg, player.weapon);
+  const weaponSkill = player.skills[weapon.skill]?.value ?? 0;
+  // 技能リンク（K-01）：combat.* / beast.attack フックを技能値から係数に畳む
+  const links: CombatLinkBonuses = {
+    attack: linkSum(cfg.links, "combat.attack", player.skills),
+    hit: linkSum(cfg.links, "combat.hit", player.skills),
+    crit: linkSum(cfg.links, "combat.crit", player.skills),
+    evade: linkSum(cfg.links, "combat.evade", player.skills),
+    defend: linkSum(cfg.links, "combat.defend", player.skills),
+    flee: linkSum(cfg.links, "combat.flee", player.skills),
+    enemyPower: linkSum(cfg.links, "combat.enemyPower", player.skills),
+    beastAttack: linkSum(cfg.links, "beast.attack", player.skills),
+  };
   const agility = player.stats["agility"] ?? 0;
   return {
     hp: Math.round(cfg.baseHp + (player.stats["endurance"] ?? 0) * cfg.hpPerEndurance),
     attack:
       Math.round(
         (cfg.attackBase +
-          (player.skills["swordplay"]?.value ?? 0) * cfg.attackPerSwordplay +
-          (player.stats["strength"] ?? 0) * cfg.attackPerStrength) *
+          weaponSkill * cfg.attackPerWeaponSkill +
+          (player.stats["strength"] ?? 0) * cfg.attackPerStrength +
+          weapon.power) *
           attackFactor *
+          (1 + links.attack) *
           10,
       ) / 10,
-    ct: Math.max(cfg.ctMin, cfg.ctBase - agility * cfg.ctPerAgility),
+    ct: Math.max(cfg.ctMin, (cfg.ctBase - agility * cfg.ctPerAgility) * weapon.ctFactor),
     agility,
     observe: player.skills["observation"]?.value ?? 0,
-    swordplay: player.skills["swordplay"]?.value ?? 0,
+    weaponSkill,
     evasion: player.skills["evasion"]?.value ?? 0,
+    weapon,
+    ownedWeapons: ownedWeaponsOf(player, cfg),
+    links,
   };
 }
 
 export function startCombat(
   enemy: EnemyDef,
   cfg: CombatConfig,
-  player: { stats: Record<string, number>; skills: Record<string, { value: number }> },
+  player: CombatPlayer,
   /** 称号などの与ダメージ倍率（effects の damageFactor(enemyId)。既定1） */
   attackFactor = 1,
 ): CombatState {
@@ -294,26 +446,46 @@ export function startCombat(
     playerCt: p.ct,
     playerObserve: p.observe,
     playerAgility: p.agility,
-    playerSwordplay: p.swordplay,
+    playerWeaponSkill: p.weaponSkill,
     playerEvasion: p.evasion,
+    // K-01：武器・技能リンク（持ち替えの引き直しに必要な参照も保持する）
+    playerWeapon: p.weapon.id,
+    ownedWeapons: p.ownedWeapons,
+    playerSkills: player.skills,
+    playerStrength: player.stats["strength"] ?? 0,
+    playerAttackFactor: attackFactor * (1 + p.links.attack),
+    playerBaseCt: cfg.ctBase - p.agility * cfg.ctPerAgility,
+    weaponHitBonus: p.weapon.hitBonus,
+    weaponCritBonus: p.weapon.critBonus,
+    weaponDefendBonus: p.weapon.defendBonus ?? 0,
+    links: p.links,
     log: [],
   };
 }
 
-/** 攻撃の命中率（敵の敏捷との差と剣術で変わる。隙への反撃は必中） */
+/** 攻撃の命中率（敵の敏捷との差と武器技能・武器補正・技能リンクで変わる。隙への反撃は必中） */
 export function hitChance(state: CombatState, enemy: EnemyDef, cfg: CombatConfig): number {
   return clamp(
     cfg.hitMin,
     cfg.hitMax,
     cfg.hitBase +
-      state.playerSwordplay * cfg.hitPerSwordplay +
-      (state.playerAgility - enemy.agility) * cfg.hitPerAgilityDiff,
+      state.playerWeaponSkill * cfg.hitPerWeaponSkill +
+      (state.playerAgility - enemy.agility) * cfg.hitPerAgilityDiff +
+      state.weaponHitBonus +
+      state.links.hit,
   );
 }
 
 /** 会心率（隙への反撃は必ず会心扱い） */
 export function critChance(state: CombatState, cfg: CombatConfig): number {
-  return clamp(0, 1, cfg.critBase + state.playerSwordplay * cfg.critPerSwordplay);
+  return clamp(
+    0,
+    1,
+    cfg.critBase +
+      state.playerWeaponSkill * cfg.critPerWeaponSkill +
+      state.weaponCritBonus +
+      state.links.crit,
+  );
 }
 
 /** 被弾の回避率。見切り中は readEvadeBonus が乗る。防御中は 0（受け止める構え） */
@@ -322,7 +494,8 @@ export function evadeChance(state: CombatState, enemy: EnemyDef, cfg: CombatConf
   const base =
     cfg.evadeBase +
     state.playerEvasion * cfg.evadePerEvasion +
-    (state.playerAgility - enemy.agility) * cfg.evadePerAgilityDiff;
+    (state.playerAgility - enemy.agility) * cfg.evadePerAgilityDiff +
+    state.links.evade;
   const reading = state.tick <= state.readUntil;
   return clamp(0, cfg.evadeMax, base + (reading ? cfg.readEvadeBonus : 0));
 }
@@ -429,66 +602,99 @@ export function turn(
 
   // 1. プレイヤー行動
   const endTick = s.tick + s.playerCt;
-  switch (action) {
-    case "attack": {
-      // 隙への反撃：体勢を崩した敵への一撃は必中・会心扱い（F-04）
-      const opening = s.openingFactor > 0 && s.tick <= s.openingUntil;
-      const r = ctxRng(ctx, `atk-${s.turn}`);
-      if (!opening && r.next() >= hitChance(s, enemy, cfg)) {
-        push({ type: "playerMiss", text: `攻撃――${enemy.name}に躱された。` });
+  if (typeof action === "object") {
+    // 武器の持ち替え（K-01）：1行動を消費する。この行動の時間は持ち替え前の
+    // 間隔で流れ、次の行動から新しい武器の間隔・技能・補正になる
+    const def = cfg.weapons?.[action.weapon];
+    if (def !== undefined && s.ownedWeapons.includes(def.id) && def.id !== s.playerWeapon) {
+      s.playerWeapon = def.id;
+      s.playerWeaponSkill = s.playerSkills[def.skill]?.value ?? 0;
+      s.playerAttack = round1(
+        (cfg.attackBase +
+          s.playerWeaponSkill * cfg.attackPerWeaponSkill +
+          s.playerStrength * cfg.attackPerStrength +
+          def.power) *
+          s.playerAttackFactor,
+      );
+      s.playerCt = Math.max(cfg.ctMin, s.playerBaseCt * def.ctFactor);
+      s.weaponHitBonus = def.hitBonus;
+      s.weaponCritBonus = def.critBonus;
+      s.weaponDefendBonus = def.defendBonus ?? 0;
+      push({ type: "playerSwitch", text: `――《${def.name}》に持ち替えた。` });
+    } else {
+      // 持っていない武器・既に構えている武器 —— 行動だけが空費される
+      push({ type: "playerSwitch", text: "――持ち替えは成らなかった。" });
+    }
+  } else
+    switch (action) {
+      case "attack": {
+        // 隙への反撃：体勢を崩した敵への一撃は必中・会心扱い（F-04）
+        const opening = s.openingFactor > 0 && s.tick <= s.openingUntil;
+        const r = ctxRng(ctx, `atk-${s.turn}`);
+        if (!opening && r.next() >= hitChance(s, enemy, cfg)) {
+          push({ type: "playerMiss", text: `攻撃――${enemy.name}に躱された。` });
+          break;
+        }
+        const crit = opening || r.next() < critChance(s, cfg);
+        const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
+        // 獣には狩猟・動物知識の技能リンク（beast.attack）が与ダメージに乗る（K-01）
+        const beastBonus = enemy.beast === true ? 1 + s.links.beastAttack : 1;
+        const dmg = round1(
+          s.playerAttack *
+            spread *
+            (crit ? cfg.critFactor : 1) *
+            (opening ? s.openingFactor : 1) *
+            beastBonus,
+        );
+        s.enemyHp -= dmg;
+        if (opening) {
+          s.openingUntil = 0;
+          s.openingFactor = 0;
+        }
+        push({
+          type: "playerAttack",
+          damage: dmg,
+          ...(crit ? { crit: true } : {}),
+          ...(opening ? { counter: true } : {}),
+          text: opening
+            ? `隙を突く――${enemy.name}に ${dmg} の一撃。`
+            : crit
+              ? `会心――${enemy.name}に ${dmg} の一撃。`
+              : `攻撃――${enemy.name}に ${dmg} の傷。`,
+        });
         break;
       }
-      const crit = opening || r.next() < critChance(s, cfg);
-      const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
-      const dmg = round1(
-        s.playerAttack * spread * (crit ? cfg.critFactor : 1) * (opening ? s.openingFactor : 1),
-      );
-      s.enemyHp -= dmg;
-      if (opening) {
-        s.openingUntil = 0;
-        s.openingFactor = 0;
+      case "defend": {
+        s.defendUntil = endTick;
+        push({ type: "playerDefend", text: "防御の構え。" });
+        break;
       }
-      push({
-        type: "playerAttack",
-        damage: dmg,
-        ...(crit ? { crit: true } : {}),
-        ...(opening ? { counter: true } : {}),
-        text: opening
-          ? `隙を突く――${enemy.name}に ${dmg} の一撃。`
-          : crit
-            ? `会心――${enemy.name}に ${dmg} の一撃。`
-            : `攻撃――${enemy.name}に ${dmg} の傷。`,
-      });
-      break;
-    }
-    case "defend": {
-      s.defendUntil = endTick;
-      push({ type: "playerDefend", text: "防御の構え。" });
-      break;
-    }
-    case "observe": {
-      s.observed = true;
-      s.readUntil = endTick;
-      push({ type: "playerObserve", text: "敵の動きを見切る。" });
-      break;
-    }
-    case "flee": {
-      s.fleeAttempts++;
-      const rng = ctxRng(ctx, `combat-flee-${s.fleeAttempts}`);
-      const chance = Math.min(
-        1,
-        Math.max(0, cfg.fleeBase + (s.playerAgility - enemy.agility) * cfg.fleePerAgility),
-      );
-      if (rng.next() < chance) {
-        s.fled = true;
-        s.done = true;
-        push({ type: "fled", text: "――間合いを離した。" });
-        return s;
+      case "observe": {
+        s.observed = true;
+        s.readUntil = endTick;
+        push({ type: "playerObserve", text: "敵の動きを見切る。" });
+        break;
       }
-      push({ type: "playerFlee", text: "逃げようとしたが、間合いを詰められた。" });
-      break;
+      case "flee": {
+        s.fleeAttempts++;
+        const rng = ctxRng(ctx, `combat-flee-${s.fleeAttempts}`);
+        const chance = Math.min(
+          1,
+          Math.max(
+            0,
+            cfg.fleeBase + (s.playerAgility - enemy.agility) * cfg.fleePerAgility + s.links.flee,
+          ),
+        );
+        if (rng.next() < chance) {
+          s.fled = true;
+          s.done = true;
+          push({ type: "fled", text: "――間合いを離した。" });
+          return s;
+        }
+        push({ type: "playerFlee", text: "逃げようとしたが、間合いを詰められた。" });
+        break;
+      }
     }
-  }
 
   if (s.enemyHp <= 0) {
     s.won = true;
@@ -520,6 +726,7 @@ export function turn(
             cfg.evadeBase +
               s.playerEvasion * cfg.evadePerEvasion +
               (s.playerAgility - enemy.agility) * cfg.evadePerAgilityDiff +
+              s.links.evade +
               (tick <= s.readUntil ? cfg.readEvadeBonus : 0),
           );
     if (r.next() < evade) {
@@ -542,9 +749,14 @@ export function turn(
     const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
     // 大技は揺らぎはあっても痛恨にはならない（対応すべき「約束された一撃」として読めるよう）
     const crit = !big && r.next() < cfg.enemyCritBase;
-    let dmg = move.power * spread * (crit ? cfg.enemyCritFactor : 1);
+    // 威圧・魔法などの技能リンク（combat.enemyPower）で敵の威力を減衰させる（K-01）
+    let dmg = move.power * spread * (crit ? cfg.enemyCritFactor : 1) * (1 - s.links.enemyPower);
     const guarded = tick <= s.defendUntil;
-    if (guarded) dmg *= big ? cfg.guardTelegraphFactor : cfg.defendFactor;
+    if (guarded) {
+      // 防御中は武器の防御補正（盾）と技能リンク（combat.defend）がさらに乗る（K-01）
+      const extra = Math.min(0.9, s.weaponDefendBonus + s.links.defend);
+      dmg *= (big ? cfg.guardTelegraphFactor : cfg.defendFactor) * (1 - extra);
+    }
     dmg = Math.max(1, Math.round(dmg));
     s.playerHp -= dmg;
     s.damageTaken += dmg;

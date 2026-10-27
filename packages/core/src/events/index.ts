@@ -138,6 +138,10 @@ export type ActionEvent =
    * 選んだが叶わなかったときに出る。行動は消費しない。id は師匠の id）
    */
   | { type: "mentorAway"; id: string }
+  /** 武器を買った（K-01。行動は消費しない。id は weapons.json の id） */
+  | { type: "weaponBought"; id: string }
+  /** 武器を持ち替えた（K-01。行動は消費しない。装備中の武器IDが変わる） */
+  | { type: "weaponEquipped"; id: string }
   // ---- 世界の危機（docs/08、W-01） ----
   /** 世界の危機が抽選された（世界生成時。v15 以前のセーブでは次の季節の変わり目） */
   | { type: "crisisDrawn" }

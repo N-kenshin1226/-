@@ -52,6 +52,8 @@ export const cliTextSchema = z
         npcGoneNames: z.record(z.string(), z.string()),
         /** 敵の個体差の気質（R-01。combat の EnemyTrait → 名前の前に付く形容） */
         enemyTraitNames: z.record(z.string(), z.string()),
+        /** 技能の分野（K-01。skills.json の category → ステータス画面の見出し名） */
+        skillCategories: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -136,6 +138,17 @@ export const cliTextSchema = z
         combatYou: z.string(),
         combatPrompt: z.string(),
         combatWon: z.string(),
+        /** 武器店（K-01）：見出し（{money}/{equipped}）・商品行（{i}/{mark}/{name}/{skill}/{power}/{price}/{desc}）・購入・装備・不足 */
+        armsHeader: z.string(),
+        armsLine: z.string(),
+        armsBought: z.string(),
+        armsEquipped: z.string(),
+        armsTooPoor: z.string(),
+        /** 戦闘画面の装備表示（{name} に武器名） */
+        combatWeaponLine: z.string(),
+        /** 武器の持ち替え（戦闘コマンドのラベルと持ち替えた行。{name} に武器名） */
+        combatSwitchLabel: z.string(),
+        combatSwitched: z.string(),
         /** 強個体討伐の知らせ（T-44。{name} は素の敵名） */
         uniqueDefeated: z.string(),
         combatLost: z.string(),
@@ -371,6 +384,9 @@ export const cliTextSchema = z
         bookEffectDays: z.string(),
         bookAlreadyRead: z.string(),
         bookFlag: z.string(),
+        /** 武器屋の印（K-01）：棚の行に付ける「装備中」「所持」の印 */
+        armsEquippedTag: z.string(),
+        armsOwnedTag: z.string(),
         /** 師匠（T-27）：一覧・入門・稽古・別れの各行 */
         mentorHeaderCurrent: z.string(),
         mentorHeaderNone: z.string(),
