@@ -1,3 +1,11 @@
+import {
+  kiMaxOf,
+  type ArtDef,
+  type ArtsConfig,
+  type BodyPart,
+  type DamageType,
+  type StatusId,
+} from "../arts/index.js";
 import { ctxRng, type MiniGameCtx } from "../minigame/types.js";
 import { linkSum, type SkillLinks } from "../links/index.js";
 import type { Rng } from "../rng/index.js";
@@ -60,6 +68,16 @@ export interface EnemyDef {
   attack: EnemyMove;
   moves: Record<string, EnemyMove>;
   pattern: EnemyPatternStep[];
+  /* ── K-02：耐性・弱点・状態耐性・部位 ── */
+  /**
+   * 打撃の性質ごとの被ダメージ倍率（<1=耐性・>1=弱点・省略=1）。
+   * 同じ構成では全部の敵に勝てないよう、種ごとに利きを分ける（09 §3）
+   */
+  resist?: Partial<Record<DamageType, number>>;
+  /** 状態異常への耐性：付与率に掛ける倍率（0=効かない、省略=通常） */
+  statusResist?: Partial<Record<StatusId, number>>;
+  /** 壊せる部位（省略時は4部位すべて） */
+  parts?: BodyPart[];
 }
 
 /**
@@ -211,11 +229,25 @@ export interface CombatConfig {
    * の補正に変換する。省略時はリンク効果なし
    */
   links?: SkillLinks;
+  /**
+   * 武技・資源（K-02、balance.arts ＋ arts.json の defs）。
+   * 指定すると { type:"art" } 行動・気力・状態異常・部位破壊・
+   * 耐性/弱点・パッシブ構成が効く。省略時は従来の戦闘のまま
+   */
+  arts?: ArtsConfig;
 }
 
-/** プレイヤー行動。武器の持ち替え（K-01）はオブジェクト形の行動 */
+/**
+ * プレイヤー行動。武器の持ち替え（K-01）と武技（K-02）はオブジェクト形の行動。
+ * { type:"art", id } は構成スロットに入っている技だけ使える
+ */
 export type CombatAction =
-  "attack" | "defend" | "observe" | "flee" | { type: "switch"; weapon: string };
+  | "attack"
+  | "defend"
+  | "observe"
+  | "flee"
+  | { type: "switch"; weapon: string }
+  | { type: "art"; id: string };
 
 export interface Telegraph {
   move: string;
@@ -239,17 +271,42 @@ export interface CombatEvent {
     | "counter"
     | "fled"
     | "won"
-    | "lost";
+    | "lost"
+    /* ── K-02 ── */
+    /** 武技の一撃が当たった（art 名は text に、IDは art に） */
+    | "playerArt"
+    /** 武技が外れた */
+    | "playerArtMiss"
+    /** 武技を使えなかった（気力不足・スロット外。行動は空費される） */
+    | "playerArtFail"
+    /** 敵に状態異常が掛かった */
+    | "statusApplied"
+    /** 出血・毒の継続ダメージ（敵側） */
+    | "statusTick"
+    /** 部位が壊れた */
+    | "partBroken"
+    /** 予兆が割り込みで潰れた */
+    | "interrupted"
+    /** 敵が気絶して行動を逃した */
+    | "stunned"
+    /** 受け流しでいなした（被弾は parryFactor に減る） */
+    | "parried";
   text: string;
   damage?: number;
-  /** 会心（playerAttack / enemyHit） */
+  /** 会心（playerAttack / playerArt / enemyHit） */
   crit?: boolean;
   /** 予兆の大技による被弾・回避（enemyHit / enemyMiss） */
   big?: boolean;
-  /** 防御で受け止めた被弾（enemyHit） */
+  /** 防御・鉄壁で受け止めた被弾（enemyHit） */
   guarded?: boolean;
-  /** 隙への反撃としての一撃（playerAttack） */
+  /** 隙への反撃としての一撃（playerAttack / playerArt） */
   counter?: boolean;
+  /** 使った技のID（playerArt / playerArtMiss / playerArtFail） */
+  art?: string;
+  /** 掛かった・消えた状態（statusApplied / statusTick） */
+  status?: StatusId;
+  /** 壊れた部位（partBroken） */
+  part?: BodyPart;
 }
 
 export interface CombatState {
@@ -318,6 +375,39 @@ export interface CombatState {
   weaponDefendBonus: number;
   /** 技能リンクの戦闘係数（balance.links。戦闘中は変わらない） */
   links: CombatLinkBonuses;
+  /* ── K-02：気力・武技・状態異常・部位 ── */
+  /** 気力（開始時点の残り。戦闘をまたいで一日は続く） */
+  playerKi: number;
+  playerKiMax: number;
+  /** tick あたりの気力回復（経過時間に掛ける。パッシブ kiRegen を含む） */
+  kiRegenPerTick: number;
+  /** 構成スロットから解決した武技（定義＋Lv。装備中の武器技能のものだけ使える） */
+  artSlots: { def: ArtDef; lv: number }[];
+  /** パッシブの合算効果（hook → 合計値） */
+  passiveFx: Record<string, number>;
+  /** 敵に掛かっている状態（until=切れる tick、power=効果の強さ） */
+  enemyStatus: Partial<Record<StatusId, { until: number; power: number }>>;
+  /** 部位ごとの蓄積ダメージ（部位破壊までの進み） */
+  partDamage: Record<BodyPart, number>;
+  /** 既に壊れた部位 */
+  brokenParts: BodyPart[];
+  /** 受け流しが有効な上限 tick */
+  parryUntil: number;
+  /** 回避の構え（対応技）が有効な上限 tick */
+  evadeUntil: number;
+  /** 鉄壁の構え（対応技）が有効な上限 tick */
+  guardArtUntil: number;
+  /**
+   * 使用記録（09 §7.1 の集計材料）：この戦闘で行った行動ごとの
+   * 使用タグ。step が artTags / skillTags に畳む。id のあるものは武技
+   */
+  uses: { id?: string; skill: string; tags: string[] }[];
+  /** 直前の行動で成功した対応（使用タグ after.* の材料） */
+  afterGuard: boolean;
+  afterParry: boolean;
+  afterEvade: boolean;
+  /** 直前の行動が武技ならそのID（chain.* タグ用） */
+  lastArtId: string | null;
   log: CombatEvent[];
 }
 
@@ -328,6 +418,11 @@ export interface CombatResult {
   damageTaken: number;
   hitsTaken: number;
   ticks: number;
+  /* ── K-02 ── */
+  /** 戦闘終了時点の気力（GameState.player.ki へ書き戻す） */
+  kiLeft: number;
+  /** この戦闘の使用記録（09 §7.1。step が artTags/skillTags に畳む） */
+  uses: { id?: string; skill: string; tags: string[] }[];
 }
 
 const clamp = (lo: number, hi: number, v: number) => Math.min(hi, Math.max(lo, v));
@@ -341,14 +436,37 @@ export interface CombatPlayer {
   weapon?: string;
   /** 所持武器ID（GameState.player.weapons。持ち替えの候補） */
   weapons?: readonly string[];
+  /* ── K-02 ── */
+  /** 現在の気力（GameState.player.ki。省略時は上限から始まる） */
+  ki?: number;
+  /** 習得済み技のレベル表（GameState.player.arts の id→lv の薄い形） */
+  arts?: Record<string, { lv: number }>;
+  /**
+   * 構成（GameState.player.build）：戦闘技スロット・パッシブ・持ち替え武器。
+   * 武器枠があるときは持ち替えはその2本に限られる（09 §6）
+   */
+  build?: {
+    slots?: readonly (string | null)[];
+    passives?: readonly (string | null)[];
+    weapons?: readonly (string | null)[];
+  };
 }
 
-/** 持ち替えられる武器の列（所持のうち定義のあるもの。装備中は必ず含む） */
+/**
+ * 持ち替えられる武器の列（K-02：構成の武器枠∩所持。
+ * 構成の武器枠が無い・全空なら所持全部 —— 従来どおり）
+ */
 function ownedWeaponsOf(player: CombatPlayer, cfg: CombatConfig): string[] {
   const equipped = weaponDefOf(cfg, player.weapon).id;
-  if (player.weapons === undefined) return [equipped];
-  const out = player.weapons.filter((id) => cfg.weapons?.[id] !== undefined || id === equipped);
-  return out.includes(equipped) ? out : [equipped, ...out];
+  const owned =
+    player.weapons === undefined
+      ? [equipped]
+      : player.weapons.filter((id) => cfg.weapons?.[id] !== undefined || id === equipped);
+  const all = owned.includes(equipped) ? owned : [equipped, ...owned];
+  const slots = player.build?.weapons;
+  if (slots === undefined || slots.every((id) => id === null)) return all;
+  const chosen = slots.filter((id): id is string => id !== null && all.includes(id));
+  return chosen.length > 0 ? chosen : all;
 }
 
 /**
@@ -410,6 +528,42 @@ export function playerCombatStats(
   };
 }
 
+/**
+ * 構成の解決（K-02）：スロットのID列を、習得済みの技＋Lvの列に畳む。
+ * 使える技は「スロットに入っていて、装備中の武器技能のもの」
+ * —— 持ち替えたら使える技も替わる（使用可否は使うたびに武器技能と照合）
+ */
+export function artSlotsOf(player: CombatPlayer, cfg: CombatConfig): { def: ArtDef; lv: number }[] {
+  const table = cfg.arts?.defs;
+  if (table === undefined || player.build?.slots === undefined) return [];
+  const out: { def: ArtDef; lv: number }[] = [];
+  for (const id of player.build.slots) {
+    if (id === null) continue;
+    const def = table[id];
+    const lv = player.arts?.[id]?.lv ?? 0;
+    if (def === undefined || def.kind === "passive" || lv < 1) continue;
+    out.push({ def, lv });
+  }
+  return out;
+}
+
+/** パッシブの合算効果（hook → Lv込みの合計値） */
+export function passiveFxOf(player: CombatPlayer, cfg: CombatConfig): Record<string, number> {
+  const table = cfg.arts?.defs;
+  if (table === undefined || cfg.arts === undefined || player.build?.passives === undefined)
+    return {};
+  const out: Record<string, number> = {};
+  for (const id of player.build.passives) {
+    if (id === null) continue;
+    const def = table[id];
+    const lv = player.arts?.[id]?.lv ?? 0;
+    if (def === undefined || def.kind !== "passive" || def.effect === undefined || lv < 1) continue;
+    const scale = 1 + (lv - 1) * cfg.arts.levelPowerFactor;
+    out[def.effect.hook] = (out[def.effect.hook] ?? 0) + def.effect.value * scale;
+  }
+  return out;
+}
+
 export function startCombat(
   enemy: EnemyDef,
   cfg: CombatConfig,
@@ -418,6 +572,10 @@ export function startCombat(
   attackFactor = 1,
 ): CombatState {
   const p = playerCombatStats(player, cfg, attackFactor);
+  // K-02：パッシブを畳んだ上で気力の上限を引く（pa_grit などが上限に効く）
+  const passiveFx = passiveFxOf(player, cfg);
+  const kiMax =
+    cfg.arts !== undefined ? kiMaxOf(player.stats, cfg.arts, passiveFx["kiMax"] ?? 0) : 0;
   return {
     tick: 0,
     turn: 0,
@@ -459,20 +617,44 @@ export function startCombat(
     weaponCritBonus: p.weapon.critBonus,
     weaponDefendBonus: p.weapon.defendBonus ?? 0,
     links: p.links,
+    // K-02：気力・武技・状態異常・部位（cfg.arts が無い世界では全部初期値のまま）
+    playerKi: player.ki ?? kiMax,
+    playerKiMax: kiMax,
+    kiRegenPerTick: (cfg.arts?.kiRegenPerTick ?? 0) + (passiveFx["kiRegen"] ?? 0),
+    artSlots: artSlotsOf(player, cfg),
+    passiveFx,
+    enemyStatus: {},
+    partDamage: { head: 0, body: 0, arms: 0, legs: 0 },
+    brokenParts: [],
+    parryUntil: -1,
+    evadeUntil: -1,
+    guardArtUntil: -1,
+    uses: [],
+    afterGuard: false,
+    afterParry: false,
+    afterEvade: false,
+    lastArtId: null,
     log: [],
   };
 }
 
-/** 攻撃の命中率（敵の敏捷との差と武器技能・武器補正・技能リンクで変わる。隙への反撃は必中） */
+/** 敵の実効敏捷（脚が壊れていると下がる。命中・回避・逃走の差分に使う） */
+export function enemyAgilityOf(state: CombatState, enemy: EnemyDef, cfg: CombatConfig): number {
+  const broken = state.brokenParts.includes("legs");
+  return broken ? enemy.agility * (cfg.arts?.breakAgilityFactor ?? 1) : enemy.agility;
+}
+
+/** 攻撃の命中率（敵の敏捷との差と武器技能・武器補正・技能リンク・パッシブで変わる。隙への反撃は必中） */
 export function hitChance(state: CombatState, enemy: EnemyDef, cfg: CombatConfig): number {
   return clamp(
     cfg.hitMin,
     cfg.hitMax,
     cfg.hitBase +
       state.playerWeaponSkill * cfg.hitPerWeaponSkill +
-      (state.playerAgility - enemy.agility) * cfg.hitPerAgilityDiff +
+      (state.playerAgility - enemyAgilityOf(state, enemy, cfg)) * cfg.hitPerAgilityDiff +
       state.weaponHitBonus +
-      state.links.hit,
+      state.links.hit +
+      (state.passiveFx["hit"] ?? 0),
   );
 }
 
@@ -484,20 +666,27 @@ export function critChance(state: CombatState, cfg: CombatConfig): number {
     cfg.critBase +
       state.playerWeaponSkill * cfg.critPerWeaponSkill +
       state.weaponCritBonus +
-      state.links.crit,
+      state.links.crit +
+      (state.passiveFx["crit"] ?? 0),
   );
 }
 
-/** 被弾の回避率。見切り中は readEvadeBonus が乗る。防御中は 0（受け止める構え） */
+/** 被弾の回避率。見切り中は readEvadeBonus、回避の構え中は evadeArtBonus が乗る。防御・鉄壁中は 0（受け止める構え） */
 export function evadeChance(state: CombatState, enemy: EnemyDef, cfg: CombatConfig): number {
-  if (state.tick <= state.defendUntil) return 0;
+  if (state.tick <= state.defendUntil || state.tick <= state.guardArtUntil) return 0;
   const base =
     cfg.evadeBase +
     state.playerEvasion * cfg.evadePerEvasion +
-    (state.playerAgility - enemy.agility) * cfg.evadePerAgilityDiff +
-    state.links.evade;
+    (state.playerAgility - enemyAgilityOf(state, enemy, cfg)) * cfg.evadePerAgilityDiff +
+    state.links.evade +
+    (state.passiveFx["evade"] ?? 0);
   const reading = state.tick <= state.readUntil;
-  return clamp(0, cfg.evadeMax, base + (reading ? cfg.readEvadeBonus : 0));
+  const evading = state.tick <= state.evadeUntil;
+  return clamp(
+    0,
+    cfg.evadeMax,
+    base + (reading ? cfg.readEvadeBonus : 0) + (evading ? (cfg.arts?.evadeArtBonus ?? 0) : 0),
+  );
 }
 
 /** 予兆の3行表示（精度は観察＋見切りボーナスで決まる） */
@@ -597,12 +786,237 @@ export function turn(
   ctx: MiniGameCtx,
 ): CombatState {
   if (state.done) return state;
-  const s: CombatState = { ...state, log: [...state.log], turn: state.turn + 1 };
+  const s: CombatState = {
+    ...state,
+    log: [...state.log],
+    uses: [...state.uses],
+    enemyStatus: { ...state.enemyStatus },
+    partDamage: { ...state.partDamage },
+    brokenParts: [...state.brokenParts],
+    turn: state.turn + 1,
+  };
   const push = (e: Omit<CombatEvent, "tick">, tick = s.tick) => s.log.push({ ...e, tick });
+  const arts = cfg.arts;
+  const startTick = s.tick;
+
+  /* ── K-02：使用記録（09 §7.1）。行動前の状況タグを集める ── */
+  const weaponSkillNow = weaponDefOf(cfg, s.playerWeapon).skill;
+  const baseTags: string[] = [];
+  {
+    // 相手との力関係（03 §4 の格上の目安：挑戦差 15）
+    const edge = enemy.challenge - s.playerWeaponSkill;
+    baseTags.push(edge >= 15 ? "foe.stronger" : edge <= -15 ? "foe.weaker" : "foe.even");
+    baseTags.push("foe.single");
+    baseTags.push(enemy.beast === true ? "foe.beast" : "foe.human");
+    if (s.telegraph !== null) baseTags.push("vs.telegraph");
+    if (s.turn === 1) baseTags.push("first.strike");
+    if (s.playerHp <= s.playerHpMax * 0.3) baseTags.push("self.lowhp");
+    if (s.afterGuard) baseTags.push("after.guard");
+    if (s.afterParry) baseTags.push("after.parry");
+    if (s.afterEvade) baseTags.push("after.evade");
+    const staggered = s.enemyStatus.stagger !== undefined && s.enemyStatus.stagger.until > s.tick;
+    if (staggered) baseTags.push("after.stagger");
+  }
+  // この行動の使用記録（解決後に s.uses に積む。基本行動は id なし）
+  let use: { id?: string; skill: string; tags: string[] } | null = null;
+
+  /* ── K-02：武技の解決に使う部品 ── */
+  /** 部位への蓄積（破壊のしきい値を超えると部位が壊れる） */
+  const addPartDamage = (part: BodyPart, dmg: number) => {
+    const targets: readonly BodyPart[] = enemy.parts ?? ["head", "body", "arms", "legs"];
+    if (!targets.includes(part) || s.brokenParts.includes(part)) return;
+    s.partDamage[part] += dmg;
+    if (arts !== undefined && s.partDamage[part] >= s.enemyHpMax * arts.partBreakShare) {
+      s.brokenParts.push(part);
+      push({ type: "partBroken", part, text: `――${enemy.name}の${PART_NAMES[part]}を壊した。` });
+    }
+  };
+  /** 状態の付与（敵の耐性・頭の破壊・パッシブ・技Lvを含む1回判定） */
+  const applyStatus = (def: ArtDef, lvStatus: number, hitIdx: number) => {
+    const st = def.status;
+    if (st === undefined || arts === undefined || s.enemyHp <= 0) return;
+    const head = s.brokenParts.includes("head") ? arts.breakStatusFactor : 1;
+    const resist = enemy.statusResist?.[st.id] ?? 1;
+    const chance = st.chance * lvStatus * (1 + (s.passiveFx["status"] ?? 0)) * head * resist;
+    if (chance <= 0) return;
+    const r = ctxRng(ctx, `st-${s.turn}-${hitIdx}`);
+    if (r.next() >= Math.min(1, chance)) return;
+    s.enemyStatus[st.id] = { until: s.tick + st.ticks, power: st.power };
+    push({
+      type: "statusApplied",
+      status: st.id,
+      text: `――${enemy.name}は${STATUS_NAMES[st.id]}。`,
+    });
+  };
+  /**
+   * 技の一撃（攻撃技・割り込みの共通部品）。
+   * 命中・会心・揺らぎ・耐性・部位蓄積・崩し特効・パッシブまで含めて1発解決する
+   */
+  const strike = (
+    a: { def: ArtDef; lv: number },
+    hitIdx: number,
+  ): { dmg: number; crit: boolean; hit: boolean } => {
+    const r = ctxRng(ctx, `art-${s.turn}-${hitIdx}`);
+    const opening = s.openingFactor > 0 && s.tick <= s.openingUntil;
+    const chance = clamp(0, 1, hitChance(s, enemy, cfg) + (a.def.hitBonus ?? 0));
+    if (!opening && r.next() >= chance) return { dmg: 0, crit: false, hit: false };
+    const staggered = s.enemyStatus.stagger !== undefined && s.enemyStatus.stagger.until > s.tick;
+    // 崩し中の敵への大技：会心が確定し崩しを消費する（09 §5「崩し→大技」）
+    const heavyCrit = a.def.heavy === true && staggered;
+    const crit = opening || heavyCrit || r.next() < critChance(s, cfg);
+    const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
+    const dtype = a.def.dtype ?? "slash";
+    let resist = enemy.resist?.[dtype] ?? 1;
+    if (a.def.pierceArmor === true && resist < 1) resist = 1;
+    const lvPower = arts !== undefined ? 1 + (a.lv - 1) * arts.levelPowerFactor : 1;
+    const dmg = round1(
+      s.playerAttack *
+        (a.def.power ?? 1) *
+        lvPower *
+        spread *
+        (crit ? cfg.critFactor : 1) *
+        (opening ? s.openingFactor : 1) *
+        (staggered ? (arts?.staggerFactor ?? 1) : 1) *
+        resist *
+        (1 + (s.passiveFx[`dmg.${dtype}`] ?? 0)) *
+        (enemy.beast === true ? 1 + s.links.beastAttack : 1) *
+        (s.brokenParts.includes("body") ? (arts?.breakDamageFactor ?? 1) : 1) *
+        (1 + (s.passiveFx["attack"] ?? 0)),
+    );
+    s.enemyHp -= dmg;
+    addPartDamage(a.def.part ?? "body", dmg);
+    if (heavyCrit) s.enemyStatus.stagger = undefined;
+    return { dmg, crit, hit: true };
+  };
+  /** 技の主処理（対応技は窓を開けるだけ。攻撃・割り込みは strike で当てる） */
+  const resolveArt = (a: { def: ArtDef; lv: number }, tags: string[]) => {
+    const lvStatus = arts !== undefined ? 1 + (a.lv - 1) * arts.levelStatusFactor : 1;
+    switch (a.def.kind) {
+      case "attack": {
+        const hits = a.def.hits ?? 1;
+        let total = 0;
+        let critAny = false;
+        let hitAny = false;
+        const opening = s.openingFactor > 0 && s.tick <= s.openingUntil;
+        for (let i = 0; i < hits && s.enemyHp > 0; i++) {
+          const r = strike(a, i);
+          if (!r.hit) continue;
+          hitAny = true;
+          total += r.dmg;
+          critAny ||= r.crit;
+        }
+        if (opening) {
+          s.openingUntil = 0;
+          s.openingFactor = 0;
+        }
+        if (!hitAny) {
+          push({
+            type: "playerArtMiss",
+            art: a.def.id,
+            text: `《${a.def.name}》――${enemy.name}に躱された。`,
+          });
+        } else {
+          push({
+            type: "playerArt",
+            art: a.def.id,
+            damage: total,
+            ...(critAny ? { crit: true } : {}),
+            ...(opening ? { counter: true } : {}),
+            text: `《${a.def.name}》――${enemy.name}に ${total} の傷。`,
+          });
+          applyStatus(a.def, lvStatus, 0);
+        }
+        break;
+      }
+      case "support": {
+        // 補助（煙玉・油壺など）：ダメージを伴わず状態だけを掛ける
+        push({ type: "playerArt", art: a.def.id, text: `《${a.def.name}》。` });
+        applyStatus(a.def, lvStatus, 0);
+        break;
+      }
+      case "response": {
+        switch (a.def.response) {
+          case "interrupt": {
+            const r = strike(a, 0);
+            if (!r.hit) {
+              push({
+                type: "playerArtMiss",
+                art: a.def.id,
+                text: `《${a.def.name}》――${enemy.name}に躱された。`,
+              });
+            } else {
+              push({
+                type: "playerArt",
+                art: a.def.id,
+                damage: r.dmg,
+                ...(r.crit ? { crit: true } : {}),
+                text: `《${a.def.name}》――${enemy.name}に ${r.dmg} の傷。`,
+              });
+              applyStatus(a.def, lvStatus, 0);
+              // 予兆への割り込み：仕掛け途中の大技を潰し体勢を崩す（09 §5）
+              if (s.telegraph !== null) {
+                s.telegraph = null;
+                s.enemyNextAt += cfg.staggerTicks;
+                push({ type: "interrupted", text: `――${enemy.name}の大技を潰した。` });
+                tags.push("interrupt");
+              }
+            }
+            break;
+          }
+          case "parry": {
+            s.parryUntil = endTick;
+            push({ type: "playerArt", art: a.def.id, text: `《${a.def.name}》――受け流しの構え。` });
+            break;
+          }
+          case "evade": {
+            s.evadeUntil = endTick;
+            push({ type: "playerArt", art: a.def.id, text: `《${a.def.name}》――間合いを取る。` });
+            break;
+          }
+          case "guard": {
+            s.guardArtUntil = endTick;
+            push({ type: "playerArt", art: a.def.id, text: `《${a.def.name}》――鉄壁の構え。` });
+            break;
+          }
+          case undefined:
+            break;
+        }
+        break;
+      }
+      case "passive":
+        break;
+    }
+  };
 
   // 1. プレイヤー行動
-  const endTick = s.tick + s.playerCt;
-  if (typeof action === "object") {
+  const artAction = typeof action === "object" && action.type === "art" ? action : null;
+  const art = artAction !== null ? s.artSlots.find((x) => x.def.id === artAction.id) : undefined;
+  // 武技はスロット入り＋装備中の武器技能のものだけ使える（09 §6。持ち替えたら技も替わる）
+  const artUsable = art !== undefined && arts !== undefined && art.def.skill === weaponSkillNow;
+  const endTick = s.tick + s.playerCt * (artUsable ? art.def.ct : 1);
+
+  if (artAction !== null) {
+    // 武技（K-02）：気力が足りない・構えの合わない技は行動だけが空費される
+    if (!artUsable || art === undefined) {
+      push({
+        type: "playerArtFail",
+        art: artAction.id,
+        text: "――その技はいまの構えでは使えない。",
+      });
+    } else if (s.playerKi < art.def.ki) {
+      push({
+        type: "playerArtFail",
+        art: art.def.id,
+        text: `――気力が足りず、《${art.def.name}》は出せない。`,
+      });
+    } else {
+      s.playerKi -= art.def.ki;
+      use = { id: art.def.id, skill: art.def.skill, tags: [...baseTags] };
+      if (s.lastArtId !== null) use.tags.push(`chain.${s.lastArtId}`);
+      if (art.def.part !== undefined) use.tags.push(`aim.${art.def.part}`);
+      resolveArt(art, use.tags);
+    }
+  } else if (typeof action === "object" && action.type === "switch") {
     // 武器の持ち替え（K-01）：1行動を消費する。この行動の時間は持ち替え前の
     // 間隔で流れ、次の行動から新しい武器の間隔・技能・補正になる
     const def = cfg.weapons?.[action.weapon];
@@ -628,6 +1042,7 @@ export function turn(
   } else
     switch (action) {
       case "attack": {
+        use = { skill: weaponSkillNow, tags: [...baseTags, "basic.attack"] };
         // 隙への反撃：体勢を崩した敵への一撃は必中・会心扱い（F-04）
         const opening = s.openingFactor > 0 && s.tick <= s.openingUntil;
         const r = ctxRng(ctx, `atk-${s.turn}`);
@@ -639,11 +1054,16 @@ export function turn(
         const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
         // 獣には狩猟・動物知識の技能リンク（beast.attack）が与ダメージに乗る（K-01）
         const beastBonus = enemy.beast === true ? 1 + s.links.beastAttack : 1;
+        const staggered =
+          s.enemyStatus.stagger !== undefined && s.enemyStatus.stagger.until > s.tick;
         const dmg = round1(
           s.playerAttack *
             spread *
             (crit ? cfg.critFactor : 1) *
             (opening ? s.openingFactor : 1) *
+            (staggered ? (arts?.staggerFactor ?? 1) : 1) *
+            (s.brokenParts.includes("body") ? (arts?.breakDamageFactor ?? 1) : 1) *
+            (1 + (s.passiveFx["attack"] ?? 0)) *
             beastBonus,
         );
         s.enemyHp -= dmg;
@@ -665,11 +1085,13 @@ export function turn(
         break;
       }
       case "defend": {
+        use = { skill: weaponSkillNow, tags: [...baseTags, "basic.defend"] };
         s.defendUntil = endTick;
         push({ type: "playerDefend", text: "防御の構え。" });
         break;
       }
       case "observe": {
+        use = { skill: weaponSkillNow, tags: [...baseTags, "basic.observe"] };
         s.observed = true;
         s.readUntil = endTick;
         push({ type: "playerObserve", text: "敵の動きを見切る。" });
@@ -682,7 +1104,9 @@ export function turn(
           1,
           Math.max(
             0,
-            cfg.fleeBase + (s.playerAgility - enemy.agility) * cfg.fleePerAgility + s.links.flee,
+            cfg.fleeBase +
+              (s.playerAgility - enemyAgilityOf(s, enemy, cfg)) * cfg.fleePerAgility +
+              s.links.flee,
           ),
         );
         if (rng.next() < chance) {
@@ -695,6 +1119,16 @@ export function turn(
         break;
       }
     }
+
+  // 使用記録を積む（仕留めた一撃には finisher。after.*・連鎖の記録もここで締める）
+  if (use !== null) {
+    if (s.enemyHp <= 0) use.tags.push("finisher");
+    s.uses.push(use);
+    s.lastArtId = use.id ?? null;
+    s.afterGuard = false;
+    s.afterParry = false;
+    s.afterEvade = false;
+  }
 
   if (s.enemyHp <= 0) {
     s.won = true;
@@ -716,21 +1150,56 @@ export function turn(
   };
   const absorb = (tick: number, move: EnemyMove, big: boolean) => {
     const r = ctxRng(ctx, `evd-${s.turn}-${absorbIdx++}`);
-    // 回避判定（防御中は躱さない —— 受け止める構えの分だけ揺らぎが無い）
+    // 腕が壊れた敵の大技は威力が落ちる（K-02。09 §5「腕を壊すと大技が出せない」の弱体化）
+    const movePower =
+      move.power * (big && s.brokenParts.includes("arms") ? (arts?.breakMoveFactor ?? 1) : 1);
+    // K-02 受け流しの構え（対応技）：構え中の被弾をいなす。
+    // 大技をいなせば大きな隙が生まれ、使用記録には after.parry が残る
+    if (tick <= s.parryUntil) {
+      const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
+      const dmg = Math.max(
+        1,
+        Math.round(movePower * spread * (arts?.parryFactor ?? 0.15) * (1 - s.links.enemyPower)),
+      );
+      s.playerHp -= dmg;
+      s.damageTaken += dmg;
+      s.hitsTaken++;
+      s.afterParry = true;
+      push(
+        {
+          type: "parried",
+          damage: dmg,
+          ...(big ? { big: true } : {}),
+          text: `${enemy.name}の《${move.name}》――受け流した（${dmg}）。`,
+        },
+        tick,
+      );
+      if (big) {
+        openUp(
+          tick,
+          (arts?.parryCounterFactor ?? cfg.counterFactor) + (s.passiveFx["counter"] ?? 0),
+        );
+      }
+      return;
+    }
+    // 回避判定（防御・鉄壁中は躱さない —— 受け止める構えの分だけ揺らぎが無い）
     const evade =
-      tick <= s.defendUntil
+      tick <= s.defendUntil || tick <= s.guardArtUntil
         ? 0
         : clamp(
             0,
             cfg.evadeMax,
             cfg.evadeBase +
               s.playerEvasion * cfg.evadePerEvasion +
-              (s.playerAgility - enemy.agility) * cfg.evadePerAgilityDiff +
+              (s.playerAgility - enemyAgilityOf(s, enemy, cfg)) * cfg.evadePerAgilityDiff +
               s.links.evade +
-              (tick <= s.readUntil ? cfg.readEvadeBonus : 0),
+              (s.passiveFx["evade"] ?? 0) +
+              (tick <= s.readUntil ? cfg.readEvadeBonus : 0) +
+              (tick <= s.evadeUntil ? (arts?.evadeArtBonus ?? 0) : 0),
           );
     if (r.next() < evade) {
       s.dodges++;
+      s.afterEvade = true;
       push(
         {
           type: "enemyMiss",
@@ -738,29 +1207,45 @@ export function turn(
           text:
             tick <= s.readUntil
               ? `${enemy.name}の《${move.name}》――見切って躱した。`
-              : `${enemy.name}の《${move.name}》――とっさに躱した。`,
+              : tick <= s.evadeUntil
+                ? `${enemy.name}の《${move.name}》――間合いを抜けて躱した。`
+                : `${enemy.name}の《${move.name}》――とっさに躱した。`,
         },
         tick,
       );
-      // 見切りで大技を躱せば大きな隙が生まれる
-      if (big && tick <= s.readUntil) openUp(tick, cfg.counterFactorRead);
+      // 見切り・回避の構えで大技を躱せば大きな隙が生まれる
+      if (big && tick <= s.readUntil)
+        openUp(tick, cfg.counterFactorRead + (s.passiveFx["counter"] ?? 0));
+      else if (big && tick <= s.evadeUntil)
+        openUp(tick, cfg.counterFactorRead + (s.passiveFx["counter"] ?? 0));
       return;
     }
     const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
     // 大技は揺らぎはあっても痛恨にはならない（対応すべき「約束された一撃」として読めるよう）
     const crit = !big && r.next() < cfg.enemyCritBase;
     // 威圧・魔法などの技能リンク（combat.enemyPower）で敵の威力を減衰させる（K-01）
-    let dmg = move.power * spread * (crit ? cfg.enemyCritFactor : 1) * (1 - s.links.enemyPower);
-    const guarded = tick <= s.defendUntil;
+    let dmg = movePower * spread * (crit ? cfg.enemyCritFactor : 1) * (1 - s.links.enemyPower);
+    // 防御・鉄壁（K-02 対応技）：鉄壁は一律の軽減、通常の防御は大技に強い
+    const guardArt = tick <= s.guardArtUntil;
+    const guarded = tick <= s.defendUntil || guardArt;
     if (guarded) {
-      // 防御中は武器の防御補正（盾）と技能リンク（combat.defend）がさらに乗る（K-01）
-      const extra = Math.min(0.9, s.weaponDefendBonus + s.links.defend);
-      dmg *= (big ? cfg.guardTelegraphFactor : cfg.defendFactor) * (1 - extra);
+      // 防御中は武器の防御補正（盾）と技能リンク（combat.defend）・パッシブがさらに乗る（K-01/K-02）
+      const extra = Math.min(
+        0.9,
+        s.weaponDefendBonus + s.links.defend + (s.passiveFx["defend"] ?? 0),
+      );
+      const factor = guardArt
+        ? (arts?.guardArtFactor ?? 0.25)
+        : big
+          ? cfg.guardTelegraphFactor
+          : cfg.defendFactor;
+      dmg *= factor * (1 - extra);
     }
     dmg = Math.max(1, Math.round(dmg));
     s.playerHp -= dmg;
     s.damageTaken += dmg;
     s.hitsTaken++;
+    s.afterGuard = guarded;
     push(
       {
         type: "enemyHit",
@@ -778,12 +1263,23 @@ export function turn(
       },
       tick,
     );
-    // 大技を防御で受け止めれば隙が生まれる
-    if (big && guarded) openUp(tick, cfg.counterFactor);
+    // 大技を防御・鉄壁で受け止めれば隙が生まれる
+    if (big && guarded) openUp(tick, cfg.counterFactor + (s.passiveFx["counter"] ?? 0));
   };
 
+  // 継続状態（K-02）：この行動枠の間に出血・毒が削った分（表示は1行に畳む）
+  const tickDmg: Partial<Record<StatusId, number>> = {};
   let t = s.tick;
   while (t < endTick && s.enemyHp > 0) {
+    // 出血・毒は tick ごとに敵の体力を削る（敵は動けずとも蝕まれていく）
+    for (const id of ["bleed", "poison"] as const) {
+      const st = s.enemyStatus[id];
+      if (st !== undefined && st.until > t) {
+        s.enemyHp -= st.power;
+        tickDmg[id] = (tickDmg[id] ?? 0) + st.power;
+      }
+    }
+    if (s.enemyHp <= 0) break;
     // 予兆の発動
     if (s.telegraph && s.telegraph.dueTick <= t) {
       const mv = enemy.moves[s.telegraph.move];
@@ -795,7 +1291,12 @@ export function turn(
       const step = enemy.pattern[s.enemyIdx % enemy.pattern.length]!;
       s.enemyIdx++;
       s.enemyNextAt += enemy.intervalTicks;
-      if (step.type === "telegraph" && step.move) {
+      // 気絶（K-02）：掛かっている間、敵はその一手を逃す
+      const stunned = s.enemyStatus.stun !== undefined && s.enemyStatus.stun.until > t;
+      if (stunned) {
+        s.enemyStatus.stun = undefined;
+        push({ type: "stunned", text: `――${enemy.name}はふらついて動けない。` }, t);
+      } else if (step.type === "telegraph" && step.move) {
         const mv = enemy.moves[step.move];
         s.telegraph = {
           move: step.move,
@@ -809,11 +1310,41 @@ export function turn(
       } else {
         absorb(t, enemy.attack, false);
       }
+      // 鈍足（K-02）：掛かっている間、敵の次の間合いが伸びる
+      const slow = s.enemyStatus.slow;
+      if (slow !== undefined && slow.until > t && slow.power > 1) {
+        s.enemyNextAt += enemy.intervalTicks * (slow.power - 1);
+      }
     }
     t++;
     if (s.playerHp <= 0) break;
   }
   s.tick = endTick;
+
+  // 継続状態で削った分は1行に畳んで出す（出血が毎tick流れると読めないため）
+  for (const [id, dmg] of Object.entries(tickDmg)) {
+    if (dmg === undefined || dmg <= 0) continue;
+    push({
+      type: "statusTick",
+      status: id as StatusId,
+      damage: round1(dmg),
+      text: `――${enemy.name}は${STATUS_TICK_NAMES[id as StatusId]}（${round1(dmg)}）。`,
+    });
+  }
+
+  // 状態で倒れた敵（出血・毒で決着が着くこともある）
+  if (s.enemyHp <= 0 && !s.done) {
+    s.won = true;
+    s.done = true;
+    push({ type: "won", text: `――${enemy.name}は力尽きた。` });
+    return s;
+  }
+
+  // K-02：行動に使った時間のぶん気力が戻る（09 §2「時間（CT）で戻る」）
+  s.playerKi = Math.min(
+    s.playerKiMax,
+    round1(s.playerKi + s.kiRegenPerTick * (s.tick - startTick)),
+  );
 
   if (s.playerHp <= 0) {
     s.done = true;
@@ -831,8 +1362,44 @@ export function combatResult(s: CombatState): CombatResult {
     damageTaken: s.damageTaken,
     hitsTaken: s.hitsTaken,
     ticks: s.tick,
+    kiLeft: s.playerKi,
+    uses: s.uses,
   };
 }
+
+/** いま使える武技（スロット入り＋装備中の武器技能のもの。UI・簡易判定用） */
+export function usableArts(state: CombatState, cfg: CombatConfig): { def: ArtDef; lv: number }[] {
+  const skill = weaponDefOf(cfg, state.playerWeapon).skill;
+  return state.artSlots.filter((a) => a.def.skill === skill);
+}
+
+/* ── K-02 の表示名（戦闘ログの語彙。cli.json ではなく戦闘内の定型としてここに置く） ── */
+
+/** 状態異常の付与文（「――敵は◯◯。」） */
+const STATUS_NAMES: Record<StatusId, string> = {
+  bleed: "血を流している",
+  stun: "気絶した",
+  stagger: "体勢を崩した",
+  slow: "足が鈍った",
+  poison: "毒を受けた",
+};
+
+/** 継続ダメージの畳み込み文（「――敵は◯◯（N）。」） */
+const STATUS_TICK_NAMES: Record<StatusId, string> = {
+  bleed: "出血で体力を削られている",
+  stun: "気絶している",
+  stagger: "体勢が崩れている",
+  slow: "足が鈍っている",
+  poison: "毒に蝕まれている",
+};
+
+/** 部位の表示名（部位破壊の文） */
+const PART_NAMES: Record<BodyPart, string> = {
+  head: "頭",
+  body: "胴",
+  arms: "腕",
+  legs: "脚",
+};
 
 /** 強化版ユニーク（T-44、06 §3B）。balance.combat.unique に対応 */
 export interface UniqueConfig {

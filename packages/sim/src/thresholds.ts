@@ -148,6 +148,25 @@ export const thresholdsSchema = z
         notes: z.record(z.string(), z.string()).optional(),
       })
       .strict(),
+    /**
+     * 武技・資源・構成のバランスCIゲート（K-02、docs/devin_tasks/K-02_arts.md、09 §3・§5〜6）。
+     * 実戦闘エンジンをシード変えで回す
+     */
+    arts: z
+      .object({
+        /** 1構成・1敵あたりの試合数（シードを変えた決定的な再現） */
+        runs: z.number().int().positive(),
+        /** 「連打では格上に勝てない」：attack のみ方針の格上への勝率上限 */
+        spamMaxWinRate: z.number().min(0).max(1),
+        /** 「複数の構成がそれぞれ勝ち筋を持つ」：この勝率以上を格上に出す構成の数の下限 */
+        minWinningBuilds: z.number().int().positive(),
+        minBuildWinRate: z.number().min(0).max(1),
+        /** 「使われない武技がない」：アクティブ技の使用カバレッジ下限 */
+        minArtCoverage: z.number().min(0).max(1),
+        /** しきい値の根拠の注記（JSON にコメントを書けないため） */
+        notes: z.record(z.string(), z.string()).optional(),
+      })
+      .strict(),
   })
   .strict();
 

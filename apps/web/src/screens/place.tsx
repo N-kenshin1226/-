@@ -247,7 +247,16 @@ function actionEntries(
       ];
     case "arms":
       // 武器屋（K-01）：武器の売り買いと持ち替え。立ち寄るだけなら行動は消費しない
-      return [{ id: "place-arms", label: "武器を見る", onPick: () => setScreen({ name: "arms" }) }];
+      // 武技の構え（K-02）：ここで戦闘技・パッシブ・持ち替え武器を組み替える
+      return [
+        { id: "place-arms", label: "武器を見る", onPick: () => setScreen({ name: "arms" }) },
+        {
+          id: "place-build",
+          label: "技の構えを整える",
+          sub: "覚えた技を構えに仕込む",
+          onPick: () => setScreen({ name: "build" }),
+        },
+      ];
     case "book":
       return [{ id: "place-book", label: "書店", onPick: () => setScreen({ name: "book" }) }];
     case "news":

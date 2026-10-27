@@ -119,6 +119,31 @@
       "prayer": "祈り",
       "magic": "魔法",
       "derived": "派生"
+    },
+    "statusNames": {
+      "bleed": "出血",
+      "stun": "気絶",
+      "stagger": "崩し",
+      "slow": "鈍足",
+      "poison": "毒"
+    },
+    "partNames": {
+      "head": "頭",
+      "body": "胴",
+      "arms": "腕",
+      "legs": "脚"
+    },
+    "artKindNames": {
+      "attack": "攻撃技",
+      "response": "対応技",
+      "support": "補助技",
+      "passive": "パッシブ"
+    },
+    "damageTypeNames": {
+      "slash": "斬",
+      "pierce": "突",
+      "blunt": "打",
+      "magic": "魔"
     }
   },
   "text": {
@@ -169,6 +194,7 @@
       "relearning": "――身体が覚えている。《{name}》の再習得が速い。",
       "agingWarn": "――近ごろ、身体の奥に小さな軋みを覚える。老いの兆しが見え始めている。",
       "agingSevere": "――身体が思うように動かない朝がある。老いは確かに進んでいる。",
+      "artLevelUp": "――《{name}》が冴えた。Lv{to} に上がった。",
       "insight": "――今日は妙に冴えている。何をしても上達が速い気がする。",
       "conditionGood": "――目覚めが良い。身体が軽い。",
       "conditionPoor": "――どうも調子が出ない。身体が重い。"
@@ -244,6 +270,16 @@
     "deathByAge": "――天命に達した（{age}歳）。この生は静かに終わる。",
     "combatFled": "――命だけは拾った。",
     "combatGain": "《{skill}》の経験 +{amount}（未定着）",
+    "combatKiLine": "（気力 {ki}/{max}）",
+    "combatArtsLabel": "武技",
+    "artLearned": "――技《{name}》を閃いた。",
+    "buildHeader": "── 武技の構成 ──",
+    "buildArtsHeader": "戦闘技（{n}/{max}）",
+    "buildPassivesHeader": "パッシブ（{n}/{max}）",
+    "buildWeaponsHeader": "持ち替える武器（2本まで・先頭が構え）",
+    "buildSlotEmpty": "（空き）",
+    "buildSaved": "――構成を整えた。",
+    "statusArtsHeader": "── 覚えた技（{n}） ──",
     "abyssStart": "――深層への石段を降りる。灯りが照らす先は、あと{light}手。",
     "abyssFloor": "── 深層 第{floor}層 ──",
     "abyssLight": "（灯り 残り{light}）",

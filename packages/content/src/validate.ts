@@ -29,6 +29,7 @@ import { weatherFileSchema } from "./weather.schema.js";
 import { placesFileSchema } from "./places.schema.js";
 import { audioFileSchema } from "./audio.schema.js";
 import { weaponsFileSchema } from "./weapons.schema.js";
+import { artsFileSchema } from "./arts.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -81,6 +82,7 @@ check("weather.json", weatherFileSchema);
 check("places.json", placesFileSchema);
 check("audio.json", audioFileSchema);
 check("weapons.json", weaponsFileSchema);
+check("arts.json", artsFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
 // 武器の突き合わせ（K-01）：武器が使う技能は skills.json に存在し、
@@ -116,6 +118,33 @@ try {
   }
 } catch (e) {
   console.error(`✗ 武器の突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 武技の突き合わせ（K-02）：武技・パッシブの由来技能は skills.json に
+// 存在するものに限る（技が実在しない技能に紐づかないようにする）
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const artsRaw = JSON.parse(readFileSync(join(root, "arts.json"), "utf8")) as {
+    arts?: { id?: string; skill?: string; kind?: string }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const bad: string[] = [];
+  for (const a of artsRaw.arts ?? []) {
+    if (a.skill !== undefined && !skillIds.has(a.skill)) {
+      bad.push(`arts.json ${a.id ?? "?"}: 未定義の技能 ${a.skill}`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 武技の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 武技の参照（arts ↔ skills）");
+  }
+} catch (e) {
+  console.error(`✗ 武技の突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

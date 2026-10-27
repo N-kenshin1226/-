@@ -27,6 +27,8 @@ export function beatMs(ev: CombatEvent, short: boolean): number {
     (ev.type === "enemyHit" && ev.big === true) ||
     ev.type === "telegraph" ||
     ev.type === "counter" ||
+    ev.type === "interrupted" ||
+    ev.type === "partBroken" ||
     ev.type === "won" ||
     ev.type === "lost";
   return big
@@ -61,6 +63,24 @@ export function sfxOf(ev: CombatEvent): SoundId | null {
       return "omen";
     case "counter":
       return "counter";
+    /* ── K-02：武技・状態異常・部位 ── */
+    case "playerArt":
+      return ev.crit === true || ev.counter === true ? "crit" : "slash";
+    case "playerArtMiss":
+      return "miss";
+    case "playerArtFail":
+      return "tag";
+    case "statusApplied":
+      return "omen";
+    case "statusTick":
+      return null; // 継続ダメージは畳み込みの1行だけ流す
+    case "partBroken":
+    case "interrupted":
+      return "counter";
+    case "stunned":
+      return "guard";
+    case "parried":
+      return "dodge";
     case "won":
       return "fanfare";
     case "lost":
@@ -114,6 +134,32 @@ export function floaterOf(ev: CombatEvent): Omit<Floater, "key"> | null {
       return { side: "enemy", text: "！", tone: "omen" };
     case "counter":
       return { side: "enemy", text: "体勢が崩れた", tone: "counter" };
+    /* ── K-02：武技・状態異常・部位 ── */
+    case "playerArt":
+      return {
+        side: "enemy",
+        text:
+          ev.counter === true
+            ? `反撃 ${ev.damage ?? ""}`
+            : ev.crit === true
+              ? `会心 ${ev.damage ?? ""}`
+              : `${ev.damage ?? ""}`,
+        tone: ev.counter === true || ev.crit === true ? "crit" : "hit",
+      };
+    case "playerArtMiss":
+      return { side: "enemy", text: "躱された", tone: "miss" };
+    case "statusApplied":
+      return { side: "enemy", text: "状態", tone: "omen" };
+    case "statusTick":
+      return { side: "enemy", text: `${ev.damage ?? ""}`, tone: "hit" };
+    case "partBroken":
+      return { side: "enemy", text: "部位破壊", tone: "counter" };
+    case "interrupted":
+      return { side: "enemy", text: "潰した", tone: "counter" };
+    case "stunned":
+      return { side: "enemy", text: "気絶", tone: "big" };
+    case "parried":
+      return { side: "player", text: `受け流し ${ev.damage ?? ""}`, tone: "guard" };
     default:
       return null;
   }

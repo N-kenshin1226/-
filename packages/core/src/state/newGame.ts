@@ -1,4 +1,5 @@
 import { createRng } from "../rng/index.js";
+import { kiMaxOf, manaMaxOf, type ArtsConfig } from "../arts/index.js";
 import { drawCrisis, type CrisisConfig } from "../crisis/index.js";
 import {
   STAT_IDS,
@@ -79,6 +80,11 @@ export interface NewGameConfig {
   initialWeapons?: readonly string[];
   /** 初期装備の武器ID（省略時は剣。initialWeapons に含まれること） */
   initialWeapon?: string;
+  /**
+   * 武技・資源（K-02、balance.arts）。指定すると気力・魔力を上限いっぱいで
+   * 始める（新しい旅立ちの朝は整っている）。省略時は 0 から（従来どおり）
+   */
+  arts?: ArtsConfig;
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -137,6 +143,24 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       // 武器（K-01）：省略時は素手と剣を携えて始める
       weapons: [...new Set(cfg.initialWeapons ?? ["fist", "sword"])],
       weapon: cfg.initialWeapon ?? "sword",
+      // 武技・資源・構成（K-02、v18〜）：気力・魔力は上限いっぱいで旅立つ
+      // （balance.arts が渡された世界のみ。以降は眠るごとに満たされる）。
+      // 最初は技を覚えていないので構成は武器2本だけが埋まっている
+      ki: cfg.arts === undefined ? 0 : kiMaxOf(stats, cfg.arts),
+      mana: cfg.arts === undefined ? 0 : manaMaxOf(stats, cfg.arts),
+      arts: {},
+      artTags: {},
+      skillTags: {},
+      build: {
+        slots: [null, null, null, null, null, null, null, null],
+        passives: [null, null, null, null],
+        weapons: [
+          cfg.initialWeapon ?? "sword",
+          [...new Set(cfg.initialWeapons ?? ["fist", "sword"])].find(
+            (w) => w !== (cfg.initialWeapon ?? "sword"),
+          ) ?? null,
+        ],
+      },
     },
     counters: {},
     flags: Object.fromEntries([

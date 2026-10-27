@@ -93,6 +93,7 @@ import {
   type Chronicle,
   type CrisisEnding,
   type CombatAction,
+  type CombatPlayer,
   type CombatState,
   type DealInput,
   type DealState,
@@ -116,6 +117,7 @@ import {
   type WakeReport,
 } from "@trace/core";
 import {
+  artDefs,
   atoms,
   balance,
   books,
@@ -160,6 +162,9 @@ export const weaponDefs: Record<string, WeaponJson> = Object.fromEntries(
   weapons.weapons.map((w) => [w.id, w]),
 );
 
+/** 武技の定義表（K-02、arts.json → id 引き。構成画面・戦闘・ステータスで共有） */
+export { artDefs };
+
 export const cfg: StepConfig = {
   time: balance.time,
   actionLogMax: balance.state.actionLogMax,
@@ -193,6 +198,11 @@ export const cfg: StepConfig = {
     ...balance.combat,
     weapons: weaponDefs,
     links: balance.links,
+    /**
+     * 武技・資源（K-02）：技の定義表（arts.json）とバランス係数（balance.arts）。
+     * 武技の消費・状態異常・部位破壊・パッシブが戦闘で効く
+     */
+    arts: { defs: artDefs, ...balance.arts },
   },
   /** 技能リンク（K-01、balance.links）：step の各フック（仕事・移動・読書・危機…）が引く */
   links: balance.links,
@@ -200,6 +210,11 @@ export const cfg: StepConfig = {
   weapons: weaponDefs,
   /** 旧セーブに無い技能へ経験が入るときの新規レコードの素質（K-01） */
   initialSkillPotential: balance.player.initialPotential,
+  /**
+   * 武技・資源・構成（K-02）：戦闘の使用記録・技の経験・習得判定・
+   * 睡眠での気力/魔力回復・setBuild の組み替えが効く
+   */
+  arts: { defs: artDefs, ...balance.arts },
   society: {
     standings: society.standings,
     professions: society.professions,
@@ -603,6 +618,8 @@ const gameInit = (
   // 初期装備の武器（K-01、weapons.json の initial/defaultWeapon）
   initialWeapons: weapons.initial,
   initialWeapon: weapons.defaultWeapon,
+  // 気力・魔力（K-02）：新しい旅立ちは上限いっぱいで始まる
+  arts: { defs: artDefs, ...balance.arts },
 });
 
 /** 新規開始のシード。?seed= で固定できる（e2e・リプレイ用）。それ以外は一意に */
@@ -848,6 +865,13 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         const name = weaponDefs[e.id]?.name ?? e.id;
         return [tpl(t.text.armsEquipped, { name })];
       }
+      // 武技（K-02）：新しい技を閃いた（通知Bランク相当）・構成を整えた
+      case "artLearned": {
+        const name = artDefs[e.id]?.name ?? e.id;
+        return [tpl(t.text.artLearned, { name })];
+      }
+      case "buildChanged":
+        return [t.text.buildSaved];
       case "bookRead": {
         const def = books.books.find((b) => b.id === e.id);
         const name = def?.name ?? e.id;
@@ -1045,6 +1069,10 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
         .map((l) => `${t.display.statNames[l.id] ?? l.id} +${fmt(l.delta)}`)
         .join(w.statJoiner),
     );
+  }
+  // 武技の定着（K-02）：使って貯めた経験が眠りで Lv になって出る
+  for (const a of report.arts ?? []) {
+    lines.push(tpl(w.artLevelUp, { name: artDefs[a.id]?.name ?? a.id, to: a.to }));
   }
   if (report.lines.length === 0) lines.push(w.noChange);
   if (report.restDay) lines.push(w.restDayLine);
@@ -1338,6 +1366,10 @@ function toEnemyDef(e: EnemyJson): EnemyDef {
     attack: e.attack,
     moves: e.moves,
     pattern: e.pattern,
+    // K-02：耐性・弱点・状態耐性・壊せる部位（enemies.json からそのまま渡す）
+    ...(e.resist !== undefined ? { resist: e.resist } : {}),
+    ...(e.statusResist !== undefined ? { statusResist: e.statusResist } : {}),
+    ...(e.parts !== undefined ? { parts: [...e.parts] } : {}),
   };
 }
 
@@ -1368,6 +1400,11 @@ export function beginCombat(
   enemy: EnemyJson,
   /** 個体差の抽選鍵（深層はラン×層で別々に渡す。省略時は日付×敵種×行動序数） */
   encounterKey?: string,
+  /**
+   * プレイヤー情報の差し替え（K-02。深層の連戦で気力を次の層へ持ち越すときに
+   * 前の層の残りを入れた player を渡す。省略時は state.player）
+   */
+  player?: CombatPlayer,
 ): CombatState {
   // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
   const fx = damageFactor(
@@ -1385,7 +1422,7 @@ export function beginCombat(
   );
   // 運命の傾向・誓約の世界補正（T-45/T-46。戦乱の世・強敵の誓で敵が強くなる）
   const def = worldEnemyDef(state, enemy, encounterKey);
-  return startCombat(def, cfg.combat, state.player, fx);
+  return startCombat(def, cfg.combat, player ?? state.player, fx);
 }
 
 /**

@@ -1,4 +1,5 @@
 import {
+  artDefs,
   atoms,
   balance,
   books,
@@ -95,6 +96,8 @@ export function stepConfig(): StepConfig {
       ...balance.combat,
       weapons: Object.fromEntries(weapons.weapons.map((w) => [w.id, w])),
       links: balance.links,
+      /** 武技・資源（K-02）：技の定義表とバランス係数（使用記録・気力・構成が効く） */
+      arts: { defs: artDefs, ...balance.arts },
     },
     /** 技能リンク（K-01、balance.links）：仕事・移動・読書・危機などのフック */
     links: balance.links,
@@ -102,6 +105,11 @@ export function stepConfig(): StepConfig {
     weapons: Object.fromEntries(weapons.weapons.map((w) => [w.id, w])),
     /** 旧セーブに無い技能への経験用（K-01、balance.player.initialPotential） */
     initialSkillPotential: balance.player.initialPotential,
+    /**
+     * 武技・資源・構成（K-02、balance.arts ＋ arts.json の defs）：
+     * 戦闘の使用記録の畳み込み・技の習得・睡眠での気力/魔力回復・setBuild が効く
+     */
+    arts: { defs: artDefs, ...balance.arts },
     society: {
       standings: society.standings,
       professions: society.professions,

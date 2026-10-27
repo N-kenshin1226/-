@@ -1,0 +1,1257 @@
+{
+  "version": 1,
+  "arts": [
+    {
+      "id": "s_slash",
+      "name": "薙ぎ払い",
+      "skill": "swordplay",
+      "learn": {
+        "at": 4
+      },
+      "kind": "attack",
+      "power": 1.1,
+      "dtype": "slash",
+      "part": "body",
+      "ki": 3,
+      "ct": 1.0,
+      "desc": "剣を大きく振るう、剣術の基本技。"
+    },
+    {
+      "id": "s_thrust",
+      "name": "突き",
+      "skill": "swordplay",
+      "learn": {
+        "at": 8
+      },
+      "kind": "attack",
+      "power": 1.05,
+      "dtype": "pierce",
+      "part": "body",
+      "hitBonus": 0.03,
+      "ki": 3,
+      "ct": 0.9,
+      "desc": "最短の軌道で突く。当たりやすい一手。"
+    },
+    {
+      "id": "s_riposte",
+      "name": "受け流し斬り",
+      "skill": "swordplay",
+      "learn": {
+        "at": 12,
+        "tag": "after.guard",
+        "share": 0.1
+      },
+      "kind": "response",
+      "response": "parry",
+      "ki": 4,
+      "ct": 0.6,
+      "desc": "受け止めた勢いをそのまま刃に変える。受け流しの構え。"
+    },
+    {
+      "id": "s_helm",
+      "name": "兜割り",
+      "skill": "swordplay",
+      "learn": {
+        "at": 15
+      },
+      "kind": "attack",
+      "power": 1.5,
+      "dtype": "slash",
+      "part": "head",
+      "hitBonus": -0.05,
+      "ki": 6,
+      "ct": 1.2,
+      "desc": "頭を目掛けて振り下ろす。外れやすいが重い。"
+    },
+    {
+      "id": "s_dash",
+      "name": "疾走斬り",
+      "skill": "swordplay",
+      "learn": {
+        "at": 18
+      },
+      "kind": "attack",
+      "power": 1.15,
+      "dtype": "slash",
+      "part": "legs",
+      "status": {
+        "id": "slow",
+        "chance": 0.4,
+        "ticks": 12,
+        "power": 1.4
+      },
+      "ki": 6,
+      "ct": 1.0,
+      "desc": "走り抜けざまに脚を斬る。足を止める。"
+    },
+    {
+      "id": "s_riser",
+      "name": "斬り上げ",
+      "skill": "swordplay",
+      "learn": {
+        "at": 20
+      },
+      "kind": "attack",
+      "power": 1.2,
+      "dtype": "slash",
+      "part": "arms",
+      "status": {
+        "id": "stagger",
+        "chance": 0.35,
+        "ticks": 10,
+        "power": 0
+      },
+      "ki": 5,
+      "ct": 1.0,
+      "desc": "下から打ち上げ、腕ごと体勢を崩す。"
+    },
+    {
+      "id": "s_cross",
+      "name": "十字斬り",
+      "skill": "swordplay",
+      "learn": {
+        "at": 26
+      },
+      "kind": "attack",
+      "power": 0.8,
+      "dtype": "slash",
+      "part": "body",
+      "hits": 2,
+      "ki": 9,
+      "ct": 1.3,
+      "desc": "縦と横、間を置かず二度斬る。"
+    },
+    {
+      "id": "s_end",
+      "name": "終わりの剣",
+      "skill": "swordplay",
+      "learn": {
+        "at": 40
+      },
+      "kind": "attack",
+      "power": 2.2,
+      "dtype": "slash",
+      "part": "body",
+      "hitBonus": -0.08,
+      "heavy": true,
+      "ki": 12,
+      "ct": 1.6,
+      "desc": "全身の力を剣に託す一撃。崩した敵には決まる。"
+    },
+    {
+      "id": "d_quick",
+      "name": "早突き",
+      "skill": "dagger",
+      "learn": {
+        "at": 3
+      },
+      "kind": "attack",
+      "power": 0.9,
+      "dtype": "pierce",
+      "part": "body",
+      "ki": 2,
+      "ct": 0.7,
+      "desc": "短刀の速さを生かした速い突き。"
+    },
+    {
+      "id": "d_feint",
+      "name": "牽制の型",
+      "skill": "dagger",
+      "learn": {
+        "at": 8,
+        "tag": "after.evade",
+        "share": 0.1
+      },
+      "kind": "response",
+      "response": "evade",
+      "ki": 3,
+      "ct": 0.7,
+      "desc": "踏み込みを牽制に変え、一瞬で間合いを取る。"
+    },
+    {
+      "id": "d_shadow",
+      "name": "影踏み",
+      "skill": "dagger",
+      "learn": {
+        "at": 12
+      },
+      "kind": "attack",
+      "power": 1.0,
+      "dtype": "pierce",
+      "part": "legs",
+      "status": {
+        "id": "slow",
+        "chance": 0.45,
+        "ticks": 12,
+        "power": 1.4
+      },
+      "ki": 5,
+      "ct": 0.9,
+      "desc": "相手の影に潜り、脚を抉る。"
+    },
+    {
+      "id": "d_artery",
+      "name": "脈突き",
+      "skill": "dagger",
+      "learn": {
+        "at": 14
+      },
+      "kind": "attack",
+      "power": 1.0,
+      "dtype": "pierce",
+      "part": "arms",
+      "status": {
+        "id": "bleed",
+        "chance": 0.5,
+        "ticks": 14,
+        "power": 0.6
+      },
+      "ki": 5,
+      "ct": 1.0,
+      "desc": "腕の脈を穿つ。血が止まらない。"
+    },
+    {
+      "id": "d_vital",
+      "name": "急所突き",
+      "skill": "dagger",
+      "learn": {
+        "at": 16
+      },
+      "kind": "attack",
+      "power": 1.4,
+      "dtype": "pierce",
+      "part": "head",
+      "hitBonus": -0.06,
+      "ki": 6,
+      "ct": 1.1,
+      "desc": "急所を正確に穿つ短刀の本領。"
+    },
+    {
+      "id": "d_twin",
+      "name": "二連突き",
+      "skill": "dagger",
+      "learn": {
+        "at": 22
+      },
+      "kind": "attack",
+      "power": 0.75,
+      "dtype": "pierce",
+      "part": "body",
+      "hits": 2,
+      "ki": 7,
+      "ct": 1.1,
+      "desc": "浅く二度、確かに刻む突き。"
+    },
+    {
+      "id": "d_heart",
+      "name": "心臓突き",
+      "skill": "dagger",
+      "learn": {
+        "at": 32,
+        "tag": "foe.stronger",
+        "share": 0.15
+      },
+      "kind": "attack",
+      "power": 2.0,
+      "dtype": "pierce",
+      "part": "body",
+      "hitBonus": -0.06,
+      "heavy": true,
+      "ki": 11,
+      "ct": 1.5,
+      "desc": "格上と渡り合う者だけが極める、一撃必殺の突き。"
+    },
+    {
+      "id": "p_thrust",
+      "name": "一文字突き",
+      "skill": "spear",
+      "learn": {
+        "at": 4
+      },
+      "kind": "attack",
+      "power": 1.15,
+      "dtype": "pierce",
+      "part": "body",
+      "ki": 3,
+      "ct": 1.0,
+      "desc": "槍の間合いから真っ直ぐに突く。"
+    },
+    {
+      "id": "p_sweep",
+      "name": "薙ぎ払い",
+      "skill": "spear",
+      "learn": {
+        "at": 10
+      },
+      "kind": "attack",
+      "power": 0.9,
+      "dtype": "blunt",
+      "part": "body",
+      "status": {
+        "id": "stagger",
+        "chance": 0.3,
+        "ticks": 10,
+        "power": 0
+      },
+      "ki": 5,
+      "ct": 1.2,
+      "desc": "穂ではなく柄で広く払い、体勢を崩す。"
+    },
+    {
+      "id": "p_pin",
+      "name": "足止め",
+      "skill": "spear",
+      "learn": {
+        "at": 12
+      },
+      "kind": "attack",
+      "power": 1.0,
+      "dtype": "pierce",
+      "part": "legs",
+      "status": {
+        "id": "slow",
+        "chance": 0.45,
+        "ticks": 12,
+        "power": 1.4
+      },
+      "ki": 5,
+      "ct": 1.0,
+      "desc": "脚に槍を絡めて逃げ道を塞ぐ。"
+    },
+    {
+      "id": "p_counter",
+      "name": "迎え槍",
+      "skill": "spear",
+      "learn": {
+        "at": 15
+      },
+      "kind": "response",
+      "response": "interrupt",
+      "power": 1.2,
+      "dtype": "pierce",
+      "part": "body",
+      "ki": 6,
+      "ct": 0.9,
+      "desc": "仕掛けてくる相手を先んじて迎え撃つ。"
+    },
+    {
+      "id": "p_skewer",
+      "name": "串刺し",
+      "skill": "spear",
+      "learn": {
+        "at": 18
+      },
+      "kind": "attack",
+      "power": 1.6,
+      "dtype": "pierce",
+      "part": "body",
+      "ki": 8,
+      "ct": 1.3,
+      "desc": "体重ごと槍に乗せて貫く重い突き。"
+    },
+    {
+      "id": "p_twin",
+      "name": "二段突き",
+      "skill": "spear",
+      "learn": {
+        "at": 24
+      },
+      "kind": "attack",
+      "power": 0.8,
+      "dtype": "pierce",
+      "part": "body",
+      "hits": 2,
+      "ki": 8,
+      "ct": 1.2,
+      "desc": "引かずに二度打ち込む。"
+    },
+    {
+      "id": "p_vault",
+      "name": "跳躍突き",
+      "skill": "spear",
+      "learn": {
+        "at": 28
+      },
+      "kind": "attack",
+      "power": 1.5,
+      "dtype": "pierce",
+      "part": "head",
+      "hitBonus": -0.06,
+      "ki": 7,
+      "ct": 1.2,
+      "desc": "跳んで頭上から突き下ろす。"
+    },
+    {
+      "id": "p_drill",
+      "name": "穿ち抜き",
+      "skill": "spear",
+      "learn": {
+        "at": 38
+      },
+      "kind": "attack",
+      "power": 2.0,
+      "dtype": "pierce",
+      "part": "body",
+      "heavy": true,
+      "pierceArmor": true,
+      "ki": 12,
+      "ct": 1.6,
+      "desc": "鎧も肉も一突きに貫く。崩した敵に特に決まる。"
+    },
+    {
+      "id": "a_chop",
+      "name": "鉈割り",
+      "skill": "axe",
+      "learn": {
+        "at": 4
+      },
+      "kind": "attack",
+      "power": 1.3,
+      "dtype": "slash",
+      "part": "body",
+      "ki": 4,
+      "ct": 1.1,
+      "desc": "斧の重みをそのまま乗せて割る。"
+    },
+    {
+      "id": "a_arm",
+      "name": "腕割り",
+      "skill": "axe",
+      "learn": {
+        "at": 12
+      },
+      "kind": "attack",
+      "power": 1.2,
+      "dtype": "slash",
+      "part": "arms",
+      "ki": 6,
+      "ct": 1.1,
+      "desc": "武器を持つ腕を狙い、大技を封じる。"
+    },
+    {
+      "id": "a_legs",
+      "name": "脚断ち",
+      "skill": "axe",
+      "learn": {
+        "at": 16
+      },
+      "kind": "attack",
+      "power": 1.1,
+      "dtype": "slash",
+      "part": "legs",
+      "status": {
+        "id": "slow",
+        "chance": 0.45,
+        "ticks": 12,
+        "power": 1.4
+      },
+      "ki": 6,
+      "ct": 1.1,
+      "desc": "逃げられないように脚を断つ。"
+    },
+    {
+      "id": "a_skull",
+      "name": "脳天割り",
+      "skill": "axe",
+      "learn": {
+        "at": 20
+      },
+      "kind": "attack",
+      "power": 1.6,
+      "dtype": "slash",
+      "part": "head",
+      "hitBonus": -0.08,
+      "ki": 8,
+      "ct": 1.3,
+      "desc": "頭蓋を目掛けた、当たれば恐ろしい一撃。"
+    },
+    {
+      "id": "a_sunder",
+      "name": "割り込み叩き",
+      "skill": "axe",
+      "learn": {
+        "at": 15
+      },
+      "kind": "response",
+      "response": "interrupt",
+      "power": 1.3,
+      "dtype": "slash",
+      "part": "body",
+      "ki": 7,
+      "ct": 1.0,
+      "desc": "大技の仕掛けを先読みし、斧で叩き潰す。"
+    },
+    {
+      "id": "a_pound",
+      "name": "破城の一撃",
+      "skill": "axe",
+      "learn": {
+        "at": 26
+      },
+      "kind": "attack",
+      "power": 1.4,
+      "dtype": "blunt",
+      "part": "body",
+      "pierceArmor": true,
+      "status": {
+        "id": "stagger",
+        "chance": 0.45,
+        "ticks": 12,
+        "power": 0
+      },
+      "ki": 9,
+      "ct": 1.4,
+      "desc": "斧の頭で装甲ごと砕く。鎧が利かない。"
+    },
+    {
+      "id": "a_cleave",
+      "name": "真っ向割り",
+      "skill": "axe",
+      "learn": {
+        "at": 40
+      },
+      "kind": "attack",
+      "power": 2.3,
+      "dtype": "slash",
+      "part": "body",
+      "hitBonus": -0.1,
+      "heavy": true,
+      "ki": 13,
+      "ct": 1.7,
+      "desc": "斧の極意。崩した敵を真っ二つにする。"
+    },
+    {
+      "id": "b_rapid",
+      "name": "早矢",
+      "skill": "archery",
+      "learn": {
+        "at": 3
+      },
+      "kind": "attack",
+      "power": 0.85,
+      "dtype": "pierce",
+      "part": "body",
+      "range": "far",
+      "ki": 3,
+      "ct": 0.8,
+      "desc": "狙いを絞らず速く射る。"
+    },
+    {
+      "id": "b_aim",
+      "name": "狙い撃ち",
+      "skill": "archery",
+      "learn": {
+        "at": 10
+      },
+      "kind": "attack",
+      "power": 1.4,
+      "dtype": "pierce",
+      "part": "head",
+      "hitBonus": -0.1,
+      "range": "far",
+      "ki": 6,
+      "ct": 1.3,
+      "desc": "息を整えて頭を射抜く。"
+    },
+    {
+      "id": "b_pin",
+      "name": "足狙い",
+      "skill": "archery",
+      "learn": {
+        "at": 12
+      },
+      "kind": "attack",
+      "power": 1.0,
+      "dtype": "pierce",
+      "part": "legs",
+      "status": {
+        "id": "slow",
+        "chance": 0.45,
+        "ticks": 12,
+        "power": 1.4
+      },
+      "range": "far",
+      "ki": 5,
+      "ct": 1.0,
+      "desc": "逃げる足に矢を刺す。"
+    },
+    {
+      "id": "b_cover",
+      "name": "牽制射ち",
+      "skill": "archery",
+      "learn": {
+        "at": 15
+      },
+      "kind": "response",
+      "response": "interrupt",
+      "power": 0.9,
+      "dtype": "pierce",
+      "part": "body",
+      "range": "far",
+      "ki": 5,
+      "ct": 0.8,
+      "desc": "仕掛ける相手に速い一矢を打ち込む。"
+    },
+    {
+      "id": "b_strong",
+      "name": "強矢",
+      "skill": "archery",
+      "learn": {
+        "at": 18
+      },
+      "kind": "attack",
+      "power": 1.7,
+      "dtype": "pierce",
+      "part": "body",
+      "range": "far",
+      "ki": 8,
+      "ct": 1.4,
+      "desc": "弓を限界まで引き絞った太い一矢。"
+    },
+    {
+      "id": "b_rain",
+      "name": "乱れ矢",
+      "skill": "archery",
+      "learn": {
+        "at": 24
+      },
+      "kind": "attack",
+      "power": 0.6,
+      "dtype": "pierce",
+      "part": "body",
+      "hits": 3,
+      "range": "far",
+      "ki": 10,
+      "ct": 1.4,
+      "desc": "矢を三本続けて射ち分ける。"
+    },
+    {
+      "id": "b_pierce",
+      "name": "貫通の矢",
+      "skill": "archery",
+      "learn": {
+        "at": 30,
+        "tag": "foe.stronger",
+        "share": 0.15
+      },
+      "kind": "attack",
+      "power": 1.5,
+      "dtype": "pierce",
+      "part": "body",
+      "pierceArmor": true,
+      "range": "far",
+      "ki": 8,
+      "ct": 1.3,
+      "desc": "格上の敵にも通る、甲を貫く矢。"
+    },
+    {
+      "id": "b_mind",
+      "name": "心眼の一矢",
+      "skill": "archery",
+      "learn": {
+        "at": 38,
+        "tag": "basic.observe",
+        "share": 0.1
+      },
+      "kind": "attack",
+      "power": 2.0,
+      "dtype": "pierce",
+      "part": "head",
+      "hitBonus": -0.08,
+      "heavy": true,
+      "range": "far",
+      "ki": 12,
+      "ct": 1.6,
+      "desc": "敵を見切る目が極まった先に見える必中の一矢。"
+    },
+    {
+      "id": "h_bash",
+      "name": "盾打ち",
+      "skill": "shield",
+      "learn": {
+        "at": 3
+      },
+      "kind": "attack",
+      "power": 1.0,
+      "dtype": "blunt",
+      "part": "body",
+      "ki": 3,
+      "ct": 1.0,
+      "desc": "盾の面で叩く。守りの武器にも牙はある。"
+    },
+    {
+      "id": "h_wall",
+      "name": "鉄壁",
+      "skill": "shield",
+      "learn": {
+        "at": 6
+      },
+      "kind": "response",
+      "response": "guard",
+      "ki": 4,
+      "ct": 0.8,
+      "desc": "盾を深く構える。どんな一撃も受け止める。"
+    },
+    {
+      "id": "h_parry",
+      "name": "受け流し",
+      "skill": "shield",
+      "learn": {
+        "at": 10,
+        "tag": "after.guard",
+        "share": 0.1
+      },
+      "kind": "response",
+      "response": "parry",
+      "ki": 5,
+      "ct": 0.7,
+      "desc": "受けた力を盾面で逸らす。反撃の隙が生まれる。"
+    },
+    {
+      "id": "h_charge",
+      "name": "盾突き",
+      "skill": "shield",
+      "learn": {
+        "at": 14
+      },
+      "kind": "attack",
+      "power": 0.9,
+      "dtype": "blunt",
+      "part": "body",
+      "status": {
+        "id": "stagger",
+        "chance": 0.5,
+        "ticks": 12,
+        "power": 0
+      },
+      "ki": 6,
+      "ct": 1.1,
+      "desc": "盾ごと体当たりして体勢を崩す。"
+    },
+    {
+      "id": "h_rattle",
+      "name": "盾鳴らし",
+      "skill": "shield",
+      "learn": {
+        "at": 18
+      },
+      "kind": "support",
+      "status": {
+        "id": "stun",
+        "chance": 0.6,
+        "ticks": 4,
+        "power": 8
+      },
+      "ki": 6,
+      "ct": 1.0,
+      "desc": "盾を打ち鳴らして相手の間を乱す。"
+    },
+    {
+      "id": "h_smash",
+      "name": "盾潰し",
+      "skill": "shield",
+      "learn": {
+        "at": 22
+      },
+      "kind": "attack",
+      "power": 1.3,
+      "dtype": "blunt",
+      "part": "arms",
+      "ki": 7,
+      "ct": 1.2,
+      "desc": "盾の縁で腕を叩き潰す。"
+    },
+    {
+      "id": "h_avalanche",
+      "name": "重盾崩し",
+      "skill": "shield",
+      "learn": {
+        "at": 34
+      },
+      "kind": "attack",
+      "power": 2.0,
+      "dtype": "blunt",
+      "part": "body",
+      "heavy": true,
+      "ki": 12,
+      "ct": 1.6,
+      "desc": "崩れた相手に盾の全重を叩き込む。"
+    },
+    {
+      "id": "f_jab",
+      "name": "正拳",
+      "skill": "brawl",
+      "learn": {
+        "at": 3
+      },
+      "kind": "attack",
+      "power": 1.0,
+      "dtype": "blunt",
+      "part": "body",
+      "ki": 2,
+      "ct": 0.8,
+      "desc": "格闘の基本。速く確かな一撃。"
+    },
+    {
+      "id": "f_kick",
+      "name": "蹴り",
+      "skill": "brawl",
+      "learn": {
+        "at": 6
+      },
+      "kind": "attack",
+      "power": 1.1,
+      "dtype": "blunt",
+      "part": "legs",
+      "ki": 3,
+      "ct": 0.9,
+      "desc": "脚を狙う重い蹴り。"
+    },
+    {
+      "id": "f_sweep",
+      "name": "足払い",
+      "skill": "brawl",
+      "learn": {
+        "at": 10
+      },
+      "kind": "attack",
+      "power": 0.8,
+      "dtype": "blunt",
+      "part": "legs",
+      "status": {
+        "id": "slow",
+        "chance": 0.5,
+        "ticks": 12,
+        "power": 1.4
+      },
+      "ki": 4,
+      "ct": 0.9,
+      "desc": "低く払って足を刈る。"
+    },
+    {
+      "id": "f_elbow",
+      "name": "肘打ち",
+      "skill": "brawl",
+      "learn": {
+        "at": 12
+      },
+      "kind": "attack",
+      "power": 1.1,
+      "dtype": "blunt",
+      "part": "head",
+      "status": {
+        "id": "stun",
+        "chance": 0.4,
+        "ticks": 4,
+        "power": 6
+      },
+      "ki": 5,
+      "ct": 1.0,
+      "desc": "懐に潜り込み顎を肘で打つ。気を失わせることもある。"
+    },
+    {
+      "id": "f_rip",
+      "name": "引っ掻き",
+      "skill": "brawl",
+      "learn": {
+        "at": 14
+      },
+      "kind": "attack",
+      "power": 0.8,
+      "dtype": "slash",
+      "part": "body",
+      "status": {
+        "id": "bleed",
+        "chance": 0.5,
+        "ticks": 12,
+        "power": 0.6
+      },
+      "ki": 4,
+      "ct": 0.9,
+      "desc": "爪で裂くように引っ掻く。傷が残る。"
+    },
+    {
+      "id": "f_parry",
+      "name": "受けの型",
+      "skill": "brawl",
+      "learn": {
+        "at": 16,
+        "tag": "after.guard",
+        "share": 0.1
+      },
+      "kind": "response",
+      "response": "parry",
+      "ki": 4,
+      "ct": 0.7,
+      "desc": "素手でも受けられる。間を読む型。"
+    },
+    {
+      "id": "f_combo",
+      "name": "連打",
+      "skill": "brawl",
+      "learn": {
+        "at": 24
+      },
+      "kind": "attack",
+      "power": 0.55,
+      "dtype": "blunt",
+      "part": "body",
+      "hits": 3,
+      "ki": 9,
+      "ct": 1.3,
+      "desc": "息を継がずに叩き込む三連撃。"
+    },
+    {
+      "id": "f_focus",
+      "name": "気合の一撃",
+      "skill": "brawl",
+      "learn": {
+        "at": 34,
+        "tag": "after.stagger",
+        "share": 0.08
+      },
+      "kind": "attack",
+      "power": 2.1,
+      "dtype": "blunt",
+      "part": "body",
+      "heavy": true,
+      "ki": 11,
+      "ct": 1.5,
+      "desc": "崩れた相手に気を込めて打ち込む渾身の一撃。"
+    },
+    {
+      "id": "t_stone",
+      "name": "石礫",
+      "skill": "throwing",
+      "learn": {
+        "at": 2
+      },
+      "kind": "attack",
+      "power": 0.9,
+      "dtype": "blunt",
+      "part": "body",
+      "range": "mid",
+      "ki": 2,
+      "ct": 0.8,
+      "desc": "拾った石を投げる。気軽な一手。"
+    },
+    {
+      "id": "t_dart",
+      "name": "投げ短剣",
+      "skill": "throwing",
+      "learn": {
+        "at": 8
+      },
+      "kind": "attack",
+      "power": 1.1,
+      "dtype": "pierce",
+      "part": "body",
+      "range": "mid",
+      "ki": 4,
+      "ct": 0.9,
+      "desc": "刃物を投げて突き刺す。"
+    },
+    {
+      "id": "t_smoke",
+      "name": "煙玉",
+      "skill": "throwing",
+      "learn": {
+        "at": 12
+      },
+      "kind": "support",
+      "status": {
+        "id": "stun",
+        "chance": 0.7,
+        "ticks": 4,
+        "power": 8
+      },
+      "range": "mid",
+      "ki": 5,
+      "ct": 0.8,
+      "desc": "足元に煙を撒く。相手の間を乱す。"
+    },
+    {
+      "id": "t_oil",
+      "name": "油壺",
+      "skill": "throwing",
+      "learn": {
+        "at": 16
+      },
+      "kind": "support",
+      "status": {
+        "id": "slow",
+        "chance": 0.8,
+        "ticks": 14,
+        "power": 1.35
+      },
+      "range": "mid",
+      "ki": 5,
+      "ct": 0.8,
+      "desc": "油を撒いて足を取らせる。"
+    },
+    {
+      "id": "t_caltrop",
+      "name": "釘撒き",
+      "skill": "throwing",
+      "learn": {
+        "at": 20
+      },
+      "kind": "attack",
+      "power": 0.6,
+      "dtype": "pierce",
+      "part": "legs",
+      "status": {
+        "id": "bleed",
+        "chance": 0.6,
+        "ticks": 14,
+        "power": 0.6
+      },
+      "range": "mid",
+      "ki": 6,
+      "ct": 0.9,
+      "desc": "踏むと痛い物を撒く。傷が血を流す。"
+    },
+    {
+      "id": "t_aim",
+      "name": "狙い投げ",
+      "skill": "throwing",
+      "learn": {
+        "at": 22
+      },
+      "kind": "attack",
+      "power": 1.3,
+      "dtype": "pierce",
+      "part": "head",
+      "hitBonus": -0.06,
+      "range": "mid",
+      "ki": 6,
+      "ct": 1.1,
+      "desc": "頭を狙って重い物を投げる。"
+    },
+    {
+      "id": "t_great",
+      "name": "大投擲",
+      "skill": "throwing",
+      "learn": {
+        "at": 30
+      },
+      "kind": "attack",
+      "power": 1.8,
+      "dtype": "blunt",
+      "part": "body",
+      "heavy": true,
+      "range": "mid",
+      "ki": 10,
+      "ct": 1.4,
+      "desc": "大きな物を全力でぶつける。崩した敵に決まる。"
+    },
+    {
+      "id": "pa_edge",
+      "name": "刃筋",
+      "skill": "swordplay",
+      "learn": {
+        "at": 18
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "dmg.slash",
+        "value": 0.1
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "斬る技の切れ味が常に上がる。"
+    },
+    {
+      "id": "pa_point",
+      "name": "突き筋",
+      "skill": "dagger",
+      "learn": {
+        "at": 18
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "dmg.pierce",
+        "value": 0.1
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "突く技の鋭さが常に上がる。"
+    },
+    {
+      "id": "pa_impact",
+      "name": "打ち筋",
+      "skill": "shield",
+      "learn": {
+        "at": 18
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "dmg.blunt",
+        "value": 0.1
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "打つ技の重みが常に上がる。"
+    },
+    {
+      "id": "pa_mighty",
+      "name": "豪腕",
+      "skill": "axe",
+      "learn": {
+        "at": 18
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "attack",
+        "value": 0.06
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "腕力が常に与ダメージを底上げする。"
+    },
+    {
+      "id": "pa_eye",
+      "name": "射抜く目",
+      "skill": "archery",
+      "learn": {
+        "at": 18
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "hit",
+        "value": 0.05
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "弓使いの目。命中率が常に上がる。"
+    },
+    {
+      "id": "pa_throw",
+      "name": "投げ筋",
+      "skill": "throwing",
+      "learn": {
+        "at": 18
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "status",
+        "value": 0.15
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "道具を狙い通りに決める。状態を掛けやすい。"
+    },
+    {
+      "id": "pa_grit",
+      "name": "気力の底",
+      "skill": "brawl",
+      "learn": {
+        "at": 18
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "kiMax",
+        "value": 8
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "気力の上限が常に上がる。"
+    },
+    {
+      "id": "pa_wall",
+      "name": "壁の心得",
+      "skill": "shield",
+      "learn": {
+        "at": 14
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "defend",
+        "value": 0.15
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "防御と受け止めが常に固くなる。"
+    },
+    {
+      "id": "pa_flow",
+      "name": "気の巡り",
+      "skill": "evasion",
+      "learn": {
+        "at": 20
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "kiRegen",
+        "value": 0.15
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "呼吸が整い、気力の戻りが常に早くなる。"
+    },
+    {
+      "id": "pa_focus",
+      "name": "集中",
+      "skill": "observation",
+      "learn": {
+        "at": 20
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "crit",
+        "value": 0.05
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "集中が澄み、会心率が常に上がる。"
+    },
+    {
+      "id": "pa_feather",
+      "name": "身軽",
+      "skill": "evasion",
+      "learn": {
+        "at": 15
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "evade",
+        "value": 0.04
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "身のこなしが軽くなり、回避率が常に上がる。"
+    },
+    {
+      "id": "pa_counter",
+      "name": "迎えの構え",
+      "skill": "footwork",
+      "learn": {
+        "at": 20
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "counter",
+        "value": 0.3
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "反撃の構えが常に備わり、反撃の威力が上がる。"
+    },
+    {
+      "id": "pa_spring",
+      "name": "魔力の泉",
+      "skill": "mana",
+      "learn": {
+        "at": 12
+      },
+      "kind": "passive",
+      "effect": {
+        "hook": "manaMax",
+        "value": 8
+      },
+      "ki": 0,
+      "ct": 1,
+      "desc": "魔力の上限が常に上がる。"
+    }
+  ]
+}

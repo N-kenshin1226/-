@@ -330,6 +330,51 @@ export const balanceSchema = z
           .strict(),
       })
       .strict(),
+    /**
+     * 武技・資源・構成（K-02、docs/09 §1〜3、§5〜6）。
+     * core/arts の ArtsConfig に対応
+     */
+    arts: z
+      .object({
+        /** 構成の枠数（戦闘技・パッシブ・持ち替え武器） */
+        slots: z.number().int().positive(),
+        passiveSlots: z.number().int().positive(),
+        weaponSlots: z.number().int().positive(),
+        /** 気力の上限 = kiBase + endurance × kiPerEndurance */
+        kiBase: z.number().positive(),
+        kiPerEndurance: z.number().nonnegative(),
+        /** 戦闘中、経過tickごとに戻る気力 */
+        kiRegenPerTick: z.number().nonnegative(),
+        /** 魔力の上限 = manaBase + spirit × manaPerSpirit（M-01 で使う素枠） */
+        manaBase: z.number().positive(),
+        manaPerSpirit: z.number().nonnegative(),
+        /** Lv n→n+1 の必要経験 = levelStep × n。Lv上限は maxLevel */
+        levelStep: z.number().positive(),
+        maxLevel: z.number().int().min(1),
+        /** Lv1あがるごとの威力・状態付与率の伸び（相対） */
+        levelPowerFactor: z.number().nonnegative(),
+        levelStatusFactor: z.number().nonnegative(),
+        /** 1回の使用の経験 = expBase × (1 + max(0, 挑戦差) × expChallengeFactor) */
+        expBase: z.number().positive(),
+        expChallengeFactor: z.number().nonnegative(),
+        /** 部位破壊のしきい値（敵の最大HP × この割合を部位に蓄積） */
+        partBreakShare: z.number().min(0).max(1),
+        /** 胴・脚・腕・頭が壊れたときの効果の係数 */
+        breakDamageFactor: z.number().min(1),
+        breakAgilityFactor: z.number().min(0).max(1),
+        breakMoveFactor: z.number().min(0).max(1),
+        breakStatusFactor: z.number().min(1),
+        /** 体勢崩し（stagger）中の被ダメージ倍率 */
+        staggerFactor: z.number().min(1),
+        /** 対応技の係数：受け流しの被ダメ・受け流し反撃・回避構え・鉄壁の被ダメ */
+        parryFactor: z.number().min(0).max(1),
+        parryCounterFactor: z.number().min(1),
+        evadeArtBonus: z.number().nonnegative(),
+        guardArtFactor: z.number().min(0).max(1),
+        /** learn.share の既定値（技能の使用記録にタグが占める割合の下限） */
+        styleShareMin: z.number().min(0).max(1),
+      })
+      .strict(),
     /** docs/03 §2 ミニゲーム。各エンジン・皮の係数 */
     minigame: z
       .object({
