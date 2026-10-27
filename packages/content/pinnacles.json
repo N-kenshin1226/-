@@ -188,7 +188,7 @@
           "condition": {
             "and": [
               { "work": { "count": { "atLeast": 5 } } },
-              { "counter": "money.earned", "gte": 150 }
+              { "counter": "money.earned", "gte": 600 }
             ]
           }
         },
@@ -200,7 +200,13 @@
           "condition": {
             "and": [
               { "counter": "society.offer.citizen", "gte": 1 },
-              { "counter": "money.earned", "gte": 800 }
+              {
+                "or": [
+                  { "counter": "society.offer.smith", "gte": 1 },
+                  { "counter": "society.offer.miner", "gte": 1 }
+                ]
+              },
+              { "counter": "money.earned", "gte": 3500 }
             ]
           }
         },
@@ -211,8 +217,10 @@
           "notice": "――頂点への段《財の奔流》に至りました。金貨が、あなたの周りで渦を巻いています。",
           "condition": {
             "and": [
-              { "within": { "days": 7, "kind": "work", "atLeast": 10 } },
-              { "counter": "money.earned", "gte": 1800 }
+              { "within": { "days": 14, "kind": "work", "atLeast": 20 } },
+              { "work": { "count": { "atLeast": 150 } } },
+              { "counter": "money.earned", "gte": 12000 },
+              { "counter": "days.slept", "gte": 28 }
             ]
           }
         },
@@ -222,7 +230,12 @@
           "rank": "S",
           "notice": "――頂点《商王》に至りました。この街の富は、あなたの掌の上にあります。",
           "condition": {
-            "and": [{ "counter": "money.earned", "gte": 3000 }, { "money": { "gte": 1000 } }]
+            "and": [
+              { "counter": "money.earned", "gte": 45000 },
+              { "money": { "gte": 15000 } },
+              { "counter": "title.total", "gte": 10 },
+              { "counter": "days.slept", "gte": 80 }
+            ]
           }
         }
       ]
@@ -241,7 +254,7 @@
           "notice": "――頂点への段《差し伸べる手》に至りました。施しは、まだ小さな灯です。",
           "condition": {
             "and": [
-              { "counter": "town.donated", "gte": 100 },
+              { "counter": "town.donated", "gte": 300 },
               { "counter": "society.offer.citizen", "gte": 1 }
             ]
           }
@@ -254,7 +267,8 @@
           "condition": {
             "and": [
               { "counter": "society.offer.patrician", "gte": 1 },
-              { "counter": "town.donated", "gte": 400 }
+              { "counter": "town.donated", "gte": 1500 },
+              { "counter": "title.total", "gte": 4 }
             ]
           }
         },
@@ -265,8 +279,9 @@
           "notice": "――頂点への段《街の盾》に至りました。この街の安寧は、あなたの肩にかかっています。",
           "condition": {
             "and": [
-              { "counter": "kill.species.bandit", "gte": 5 },
-              { "counter": "town.donated", "gte": 800 }
+              { "counter": "kill.species.bandit", "gte": 15 },
+              { "counter": "town.donated", "gte": 5000 },
+              { "within": { "days": 14, "kind": "donate", "atLeast": 6 } }
             ]
           }
         },
@@ -277,9 +292,11 @@
           "notice": "――頂点《領主》に至りました。この街は、あなたとともにあります。",
           "condition": {
             "and": [
-              { "counter": "town.donated", "gte": 1500 },
+              { "counter": "town.donated", "gte": 15000 },
               { "counter": "society.offer.patrician", "gte": 1 },
-              { "counter": "title.total", "gte": 3 }
+              { "counter": "title.total", "gte": 8 },
+              { "within": { "days": 28, "kind": "donate", "atLeast": 14 } },
+              { "counter": "days.slept", "gte": 80 }
             ]
           }
         }
