@@ -40,7 +40,8 @@ describe("頂点ルートの専用ボット（X-9 伏せられた頂点ルート
   // 隠しルートは発見フラグ（噂アトムの unlock.flag）が立つまで段が評価されない。
   // ボットは planReading 経由で噂を読んでから段の条件をこなす
   for (const routeId of ["merchant_king", "lord"] as const) {
-    it(`${routeId}ルート：噂を読んで開き、全段に至る`, () => {
+    // 全行程ボットシムは並列実行時に5sを超えることがあるため、余裕を持たせる
+    it(`${routeId}ルート：噂を読んで開き、全段に至る`, { timeout: 20_000 }, () => {
       const route = pinnacles.pinnacles.find((r) => r.id === routeId)!;
       expect(route.hidden).toBeDefined();
       const bot = makePinnacleBot(route, enemies.enemies);
