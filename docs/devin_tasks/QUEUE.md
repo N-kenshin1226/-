@@ -15,7 +15,8 @@
 | F-03 | [F-03_minigame_motion.md](F-03_minigame_motion.md) | F-02 | todo | **最優先（刺激）**。ミニゲームに動きと手応え |
 | F-04 | [F-04_combat_tension.md](F-04_combat_tension.md) | F-02 | todo | **最優先（刺激）**。戦闘の駆け引き |
 | F-05 | [F-05_daily_events.md](F-05_daily_events.md) | ― | todo | **最優先（刺激）**。日々の出来事・勝負所の絞り込み |
-| P-02 | [P-02_more_actions.md](P-02_more_actions.md) | P-01, F-05 | todo | **最優先（刺激）**。行動の種類を増やす（散策・人付き合い・市場・採集・料理・賭け・旅など） |
+| K-01 | [K-01_skills.md](K-01_skills.md) | ― | todo | **最優先（刺激）**。技能を約45種に（死んだ技能を作らない） |
+| P-02 | [P-02_more_actions.md](P-02_more_actions.md) | P-01, F-05, K-01 | todo | **最優先（刺激）**。行動の種類を増やす（散策・人付き合い・市場・採集・料理・賭け・旅など） |
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
 | W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | done | 危機の筋書きと世界の備え（docs/08_world_crisis.md） |
 | W-02 | [W-02_touchpoints.md](W-02_touchpoints.md) | W-01 | done | 接点（危機が日常に混ざる）と寄与 |
