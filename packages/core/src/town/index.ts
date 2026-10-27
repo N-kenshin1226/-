@@ -53,3 +53,20 @@ export function specialOrderOf<O extends OrderLike>(
     special: true,
   };
 }
+
+/**
+ * その日の「勝負所」の注文（F-05、03 §2「使い所の原則」）。
+ * showdown の印のある注文から日替わりで1件だけ選ぶ —— 一覧に並ぶ勝負所は
+ * 特別注文（0〜1件）と合わせても1日2件に収まる。日常の注文は簡易判定が標準。
+ * シード＋日付で決定的（特別注文とは別の乱数列。state.rng は消費しない）
+ */
+export function showdownOrderOf<O extends OrderLike>(
+  seed: string,
+  day: number,
+  orders: readonly (O & { showdown?: boolean })[],
+): O | null {
+  const pool = orders.filter((o) => o.showdown === true);
+  if (pool.length === 0) return null;
+  const rng = createRng(`${seed}:town:showdown:${day}`);
+  return pool[rng.int(0, pool.length - 1)]!;
+}

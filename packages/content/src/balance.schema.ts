@@ -627,6 +627,27 @@ export const balanceSchema = z
         combatFledScore: z.number().min(0).max(1),
       })
       .strict(),
+    /**
+     * 日々の出来事（F-05、docs/devin_tasks/F-05_daily_events.md）。
+     * core/incidents の IncidentsConfig に対応。出来事の中身（条件・話し手・
+     * 選択肢と結果）は incidents.json が持ち、ここには届く頻度と間隔だけを置く
+     */
+    incidents: z
+      .object({
+        /** 1日に起きる出来事の上限（F-05「1日に0〜2回」） */
+        perDay: z.number().int().min(1).max(3),
+        /** 出来事が起きる日の基本確率（起きない日もある ―― 日常は作業にならない） */
+        chance: z.number().min(0).max(1),
+        /** 2件目が起きる確率（perDay >= 2 のときだけ振られる） */
+        secondChance: z.number().min(0).max(1),
+        /** 出来事が再び届くまでの既定間隔（日。incidents.json 側の cooldownDays が優先） */
+        cooldownDays: z.number().int().nonnegative(),
+        /** 同じ種類の出来事が続かない既定の間隔（日） */
+        kindGapDays: z.number().int().nonnegative(),
+        /** 出来事の起きない日がこの日数続いたら、その日は確実に起きる（F-05「3日に1回以上」） */
+        pityGapDays: z.number().int().positive(),
+      })
+      .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */
     sim: z
       .object({

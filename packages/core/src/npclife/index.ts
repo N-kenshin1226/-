@@ -213,6 +213,8 @@ export function npcLifeEvents(
         const def = cfg.mentors?.find((m) => m.id === mentor!.id);
         if (def?.npc === npc.npcId || (def?.npc === undefined && def?.id === npc.npcId)) {
           mentor = null;
+          // 「いま師匠がいる」の印も消す（F-05：出来事の条件がこの旗を読む）
+          flags["mentor.now"] = false;
         }
       }
 

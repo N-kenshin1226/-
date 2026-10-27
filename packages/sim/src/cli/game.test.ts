@@ -38,7 +38,9 @@ describe("playCli", () => {
       ]),
       "q",
     ]);
-    const state = await playCli({ io, savePath, seed: SEED });
+    // F-05：出来事の割り込みは入力を1つ消費するので、
+    // 3日とも出来事の起きないシード（cli-3d-27）で固定する
+    const state = await playCli({ io, savePath, seed: "cli-3d-27" });
     const text = output.join("\n");
 
     expect(text).toContain("TRACE");
@@ -177,7 +179,9 @@ describe("T-20 街のプレイループ", () => {
       lines.push("5", "1", "y"); // 寝る（安い宿・夕食あり）
     }
     const { io, output } = scriptedIo(["1", "1", "", ...lines, "q"]); // 出自→傾向→誓約→1週間;
-    const state = await playCli({ io, savePath, seed: "town-week", delay: async () => {} });
+    // F-05：出来事の割り込みは入力を1つ消費するので、
+    // 7日とも出来事の起きないシード（town-week-33）で固定する
+    const state = await playCli({ io, savePath, seed: "town-week-33", delay: async () => {} });
     const text = output.join("\n");
 
     expect(state!.time.day).toBe(7);

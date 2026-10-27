@@ -164,7 +164,7 @@ export type {
   PinnacleStageDef,
   PinnacleStageReached,
 } from "./pinnacle/index.js";
-export { specialOrderOf } from "./town/index.js";
+export { showdownOrderOf, specialOrderOf } from "./town/index.js";
 export type { OrderLike, SpecialOrderOf, SpecialOrderSpec } from "./town/index.js";
 export { isSkillUnlocked, unlockFlag, unlockSkills } from "./skills/index.js";
 export type { SkillUnlockDef } from "./skills/index.js";
@@ -226,6 +226,29 @@ export type {
   OccasionSpeaker as OccasionSpeakerDef,
   OccasionVessel,
 } from "./occasions/index.js";
+export {
+  drawIncidents,
+  incidentChoosable,
+  incidentDef,
+  incidentDoneDayKey,
+  incidentLastOfferKey,
+  incidentOfferDayKey,
+  incidentOfferKindDayKey,
+  incidentOffers,
+  incidentOutcome,
+  incidentPending,
+  incidentPendingChoice,
+  incidentSpeaker,
+} from "./incidents/index.js";
+export type {
+  IncidentChoice,
+  IncidentDef,
+  IncidentDraw,
+  IncidentOffer,
+  IncidentOutcome,
+  IncidentSpeaker,
+  IncidentsConfig,
+} from "./incidents/index.js";
 export {
   addHeroContribution,
   CRISIS_HERO_FLAG,

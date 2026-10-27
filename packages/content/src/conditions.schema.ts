@@ -71,5 +71,19 @@ export const condSchema: z.ZodType<Cond> = z.lazy(() =>
         weather: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
       })
       .strict(),
+    /**
+     * 世界の危機の進行（F-05、docs/08）：active は「進行中の危機がある」、
+     * minStage は段階の下限（進行中の世界にだけ成立する）
+     */
+    z
+      .object({
+        crisis: z
+          .object({
+            active: z.boolean().optional(),
+            minStage: z.number().int().nonnegative().optional(),
+          })
+          .strict(),
+      })
+      .strict(),
   ]),
 );

@@ -68,6 +68,30 @@ export function runRetention(): number {
     }
   }
 
+  // 日々の出来事の頻度（F-05、docs/devin_tasks/F-05_daily_events.md
+  // 「普通に遊んで3日に1回以上」）：届いた日の割合と、届かない日の最大連続数
+  const ig = t.incidents;
+  for (const botId of ig.bots) {
+    const r = results.find((x) => x.botId === botId)!;
+    const offerRate = r.incidentDays.length / Math.max(1, r.days.length);
+    let dry = 0;
+    let maxDry = 0;
+    for (const d of r.days) {
+      dry = d.incident ? 0 : dry + 1;
+      if (dry > maxDry) maxDry = dry;
+    }
+    const pass = offerRate >= ig.minOfferRate && maxDry <= ig.maxDryStreak;
+    if (!pass) {
+      fails.push({
+        metric: "日々の出来事の頻度",
+        detail: `${botId}: 届いた日 ${r.incidentDays.length}/${r.days.length}日（${(offerRate * 100).toFixed(0)}% ≥ ${ig.minOfferRate * 100}%） 最長空白 ${maxDry}日（≤${ig.maxDryStreak}）`,
+      });
+    }
+    console.log(
+      `  ${pass ? "✓" : "✗"} 出来事の頻度: ${botId.padEnd(8)} ${r.incidentDays.length}/${r.days.length}日（${(offerRate * 100).toFixed(0)}% ≥ ${(ig.minOfferRate * 100).toFixed(0)}%） 最長空白 ${maxDry}日（≤${ig.maxDryStreak}）`,
+    );
+  }
+
   const outDir = join(dirname(fileURLToPath(import.meta.url)), "../out");
   mkdirSync(outDir, { recursive: true });
   writeFileSync(
@@ -77,6 +101,7 @@ export function runRetention(): number {
         botId: r.botId,
         firsts: r.firsts,
         maxConsecutiveSameAction: r.maxConsecutiveSameAction,
+        incidentDays: r.incidentDays,
       })),
       null,
       2,

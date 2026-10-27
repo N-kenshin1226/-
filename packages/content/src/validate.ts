@@ -24,6 +24,7 @@ import { rivalsFileSchema } from "./rivals.schema.js";
 import { occasionsFileSchema } from "./occasions.schema.js";
 import { discoveriesFileSchema } from "./discoveries.schema.js";
 import { npcLifecycleFileSchema } from "./npc_lifecycle.schema.js";
+import { incidentsFileSchema } from "./incidents.schema.js";
 import { weatherFileSchema } from "./weather.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
@@ -72,6 +73,7 @@ check("rivals.json", rivalsFileSchema);
 check("occasions.json", occasionsFileSchema);
 check("discoveries.json", discoveriesFileSchema);
 check("npc_lifecycle.json", npcLifecycleFileSchema);
+check("incidents.json", incidentsFileSchema);
 check("weather.json", weatherFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
@@ -512,6 +514,69 @@ try {
   failed = true;
 }
 
+// 日々の出来事の参照突き合わせ（F-05）：話し手は voices.json の住人か
+// rivals.json の名前表の範囲内（師匠は mentor 話し手として mentors.json と
+// 別途突き合わせ済み）、結果が動かす経験は skills.json、手がかりのアトムは
+// lore/atoms に存在するものに限る
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const voicesRaw = JSON.parse(readFileSync(join(root, "voices.json"), "utf8")) as {
+    npcs?: { id?: string }[];
+  };
+  const rivalsRaw = JSON.parse(readFileSync(join(root, "rivals.json"), "utf8")) as {
+    names?: string[];
+  };
+  const incidentsRaw = JSON.parse(readFileSync(join(root, "incidents.json"), "utf8")) as {
+    incidents?: {
+      id?: string;
+      speaker?: { kind?: string; id?: string; index?: number };
+      choices?: { outcomes?: { gain?: { skill?: string }; atom?: string }[] }[];
+    }[];
+  };
+  const atomIds = new Set(
+    (readdirSync(join(root, "lore/atoms")) as string[])
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => f.slice(0, -".json".length)),
+  );
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const npcIds = new Set((voicesRaw.npcs ?? []).map((n) => n.id));
+  const rivalNames = rivalsRaw.names?.length ?? 0;
+  const bad: string[] = [];
+  for (const d of incidentsRaw.incidents ?? []) {
+    const label = `incidents.json ${d.id ?? "?"}`;
+    if (d.speaker?.kind === "npc" && !npcIds.has(d.speaker.id ?? "")) {
+      bad.push(`${label}: 話し手NPC ${d.speaker.id}`);
+    }
+    if (
+      d.speaker?.kind === "rival" &&
+      (d.speaker.index === undefined || d.speaker.index >= rivalNames)
+    ) {
+      bad.push(`${label}: ライバル話し手 index ${d.speaker.index}`);
+    }
+    for (const c of d.choices ?? []) {
+      for (const o of c.outcomes ?? []) {
+        if (o.gain?.skill !== undefined && !skillIds.has(o.gain.skill)) {
+          bad.push(`${label}: 経験のスキル ${o.gain.skill}`);
+        }
+        if (o.atom !== undefined && !atomIds.has(o.atom)) {
+          bad.push(`${label}: 手がかりのアトム ${o.atom}`);
+        }
+      }
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 出来事の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 出来事の参照（incidents ↔ voices/rivals/skills/atoms）");
+  }
+} catch (e) {
+  console.error(`✗ 出来事の参照突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
 // NPCの歳月の参照突き合わせ（X-12）：対象は voices.json / canon.json の人物か、
 // ランキングのライバルの抽選順（rival.<index>、balance.rivals.size の範囲内）に限る。
 // 師匠のNPCが対象になると、発火時にその師匠は街を去り使えなくなる
@@ -622,6 +687,7 @@ try {
     "mentors.json",
     "pinnacles.json",
     "npc_lifecycle.json",
+    "incidents.json",
     "vows.json",
     "crises/sample.json",
   ];

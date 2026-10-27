@@ -7,6 +7,7 @@ import { canAct, describe, isSkillUnlocked, type GameState } from "@trace/core";
 import {
   cfg,
   crisisFinaleOffers,
+  incidentPendingChoice,
   occasionOffers,
   originList,
   skillList,
@@ -117,6 +118,19 @@ export function MenuScreen({
             sub: "届いた打診",
             gold: true,
             onPick: () => setScreen({ name: "occasion" }),
+          } satisfies MenuEntry,
+        ]
+      : []),
+    // 日々の出来事（F-05）：応えは会話の一瞬（行動を消費しない）ので、
+    // 行動残が無い日でも届いた分には応えられる（寝る前の応え直しの窓口）
+    ...(cfg.incidents !== undefined && incidentPendingChoice(state, cfg.incidents).length > 0
+      ? [
+          {
+            id: "menu-incident",
+            label: "届いた出来事",
+            sub: "応えを待つ声",
+            gold: true,
+            onPick: () => setScreen({ name: "incident" }),
           } satisfies MenuEntry,
         ]
       : []),

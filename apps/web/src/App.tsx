@@ -21,6 +21,7 @@ import {
   crisisSceneHaze,
   eventLines,
   heirLife,
+  incidentPendingChoice,
   legacyArtifactName,
   loadChronicle,
   loadGame,
@@ -58,6 +59,7 @@ import { MinigameScreen, WorkModeScreen, WorkScreen } from "./screens/work.js";
 import { AbyssScreen, CombatScreen, HuntScreen } from "./screens/hunt.js";
 import { CrisisScreen } from "./screens/crisis.js";
 import { OccasionScreen } from "./screens/occasion.js";
+import { IncidentScreen } from "./screens/incident.js";
 import { LoreScreen, RecordsScreen } from "./screens/records.js";
 import { MentorScreen, SocietyScreen } from "./screens/society.js";
 import { HeirScreen, RebirthScreen, RetireScreen, SuccessionScreen } from "./screens/end.js";
@@ -121,6 +123,7 @@ const HUD_SCREENS = new Set<Screen["name"]>([
   "hunt",
   "crisis",
   "occasion",
+  "incident",
   "lore",
   "book",
   "records",
@@ -149,6 +152,15 @@ export function App() {
   const [screen, setScreen] = useState<Screen>({ name: "menu" });
   /** 通知の積み重ね（S=中央の帯・A=光る窓。1枚ずつ捌く） */
   const [notices, setNotices] = useState<NoticeData[]>([]);
+  /**
+   * 日々の出来事（F-05）：「あとにする」とした出来事の記憶（その日だけ）。
+   * 自動割り込みでうるさくしないための印 —— メニューの「届いた出来事」からは
+   * 先送り済みにも応えられる。日が変われば流れる（昨日の出来事は昨日流れた）
+   */
+  const [incidentDeferred, setIncidentDeferred] = useState<{
+    day: number;
+    ids: ReadonlySet<string>;
+  }>({ day: -1, ids: new Set() });
 
   useEffect(() => {
     const g = loadGame();
@@ -366,7 +378,19 @@ export function App() {
     );
   }
 
-  const scene = sceneOf(screen);
+  // 日々の出来事（F-05）：メニューに居る間に届いた分があれば会話の窓が割り込む
+  // （行動の合間 —— メニューは行動と行動の境目）。「あとにする」はその日は割り込まない
+  const pendingIncidents =
+    cfg.incidents !== undefined ? incidentPendingChoice(state, cfg.incidents) : [];
+  const deferredIds =
+    incidentDeferred.day === state.time.day ? incidentDeferred.ids : new Set<string>();
+  const autoIncidents = pendingIncidents.filter((o) => !deferredIds.has(o.def.id));
+  const effScreen: Screen =
+    autoIncidents.length > 0 && screen.name === "menu" ? { name: "incident" } : screen;
+  const deferIncident = (id: string) =>
+    setIncidentDeferred({ day: state.time.day, ids: new Set([...deferredIds, id]) });
+
+  const scene = sceneOf(effScreen);
   const notice = notices[0];
   // 危機の段階による景色の霞（W-04、docs/08 §3「景色の差分」）。
   // 段階の数字は出さず、世界の気配として背景に滲ませる
@@ -377,11 +401,13 @@ export function App() {
       <div data-testid="app" className="scene">
         {/* 背景 → 名札 → HUD → 画面の窓 → 会話窓 → 操作ガイド → 通知 の順に重ねる */}
         <SceneBackground kind={scene} haze={haze} />
-        {HUD_SCREENS.has(screen.name) && <TopChrome state={state} />}
-        <div key={screen.name} className="screen-fade">
+        {HUD_SCREENS.has(effScreen.name) && <TopChrome state={state} />}
+        <div key={effScreen.name} className="screen-fade">
           <ScreenView
             state={state}
-            screen={screen}
+            screen={effScreen}
+            /** 自動割り込みの出来事窓なら true（先送り済みは出さない） */
+            incidentAuto={screen.name === "menu"}
             setScreen={setScreen}
             act={act}
             push={push}
@@ -391,9 +417,11 @@ export function App() {
             onBorn={born}
             onChooseWay={chooseWay}
             onHeirBorn={heirBorn}
+            onIncidentDefer={deferIncident}
+            incidentDeferred={deferredIds}
           />
         </div>
-        {LOG_SCREENS.has(screen.name) && (
+        {LOG_SCREENS.has(effScreen.name) && (
           <LogWindow
             lines={log}
             testId="log"
@@ -401,7 +429,7 @@ export function App() {
           />
         )}
         {/* 記録は常に DOM に残す（起床・戦闘など会話窓を出さない画面では不可視に） */}
-        {!LOG_SCREENS.has(screen.name) && screen.name !== "menu" && (
+        {!LOG_SCREENS.has(effScreen.name) && effScreen.name !== "menu" && (
           <div
             data-testid="log"
             aria-hidden="true"
@@ -521,6 +549,9 @@ function TopChrome({ state }: { state: GameState }) {
 function ScreenView(props: {
   state: GameState;
   screen: Screen;
+  /** 自動割り込みの出来事窓として開いているか（F-05） */
+  incidentAuto: boolean;
+  incidentDeferred: ReadonlySet<string>;
   setScreen: (s: Screen) => void;
   act: Act;
   push: Push;
@@ -536,10 +567,13 @@ function ScreenView(props: {
   ) => void;
   onChooseWay: (prev: GameState, cause: "retire" | "oldAge", way: "rebirth" | "heir") => void;
   onHeirBorn: (prev: GameState, originId: string, vows: readonly string[]) => void;
+  onIncidentDefer: (id: string) => void;
 }) {
   const {
     state,
     screen,
+    incidentAuto,
+    incidentDeferred,
     setScreen,
     act,
     push,
@@ -549,6 +583,7 @@ function ScreenView(props: {
     onBorn,
     onChooseWay,
     onHeirBorn,
+    onIncidentDefer,
   } = props;
   const toMenu = () => setScreen({ name: "menu" });
   switch (screen.name) {
@@ -613,6 +648,17 @@ function ScreenView(props: {
       return <CrisisScreen state={state} setScreen={setScreen} act={act} />;
     case "occasion":
       return <OccasionScreen state={state} setScreen={setScreen} act={act} />;
+    case "incident":
+      return (
+        <IncidentScreen
+          state={state}
+          setScreen={setScreen}
+          act={act}
+          deferred={incidentDeferred}
+          auto={incidentAuto}
+          onDefer={onIncidentDefer}
+        />
+      );
     case "ending":
       return <EndingScreen state={state} back={toMenu} />;
     case "lore":

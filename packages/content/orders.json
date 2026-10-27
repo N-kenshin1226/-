@@ -22,7 +22,8 @@
       "name": "短剣の注文",
       "targetQuality": 60,
       "rewardMoney": 120,
-      "note": "刃こぼれのない刀身が条件。勝負所"
+      "note": "刃こぼれのない刀身が条件",
+      "showdown": true
     },
     {
       "id": "order.ore_survey",
@@ -54,7 +55,8 @@
       "name": "公会堂の独奏",
       "targetQuality": 60,
       "rewardMoney": 110,
-      "note": "品評会の舞台に立つ。勝負所"
+      "note": "品評会の舞台に立つ",
+      "showdown": true
     },
     {
       "id": "order.big_catch",
@@ -62,7 +64,8 @@
       "name": "荒れ川の大物",
       "targetQuality": 45,
       "rewardMoney": 55,
-      "note": "川の主を釣り上げる勝負"
+      "note": "川の主を釣り上げる勝負",
+      "showdown": true
     },
     {
       "id": "order.relic_check",
@@ -70,7 +73,8 @@
       "name": "出土品の真贋",
       "targetQuality": 55,
       "rewardMoney": 90,
-      "note": "大金が動く鑑定。贋作を掴むな"
+      "note": "大金が動く鑑定。贋作を掴むな",
+      "showdown": true
     }
   ]
 }
