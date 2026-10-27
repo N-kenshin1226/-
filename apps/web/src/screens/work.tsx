@@ -31,6 +31,8 @@ import {
   isTimingKind,
   minigameResult,
   orderList,
+  placeOf,
+  placeTakesKind,
   showdownOrderOf,
   simpleQuality,
   skillList,
@@ -113,11 +115,16 @@ function kindToMinigame(kind: string): MinigameKind {
 
 export function WorkScreen({
   state,
+  place,
   setScreen,
 }: {
   state: GameState;
+  /** 注文が届いた場所（P-01。街の鍛冶場・市場・ギルドなど）。省略時は全注文 */
+  place?: string;
   setScreen: (s: Screen) => void;
 }) {
+  const placeDef = placeOf(place);
+  const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   const special = specialOrderOf(state.seed, state.time.day);
   // 今日の勝負所の注文（F-05）：showdown の印のある注文から日替わり1件。
   // 一覧には「勝負所：」の印を付ける —— 日常の注文は簡易判定が標準
@@ -125,7 +132,10 @@ export function WorkScreen({
   // 危機の接点（W-02）：「異変：」の印を付けた注文が日替わりで混ざる。受けても受けなくてもよい
   const crisis = crisisOrders(state);
   // 特別注文と異変の注文は先頭に並べる（目玉がスクロール下に埋もれないように）
-  const list: (Order | SpecialOrder)[] = [...(special ? [special] : []), ...crisis, ...orderList];
+  const all: (Order | SpecialOrder)[] = [...(special ? [special] : []), ...crisis, ...orderList];
+  // 場所ごとの注文（P-01）：その場所に届く技能の注文だけを並べる。
+  // 場所が無い（古い画面遷移）なら全注文のまま —— 機能は必ずどこかの場所から届く
+  const list = placeDef !== undefined ? all.filter((o) => placeTakesKind(placeDef, o.kind)) : all;
   const entries: MenuEntry[] = [
     ...(special !== undefined || crisis.length > 0
       ? [{ kind: "header" as const, text: t.text.specialOrder }]
@@ -139,11 +149,11 @@ export function WorkScreen({
         label: isShowdown ? `${t.text.showdownTag}${o.name}` : o.name,
         sub: `${kind}・目標${o.targetQuality}・${o.rewardMoney}G`,
         gold: isSpecial || isShowdown,
-        onPick: () => setScreen({ name: "workMode", order: o }),
+        onPick: () => setScreen({ name: "workMode", order: o, place }),
       };
     }),
     { kind: "divider" },
-    { id: "back", label: "戻る", onPick: () => setScreen({ name: "menu" }) },
+    { id: "back", label: "戻る", onPick: () => setScreen(backTo) },
   ];
   return (
     <div data-testid="screen-work" className="scene">
@@ -161,11 +171,11 @@ export function WorkScreen({
               marginTop: 2,
             }}
           >
-            {t.text.orderPick}
+            {placeDef !== undefined ? `${placeDef.name} ―― ${t.text.orderPick}` : t.text.orderPick}
           </div>
         </div>
         <div className="scroll" style={{ maxHeight: "78%", overflowY: "auto" }}>
-          <CommandMenu entries={entries} onBack={() => setScreen({ name: "menu" })} />
+          <CommandMenu entries={entries} onBack={() => setScreen(backTo)} />
         </div>
       </WorldFrame>
       <HintBar
@@ -182,16 +192,20 @@ export function WorkScreen({
 export function WorkModeScreen({
   state,
   order,
+  place,
   setScreen,
   act,
   push,
 }: {
   state: GameState;
   order: Order;
+  /** 注文が届いた場所（P-01。戻る先と景色の根拠） */
+  place?: string;
   setScreen: (s: Screen) => void;
   act: Act;
   push: Push;
 }) {
+  const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   const doSimple = () => {
     const quality = simpleQuality(state, order.kind);
     let expFactor: number | undefined = balance.minigame.simpleExpFactor;
@@ -207,11 +221,12 @@ export function WorkModeScreen({
         difficulty: order.targetQuality,
         order: order.id,
         expFactor,
-        rewardMoney: order.rewardMoney,
+        // 報酬0は「記載なし」：台帳の市場価値がそのまま入る（湖畔の釣りなど。P-01）
+        ...(order.rewardMoney > 0 ? { rewardMoney: order.rewardMoney } : {}),
       },
       { format: (ev) => workResultLines(ev, order, quality, [], state) },
     );
-    setScreen({ name: "menu" });
+    setScreen(backTo);
   };
   const entries: MenuEntry[] = [
     {
@@ -219,7 +234,7 @@ export function WorkModeScreen({
       label: "自分でやる",
       sub: "ミニゲーム",
       primary: true,
-      onPick: () => setScreen({ name: "minigame", kind: kindToMinigame(order.kind), order }),
+      onPick: () => setScreen({ name: "minigame", kind: kindToMinigame(order.kind), order, place }),
     },
     {
       id: "work-simple",
@@ -227,7 +242,7 @@ export function WorkModeScreen({
       onPick: doSimple,
     },
     { kind: "divider" },
-    { id: "back", label: "戻る", onPick: () => setScreen({ name: "work" }) },
+    { id: "back", label: "戻る", onPick: () => setScreen({ name: "work", place }) },
   ];
   return (
     <div data-testid="screen-workmode" className="scene">
@@ -250,7 +265,7 @@ export function WorkModeScreen({
             {t.text.workModePrompt}
           </p>
         </div>
-        <CommandMenu entries={entries} onBack={() => setScreen({ name: "work" })} />
+        <CommandMenu entries={entries} onBack={() => setScreen({ name: "work", place })} />
       </WorldFrame>
       <HintBar
         items={[
@@ -279,6 +294,7 @@ export function MinigameScreen({
   order,
   finale,
   occasion,
+  place,
   setScreen,
   act,
 }: {
@@ -289,6 +305,8 @@ export function MinigameScreen({
   finale?: string;
   /** 勝負所の行事なら行事の id（X-10。出来は行事の勝敗へ） */
   occasion?: string;
+  /** 注文が届いた場所（P-01。戻る先） */
+  place?: string;
   setScreen: (s: Screen) => void;
   act: Act;
 }) {
@@ -313,7 +331,7 @@ export function MinigameScreen({
         ? { name: "occasion" }
         : finale !== undefined
           ? { name: "crisis" }
-          : { name: "work" },
+          : { name: "work", place },
     );
   const startLine = isTimingKind(kind)
     ? tpl(
@@ -368,11 +386,11 @@ export function MinigameScreen({
         order: order.id,
         flags: res.flags.length > 0 ? res.flags : undefined,
         expFactor,
-        rewardMoney: order.rewardMoney,
+        ...(order.rewardMoney > 0 ? { rewardMoney: order.rewardMoney } : {}),
       },
       { format: (ev) => workResultLines(ev, order, res.quality, res.flags, state) },
     );
-    setScreen({ name: "menu" });
+    setScreen(place !== undefined ? { name: "place", place } : { name: "menu" });
   };
 
   const entries: MenuEntry[] = [

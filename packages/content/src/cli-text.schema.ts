@@ -308,6 +308,17 @@ export const cliTextSchema = z
         /** 頂点ルートの記録（T-41。{pinnacles} はルート名を繋いだもの） */
         chroniclePinnacle: z.string(),
         chronicleRecorded: z.string(),
+        /**
+         * 場所と移動（P-01、docs/03 §2）：見取り図の題字（{town} は街の名）・
+         * 場所選びの問いかけ・外への移動の記録行（{name} は行き先の場所名）・
+         * 街の外からの帰還・場所の住人欄・場所から見取り図への戻り口
+         */
+        mapTitle: z.string(),
+        mapPick: z.string(),
+        travelLine: z.string(),
+        travelReturn: z.string(),
+        placeHere: z.string(),
+        placeBack: z.string(),
         /** 引退・転生（T-40）：確認・継承の選択（記憶の称号／遺物）・新しい生の告知 */
         retireConfirm: z.string(),
         resetConfirm: z.string(),

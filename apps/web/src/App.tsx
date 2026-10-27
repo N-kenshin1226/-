@@ -29,16 +29,21 @@ import {
   newSession,
   nextLife,
   noticesOf,
+  placeOf,
   recordLifeEnd,
   resetSave as clearSaves,
   saveGame,
   skillList,
+  skyNow,
   t,
   tagsOf,
   tpl,
   wakeLines,
   type FateChoice,
 } from "./game.js";
+import { places } from "@trace/content";
+import { TravelVeil, type TravelFx, type TravelFxKind } from "./fx/travel.js";
+import { fxMs, motionOff } from "./fx/settings.js";
 import { FxTagLayer, MoneyCount, type FxTagItem } from "./fx/fx.js";
 import {
   CellGauge,
@@ -58,6 +63,7 @@ import { theme } from "./theme.js";
 import { TitleScreen } from "./screens/title.js";
 import { IntroScreen } from "./screens/intro.js";
 import { MenuScreen } from "./screens/menu.js";
+import { PlaceScreen } from "./screens/place.js";
 import { BookScreen, SleepScreen, StatusScreen, TrainScreen } from "./screens/town.js";
 import { MinigameScreen, WorkModeScreen, WorkScreen } from "./screens/work.js";
 import { AbyssScreen, CombatScreen, HuntScreen } from "./screens/hunt.js";
@@ -71,6 +77,22 @@ import { EndingScreen } from "./screens/ending.js";
 import { NewsScreen, NoticeOverlay, WakeScreen } from "./screens/daily.js";
 import { SettingsScreen } from "./screens/settings.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
+
+/** 幕の時間（P-01。「演出を短く」で短い側。theme.fx → --trv-* へ書き込む値） */
+function fxInMs(kind: TravelFxKind): number {
+  return kind === "sleep"
+    ? fxMs(theme.fx.sleepInMs, theme.fx.sleepInShortMs)
+    : kind === "combat"
+      ? fxMs(theme.fx.combatInMs, theme.fx.combatInShortMs)
+      : fxMs(theme.fx.travelInMs, theme.fx.travelInShortMs);
+}
+function fxOutMs(kind: TravelFxKind): number {
+  return kind === "sleep"
+    ? fxMs(theme.fx.sleepInMs, theme.fx.sleepInShortMs)
+    : kind === "combat"
+      ? fxMs(theme.fx.combatInMs, theme.fx.combatInShortMs)
+      : fxMs(theme.fx.travelOutMs, theme.fx.travelOutShortMs);
+}
 
 /** セーブ削除の確認画面（UI-01：記録を消す操作は必ず確認を挟む） */
 function ResetScreen({ back, onReset }: { back: () => void; onReset: () => void }) {
@@ -88,8 +110,13 @@ function ResetScreen({ back, onReset }: { back: () => void; onReset: () => void 
   );
 }
 
-/** 画面→情景（README §2：背景が一番下の層） */
-function sceneOf(s: Screen): SceneKind {
+/** 画面→情景（README §2：背景が一番下の層。P-01：場所に縛られた画面はその場所の情景） */
+function sceneOf(s: Screen, lastPlace: string | null): SceneKind {
+  /** 場所 id → 情景。未知の場所・場所なしは街の景色に倒す */
+  const placeScene = (id: string | null | undefined): SceneKind | null => {
+    const sc = placeOf(id ?? "")?.scene;
+    return sc !== undefined ? (sc as SceneKind) : null;
+  };
   switch (s.name) {
     case "wake":
     case "heir":
@@ -105,6 +132,8 @@ function sceneOf(s: Screen): SceneKind {
     case "abyss":
       return "abyss";
     case "combat":
+      // 狩り場の景色のまま戦う（P-01。地域の情景があればそれを使う）
+      return placeScene(s.place) ?? "night";
     case "crisis":
     case "ending":
     case "sleep":
@@ -113,14 +142,18 @@ function sceneOf(s: Screen): SceneKind {
     case "succession":
     case "rebirth":
       return "night";
+    case "place":
+      return placeScene(s.place) ?? "town";
     default:
-      return "town";
+      // 場所に縛られた画面（仕事・狩り・鍛錬・師匠など）はその場所の情景のまま
+      return placeScene(("place" in s ? s.place : undefined) ?? lastPlace) ?? "town";
   }
 }
 
 /** 右上の常設 HUD（疲労ゲージ・蝋燭・所持金）を出す画面 */
 const HUD_SCREENS = new Set<Screen["name"]>([
   "menu",
+  "place",
   "train",
   "sleep",
   "work",
@@ -202,6 +235,90 @@ export function App() {
   const stateRef = useRef<GameState | null>(null);
   stateRef.current = state;
 
+  // ── 場所と移動の転換（P-01、docs/03 §2） ──
+  /** 今出ている画面（転換の出し分け用。コミット済みの値だけを映す） */
+  const screenRef = useRef<Screen>({ name: "menu" });
+  screenRef.current = screen;
+  /** 最後に居た場所（情景の基準。場所の画面へ行くたびに更新） */
+  const lastPlaceRef = useRef<string | null>(null);
+  /** 「戻る」の宛先の基盤画面（P-01）：見取り図か場所。行動・設定などの画面は
+      開かれた時点の基盤画面へ帰る（見取り図から開けば見取り図へ、場所からなら場所へ） */
+  const backRef = useRef<Screen>({ name: "menu" });
+  /** 走っている幕（in=閉じる途中 / out=開く途中） */
+  const [fx, setFx] = useState<TravelFx | null>(null);
+  /** 幕の裏で差し替える行き先（幕を飛ばしたとき即確定するために覚える） */
+  const pendingScreen = useRef<Screen | null>(null);
+  const fxT1 = useRef<number | undefined>(undefined);
+  const fxT2 = useRef<number | undefined>(undefined);
+  const fxSeq = useRef(0);
+
+  /** 画面転換の窓口：全ての画面遷移はここを通る（転換の出し分けは引数だけで決まる）。
+      場所↔見取り図・場所↔場所＝移動の幕、寝る・休む＝眠りの幕、戦闘開始＝暗転＋揺れ */
+  const go = useCallback((next: Screen) => {
+    const seq = ++fxSeq.current;
+    const clear = () => {
+      window.clearTimeout(fxT1.current);
+      window.clearTimeout(fxT2.current);
+    };
+    const commit = (s: Screen) => {
+      screenRef.current = s;
+      setScreen(s);
+    };
+    if (next.name === "place") lastPlaceRef.current = next.place;
+    // 走っている幕があれば畳む：幕の裏の行き先を先に確定してから、今の画面から次へ数える
+    clear();
+    if (pendingScreen.current !== null) {
+      commit(pendingScreen.current);
+      pendingScreen.current = null;
+    }
+    setFx(null);
+    const cur = screenRef.current;
+    const bound = (s: Screen) => s.name === "menu" || s.name === "place";
+    // 基盤画面の更新：基盤へ着けばそれが新しい帰り先、基盤から離れれば今の基盤を覚える
+    if (bound(next)) backRef.current = next;
+    else if (bound(cur)) backRef.current = cur;
+    const kind: TravelFxKind | null =
+      bound(cur) &&
+      bound(next) &&
+      (cur.name !== next.name ||
+        (cur.name === "place" && next.name === "place" && cur.place !== next.place))
+        ? "travel"
+        : next.name === "wake" || next.name === "heir"
+          ? "sleep"
+          : next.name === "combat"
+            ? "combat"
+            : null;
+    // 演出オフ（短く・動きを減らす）では幕を掛けず直接切り替える
+    if (kind === null || motionOff()) {
+      commit(next);
+      return;
+    }
+    pendingScreen.current = next;
+    setFx({ kind, phase: "in" });
+    fxT1.current = window.setTimeout(() => {
+      if (seq !== fxSeq.current) return;
+      pendingScreen.current = null;
+      commit(next);
+      setFx({ kind, phase: "out" });
+      fxT2.current = window.setTimeout(() => {
+        if (seq === fxSeq.current) setFx(null);
+      }, fxOutMs(kind));
+    }, fxInMs(kind));
+  }, []);
+
+  /** 幕を飛ばす（クリック・Enter・Esc・Space。行動の結果は変わらない） */
+  const skipFx = useCallback(() => {
+    fxSeq.current += 1;
+    window.clearTimeout(fxT1.current);
+    window.clearTimeout(fxT2.current);
+    if (pendingScreen.current !== null) {
+      screenRef.current = pendingScreen.current;
+      setScreen(pendingScreen.current);
+      pendingScreen.current = null;
+    }
+    setFx(null);
+  }, []);
+
   /** step を実行し、イベント行を記録する。起床報告があれば起床の窓を、
       S/Aの出来事があれば通知を重ねて表示する（UI-01）。
       ref 経由で現在値を読むため、StrictMode の二重適用を起こさない */
@@ -219,7 +336,7 @@ export function App() {
         saveGame(res.state);
         stateRef.current = res.state;
         setState(res.state);
-        setScreen({ name: "succession", prev: res.state, cause: "oldAge" });
+        go({ name: "succession", prev: res.state, cause: "oldAge" });
         return;
       }
       // 年代記への追記（T-38。戦闘死＝教会で蘇生する死。老衰死は上で転生へ回す）
@@ -232,7 +349,8 @@ export function App() {
       );
       if (wakeEv !== undefined) {
         push(wakeLines(res.state, res.events, opts?.atHome ?? false));
-        setScreen({
+        // 寝た・休んだ → 朝：闇から明るさへ開く幕を掛ける（P-01）
+        go({
           name: "wake",
           report: wakeEv.report,
           events: res.events,
@@ -262,7 +380,7 @@ export function App() {
       stateRef.current = res.state;
       setState(res.state);
     },
-    [push],
+    [push, go],
   );
 
   // 新規開始画面で選ぶ運命（T-45/T-46）：傾向と誓約。既定は穏やかな世＋誓約なし
@@ -277,7 +395,7 @@ export function App() {
     setLog([t.text.banner, "", t.text.intro]);
     // 導入の会話窓（F-06）：年代記に頁が無い＝初めての生のときだけ挟む。
     // 2周目以降の始め方を知っているプレイヤーには出さない
-    setScreen(loadChronicle().lives.length === 0 ? { name: "intro" } : { name: "menu" });
+    go(loadChronicle().lives.length === 0 ? { name: "intro" } : { name: "menu" });
   };
 
   /** 引退の確認に応答する（T-40。06 §1：引退はいつでも選べる。確認は1回） */
@@ -285,7 +403,13 @@ export function App() {
     (confirmed: boolean) => {
       if (!confirmed) {
         push(t.text.retireCancelled);
-        setScreen({ name: "menu" });
+        // 思いとどまったら居た場所へ帰る（P-01。引退は自宅の行動）
+        const dest = lastPlaceRef.current;
+        go(
+          dest !== null && placeOf(dest) !== undefined
+            ? { name: "place", place: dest }
+            : { name: "menu" },
+        );
         return;
       }
       const s = stateRef.current;
@@ -298,9 +422,9 @@ export function App() {
       saveGame(res.state);
       stateRef.current = res.state;
       setState(res.state);
-      setScreen({ name: "succession", prev: res.state, cause: "retire" });
+      go({ name: "succession", prev: res.state, cause: "retire" });
     },
-    [push],
+    [push, go],
   );
 
   /** セーブの削除（UI-01。記録を消す操作は必ず確認を挟む） */
@@ -312,8 +436,8 @@ export function App() {
     setLog([]);
     setNotices([]);
     setTagItems([]);
-    setScreen({ name: "menu" });
-  }, []);
+    go({ name: "menu" });
+  }, [go]);
 
   /** 転生画面の確定（T-40）：選んだ記憶・遺物・出自と運命で次の周を始める（T-45/T-46） */
   const born = useCallback(
@@ -364,9 +488,9 @@ export function App() {
         lines.push(tpl(t.text.rebirthLostBooks, { names }));
       }
       push(lines);
-      setScreen({ name: "menu" });
+      go({ name: "menu" });
     },
-    [push],
+    [push, go],
   );
 
   /**
@@ -378,12 +502,12 @@ export function App() {
       if (way === "rebirth") {
         const bio = bioLines(prev, cause === "retire" ? "retire" : "death", true);
         recordLifeEnd(prev, cause, bio.join("\n"));
-        setScreen({ name: "rebirth", prev, cause });
+        go({ name: "rebirth", prev, cause });
       } else {
-        setScreen({ name: "heir", prev, cause });
+        go({ name: "heir", prev, cause });
       }
     },
-    [],
+    [go],
   );
 
   /** 次代画面の確定（T-48）：同じ世界 seed で新しい生を始める。年代記には刻まない */
@@ -406,9 +530,9 @@ export function App() {
         .join("、");
       if (bonus !== "") lines.push(tpl(t.text.heirPotential, { skills: bonus }));
       push(lines);
-      setScreen({ name: "menu" });
+      go({ name: "menu" });
     },
-    [push],
+    [push, go],
   );
 
   if (!loaded) return null;
@@ -432,25 +556,46 @@ export function App() {
   const deferIncident = (id: string) =>
     setIncidentDeferred({ day: state.time.day, ids: new Set([...deferredIds, id]) });
 
-  const scene = sceneOf(effScreen);
+  const scene = sceneOf(effScreen, lastPlaceRef.current);
   const notice = notices[0];
   // 危機の段階による景色の霞（W-04、docs/08 §3「景色の差分」）。
   // 段階の数字は出さず、世界の気配として背景に滲ませる
   const haze = crisisSceneHaze(state, cfg.crisis);
+  // 現在の空（P-01）：時間帯と天候は state から導出する値 —— 背景にだけ効く
+  const sky = skyNow(state);
+  // 名札の場所：場所の画面・場所に縛られた画面はその場所、それ以外は最後に居た場所。
+  // 見取り図に居るとき・どこにも居ないときは街の名
+  const chromePlace =
+    effScreen.name === "menu"
+      ? undefined
+      : (placeOf(
+          effScreen.name === "place"
+            ? effScreen.place
+            : (("place" in effScreen ? effScreen.place : undefined) ??
+                lastPlaceRef.current ??
+                undefined),
+        ) ?? undefined);
+  const jolt = fx?.kind === "combat";
 
   return (
     <Stage>
-      <div data-testid="app" className="scene">
+      <div
+        data-testid="app"
+        className={`scene${jolt ? " fx-jolt" : ""}`}
+        style={jolt ? { animationDuration: `${fxInMs("combat")}ms` } : undefined}
+      >
         {/* 背景 → 名札 → HUD → 画面の窓 → 会話窓 → 操作ガイド → 通知 の順に重ねる */}
-        <SceneBackground kind={scene} haze={haze} />
-        {HUD_SCREENS.has(effScreen.name) && <TopChrome state={state} />}
+        <SceneBackground kind={scene} haze={haze} tod={sky.tod} weather={sky.weather} />
+        {HUD_SCREENS.has(effScreen.name) && <TopChrome state={state} place={chromePlace} />}
         <div key={effScreen.name} className="screen-fade">
           <ScreenView
             state={state}
             screen={effScreen}
             /** 自動割り込みの出来事窓なら true（先送り済みは出さない） */
             incidentAuto={screen.name === "menu"}
-            setScreen={setScreen}
+            lastPlace={lastPlaceRef.current}
+            backTo={backRef.current}
+            setScreen={go}
             act={act}
             push={push}
             log={log}
@@ -470,27 +615,30 @@ export function App() {
             style={pos({ left: 28, bottom: 56, width: 560, height: 118 })}
           />
         )}
-        {/* 記録は常に DOM に残す（起床・戦闘など会話窓を出さない画面では不可視に） */}
-        {!LOG_SCREENS.has(effScreen.name) && effScreen.name !== "menu" && (
-          <div
-            data-testid="log"
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              left: -4,
-              top: -4,
-              width: 1,
-              height: 1,
-              overflow: "hidden",
-              opacity: 0.01,
-              pointerEvents: "none",
-            }}
-          >
-            {log.map((l, i) => (
-              <div key={i}>{l}</div>
-            ))}
-          </div>
-        )}
+        {/* 記録は常に DOM に残す（起床・戦闘など会話窓を出さない画面では不可視に）。
+            場所の画面は会話窓の中に記録を持つので二重には出さない */}
+        {!LOG_SCREENS.has(effScreen.name) &&
+          effScreen.name !== "menu" &&
+          effScreen.name !== "place" && (
+            <div
+              data-testid="log"
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: -4,
+                top: -4,
+                width: 1,
+                height: 1,
+                overflow: "hidden",
+                opacity: 0.01,
+                pointerEvents: "none",
+              }}
+            >
+              {log.map((l, i) => (
+                <div key={i}>{l}</div>
+              ))}
+            </div>
+          )}
         {/* 下帯のグラデーション（README 決まりごと5：操作ガイドは常に出す） */}
         <div
           aria-hidden="true"
@@ -505,13 +653,17 @@ export function App() {
             pointerEvents: "none",
           }}
         />
+        {/* 移動・戦闘・眠りの幕（P-01）：画面の窓より上・通知より下。飛ばせる */}
+        {fx !== null && (
+          <TravelVeil fx={fx} inMs={fxInMs(fx.kind)} outMs={fxOutMs(fx.kind)} onSkip={skipFx} />
+        )}
         {/* B通知の札：右上に重ねる（F-02。画面の窓より上・S/Aの帯より下） */}
         <FxTagLayer items={tagItems} onDismiss={dismissTag} />
         {notice !== undefined && (
           <NoticeOverlay
             state={state}
             notice={notice}
-            onEnd={() => setScreen({ name: "ending" })}
+            onEnd={() => go({ name: "ending" })}
             onClose={() => setNotices((q) => q.slice(1))}
           />
         )}
@@ -520,15 +672,20 @@ export function App() {
   );
 }
 
-/** 左上の名札＋日付、右上の HUD（UI-01：Main見本の常設クローム） */
-function TopChrome({ state }: { state: GameState }) {
+/** 左上の名札＋日付、右上の HUD（UI-01：Main見本の常設クローム）。
+    P-01：名札は今いる場所を示す（見取り図や場所の外では街の名） */
+function TopChrome({ state, place }: { state: GameState; place?: { name: string; kind: string } }) {
   const left = Math.max(0, cfg.time.actionsPerDay - state.time.action);
   const d = describe(state.time, cfg.time);
   return (
     <>
-      <Plate style={pos({ left: 28, top: 22 })}>
+      <Plate style={pos({ left: 28, top: 22 })} testId="place-name">
         <span style={{ fontFamily: theme.font.mincho, fontSize: 16 }}>
-          アルディ<span style={{ color: theme.colors.world.dim, fontSize: 13 }}> ―― 宿場街</span>
+          {place?.name ?? places.town}
+          <span style={{ color: theme.colors.world.dim, fontSize: 13 }}>
+            {" "}
+            ―― {place !== undefined && place.kind === "region" ? "街の外" : "宿場街"}
+          </span>
         </span>
       </Plate>
       <div
@@ -597,6 +754,10 @@ function ScreenView(props: {
   /** 自動割り込みの出来事窓として開いているか（F-05） */
   incidentAuto: boolean;
   incidentDeferred: ReadonlySet<string>;
+  /** 最後に居た場所（P-01。情景の基準） */
+  lastPlace: string | null;
+  /** 「戻る」の宛先の基盤画面（P-01。画面が開かれた時点の見取り図か場所） */
+  backTo: Screen;
   setScreen: (s: Screen) => void;
   act: Act;
   push: Push;
@@ -629,11 +790,25 @@ function ScreenView(props: {
     onChooseWay,
     onHeirBorn,
     onIncidentDefer,
+    backTo,
   } = props;
   const toMenu = () => setScreen({ name: "menu" });
+  /** 戻る先（P-01）：場所に縛られた画面はその場所へ、それ以外は開かれた時点の
+      基盤画面（見取り図か場所）へ帰る */
+  const toBack = (p?: string) => () => {
+    if (p !== undefined && placeOf(p) !== undefined) {
+      setScreen({ name: "place", place: p });
+      return;
+    }
+    setScreen(backTo);
+  };
   switch (screen.name) {
     case "intro":
       return <IntroScreen name={state.player.name} setScreen={setScreen} />;
+    case "place":
+      return (
+        <PlaceScreen state={state} place={screen.place} setScreen={setScreen} act={act} log={log} />
+      );
     case "wake":
       return (
         <WakeScreen
@@ -645,18 +820,19 @@ function ScreenView(props: {
         />
       );
     case "news":
-      return <NewsScreen state={state} events={screen.events} back={toMenu} />;
+      return <NewsScreen state={state} events={screen.events} back={toBack()} />;
     case "train":
-      return <TrainScreen state={state} act={act} back={toMenu} />;
+      return <TrainScreen state={state} act={act} back={toBack()} />;
     case "sleep":
-      return <SleepScreen state={state} act={act} back={toMenu} />;
+      return <SleepScreen state={state} act={act} back={toBack()} />;
     case "work":
-      return <WorkScreen state={state} setScreen={setScreen} />;
+      return <WorkScreen state={state} place={screen.place} setScreen={setScreen} />;
     case "workMode":
       return (
         <WorkModeScreen
           state={state}
           order={screen.order}
+          place={screen.place}
           setScreen={setScreen}
           act={act}
           push={push}
@@ -670,14 +846,15 @@ function ScreenView(props: {
           order={screen.order}
           finale={screen.finale}
           occasion={screen.occasion}
+          place={screen.place}
           setScreen={setScreen}
           act={act}
         />
       );
     case "hunt":
-      return <HuntScreen state={state} setScreen={setScreen} />;
+      return <HuntScreen state={state} place={screen.place} setScreen={setScreen} />;
     case "abyss":
-      return <AbyssScreen state={state} act={act} push={push} back={toMenu} />;
+      return <AbyssScreen state={state} act={act} push={push} back={toBack()} />;
     case "combat":
       return (
         <CombatScreen
@@ -686,6 +863,7 @@ function ScreenView(props: {
           touchpoint={screen.touchpoint}
           finale={screen.finale}
           occasion={screen.occasion}
+          place={screen.place}
           setScreen={setScreen}
           act={act}
           push={push}
@@ -711,21 +889,23 @@ function ScreenView(props: {
     case "lore":
       return <LoreScreen state={state} atomId={screen.atomId} setScreen={setScreen} act={act} />;
     case "book":
-      return <BookScreen state={state} act={act} back={toMenu} />;
+      return <BookScreen state={state} act={act} back={toBack()} />;
     case "records":
-      return <RecordsScreen state={state} back={toMenu} />;
+      return <RecordsScreen state={state} back={toBack()} />;
     case "society":
-      return <SocietyScreen state={state} act={act} back={toMenu} />;
+      return <SocietyScreen state={state} act={act} back={toBack()} />;
     case "mentor":
-      return <MentorScreen state={state} act={act} back={toMenu} />;
+      return (
+        <MentorScreen state={state} place={screen.place} act={act} back={toBack(screen.place)} />
+      );
     case "status":
-      return <StatusScreen state={state} back={toMenu} />;
+      return <StatusScreen state={state} back={toBack()} />;
     case "settings":
-      return <SettingsScreen back={toMenu} />;
+      return <SettingsScreen back={toBack()} />;
     case "retire":
-      return <RetireScreen onRetire={onRetire} back={toMenu} />;
+      return <RetireScreen onRetire={onRetire} back={toBack()} />;
     case "reset":
-      return <ResetScreen back={toMenu} onReset={onReset} />;
+      return <ResetScreen back={toBack()} onReset={onReset} />;
     case "succession":
       return <SuccessionScreen prev={screen.prev} cause={screen.cause} onChoose={onChooseWay} />;
     case "rebirth":

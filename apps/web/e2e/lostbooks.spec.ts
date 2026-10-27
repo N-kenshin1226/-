@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newGame, serialize, type GameState } from "@trace/core";
+import { placeAct } from "./helpers.js";
 
 /**
  * X-5 失われた書物（06 §2）：前世の代表技能が閾値を超えていれば、
@@ -40,9 +41,9 @@ const saveOf = (seed: string, peak: number): string => {
   return serialize(prev);
 };
 
-/** 仕込んだ生を引退させて転生まで進める（戻る先はメニュー） */
+/** 仕込んだ生を引退させて転生まで進める（P-01：引退は自宅の行動） */
 const rebirth = async (page: import("@playwright/test").Page): Promise<void> => {
-  await page.getByTestId("menu-retire").click();
+  await placeAct(page, "home", "retire");
   await page.getByTestId("retire-yes").click();
   await page.getByTestId("succession-rebirth").click();
   await page.getByTestId("rebirth-origin-wanderer").click();
@@ -51,7 +52,8 @@ const rebirth = async (page: import("@playwright/test").Page): Promise<void> => 
 
 /** 《釘の束》（簡易判定・報酬15G）を1回納める。自己ベスト等のA窓が出たら畳む（F-02） */
 const workNail = async (page: import("@playwright/test").Page): Promise<void> => {
-  await page.getByTestId("menu-work").click();
+  // 鍛冶の注文は鍛冶場に届く（P-01）
+  await placeAct(page, "forge", "work");
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
   for (let i = 0; i < 4; i++) {
@@ -83,8 +85,8 @@ test("剣術を極めた生は、次の世界の書店に《剣鬼の手記》�
   await workNail(page);
   await workNail(page);
 
-  // 書店に《剣鬼の手記》が並ぶ（棚条件 lostbook.swordplay が立っている）
-  await page.getByTestId("menu-book").click();
+  // 書店に《剣鬼の手記》が並ぶ（棚条件 lostbook.swordplay が立っている。書店は市場）
+  await placeAct(page, "market", "book");
   const shop = page.getByTestId("screen-book");
   await expect(shop).toBeVisible();
   await expect(shop).toContainText("剣鬼の手記");
@@ -119,7 +121,7 @@ test("代表技能が閾値に届かない生は手記を遺さない", async ({
 
   // 告知は出ず、書店にも並ばない
   await expect(page.getByTestId("log")).not.toContainText("失われた手記");
-  await page.getByTestId("menu-book").click();
+  await placeAct(page, "market", "book");
   const shop = page.getByTestId("screen-book");
   await expect(shop).toBeVisible();
   await expect(shop).not.toContainText("剣鬼の手記");

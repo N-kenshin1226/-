@@ -154,10 +154,22 @@ export interface StepConfig {
    * 天候の係数が乗り、(c) 起床レポートに今日の空の風景の行が載る
    */
   weather?: WeatherConfig;
+  /**
+   * 移動（P-01、docs/03 §2。balance.travel）。街の中の移動は行動を
+   * 消費しないが、門から街の外へ出る・街の外どうしの移動は行動を消費する
+   */
+  travel?: { outsideCost: number };
 }
 
 export type Command =
   | { type: "wait" }
+  /**
+   * 街の外への移動（P-01、docs/03 §2）。行動を cfg.travel.outsideCost 回
+   * 消費する（行動残が足りなければ何も起きない）。街の中の移動は
+   * コマンドを踏まない —— 場所の切り替えは画面側の遷移で、時間は進まない。
+   * to は行き先の場所 id（行動ログの目印。朝刊の記録欄に残る）
+   */
+  | { type: "travel"; to?: string }
   /** 宿で寝る。inn/dinner は睡眠の質（2要因のみ） */
   | { type: "sleep"; inn?: InnRank; dinner?: boolean }
   /** 休養：家で休んで眠る。行動0回なら休養日（素質回復・オーバーワーク解除） */
@@ -327,6 +339,22 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "wait", cfg.body);
       events.push({ type: "actionPerformed", kind: "wait", day: next.time.day });
+      break;
+    }
+    case "travel": {
+      // 街の外への移動（P-01）：行動を outsideCost 回消費する。残が足りなければ動けない
+      const cost = Math.max(1, Math.round(cfg.travel?.outsideCost ?? 1));
+      if (next.time.action + cost > cfg.time.actionsPerDay) break;
+      for (let i = 0; i < cost; i++) {
+        next.time = advanceTime(next.time, cfg.time);
+        next = applyActionLoad(next, "travel", cfg.body);
+      }
+      events.push({
+        type: "actionPerformed",
+        kind: "travel",
+        day: next.time.day,
+        ...(command.to !== undefined ? { target: command.to } : {}),
+      });
       break;
     }
     case "sleep":

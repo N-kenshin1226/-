@@ -81,6 +81,16 @@ export type { IncidentJson, IncidentsFile } from "./incidents.schema.js";
 export { weather } from "./weather.js";
 export { weatherFileSchema, weatherKindSchema } from "./weather.schema.js";
 export type { WeatherFile, WeatherKindJson } from "./weather.schema.js";
+
+export { places } from "./places.js";
+export { placesFileSchema, placeSchema, placeActionSchema } from "./places.schema.js";
+export type {
+  PlacesFile,
+  PlaceJson,
+  PlaceActionJson,
+  PlaceActionType,
+  PlaceScene,
+} from "./places.schema.js";
 // 隠し要素（X-11、docs/03 §5。時刻・月齢・行動の組み合わせで出る発見）
 export { discoveries } from "./discoveries.js";
 export {

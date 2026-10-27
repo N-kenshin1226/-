@@ -141,6 +141,23 @@ export const theme = {
     combatFloaterShortMs: 480,
     combatLungeMs: 240,
     combatOmenPulseMs: 1500,
+    /**
+     * 場所と移動（P-01）：見取り図↔場所・場所↔場所の幕（閉じる→開く）、
+     * 戦闘開始の暗転＋揺れ、眠りの暗転（朝へゆっくり切り替わる）。
+     * 幕はクリック・Enter・Esc で飛ばせる。それぞれ「演出を短く」で短い側へ
+     */
+    /** 場所の移動：幕が閉じるまでの時間（ms） */
+    travelInMs: 300,
+    travelInShortMs: 140,
+    /** 場所の移動：幕が開く時間（ms） */
+    travelOutMs: 340,
+    travelOutShortMs: 160,
+    /** 戦闘開始：暗転しながら舞台が揺れる時間（ms） */
+    combatInMs: 560,
+    combatInShortMs: 280,
+    /** 眠りの暗転：ゆっくり夜へ落ちて朝へ切り替わる時間（ms） */
+    sleepInMs: 900,
+    sleepInShortMs: 450,
     /** 効果音の既定音量（0〜1）。設定画面で変更・永続化される */
     defaultVolume: 0.6,
   },

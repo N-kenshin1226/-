@@ -176,14 +176,20 @@ function CombatArena({
 // ---- 狩り（CT戦闘） ----
 export function HuntScreen({
   state,
+  place,
   setScreen,
 }: {
   state: GameState;
+  /** 狩りの場＝地域 id（P-01。places.json の region は enemies.json の area と揃える） */
+  place?: string;
   setScreen: (s: Screen) => void;
 }) {
+  const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   // 危機の接点（W-02）：今日の接点の相手には「異変：」の印を付ける。印は示すだけ、倒しても逃げてもよい
   const tpEnemies = crisisEnemyTouchpoints(state);
-  const entries: MenuEntry[] = enemyAreas.flatMap(([area, group]): MenuEntry[] => {
+  // 場所が指定されればその地域の獲物だけ（P-01）：森の獣は森、追い剥ぎは旧街道
+  const areas = place !== undefined ? enemyAreas.filter(([a]) => a === place) : enemyAreas;
+  const entries: MenuEntry[] = areas.flatMap(([area, group]): MenuEntry[] => {
     const areaName = t.display.huntAreas[area] ?? area;
     // 危機の段階で閉じられたエリアは「立ち入れない」とだけ出す（W-01。段階が変われば解放）
     if (crisisAreaClosed(state, cfg.crisis, area)) {
@@ -204,6 +210,7 @@ export function HuntScreen({
                 name: "combat",
                 enemy: e,
                 ...(tp !== undefined ? { touchpoint: tp } : {}),
+                place,
               }),
           },
           // 強個体は特別な相手（T-44）：金色の一行として別立て
@@ -214,7 +221,7 @@ export function HuntScreen({
                   label: `《${ue.name}》`,
                   sub: `強個体・挑戦差 ${ue.challenge}`,
                   gold: true,
-                  onPick: () => setScreen({ name: "combat", enemy: ue }),
+                  onPick: () => setScreen({ name: "combat", enemy: ue, place }),
                 } satisfies Extract<MenuEntry, { id: string }>,
               ]
             : []),
@@ -240,9 +247,9 @@ export function HuntScreen({
             entries={[
               ...entries,
               { kind: "divider" },
-              { id: "back", label: "戻る", onPick: () => setScreen({ name: "menu" }) },
+              { id: "back", label: "戻る", onPick: () => setScreen(backTo) },
             ]}
-            onBack={() => setScreen({ name: "menu" })}
+            onBack={() => setScreen(backTo)}
           />
         </div>
       </WorldFrame>
@@ -263,6 +270,7 @@ export function CombatScreen({
   touchpoint,
   finale,
   occasion,
+  place,
   setScreen,
   act,
   push,
@@ -275,11 +283,15 @@ export function CombatScreen({
   finale?: string;
   /** 勝負所の行事（決闘）なら行事の id（X-10。結果は行事の勝敗へ） */
   occasion?: string;
+  /** 戦いの起きた場所（P-01。決着後に戻る先） */
+  place?: string;
   setScreen: (s: Screen) => void;
   act: Act;
   push: Push;
 }) {
   const [cs, setCs] = useState<CombatState>(() => beginCombat(state, enemy));
+  // 決着後に戻る先（P-01）：戦いの起きた場所 —— 場所を経由しない導線は見取り図へ
+  const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   /** 世界補正込みの敵定義（意図の表示が解決側と一致するよう同じものを使う） */
   const def = useMemo(() => enemyDefOf(state, enemy), [state, enemy]);
   const [announced, setAnnounced] = useState(false);
@@ -389,7 +401,7 @@ export function CombatScreen({
       // 伝記 → 年代記への記録（T-38。実際の追記は act 内で died イベントを見て行う）
       push(t.text.chronicleRecorded);
     }
-    setScreen({ name: "menu" });
+    setScreen(backTo);
   };
 
   // コマンド列は一本（キー入力が競合しないよう、戦闘中も確定後も同じ列を使う）
@@ -413,7 +425,7 @@ export function CombatScreen({
           id: "combat-giveup",
           label: "あきらめる",
           danger: true,
-          onPick: () => setScreen({ name: "menu" }),
+          onPick: () => setScreen(backTo),
         },
       ]
     : [
@@ -428,7 +440,7 @@ export function CombatScreen({
           id: "combat-giveup",
           label: "あきらめる",
           danger: true,
-          onPick: () => setScreen({ name: "menu" }),
+          onPick: () => setScreen(backTo),
         },
       ];
 
@@ -443,7 +455,7 @@ export function CombatScreen({
         </div>
         <IntentLine cs={cs} def={def} />
         <CombatArena cs={cs} enemy={enemy} def={def} playback={playback} />
-        <CommandMenu entries={entries} onBack={() => setScreen({ name: "menu" })} />
+        <CommandMenu entries={entries} onBack={() => setScreen(backTo)} />
       </WorldFrame>
       <HintBar
         items={[

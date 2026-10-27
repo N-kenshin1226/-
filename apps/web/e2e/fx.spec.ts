@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { skipIntro } from "./helpers.js";
+import { placeAct, skipIntro, waitVeil } from "./helpers.js";
 import { newGame, serialize } from "@trace/core";
 import type { GameState } from "@trace/core";
 
@@ -46,7 +46,8 @@ test("B通知は右上の札で届く：報酬・納品・称号が重なり、�
   // 最初の仕事：初仕事の称号（B）＋納品＋報酬がまとめて届く。
   // この種では初回の作品が自己ベスト（ティア）を更新しAの窓も重なる
   // ―― モーダルの窓が開いている間、札のクリックは窓に届かない（覆いは正しい）
-  await page.getByTestId("menu-work").click();
+  // 鍛冶の注文は鍛冶場に届く（P-01：仕事は場所に属する）
+  await placeAct(page, "forge", "work");
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
 
@@ -88,7 +89,8 @@ test("A通知は加護の層（銀青）の光る窓で届く。開いている�
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  await page.getByTestId("menu-rest").click();
+  await placeAct(page, "home", "rest");
+  await waitVeil(page); // 眠りの幕が開ききるまで待つ（幕はキーを呑む）
   const notice = page.getByTestId("notice-a");
   await expect(notice).toBeVisible();
   await expect(notice).toContainText("NEW TITLE");
@@ -125,7 +127,8 @@ test("S通知は世界の暗い帯で届く。同日に重なったSは囁きの
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  await page.getByTestId("menu-rest").click();
+  await placeAct(page, "home", "rest");
+  await waitVeil(page);
   const notice = page.getByTestId("notice-s");
   await expect(notice).toBeVisible();
   await expect(notice).toContainText("剣の理を見た者");
@@ -156,7 +159,8 @@ test("起床ログの数値はカウントアップで動き、reduced-motion �
   await page.addInitScript(putSave, save);
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
-  await page.getByTestId("menu-rest").click();
+  await placeAct(page, "home", "rest");
+  await waitVeil(page);
 
   await expect(page.getByTestId("screen-wake")).toBeVisible();
   const num = page.locator('[data-testid^="wake-skill-"]').first();
@@ -184,7 +188,8 @@ test("reduced-motion の環境では数値は最初から最終値を示す", as
   }));
   await page.addInitScript(putSave, save);
   await page.goto("/");
-  await page.getByTestId("menu-rest").click();
+  await placeAct(page, "home", "rest");
+  await waitVeil(page);
   await expect(page.getByTestId("screen-wake")).toBeVisible();
   const num = page.locator('[data-testid^="wake-skill-"]').first();
   await expect(num).toBeVisible();
@@ -200,7 +205,7 @@ test("環境設定：効果音のオン/オフと演出の長さを整え、端�
   await skipIntro(page);
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  await page.getByTestId("menu-settings").click();
+  await placeAct(page, "home", "settings");
   const scr = page.getByTestId("screen-settings");
   await expect(scr).toBeVisible();
 
@@ -220,5 +225,9 @@ test("環境設定：効果音のオン/オフと演出の長さを整え、端�
   expect(parsed.shortFx).toBe(true);
 
   await page.keyboard.press("Escape");
+  // P-01：環境設定は自宅に属する —— Esc で自宅へ、もう一度で見取り図へ
+  await expect(page.getByTestId("place")).toHaveAttribute("data-place", "home");
+  await page.keyboard.press("Escape");
+  await waitVeil(page);
   await expect(page.getByTestId("menu")).toBeVisible();
 });

@@ -1536,3 +1536,176 @@ button {
     transition: none;
   }
 }
+
+/* ── P-01: 場所と移動（見取り図・幕・天候の空） ── */
+
+/* 移動・戦闘・眠りの幕：画面全体を覆う層。クリック・キーで飛ばせる。
+   時間は JS（theme.fx）が --trv-* に書き込む（「演出を短く」対応） */
+.trv {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: #050308;
+  cursor: pointer;
+}
+.trv.in {
+  animation: trvIn var(--trv-in, 300ms) ease-in forwards;
+}
+.trv.out {
+  animation: trvOut var(--trv-out, 340ms) ease-out forwards;
+}
+.trv.combat {
+  background: #000;
+}
+.trv.sleep {
+  background: #020209;
+}
+@keyframes trvIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes trvOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* 戦闘開始の揺れ：暗転と同じ時間だけ舞台が小刻みに揺れる */
+.fx-jolt {
+  animation: fxJolt ease-in-out;
+}
+@keyframes fxJolt {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(5px, -2px);
+  }
+  30% {
+    transform: translate(-4px, 2px);
+  }
+  45% {
+    transform: translate(3px, -1px);
+  }
+  60% {
+    transform: translate(-2px, 1px);
+  }
+  75% {
+    transform: translate(1px, 0);
+  }
+}
+
+/* 見取り図：街の場所の印。金の小さな面取り＋名札。選択中は明るく滲む */
+.map-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px 12px;
+}
+.map-mark .diamond {
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  border: 1.5px solid var(--t-world-light);
+  background: rgba(10, 10, 16, 0.72);
+  box-shadow: 0 0 0 3px rgba(10, 10, 16, 0.55);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+.map-mark .tag {
+  font-family: var(--t-font-mincho);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t-world-text);
+  background: rgba(10, 10, 16, 0.78);
+  border: 1px solid var(--t-world-frame);
+  border-radius: 3px;
+  padding: 1px 7px 2px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.map-mark.on .diamond {
+  background: var(--t-world-light);
+  border-color: #f6e3b8;
+  box-shadow:
+    0 0 0 3px rgba(10, 10, 16, 0.55),
+    0 0 12px rgba(232, 199, 127, 0.75);
+}
+.map-mark.on .tag {
+  color: var(--t-world-hi);
+  border-color: var(--t-world-light);
+  box-shadow: 0 0 10px rgba(232, 199, 127, 0.35);
+}
+/* 見取り図上で出る届き物の印（届いた出来事・打診） */
+.map-mark .pip {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--t-special);
+  box-shadow: 0 0 8px rgba(232, 199, 127, 0.9);
+}
+
+/* 天候の空（P-01）：雨の筋・雪の点・雲の霞。背景SVGの中で動く */
+.wx-rain {
+  animation: wxRain 0.9s linear infinite;
+}
+@keyframes wxRain {
+  from {
+    transform: translate(0, -80px);
+  }
+  to {
+    transform: translate(-16px, 0);
+  }
+}
+.wx-snow {
+  animation: wxSnow 4.5s linear infinite;
+}
+@keyframes wxSnow {
+  from {
+    transform: translate(0, -96px);
+  }
+  to {
+    transform: translate(-24px, 0);
+  }
+}
+.wx-mist {
+  animation: wxMist 11s ease-in-out infinite alternate;
+}
+@keyframes wxMist {
+  from {
+    transform: translateX(-34px);
+  }
+  to {
+    transform: translateX(34px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trv.in,
+  .trv.out,
+  .fx-jolt,
+  .wx-rain,
+  .wx-snow,
+  .wx-mist {
+    animation: none;
+  }
+}

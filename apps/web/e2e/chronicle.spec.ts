@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { placeAct } from "./helpers.js";
 
 // T-38 年代記：別領域の保存が開始画面と街の記録に出る
 test("年代記が開始画面と街の記録に出る", async ({ page }) => {
@@ -28,7 +29,8 @@ test("年代記が開始画面と街の記録に出る", async ({ page }) => {
   // セーブが無くても年代記の件数が開始画面に出る
   await expect(page.getByTestId("app")).toContainText("年代記には 1 人の人生が記録されている");
   await page.getByTestId("origin-wanderer").click();
-  await page.getByTestId("menu-records").click();
+  // 年代記は街の記録に出る ―― 記録はギルドの掲示板（P-01）
+  await placeAct(page, "guild", "records");
   const view = page.getByTestId("chronicle");
   await expect(view).toContainText("古の英雄《百狼斬り》");
   await expect(view).toContainText("42日を生き");

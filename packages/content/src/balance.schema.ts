@@ -473,6 +473,16 @@ export const balanceSchema = z
       })
       .strict(),
     /**
+     * 移動（P-01、docs/03 §2）。街の中の移動は行動を消費しないが、
+     * 門から街の外へ出る（街の外どうしの移動も同じ）は行動を消費する
+     */
+    travel: z
+      .object({
+        /** 街の外への移動1回が消費する行動数 */
+        outsideCost: z.number().int().min(1),
+      })
+      .strict(),
+    /**
      * 天候（X-13、docs/03 §2「日替わりの要因は2つまで」の1枠）。
      * 空の種類・季節の重み・風景の行は weather.json が持ち、
      * ここには注文の報酬への日替わり係数だけを置く（core/weather の

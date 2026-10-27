@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "town": "アルディ",
+  "places": [
+    {
+      "id": "home",
+      "name": "自宅",
+      "kind": "town",
+      "scene": "home",
+      "pos": [10, 74],
+      "desc": "あなたの寝床。戸を閉めれば外の音も遠い",
+      "npcs": [],
+      "actions": [
+        { "type": "rest" },
+        { "type": "status" },
+        { "type": "settings" },
+        { "type": "retire" },
+        { "type": "reset" }
+      ]
+    },
+    {
+      "id": "inn",
+      "name": "宿屋《麦穂亭》",
+      "kind": "town",
+      "scene": "inn",
+      "pos": [32, 64],
+      "desc": "旅人の宿。朝刊は朝食の席に届き、一日の終わりはここで眠る",
+      "npcs": ["npc.marta"],
+      "actions": [{ "type": "sleep" }, { "type": "news" }, { "type": "incident" }]
+    },
+    {
+      "id": "tavern",
+      "name": "酒場",
+      "kind": "town",
+      "scene": "tavern",
+      "pos": [52, 72],
+      "desc": "灯りと酒の匂い。余興の仕事と旅の噂はここに集まる",
+      "npcs": [],
+      "actions": [
+        { "type": "work", "kinds": ["performance"] },
+        { "type": "news" },
+        { "type": "incident" }
+      ]
+    },
+    {
+      "id": "forge",
+      "name": "鍛冶場",
+      "kind": "town",
+      "scene": "forge",
+      "pos": [68, 78],
+      "desc": "炭の熱気と槌の音。鍛冶の注文はここに届く",
+      "npcs": ["npc.cum"],
+      "actions": [{ "type": "work", "kinds": ["smithing"] }, { "type": "mentor" }]
+    },
+    {
+      "id": "market",
+      "name": "市場",
+      "kind": "town",
+      "scene": "market",
+      "pos": [56, 40],
+      "desc": "露店が軒を連ねる広場。古書店はその片隅に店を構える",
+      "npcs": ["npc.nola"],
+      "actions": [
+        { "type": "work", "kinds": ["eloquence", "appraisal"] },
+        { "type": "book" },
+        { "type": "mentor" }
+      ]
+    },
+    {
+      "id": "guild",
+      "name": "ギルド",
+      "kind": "town",
+      "scene": "guild",
+      "pos": [36, 28],
+      "desc": "冒険者の集う宿場の要。掲示板に注文と世界からの打診が届く",
+      "npcs": [],
+      "actions": [
+        { "type": "work", "kinds": ["mining", "fishing"], "default": true },
+        { "type": "train" },
+        { "type": "society" },
+        { "type": "records" },
+        { "type": "crisis" },
+        { "type": "occasion" }
+      ]
+    },
+    {
+      "id": "church",
+      "name": "教会",
+      "kind": "town",
+      "scene": "church",
+      "pos": [82, 24],
+      "desc": "石造りの静けさ。古い記録と灯火がここに守られている",
+      "npcs": ["npc.edel"],
+      "actions": [{ "type": "lore" }, { "type": "mentor" }]
+    },
+    {
+      "id": "gate",
+      "name": "街の門",
+      "kind": "town",
+      "scene": "gate",
+      "pos": [88, 86],
+      "desc": "アルディの東門。街の外の道はここからしか通れない",
+      "npcs": ["npc.sado"],
+      "actions": [
+        { "type": "travel", "to": "forest" },
+        { "type": "travel", "to": "highway" },
+        { "type": "travel", "to": "lake" },
+        { "type": "travel", "to": "abyss" }
+      ]
+    },
+    {
+      "id": "forest",
+      "name": "近郊の森",
+      "kind": "region",
+      "scene": "forest",
+      "desc": "街の裏手に広がる古い森。木々の隙間に魔物が潜む",
+      "npcs": ["npc.garo"],
+      "actions": [
+        { "type": "hunt" },
+        { "type": "mentor" },
+        { "type": "travel", "to": "gate" },
+        { "type": "travel", "to": "highway" },
+        { "type": "travel", "to": "lake" },
+        { "type": "travel", "to": "abyss" }
+      ]
+    },
+    {
+      "id": "highway",
+      "name": "旧街道",
+      "kind": "region",
+      "scene": "highway",
+      "desc": "かつての街道の名残。石畳の切れ目に追い剥ぎが待ち伏せる",
+      "npcs": ["npc.fenn"],
+      "actions": [
+        { "type": "hunt" },
+        { "type": "mentor" },
+        { "type": "travel", "to": "gate" },
+        { "type": "travel", "to": "forest" },
+        { "type": "travel", "to": "lake" },
+        { "type": "travel", "to": "abyss" }
+      ]
+    },
+    {
+      "id": "lake",
+      "name": "湖畔",
+      "kind": "region",
+      "scene": "lake",
+      "desc": "街から歩いて半日の静かな湖。風のない日は水面が鏡になる",
+      "npcs": [],
+      "actions": [
+        { "type": "fish" },
+        { "type": "travel", "to": "gate" },
+        { "type": "travel", "to": "forest" },
+        { "type": "travel", "to": "highway" },
+        { "type": "travel", "to": "abyss" }
+      ]
+    },
+    {
+      "id": "abyss",
+      "name": "深層の穴",
+      "kind": "region",
+      "scene": "abyss",
+      "desc": "街の裏山に口を開ける深い穴。灯りが尽きるまで潜れる",
+      "npcs": [],
+      "actions": [
+        { "type": "abyss" },
+        { "type": "travel", "to": "gate" },
+        { "type": "travel", "to": "forest" },
+        { "type": "travel", "to": "highway" },
+        { "type": "travel", "to": "lake" }
+      ]
+    }
+  ]
+}
