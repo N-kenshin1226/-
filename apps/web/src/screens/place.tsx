@@ -18,6 +18,7 @@ import {
   placeVoice,
   t,
   tpl,
+  townName,
   travelOutCost,
 } from "../game.js";
 import {
@@ -369,6 +370,125 @@ function actionEntries(
           onPick: () => setScreen({ name: "reset" }),
         },
       ];
+    // ---- 日々の営み（P-02「行動の種類を増やす」） ----
+    case "stroll":
+      // 散策：その場所の表から小さな出来事を1件引く（1行動）
+      return [
+        {
+          id: "place-stroll",
+          label: "散策する",
+          sub: "歩いてみる",
+          disabled: !canActNow,
+          onPick: () => act({ type: "stroll", scope: place.kind === "region" ? "region" : "town" }),
+        },
+      ];
+    case "gather":
+      // 採集：その場所の採集表から品を引く（1行動）
+      return [
+        {
+          id: "place-gather",
+          label: "採集する",
+          sub: "取れるものを探す",
+          disabled: !canActNow,
+          onPick: () => act({ type: "gather", place: place.id }),
+        },
+      ];
+    case "market":
+      // 市場：売り買いは行動を消費しない
+      return [
+        {
+          id: "place-market",
+          label: "市場で商う",
+          sub: "品物の売り買い",
+          onPick: () => setScreen({ name: "life", view: "market", place: place.id }),
+        },
+      ];
+    case "cook":
+      return [
+        {
+          id: "place-cook",
+          label: "料理する",
+          sub: "材料から作る",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "life", view: "cook", place: place.id }),
+        },
+      ];
+    case "gamble":
+      return [
+        {
+          id: "place-gamble",
+          label: "賭け事",
+          sub: "サイコロの卓",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "life", view: "gamble", place: place.id }),
+        },
+      ];
+    case "social":
+      return [
+        {
+          id: "place-social",
+          label: "人と過ごす",
+          sub: "話す・飲む・贈る",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "life", view: "social", place: place.id }),
+        },
+      ];
+    case "board":
+      return [
+        {
+          id: "place-board",
+          label: "依頼掲示板",
+          sub: "日々の頼み",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "life", view: "board", place: place.id }),
+        },
+      ];
+    case "pray":
+      return [
+        {
+          id: "place-pray",
+          label: "祈る",
+          sub: "静けさの中で",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "life", view: "pray", place: place.id }),
+        },
+      ];
+    case "eat":
+      // 食事：携えた食料を1つ（行動は消費しない）
+      return [
+        {
+          id: "place-eat",
+          label: "食事をとる",
+          sub: "携えた食料",
+          onPick: () => setScreen({ name: "life", view: "eat", place: place.id }),
+        },
+      ];
+    case "shelf":
+      return [
+        {
+          id: "place-shelf",
+          label: "持ち物棚",
+          sub: "家の棚",
+          onPick: () => setScreen({ name: "life", view: "shelf", place: place.id }),
+        },
+      ];
+    case "journey": {
+      // 旅（隣町）：数日の野営を経て着く。出発は1行動
+      const town = a.to !== undefined ? townName(a.to) : "";
+      return [
+        {
+          id: `place-journey-${a.to}`,
+          label: `${town}へ旅立つ`,
+          sub: "数日の道のり",
+          disabled: !canActNow,
+          onPick: () => {
+            if (a.to === undefined) return;
+            act({ type: "journey", to: a.to });
+            setScreen({ name: "journey" });
+          },
+        },
+      ];
+    }
     case "travel": {
       const dest = placeOf(a.to);
       // 街（門）へ戻るだけなら行動を消費しない —— 戻れなくなる日を作らない

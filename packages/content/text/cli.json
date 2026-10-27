@@ -7,6 +7,7 @@
       "good": "上宿《白帆亭》"
     },
     "homeName": "自宅",
+    "campName": "野営",
     "dinnerNames": {
       "with": "シチュー",
       "without": "夕食なし"
@@ -444,6 +445,22 @@
     "travelReturn": "街へ戻る",
     "placeHere": "ここにいる人",
     "placeBack": "見取り図へ",
-    "resetConfirm": "――この街での全ての記録を消します。よろしいですか"
+    "resetConfirm": "――この街での全ての記録を消します。よろしいですか",
+    "life": {
+      "arrive": "――{town}に着いた。",
+      "itemGot": "《{name}》を{n}つ手に入れた",
+      "itemBought": "《{name}》を{n}つ買った（{amount}G）",
+      "itemSold": "《{name}》を{n}つ売った（{amount}G）",
+      "cooked": "《{name}》を作った。出来{quality}",
+      "ate": "《{name}》を食べた。今夜の眠りが少し深くなる",
+      "gambleWon": "――勝った。{amount}Gが戻る。",
+      "gambleLost": "――負けた。{stake}Gを失った。",
+      "prayed": "――祈りを捧げた。今夜の眠りが少し深くなる",
+      "prayedAlms": "――祈りを捧げ、{alms}Gの施しを納めた。",
+      "bonded": "――{name}との仲が深まった",
+      "bondMissed": "――{name}は今日はいないようだ",
+      "errandDone": "――掲示板の依頼《{name}》を果たした",
+      "journeyStarted": "――{town}への旅に出た。{days}日の道のり"
+    }
   }
 }

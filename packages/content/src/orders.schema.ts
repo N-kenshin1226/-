@@ -18,6 +18,11 @@ export const orderSchema = z
      * （釘の束のような日常の注文は簡易判定が標準）
      */
     showdown: z.literal(true).optional(),
+    /**
+     * 注文の出る町（P-02、life.json towns の id。省略時は基点の町 "ardi"）。
+     * 町ごとに注文が違う —— ベルンにはベルンの仕事だけが届く
+     */
+    town: z.string().min(1).optional(),
   })
   .strict();
 

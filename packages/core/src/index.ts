@@ -54,6 +54,7 @@ export { TENDENCY_IDS } from "./state/types.js";
 export type {
   ActionLogEntry,
   GameState,
+  LifeState,
   PlayerState,
   SkillId,
   SkillState,
@@ -412,3 +413,36 @@ export type {
   NpcLifeNpcDef,
 } from "./npclife/index.js";
 export { mentorAbsent } from "./mentors/index.js";
+// 日々の営み（P-02「行動の種類を増やす」）
+export {
+  bondOf,
+  bondWarm,
+  canErrand,
+  cookQuality,
+  drawGamble,
+  drawGather,
+  drawStroll,
+  errandDoneDayKey,
+  errandsFor,
+  errandsToday,
+  itemCount,
+  itemPrice,
+  journeyBetween,
+  journeying,
+  marketStock,
+  mealToday,
+  prayedToday,
+  townName,
+  townOf,
+  withItem,
+} from "./life/index.js";
+export type {
+  ErrandDef,
+  GatherEntry,
+  GatherTable,
+  ItemDef,
+  JourneyDef,
+  LifeConfig,
+  LifeOutcome,
+  RecipeDef,
+} from "./life/index.js";

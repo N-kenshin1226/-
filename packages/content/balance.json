@@ -24,7 +24,11 @@
     "base": {
       "train": 3.6,
       "work": 2.5,
-      "combat": 4.0
+      "combat": 4.0,
+      "gather": 2.0,
+      "cook": 2.4,
+      "pray": 1.2,
+      "gamble": 1.0
     },
     "challengePoints": [
       [-20, 0.05],
@@ -105,7 +109,15 @@
       "combat": 20,
       "occasion": 14,
       "abyss": 24,
-      "travel": 6
+      "travel": 6,
+      "stroll": 4,
+      "gather": 10,
+      "cook": 6,
+      "gamble": 4,
+      "social": 3,
+      "pray": 3,
+      "errand": 5,
+      "journey": 4
     },
     "fatigueDefaultPerAction": 2,
     "fatigueRecover": 60,
@@ -134,6 +146,32 @@
         "agility": 2
       },
       "travel": {
+        "endurance": 2,
+        "agility": 1
+      },
+      "stroll": {
+        "endurance": 1
+      },
+      "gather": {
+        "endurance": 1,
+        "perception": 1
+      },
+      "cook": {
+        "dexterity": 1
+      },
+      "gamble": {
+        "perception": 1
+      },
+      "social": {
+        "spirit": 1
+      },
+      "pray": {
+        "spirit": 1
+      },
+      "errand": {
+        "endurance": 1
+      },
+      "journey": {
         "endurance": 2,
         "agility": 1
       }
@@ -398,6 +436,20 @@
   },
   "travel": {
     "outsideCost": 1
+  },
+  "life": {
+    "mealSleepFactor": 0.004,
+    "praySleepBonus": 0.08,
+    "campQuality": 0.55,
+    "gatherDraws": 3,
+    "errandPerDay": 2,
+    "marketJitter": 0.08,
+    "bondRespectMin": 40,
+    "bondMax": 100,
+    "prayDifficulty": 20,
+    "gambleWinChance": 0.44,
+    "gambleDifficulty": 25,
+    "cookQualityBase": 45
   },
   "weather": {
     "orderPrice": {
@@ -757,6 +809,21 @@
       "cap": 0.4,
       "skills": {
         "teaching": 0.004
+      }
+    },
+    "social.gain": {
+      "cap": 3,
+      "skills": {
+        "etiquette": 1,
+        "eloquence": 0.5,
+        "merchant_eye": 0.3
+      }
+    },
+    "gamble.win": {
+      "cap": 0.25,
+      "skills": {
+        "gambling": 0.004,
+        "observation": 0.001
       }
     }
   }

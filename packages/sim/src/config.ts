@@ -7,6 +7,8 @@ import {
   crisisTypes,
   discoveries,
   incidents,
+  items,
+  life,
   mentors,
   npcLifecycle,
   occasions,
@@ -212,6 +214,25 @@ export function stepConfig(): StepConfig {
         conditionPoor: cliText.text.wake.conditionPoor,
       },
     },
+    /**
+     * 日々の営み（P-02「行動の種類を増やす」）：life.json の定義表＋
+     * balance.life の係数。到着の文面は cli.json から注入する
+     */
+    life: {
+      towns: life.towns,
+      journeys: life.journeys,
+      stroll: life.stroll,
+      gather: life.gather,
+      recipes: life.recipes,
+      market: life.market,
+      gamble: life.gamble,
+      social: life.social,
+      errands: life.errands,
+      ...balance.life,
+      texts: { arrive: cliText.text.life.arrive },
+    },
+    /** 品物の定義表（P-02、items.json。市場・料理・贈り物に使う） */
+    items: Object.fromEntries(items.items.map((i) => [i.id, i])),
   };
 }
 

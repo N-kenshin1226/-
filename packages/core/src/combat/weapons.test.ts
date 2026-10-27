@@ -413,7 +413,7 @@ describe("セーブ v17（K-01）", () => {
     delete p.weapon;
     v16.player = p;
     const restored = deserialize(JSON.stringify(v16));
-    expect(restored.version).toBe(17);
+    expect(restored.version).toBe(18); // v17（武器）を経て最新版へ
     expect(restored.player.weapons).toEqual(["fist", "sword"]);
     expect(restored.player.weapon).toBe("sword");
   });
@@ -435,7 +435,7 @@ describe("セーブ v17（K-01）", () => {
     expect(restored.player.skills["swordplay"]!.potential).toBe(100);
   });
 
-  it("SAVE_VERSION は 17", () => {
-    expect(SAVE_VERSION).toBe(17);
+  it("SAVE_VERSION は 18（v18 は P-02 日々の営みの追加）", () => {
+    expect(SAVE_VERSION).toBe(18);
   });
 });

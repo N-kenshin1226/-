@@ -79,6 +79,11 @@ export interface NewGameConfig {
   initialWeapons?: readonly string[];
   /** 初期装備の武器ID（省略時は剣。initialWeapons に含まれること） */
   initialWeapon?: string;
+  /**
+   * 基点の町（P-02、life.json towns の id。v18〜）。
+   * 省略時は "ardi"（最初の町。転生・引き継ぎの呼び出し側が別の町を渡せる）
+   */
+  initialTown?: string;
 }
 
 export function newGame(seed: string, name: string, cfg: NewGameConfig): GameState {
@@ -173,6 +178,16 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     vows: [...new Set(cfg.vows ?? [])],
     // 世界の危機（W-01）：引き継ぎがあればそのまま、なければ世界シードから抽選
     crisis: cfg.carryoverCrisis ?? (cfg.crisis ? drawCrisis(seed, cfg.crisis) : null),
+    // 日々の営み（P-02、v18〜）：基点の町にいて空荷で始まる
+    life: {
+      town: cfg.initialTown ?? "ardi",
+      items: {},
+      bonds: {},
+      mealDay: -1,
+      mealQuality: 0,
+      prayedDay: -1,
+      journey: null,
+    },
   };
 }
 

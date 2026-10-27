@@ -80,6 +80,12 @@ import {
   occasionOffers,
   occasionSpeaker,
   rollIndividual,
+  bondOf,
+  errandsFor as coreErrandsFor,
+  itemPrice,
+  marketStock as coreMarketStock,
+  townName as coreTownName,
+  townOf,
   marketFactor,
   weatherOf,
   weaponDefOf,
@@ -126,6 +132,8 @@ import {
   enemies,
   enemiesByArea,
   incidents,
+  items,
+  life,
   mentors,
   narration,
   npcLifecycle,
@@ -340,6 +348,26 @@ export const cfg: StepConfig = {
       conditionPoor: cliText.text.wake.conditionPoor,
     },
   },
+  /**
+   * 日々の営み（P-02「行動の種類を増やす」）：life.json の定義表（町・道・
+   * 散策・採集・料理・市場・賭け・人との時間・掲示板）＋balance.life の係数。
+   * 到着の文面は cli.json から注入する
+   */
+  life: {
+    towns: life.towns,
+    journeys: life.journeys,
+    stroll: life.stroll,
+    gather: life.gather,
+    recipes: life.recipes,
+    market: life.market,
+    gamble: life.gamble,
+    social: life.social,
+    errands: life.errands,
+    ...balance.life,
+    texts: { arrive: cliText.text.life.arrive },
+  },
+  /** 品物の定義表（P-02、items.json の id → 定義。市場・料理・食事・贈り物に使う） */
+  items: Object.fromEntries(items.items.map((i) => [i.id, i])),
 };
 
 /**
@@ -406,6 +434,61 @@ export function placeTakesKind(place: PlaceJson, kind: string): boolean {
 /** 街の外への移動が消費する行動数（balance.travel。街の中は 0） */
 export function travelOutCost(): number {
   return cfg.travel?.outsideCost ?? 1;
+}
+
+/* ── 日々の営み（P-02「行動の種類を増やす」） ──
+ * 町・品物・仲・掲示板・旅の表示ヘルパー。値段・抽選は core が持ち、
+ * ここでは表示名の解決と一覧の選択だけを行う */
+
+export { canErrand, itemCount, journeying, mealToday, prayedToday, townOf } from "@trace/core";
+
+/** 品物の定義表（items.json → id 引き） */
+export const itemDefs = cfg.items ?? {};
+/** 品物の表示名（未定義は id のまま返す） */
+export function itemName(id: string): string {
+  return itemDefs[id]?.name ?? id;
+}
+/** 町の表示名（life.json towns） */
+export function townName(id: string): string {
+  return cfg.life !== undefined ? coreTownName(id, cfg.life) : id;
+}
+/** 今いる町の見取り図に出る場所（town 欄の無い場所は基点の町に属する） */
+export function townPlacesIn(town: string): PlaceJson[] {
+  return townPlaces.filter((p) => (p.town ?? "ardi") === town);
+}
+/** 今いる町に届く掲示板の依頼 */
+export function errandsNow(state: GameState) {
+  return cfg.life !== undefined ? coreErrandsFor(townOf(state), cfg.life) : [];
+}
+/** その町の市場に並ぶ品の id */
+export function marketStockNow(state: GameState): string[] {
+  return cfg.life !== undefined ? coreMarketStock(townOf(state), cfg.life) : [];
+}
+/** 品の相場（表示用。side は "buy"=店で買う / "sell"=店に売る） */
+export function itemPriceNow(state: GameState, id: string, side: "buy" | "sell"): number {
+  const def = itemDefs[id];
+  if (def === undefined || cfg.life === undefined) return 0;
+  return itemPrice(state.seed, state.time.day, id, townOf(state), side, cfg.life, def);
+}
+/** 人物の表示名（voices.json の npc id） */
+export function npcName(id: string): string {
+  return voices.npcs.find((n) => n.id === id)?.name ?? id;
+}
+/** 人との仲の値（bonds 欄。上限は balance.life.bondMax） */
+export function bondOfNow(state: GameState, npc: string): number {
+  return cfg.life !== undefined ? bondOf(state, npc, cfg.life) : 0;
+}
+/** 旅の行き先の町名（旅の途中でなければ null） */
+export function journeyDestName(state: GameState): string | null {
+  return state.life.journey !== null ? townName(state.life.journey.to) : null;
+}
+/** 旅の行き来がある隣町の id（現在の町から。無ければ null） */
+export function journeyTargetNow(state: GameState): string | null {
+  if (cfg.life === undefined) return null;
+  const town = townOf(state);
+  const road = cfg.life.journeys.find((j) => j.from === town || j.to === town);
+  if (road === undefined) return null;
+  return road.from === town ? road.to : road.from;
 }
 
 /**
@@ -999,6 +1082,54 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
             title: atoms.find((a) => a.id === e.id)?.title ?? e.id,
           }),
         ];
+      // ---- 日々の営み（P-02「行動の種類を増やす」） ----
+      // 出来事の行はすべて記録行（ログ）だけ —— 通知の窓・札は足さない
+      // （賭けの勝敗・仲・到着は生活の中の小さなできごと。通知ランク：行のみ）
+      case "strollOutcome":
+        return [e.text];
+      case "itemGot":
+        return [tpl(t.text.life.itemGot, { name: itemName(e.id), n: e.n })];
+      case "itemBought":
+        return [tpl(t.text.life.itemBought, { name: itemName(e.id), n: e.n, amount: e.amount })];
+      case "itemSold":
+        return [tpl(t.text.life.itemSold, { name: itemName(e.id), n: e.n, amount: e.amount })];
+      // 料理の材料・贈り物の消費は行動の内側 —— 行は出さない（作った・渡した行が語る）
+      case "itemSpent":
+        return [];
+      case "cooked":
+        return [
+          tpl(t.text.life.cooked, {
+            name: itemName(e.out),
+            quality: Math.round(e.quality),
+          }),
+        ];
+      case "ate":
+        return [tpl(t.text.life.ate, { name: itemName(e.id) })];
+      case "gambled":
+        return [
+          e.won
+            ? tpl(t.text.life.gambleWon, { amount: e.amount })
+            : tpl(t.text.life.gambleLost, { stake: e.stake }),
+        ];
+      case "prayed":
+        return [
+          e.alms !== undefined ? tpl(t.text.life.prayedAlms, { alms: e.alms }) : t.text.life.prayed,
+        ];
+      case "bonded":
+        return [
+          e.amount > 0
+            ? tpl(t.text.life.bonded, { name: npcName(e.npc) })
+            : tpl(t.text.life.bondMissed, { name: npcName(e.npc) }),
+        ];
+      case "errandDone": {
+        const def = cfg.life?.errands.find((x) => x.id === e.id);
+        return [tpl(t.text.life.errandDone, { name: def?.name ?? e.id })];
+      }
+      case "journeyStarted":
+        return [tpl(t.text.life.journeyStarted, { town: townName(e.to), days: e.days })];
+      case "journeyArrived":
+        // 到着の一行は起床の「驚き」の列に既に出る（sleep 側が texts.arrive を載せる）
+        return [];
       default:
         return [];
     }
@@ -1023,10 +1154,16 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   if (!report) return [];
   const w = t.text.wake;
   const lines: string[] = [w.header];
+  // 旅の途中の眠りは野営（P-02。到着の朝は journey が空でも journeyArrived で判る）
+  const camping = state.life.journey !== null || events.some((e) => e.type === "journeyArrived");
   lines.push(
     tpl(w.qualityLine, {
       quality: qualityLabel(report.quality),
-      inn: atHome ? t.display.homeName : t.display.innNames[report.inn],
+      inn: camping
+        ? t.display.campName
+        : atHome
+          ? t.display.homeName
+          : t.display.innNames[report.inn],
       dinner: !atHome && report.dinner ? t.display.dinnerNames.with : t.display.dinnerNames.without,
     }),
   );
@@ -1690,6 +1827,25 @@ function deedLabel(kind: string, target?: string): string {
     case "travel":
       // 街の外への移動（P-01）：行き先の場所名まで記録欄に出す
       return `${placeName(target)}への移動`;
+    // ---- 日々の営み（P-02） ----
+    case "stroll":
+      return "散策";
+    case "gather":
+      return `${placeName(target)}での採集`;
+    case "cook":
+      return `${itemName(target ?? "")}の料理`;
+    case "gamble":
+      return "賭け事";
+    case "pray":
+      return "祈り";
+    case "social":
+      return `${npcName(target ?? "")}との時間`;
+    case "errand": {
+      const name = cfg.life?.errands.find((e) => e.id === target)?.name ?? target ?? "";
+      return `依頼《${name}》`;
+    }
+    case "journey":
+      return `${townName(target ?? "")}への旅`;
     default:
       return kind;
   }
@@ -1865,11 +2021,13 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
   };
 }
 
-/** メイン画面の会話窓：その日の街の住人の一言（日替わり・決定的） */
+/** メイン画面の会話窓：その日の街の住人の一言（日替わり・決定的）。
+    P-02：声を掛けるのは今いる町の場所に住む人だけ（ベルンにベルンの人） */
 export function townVoice(state: GameState): { name: string; role: string; text: string } {
   const rng = createRng(`${state.seed}:voice:${state.time.day}`);
   // 危機の段階・歳月の退場で街に居なくなった住人は窓に出ない（W-04/X-12：人の不在で伝える）
-  const pool = voices.npcs.filter((n) => npcGoneReason(state, n.id) === null);
+  const locals = new Set(townPlacesIn(townOf(state)).flatMap((p) => p.npcs));
+  const pool = voices.npcs.filter((n) => locals.has(n.id) && npcGoneReason(state, n.id) === null);
   const npc = rng.pick(pool.length > 0 ? pool : [...voices.npcs]);
   return npcVoiceLine(state, rng, npc);
 }
@@ -2224,9 +2382,17 @@ export function wakePack(
   atHome: boolean,
   state?: GameState,
 ): WakePack {
+  // 旅の途中の眠りは野営（P-02。到着の朝は journey が空でも journeyArrived で判る）
+  const camping =
+    (state !== undefined && state.life.journey !== null) ||
+    events.some((e) => e.type === "journeyArrived");
   return {
     quality: qualityLabel(report.quality),
-    inn: atHome ? t.display.homeName : t.display.innNames[report.inn],
+    inn: camping
+      ? t.display.campName
+      : atHome
+        ? t.display.homeName
+        : t.display.innNames[report.inn],
     dinner: !atHome && report.dinner ? t.display.dinnerNames.with : t.display.dinnerNames.without,
     skillLines: report.lines
       .filter((l) => l.kind === "skill")

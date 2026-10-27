@@ -9,6 +9,8 @@ export const cliTextSchema = z
         innNames: z.object({ cheap: z.string(), normal: z.string(), good: z.string() }).strict(),
         /** rest（家で休む）の起床ログに出す場所名 */
         homeName: z.string(),
+        /** 旅の野営（P-02）の起床ログに出す場所名 */
+        campName: z.string(),
         dinnerNames: z.object({ with: z.string(), without: z.string() }).strict(),
         seasonNames: z.array(z.string()).length(4),
         weekdayNames: z.array(z.string()).length(7),
@@ -461,6 +463,32 @@ export const cliTextSchema = z
         npcTownComment: z.string(),
         quit: z.string(),
         invalidInput: z.string(),
+        /**
+         * 日々の営み（P-02「行動の種類を増やす」）：散策・採集・料理・賭け・
+         * 人との時間・市場・掲示板・祈り・旅の記録行。{name} は品・人物・
+         * 依頼・町の表示名、{town} は町の名、{n}/{amount}/{stake}/{days}/{quality}
+         * は数値を差し込む
+         */
+        life: z
+          .object({
+            /** 旅の到着（起床の驚きの行＋記録。{town} は着いた町の名） */
+            arrive: z.string(),
+            itemGot: z.string(),
+            itemBought: z.string(),
+            itemSold: z.string(),
+            cooked: z.string(),
+            ate: z.string(),
+            gambleWon: z.string(),
+            gambleLost: z.string(),
+            prayed: z.string(),
+            prayedAlms: z.string(),
+            bonded: z.string(),
+            /** 相手が今日街にいなかった（R-01 人の揺らぎと同じ仕立て） */
+            bondMissed: z.string(),
+            errandDone: z.string(),
+            journeyStarted: z.string(),
+          })
+          .strict(),
         eof: z.string(),
       })
       .strict(),

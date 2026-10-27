@@ -15,6 +15,15 @@
           "type": "rest"
         },
         {
+          "type": "cook"
+        },
+        {
+          "type": "eat"
+        },
+        {
+          "type": "shelf"
+        },
+        {
           "type": "status"
         },
         {
@@ -41,6 +50,12 @@
           "type": "sleep"
         },
         {
+          "type": "social"
+        },
+        {
+          "type": "eat"
+        },
+        {
           "type": "news"
         },
         {
@@ -58,7 +73,7 @@
       "scene": "tavern",
       "pos": [52, 72],
       "desc": "灯りと酒の匂い。余興の仕事と旅の噂はここに集まる",
-      "npcs": [],
+      "npcs": ["npc.ilda"],
       "actions": [
         {
           "type": "work",
@@ -72,6 +87,15 @@
             "storyteller",
             "medicinal_meal"
           ]
+        },
+        {
+          "type": "gamble"
+        },
+        {
+          "type": "social"
+        },
+        {
+          "type": "eat"
         },
         {
           "type": "news"
@@ -98,6 +122,9 @@
           "type": "arms"
         },
         {
+          "type": "social"
+        },
+        {
           "type": "mentor"
         }
       ]
@@ -121,6 +148,15 @@
             "etiquette",
             "merchant_eye"
           ]
+        },
+        {
+          "type": "market"
+        },
+        {
+          "type": "social"
+        },
+        {
+          "type": "stroll"
         },
         {
           "type": "book"
@@ -166,6 +202,9 @@
           "type": "train"
         },
         {
+          "type": "board"
+        },
+        {
           "type": "society"
         },
         {
@@ -206,6 +245,12 @@
           ]
         },
         {
+          "type": "pray"
+        },
+        {
+          "type": "social"
+        },
+        {
           "type": "lore"
         },
         {
@@ -240,6 +285,13 @@
         {
           "type": "work",
           "kinds": ["riding", "footwork", "wind_magic", "lancer"]
+        },
+        {
+          "type": "journey",
+          "to": "bergen"
+        },
+        {
+          "type": "social"
         },
         {
           "type": "mentor"
@@ -278,8 +330,17 @@
           "type": "hunt"
         },
         {
+          "type": "gather"
+        },
+        {
+          "type": "stroll"
+        },
+        {
           "type": "work",
           "kinds": ["logging", "gathering", "hunting"]
+        },
+        {
+          "type": "social"
         },
         {
           "type": "mentor"
@@ -318,6 +379,15 @@
           "type": "hunt"
         },
         {
+          "type": "gather"
+        },
+        {
+          "type": "stroll"
+        },
+        {
+          "type": "social"
+        },
+        {
           "type": "mentor"
         },
         {
@@ -354,6 +424,12 @@
           "type": "fish"
         },
         {
+          "type": "gather"
+        },
+        {
+          "type": "stroll"
+        },
+        {
           "type": "work",
           "kinds": ["fishing", "swimming"]
         },
@@ -384,6 +460,12 @@
       "npcs": [],
       "actions": [
         {
+          "type": "gather"
+        },
+        {
+          "type": "stroll"
+        },
+        {
           "type": "work",
           "kinds": ["farming", "earth_magic"]
         },
@@ -413,6 +495,9 @@
           "type": "abyss"
         },
         {
+          "type": "gather"
+        },
+        {
           "type": "travel",
           "to": "gate"
         },
@@ -427,6 +512,89 @@
         {
           "type": "travel",
           "to": "lake"
+        }
+      ]
+    },
+    {
+      "id": "bern.gate",
+      "name": "ベルンの門",
+      "kind": "town",
+      "town": "bergen",
+      "scene": "gate",
+      "pos": [82, 82],
+      "desc": "石の関門。ここからアルディへの道が下っている",
+      "npcs": [],
+      "actions": [
+        {
+          "type": "journey",
+          "to": "ardi"
+        },
+        {
+          "type": "stroll"
+        }
+      ]
+    },
+    {
+      "id": "bern.square",
+      "name": "ベルンの広場",
+      "kind": "town",
+      "town": "bergen",
+      "scene": "town",
+      "pos": [45, 38],
+      "desc": "井戸を囲む小さな広場。掲示板に頼み事が貼られている",
+      "npcs": [],
+      "actions": [
+        {
+          "type": "stroll"
+        },
+        {
+          "type": "board"
+        }
+      ]
+    },
+    {
+      "id": "bern.market",
+      "name": "ベルンの市",
+      "kind": "town",
+      "town": "bergen",
+      "scene": "market",
+      "pos": [60, 56],
+      "desc": "木彫りと羊毛と黒パンの市。山の幸が並ぶ",
+      "npcs": ["npc.bern.vida"],
+      "actions": [
+        {
+          "type": "work",
+          "kinds": ["brewing", "leatherwork", "tailoring", "bargaining", "craft"]
+        },
+        {
+          "type": "market"
+        },
+        {
+          "type": "social"
+        },
+        {
+          "type": "stroll"
+        }
+      ]
+    },
+    {
+      "id": "bern.inn",
+      "name": "宿《渡り鳥》",
+      "kind": "town",
+      "town": "bergen",
+      "scene": "inn",
+      "pos": [28, 62],
+      "desc": "旅籠。梁の低い食堂に山の煙の匂いが染みている",
+      "npcs": ["npc.bern.rohe"],
+      "actions": [
+        {
+          "type": "sleep"
+        },
+        {
+          "type": "social"
+        },
+        {
+          "type": "eat"
         }
       ]
     }

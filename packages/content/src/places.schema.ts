@@ -13,7 +13,20 @@ import { z } from "zod";
  *   work/kinds … その場所に届く注文の技能（skills.json の id）。
  *                default=true ならどこにも割り当たっていない注文の受け皿
  *   travel/to  … 行き先の場所 id（街→地域・地域→地域・地域→門）
+ *   journey/to … 行き先の町 id（P-02。life.json towns の id。数日かかる旅）
  *   それ以外   … type だけを持つ（hunt/fish/abyss/book/news/lore/…）
+ *
+ * P-02「行動の種類を増やす」で加わった行動：
+ *   stroll  散策（歩いて起きる小さな出来事。life.json stroll の表）
+ *   gather  採集（場所ごとの採集表 life.json gather。品物が手に入る）
+ *   market  市場売買（品物の売り買い。行動は消費しない）
+ *   cook    料理（レシピから品を作る。行動を消費する）
+ *   gamble  賭け事（酒場のサイコロ。行動を消費する）
+ *   social  人と過ごす（話す・飲む・贈る。仲の値が育つ）
+ *   board   依頼掲示板（納品系の日々の頼み。life.json errands）
+ *   pray    祈る／寄付（祈りは行動・寄付はお金。世界の備えにも足せる）
+ *   eat     食事（持ち物の料理・宿の食事。次の眠りの質に効く）
+ *   shelf   持ち物棚（持ち物の一覧。行動は消費しない）
  */
 
 /** 場所でできる行動の種類 */
@@ -41,6 +54,18 @@ export const PLACE_ACTION_TYPES = [
   "retire",
   "reset",
   "travel",
+  /** 以下 P-02「行動の種類を増やす」 */
+  "stroll",
+  "gather",
+  "market",
+  "cook",
+  "gamble",
+  "social",
+  "board",
+  "pray",
+  "eat",
+  "shelf",
+  "journey",
 ] as const;
 
 export type PlaceActionType = (typeof PLACE_ACTION_TYPES)[number];
@@ -52,7 +77,7 @@ export const placeActionSchema = z
     kinds: z.array(z.string().min(1)).optional(),
     /** work のみ：どこにも割り当たっていない注文をここで受ける */
     default: z.literal(true).optional(),
-    /** travel のみ：行き先の場所 id */
+    /** travel は行き先の場所 id、journey は行き先の町 id（P-02） */
     to: z.string().min(1).optional(),
   })
   .strict()
@@ -66,11 +91,14 @@ export const placeActionSchema = z
     if (a.type === "travel" && a.to === undefined) {
       ctx.addIssue({ code: "custom", message: "travel の行動には to（行き先）が必要" });
     }
+    if (a.type === "journey" && a.to === undefined) {
+      ctx.addIssue({ code: "custom", message: "journey の行動には to（行き先の町）が必要" });
+    }
     if (a.type !== "work" && (a.kinds !== undefined || a.default !== undefined)) {
       ctx.addIssue({ code: "custom", message: "kinds/default は work の行動にだけ使う" });
     }
-    if (a.type !== "travel" && a.to !== undefined) {
-      ctx.addIssue({ code: "custom", message: "to は travel の行動にだけ使う" });
+    if (a.type !== "travel" && a.type !== "journey" && a.to !== undefined) {
+      ctx.addIssue({ code: "custom", message: "to は travel/journey の行動にだけ使う" });
     }
   });
 
@@ -101,6 +129,11 @@ export const placeSchema = z
     name: z.string().min(1),
     /** town=街の中（見取り図から選ぶ。移動は行動を消費しない） / region=街の外（門から出る） */
     kind: z.enum(["town", "region"]),
+    /**
+     * 属する町（P-02、life.json towns の id。省略時は基点の町 "ardi"）。
+     * 町の場所はその町の見取り図にだけ並び、街の外の地域はその町の門から出る
+     */
+    town: z.string().min(1).optional(),
     /** 背景の情景キー */
     scene: z.enum(PLACE_SCENES),
     /** 街の見取り図での位置（% 座標。街の場所だけ持つ） */

@@ -509,6 +509,39 @@ export const balanceSchema = z
       })
       .strict(),
     /**
+     * 日々の営み（P-02「行動の種類を増やす」）。core/life の LifeConfig の
+     * 係数部。表の中身（町・道・散策の出来事・採集・レシピ・市場・賭け・
+     * 仲・掲示板）は life.json が持ち、ここには効き具合だけを置く
+     */
+    life: z
+      .object({
+        /** 食べた食事の眠りへの効き（眠りの質 += 食事の質 × この値） */
+        mealSleepFactor: z.number().min(0).max(0.02),
+        /** 祈った日の眠りの質への加算 */
+        praySleepBonus: z.number().min(0).max(0.5),
+        /** 野営（旅の道中の眠り）の質 */
+        campQuality: z.number().positive(),
+        /** 採集1回に引く品の数（採集表からの抽選回数） */
+        gatherDraws: z.number().int().min(1).max(6),
+        /** 掲示板の依頼を1日にこなせる数 */
+        errandPerDay: z.number().int().min(1),
+        /** 市場の日替わりの揺らぎの半幅（価格 ×(1±この値)） */
+        marketJitter: z.number().min(0).max(0.5),
+        /** 仲の値がこの値を超えると相手の挨拶が親しいものに変わる */
+        bondRespectMin: z.number().nonnegative(),
+        /** 仲の値の上限 */
+        bondMax: z.number().positive(),
+        /** 祈りの経験の挑戦差（prayer 技能に対する難度） */
+        prayDifficulty: z.number().min(0).max(100),
+        /** 賭け事の基礎勝率（gamble.win リンクの技能分が加算される） */
+        gambleWinChance: z.number().min(0).max(1),
+        /** 賭け事の経験の挑戦差（gambling 技能に対する難度） */
+        gambleDifficulty: z.number().min(0).max(100),
+        /** まかせ料理の出来の基準（実技ミニゲーム無しのときの出来の中央値） */
+        cookQualityBase: z.number().min(0).max(100),
+      })
+      .strict(),
+    /**
      * 天候（X-13、docs/03 §2「日替わりの要因は2つまで」の1枠）。
      * 空の種類・季節の重み・風景の行は weather.json が持ち、
      * ここには注文の報酬への日替わり係数だけを置く（core/weather の

@@ -40,6 +40,27 @@ import {
 } from "./incidents/index.js";
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import type { CombatConfig, WeaponDef } from "./combat/index.js";
+import {
+  bondOf,
+  canErrand,
+  cookQuality,
+  drawGamble,
+  drawGather,
+  drawStroll,
+  errandsFor,
+  gambleWinChance,
+  itemCount,
+  itemPrice,
+  journeyBetween,
+  marketStock,
+  mealToday,
+  prayedToday,
+  townOf,
+  townName,
+  withItem,
+  type ItemDef,
+  type LifeConfig,
+} from "./life/index.js";
 import { linkFlat, linkFlatCap, linkSum, type SkillLinks } from "./links/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
 import { npcLifeEvents, type NpcLifeConfig } from "./npclife/index.js";
@@ -199,6 +220,14 @@ export interface StepConfig {
    * 技能も途中の世界から育てられる）。省略時は無い技能への経験は捨てる
    */
   initialSkillPotential?: number;
+  /**
+   * 日々の営み（P-02「行動の種類を増やす」。life.json＋balance.life）。
+   * 散策・採集・料理・賭け事・人との時間・市場・掲示板・祈り・旅の
+   * 定義と係数。省略時はこれらのコマンドは何も起こさない
+   */
+  life?: LifeConfig;
+  /** 品物の定義表（items.json の id → 定義。値段・食事の質・贈り物の価値に使う） */
+  items?: Record<string, ItemDef>;
 }
 
 export type Command =
@@ -355,7 +384,60 @@ export type Command =
    * state は変えず `retired` イベントだけを返す —— 伝記・年代記・継承・転生は
    * 呼び出し側が行う（転生は newGame で別の GameState に切り替わるため）
    */
-  | { type: "retire" };
+  | { type: "retire" }
+  // ---- 日々の営み（P-02「行動の種類を増やす」） ----
+  /**
+   * 散策（1行動）。scope は表のキー（"town"=街の中 / "region"=街の外。
+   * 省略時は旅の途中なら "road"、町にいれば "town"）。歩いて起きる小さな
+   * 出来事を life.json stroll の表から決定的に1件引く
+   */
+  | { type: "stroll"; scope?: "town" | "region" }
+  /**
+   * 採集（1行動）。place は life.json gather の表のある場所 id。
+   * 場所ごとの採集表から季節・天候を見て品を引き、その場所の技能に経験が入る
+   */
+  | { type: "gather"; place: string }
+  /** 市場で買う（行動は消費しない。stock に並ぶ品をその町の相場で） */
+  | { type: "buyItem"; id: string; n?: number }
+  /** 市場で売る（行動は消費しない。持ち物をその町の相場で） */
+  | { type: "sellItem"; id: string; n?: number }
+  /**
+   * 料理（1行動）。recipe は life.json のレシピ id。材料を消費して
+   * 仕上がりの品を得る。quality はミニゲームの出来（省略時はまかせ ——
+   * 日付×回目の決定的な素の出来）
+   */
+  | { type: "cook"; recipe: string; quality?: number }
+  /**
+   * 食べる（行動は消費しない）。持ち物の食べられる品を1つ食べ、
+   * その質を今夜の眠りに刻む（日付が変わると効き目は消える）
+   */
+  | { type: "eat"; id: string }
+  /**
+   * 賭ける（1行動）。stake は life.json gamble.stakes の掛け金。
+   * 勝率は基礎値＋賭けの技能（gamble.win リンク）。勝てば掛け金×winFactor が戻る
+   */
+  | { type: "gamble"; stake: number }
+  /**
+   * 祈る（1行動）。alms を渡すと併せて施しを納める（生活の中の世界の備え —
+   * 施しの累計は counters["life.alms"]）。祈った日の眠りが少し深くなる
+   */
+  | { type: "pray"; alms?: number }
+  /**
+   * 人と過ごす（1行動）。way は 話す=talk / 飲む=drink（代金）/ 贈る=gift
+   * （item=贈る品物の id）。仲の値が育ち、社交の技能（social.gain リンク）に
+   * 少し経験が入る。相手が今日街にいない日は会えない（行動も消費しない）
+   */
+  | { type: "social"; npc: string; way: "talk" | "drink" | "gift"; item?: string }
+  /**
+   * 掲示板の依頼を果たす（1行動）。id は life.json errands の id。
+   * 納める品が揃い、日限・日の上限の内なら品を納めて報酬を得る
+   */
+  | { type: "errand"; id: string }
+  /**
+   * 旅に出る（1行動）。to は行き先の町 id（life.json journeys の道がある
+   * 町に限る）。以後は野営の眠りで日が進み、日数ぶんの野営で着く
+   */
+  | { type: "journey"; to: string };
 
 export interface StepResult {
   state: GameState;
@@ -452,6 +534,73 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       cfg.combat.deathPendingFactor + linkSum(cfg.links, "death.keep", next.player.skills),
     );
 
+  /**
+   * 日々の営みの技能経験（P-02：gather/cook/pray/gamble 共通）。
+   * train/work/combat と同じ computeGain の式で、kind は gain.base の
+   * 行動種別、difficulty は表（採集・レシピ・係数）の難度 —— 挑戦差を作る
+   */
+  const grantLifeGain = (kind: string, skillId: string, difficulty: number): void => {
+    const skill = ensureSkillRecord(skillId);
+    if (skill === undefined) return;
+    const repeats = recentRepeats(next.actionLog, kind, skillId, cfg.gain.noveltyWindow);
+    const { amount } = computeGain(
+      {
+        kind,
+        skill: skill.value,
+        delta: difficulty - skill.value,
+        repeats,
+        potential: skill.potential,
+        fatigue: next.player.fatigue,
+        wind: windFor(next, kind, skillId),
+        modifiers: gainModifier(
+          [
+            ...activeEffects(
+              next,
+              cfg.titles,
+              cfg.society.professions,
+              cfg.mentors?.mentors,
+              cfg.legacy?.artifactGainFactor,
+            ),
+            ...activeBookEffects(next, cfg.books),
+          ],
+          kind,
+          skillId,
+        ),
+      },
+      cfg.gain,
+    );
+    // R-01：営みの経験にも揺らぎが掛かる
+    const applied = amount * gainFactor(skill.value);
+    skill.pending += applied;
+    skill.lastUsedDay = next.time.day;
+    events.push({ type: "gainApplied", skill: skillId, amount: applied });
+  };
+
+  /** 品物の増減を state に反映し、対応するイベントを出す（P-02） */
+  const giveItem = (id: string, n: number): void => {
+    if (n <= 0) return;
+    next = { ...next, life: withItem(next, id, n) };
+    events.push({ type: "itemGot", id, n });
+  };
+  const takeItem = (id: string, n: number): void => {
+    if (n <= 0) return;
+    next = { ...next, life: withItem(next, id, -n) };
+    events.push({ type: "itemSpent", id, n });
+  };
+  /** 仲を深める（bondOf の上限まで。amount<=0 のときは「会えなかった」だけを出す） */
+  const deepen = (npc: string, amount: number): void => {
+    if (amount <= 0) {
+      events.push({ type: "bonded", npc, amount: 0, total: bondOf(next, npc, cfg.life!) });
+      return;
+    }
+    const total = Math.min(cfg.life!.bondMax, bondOf(next, npc, cfg.life!) + amount);
+    next = {
+      ...next,
+      life: { ...next.life, bonds: { ...next.life.bonds, [npc]: total } },
+    };
+    events.push({ type: "bonded", npc, amount, total });
+  };
+
   switch (command.type) {
     case "wait": {
       next.time = advanceTime(next.time, cfg.time);
@@ -496,9 +645,17 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       // R-01 体調の揺らぎ：目覚める日の「調子」を日×世界シードで抽選し、
       // 睡眠の質と疲労で良い/悪いの重みを傾ける。結果は今晩の定着の質に係数として効く
-      const baseQuality = isRest
-        ? cfg.body.restQuality
-        : sleepQuality(command.inn ?? "normal", command.dinner ?? false, cfg.sleep);
+      // P-02：旅の途中の眠りは野営（campQuality）。食事と祈りはどの眠りにも効く
+      const camping = next.life.journey !== null;
+      let baseQuality = camping
+        ? (cfg.life?.campQuality ?? cfg.body.restQuality)
+        : isRest
+          ? cfg.body.restQuality
+          : sleepQuality(command.inn ?? "normal", command.dinner ?? false, cfg.sleep);
+      if (cfg.life !== undefined) {
+        baseQuality += mealToday(next) * cfg.life.mealSleepFactor;
+        if (prayedToday(next)) baseQuality += cfg.life.praySleepBonus;
+      }
       const condition =
         cfg.variance !== undefined
           ? rollCondition(
@@ -562,8 +719,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         label: w.label,
         direction: w.direction,
       }));
-      // 宿代を払う（rest・自宅は無料）。傾向・誓約で変動する（T-45/T-46）
-      if (!isRest) {
+      // 宿代を払う（rest・自宅・旅の野営は無料）。傾向・誓約で変動する（T-45/T-46）
+      if (!isRest && !camping) {
         const cost = Math.round(
           (cfg.sleep.innCost?.[command.inn ?? "normal"] ?? 0) * worldFactor(fate, "innCostFactor"),
         );
@@ -575,6 +732,21 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       next.time = sleepTime(next.time);
       next = resetDailyNotify(next); // 日付が変わると通知予算はリセット
+
+      // P-02 旅の途中：野営で残り日数を1つ減らし、0 の朝に着く
+      if (camping && cfg.life !== undefined && next.life.journey !== null) {
+        const j = { ...next.life.journey, daysLeft: next.life.journey.daysLeft - 1 };
+        if (j.daysLeft <= 0) {
+          next = { ...next, life: { ...next.life, town: j.to, journey: null } };
+          events.push({ type: "journeyArrived", town: j.to });
+          const arrive =
+            cfg.life.texts?.arrive?.replaceAll("{town}", townName(j.to, cfg.life)) ??
+            `――${townName(j.to, cfg.life)}に着いた。`;
+          report.surprises.push(arrive);
+        } else {
+          next = { ...next, life: { ...next.life, journey: j } };
+        }
+      }
 
       // 天候（X-13）：新しい朝の空を seed+day から導出して起床レポートに載せる。
       // 風景として滲ませるだけ —— 常時ステータス表示にはしない（W-04 の間接表現と同系統）
@@ -1533,6 +1705,327 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 引退：行動を消費せず状態も変えない。生涯の終わりを告げる出来事だけを発行し、
       // 伝記・年代記への記録・継承・転生は呼び出し側の仕事（T-40。06 §1）
       events.push({ type: "retired" });
+      break;
+    }
+    // ---- 日々の営み（P-02「行動の種類を増やす」） ----
+    case "stroll": {
+      // 散策：歩いて起きる小さな出来事。表は scope で分かれる
+      // （旅の途中は常に "road" —— 街道の出来事しか起きない）
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      const scope = next.life.journey !== null ? "road" : (command.scope ?? "town");
+      const seq = next.counters["action.stroll"] ?? 0;
+      const outcome = drawStroll(next.seed, next.time.day, scope, seq, cfg.life);
+      if (outcome === undefined) break;
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "stroll", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "stroll",
+        day: next.time.day,
+        variant: scope,
+      });
+      events.push({ type: "strollOutcome", text: outcome.text });
+      // 小さな効果：金・拾い物・出会い・見聞・経験・疲労・旗印
+      if (outcome.money !== undefined && outcome.money !== 0) {
+        const amount = Math.trunc(outcome.money);
+        next = {
+          ...next,
+          player: { ...next.player, money: Math.max(0, next.player.money + amount) },
+        };
+        if (amount > 0) events.push({ type: "moneyPaid", amount });
+      }
+      for (const [id, n] of Object.entries(outcome.items ?? {})) {
+        giveItem(id, Math.trunc(n));
+      }
+      if (outcome.npc !== undefined) {
+        deepen(outcome.npc, outcome.bond ?? cfg.life.social.talk.bond * 0.8);
+      }
+      if (outcome.gain !== undefined && outcome.gain.amount !== 0) {
+        grantPending(outcome.gain.skill, outcome.gain.amount);
+      }
+      if (outcome.fatigue !== undefined && outcome.fatigue !== 0) {
+        next = {
+          ...next,
+          player: {
+            ...next.player,
+            fatigue: Math.max(0, Math.min(100, next.player.fatigue + outcome.fatigue)),
+          },
+        };
+      }
+      if (outcome.flag !== undefined) {
+        next = { ...next, flags: { ...next.flags, [outcome.flag]: true } };
+      }
+      if (outcome.atom !== undefined) {
+        // 手がかり：アトムを読み終えたことにする（出来事の atom と同じ道。
+        // 読み済みなら何も起きない）
+        const res = readAtom(next, outcome.atom, cfg.lore);
+        if (res.ok) {
+          next = res.state;
+          events.push({ type: "atomRead", id: outcome.atom });
+          for (const f of res.newFacts) events.push({ type: "factLearned", id: f });
+          for (const c of res.connections) {
+            events.push({ type: "loreConnection", id: c.eventId, flag: c.flag });
+          }
+        }
+      }
+      break;
+    }
+    case "gather": {
+      // 採集：場所ごとの採集表から季節・天候を見て品を引き、その場所の技能に経験が入る
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      const table = cfg.life.gather[command.place];
+      if (table === undefined) break;
+      const season = describeTime(next.time, cfg.time).season;
+      const weather =
+        cfg.weather !== undefined
+          ? weatherOf(next.seed, next.time.day, cfg.weather, cfg.time).kind.id
+          : undefined;
+      const got = drawGather(
+        next.seed,
+        next.time.day,
+        command.place,
+        next.counters["action.gather"] ?? 0,
+        season,
+        weather,
+        cfg.life,
+      );
+      grantLifeGain("gather", table.skill, table.difficulty);
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "gather", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "gather",
+        day: next.time.day,
+        target: command.place,
+      });
+      for (const g of got) giveItem(g.item, g.n);
+      break;
+    }
+    case "buyItem": {
+      // 市場で買う：店に並ぶ品をその町の相場で。行動は消費しない
+      if (cfg.life === undefined || cfg.items === undefined) break;
+      const def = cfg.items[command.id];
+      if (def === undefined) break;
+      const n = Math.max(1, Math.trunc(command.n ?? 1));
+      const town = townOf(next);
+      if (!marketStock(town, cfg.life).includes(command.id)) break;
+      const cost = itemPrice(next.seed, next.time.day, command.id, town, "buy", cfg.life, def) * n;
+      if (next.player.money < cost) break;
+      next = {
+        ...next,
+        player: { ...next.player, money: next.player.money - cost },
+      };
+      next = { ...next, life: withItem(next, command.id, n) };
+      events.push({ type: "itemBought", id: command.id, n, amount: cost });
+      break;
+    }
+    case "sellItem": {
+      // 市場で売る：持ち物をその町の相場で。行動は消費しない
+      if (cfg.life === undefined || cfg.items === undefined) break;
+      const def = cfg.items[command.id];
+      if (def === undefined) break;
+      const n = Math.max(1, Math.trunc(command.n ?? 1));
+      if (itemCount(next, command.id) < n) break;
+      const town = townOf(next);
+      const gain = itemPrice(next.seed, next.time.day, command.id, town, "sell", cfg.life, def) * n;
+      next = { ...next, life: withItem(next, command.id, -n) };
+      next = {
+        ...next,
+        player: { ...next.player, money: next.player.money + gain },
+      };
+      events.push({ type: "itemSold", id: command.id, n, amount: gain });
+      break;
+    }
+    case "cook": {
+      // 料理：材料を消費して仕上がりの品を作る。出来はミニゲームかまかせの素の出来
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      const recipe = cfg.life.recipes.find((r) => r.id === command.recipe);
+      if (recipe === undefined) break;
+      if (!Object.entries(recipe.inputs).every(([id, n]) => itemCount(next, id) >= n)) break;
+      const quality = Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            command.quality ??
+              cookQuality(next.seed, next.time.day, next.counters["cook.total"] ?? 0, cfg.life),
+          ),
+        ),
+      );
+      grantLifeGain("cook", recipe.skill, recipe.difficulty);
+      for (const [id, n] of Object.entries(recipe.inputs)) takeItem(id, n);
+      next = { ...next, life: withItem(next, recipe.out, 1) };
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "cook", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "cook",
+        day: next.time.day,
+        target: recipe.out,
+        variant: recipe.id,
+      });
+      events.push({ type: "cooked", recipe: recipe.id, out: recipe.out, quality });
+      break;
+    }
+    case "eat": {
+      // 食べる：持ち物の食べられる品を1つ。その質を今夜の眠りに刻む
+      // （料理は作ったときの出来で質が動く —— counters["meal.q.<id>"] が覚える）
+      if (cfg.life === undefined || cfg.items === undefined) break;
+      const def = cfg.items[command.id];
+      if (def?.food === undefined) break;
+      if (itemCount(next, command.id) < 1) break;
+      const cookedQ = next.counters[`meal.q.${command.id}`];
+      const quality = Math.round(
+        cookedQ !== undefined ? def.food * (0.5 + cookedQ / 200) : def.food,
+      );
+      takeItem(command.id, 1);
+      next = {
+        ...next,
+        life: { ...next.life, mealDay: next.time.day, mealQuality: quality },
+      };
+      events.push({ type: "ate", id: command.id, quality });
+      break;
+    }
+    case "gamble": {
+      // 賭け事：掛け金の段に限り張れる。勝率は基礎値＋賭けの技能（gamble.win）
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      const stake = Math.trunc(command.stake);
+      if (!cfg.life.gamble.stakes.includes(stake) || next.player.money < stake) break;
+      const chance = gambleWinChance(
+        next,
+        linkSum(cfg.links, "gamble.win", next.player.skills),
+        cfg.life,
+      );
+      const won = drawGamble(next.seed, next.time.day, next.counters["gamble.total"] ?? 0, chance);
+      const back = won ? Math.round(stake * cfg.life.gamble.winFactor) : 0;
+      grantLifeGain("gamble", "gambling", cfg.life.gambleDifficulty);
+      next = {
+        ...next,
+        player: { ...next.player, money: next.player.money - stake + back },
+      };
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "gamble", cfg.body);
+      events.push({ type: "actionPerformed", kind: "gamble", day: next.time.day });
+      events.push({ type: "gambled", stake, won, amount: back });
+      if (won) events.push({ type: "moneyPaid", amount: back });
+      break;
+    }
+    case "pray": {
+      // 祈る：その日の眠りを少し深くする刻印。施しを納めると併せて積む
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      const alms = Math.max(0, Math.trunc(command.alms ?? 0));
+      const paid = Math.min(alms, next.player.money);
+      grantLifeGain("pray", "prayer", cfg.life.prayDifficulty);
+      next = {
+        ...next,
+        life: { ...next.life, prayedDay: next.time.day },
+        player: { ...next.player, money: next.player.money - paid },
+      };
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "pray", cfg.body);
+      events.push({ type: "actionPerformed", kind: "pray", day: next.time.day });
+      events.push({ type: "prayed", ...(paid > 0 ? { alms: paid } : {}) });
+      break;
+    }
+    case "social": {
+      // 人と過ごす：話す・飲む・贈る。仲の値が育ち社交の技能に少し経験が入る。
+      // 相手が今日街にいない日は会えない（人の揺らぎ、R-01）
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      if (
+        cfg.variance !== undefined &&
+        npcAway(next.seed, next.time.day, command.npc, cfg.variance.npc)
+      ) {
+        events.push({
+          type: "bonded",
+          npc: command.npc,
+          amount: 0,
+          total: bondOf(next, command.npc, cfg.life),
+        });
+        break;
+      }
+      // 各経路で代入される（抜ける経路は break）
+      let amount: number;
+      if (command.way === "talk") {
+        amount = cfg.life.social.talk.bond;
+      } else if (command.way === "drink") {
+        const cost = cfg.life.social.drink.cost;
+        if (next.player.money < cost) break;
+        amount = cfg.life.social.drink.bond;
+        next = {
+          ...next,
+          player: { ...next.player, money: next.player.money - cost },
+        };
+      } else {
+        // 贈る：持ち物の売れる品を1つ。価値の大きい贈り物ほど仲が深まる
+        const def = cfg.items?.[command.item ?? ""];
+        if (command.item === undefined || def === undefined || def.price <= 0) break;
+        if (itemCount(next, command.item) < 1) break;
+        takeItem(command.item, 1);
+        amount = Math.min(cfg.life.social.gift.cap, def.price * cfg.life.social.gift.bondPerPrice);
+      }
+      // K-01 社交の技能：口添え・弁舌・目利きに少し経験が入る（social.gain）
+      grantLinkGains("social.gain");
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "social", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "social",
+        day: next.time.day,
+        target: command.npc,
+        variant: command.way,
+      });
+      deepen(command.npc, amount);
+      break;
+    }
+    case "errand": {
+      // 掲示板の依頼：納める品が揃えば品を納めて報酬を得る
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      const def = errandsFor(townOf(next), cfg.life).find((e) => e.id === command.id);
+      if (def === undefined || !canErrand(next, def, cfg.life)) break;
+      for (const [id, n] of Object.entries(def.need)) takeItem(id, n);
+      const money = Math.trunc(def.reward.money ?? 0);
+      if (money > 0) {
+        next = {
+          ...next,
+          player: { ...next.player, money: next.player.money + money },
+        };
+      }
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "errand", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "errand",
+        day: next.time.day,
+        target: def.id,
+      });
+      events.push({ type: "errandDone", id: def.id });
+      if (money > 0) events.push({ type: "moneyPaid", amount: money });
+      for (const [id, n] of Object.entries(def.reward.items ?? {})) giveItem(id, n);
+      if (def.reward.bond !== undefined) deepen(def.reward.bond.npc, def.reward.bond.amount);
+      if (def.reward.gain !== undefined && def.reward.gain.amount > 0) {
+        grantPending(def.reward.gain.skill, def.reward.gain.amount);
+      }
+      break;
+    }
+    case "journey": {
+      // 旅に出る：道のある隣町へ。以後は野営の眠りで日が進み、日数ぶんで着く
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      if (next.life.journey !== null) break;
+      const road = journeyBetween(cfg.life, townOf(next), command.to);
+      if (road === undefined) break;
+      next = {
+        ...next,
+        life: { ...next.life, journey: { to: command.to, daysLeft: road.days } },
+      };
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "journey", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "journey",
+        day: next.time.day,
+        target: command.to,
+      });
+      events.push({ type: "journeyStarted", to: command.to, days: road.days });
       break;
     }
   }

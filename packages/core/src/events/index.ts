@@ -232,7 +232,50 @@ export type ActionEvent =
       name: string;
       text: string;
       day: number;
-    };
+    }
+  // ---- 日々の営み（P-02「行動の種類を増やす」） ----
+  /**
+   * 散策・道中の出来事が起きた（1行動）。text は結末の一文（記録の行。
+   * 「――」始まりの地の文）。小さな効果（拾い物・金・仲・経験・疲労）は
+   * このイベントとは別に itemGot/moneyPaid/gainApplied/bonded として発行される
+   */
+  | { type: "strollOutcome"; text: string }
+  /** 品物を得た（採集・散策・報酬。id は items.json の id、n は個数） */
+  | { type: "itemGot"; id: string; n: number }
+  /** 品物を消費・納めた（料理の材料・掲示板の納品・贈り物。id は items.json の id） */
+  | { type: "itemSpent"; id: string; n: number }
+  /** 市場で買った（行動は消費しない。amount は払った G） */
+  | { type: "itemBought"; id: string; n: number; amount: number }
+  /** 市場で売った（行動は消費しない。amount は得た G） */
+  | { type: "itemSold"; id: string; n: number; amount: number }
+  /**
+   * 料理を作った（1行動）。recipe は life.json のレシピ id、out はできた
+   * 品物、quality は出来（0〜100。counters["meal.q.<out>"] がこの出来を覚える）
+   */
+  | { type: "cooked"; recipe: string; out: string; quality: number }
+  /** 食べた（行動は消費しない。quality はその食事の質 —— 今夜の眠りに効く） */
+  | { type: "ate"; id: string; quality: number }
+  /** 賭けた（1行動。stake は掛け金、won は勝敗、amount は手に入った G） */
+  | { type: "gambled"; stake: number; won: boolean; amount: number }
+  /**
+   * 祈った（1行動。alms は施しに納めた G。祈った日の眠りが少し深くなる）。
+   * 施しの累計は counters["life.alms"] に刻まれる
+   */
+  | { type: "prayed"; alms?: number }
+  /**
+   * 人との仲が深まった（話す・飲む・贈る・散策の出会い・依頼の報酬）。
+   * amount は今回の増分（0 なら「相手に会えなかった」）、total は増分後の仲の値
+   */
+  | { type: "bonded"; npc: string; amount: number; total: number }
+  /** 掲示板の依頼を果たした（1行動。id は life.json errands の id） */
+  | { type: "errandDone"; id: string }
+  /**
+   * 旅に出た（1行動。to は行き先の町 id、days は道中に要する日数）。
+   * 以後は野営の眠りで daysLeft が減り、0 の朝に着く
+   */
+  | { type: "journeyStarted"; to: string; days: number }
+  /** 町に着いた（旅の最後の野営の朝。town は着いた町の id） */
+  | { type: "journeyArrived"; town: string };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -491,6 +534,134 @@ export const counterSubscriber: Subscriber = (state, event) => {
           ...state.counters,
           "npc.events": (state.counters["npc.events"] ?? 0) + 1,
           [`npc.events.${event.kind}`]: (state.counters[`npc.events.${event.kind}`] ?? 0) + 1,
+        },
+      };
+    }
+    // ---- 日々の営み（P-02）：持ち物・仲・賭け・依頼・祈り・旅の刻印 ----
+    case "itemGot": {
+      // 品の累計と今の所持数を刻む（条件DSLから「これだけ集めた/持っている」を読める。
+      // 所持数は step が先に更新した state.life.items の最終値を写すだけ）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [`item.got.${event.id}`]: (state.counters[`item.got.${event.id}`] ?? 0) + event.n,
+          [`item.${event.id}`]: state.life.items[event.id] ?? 0,
+        },
+      };
+    }
+    case "itemSpent": {
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [`item.spent.${event.id}`]: (state.counters[`item.spent.${event.id}`] ?? 0) + event.n,
+          [`item.${event.id}`]: state.life.items[event.id] ?? 0,
+        },
+      };
+    }
+    case "itemBought": {
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "item.bought": (state.counters["item.bought"] ?? 0) + event.n,
+          [`item.${event.id}`]: state.life.items[event.id] ?? 0,
+        },
+      };
+    }
+    case "itemSold": {
+      // 売却の累計（売上の生涯合計に乗る。商売の実績を条件DSLから読める）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "item.sold": (state.counters["item.sold"] ?? 0) + event.n,
+          "money.earned": (state.counters["money.earned"] ?? 0) + event.amount,
+          [`item.${event.id}`]: state.life.items[event.id] ?? 0,
+        },
+      };
+    }
+    case "cooked": {
+      // 直近の出来を品物ごとに覚える（食べたときの食事の質に効く）＋料理の累計
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [`meal.q.${event.out}`]: Math.round(event.quality),
+          "cook.total": (state.counters["cook.total"] ?? 0) + 1,
+          [`item.${event.out}`]: state.life.items[event.out] ?? 0,
+        },
+      };
+    }
+    case "ate": {
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "meal.count": (state.counters["meal.count"] ?? 0) + 1,
+        },
+      };
+    }
+    case "gambled": {
+      // 賭けの通算（勝敗・回数。博打の実績を条件DSLから読める）
+      const key = event.won ? "gamble.won" : "gamble.lost";
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "gamble.total": (state.counters["gamble.total"] ?? 0) + 1,
+          [key]: (state.counters[key] ?? 0) + 1,
+        },
+      };
+    }
+    case "prayed": {
+      // 祈りの回数と施しの累計（教会への奉仕。条件DSL・称号から読める）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "life.prayed": (state.counters["life.prayed"] ?? 0) + 1,
+          "life.alms": (state.counters["life.alms"] ?? 0) + (event.alms ?? 0),
+        },
+      };
+    }
+    case "bonded": {
+      // 相手ごとの仲の値を条件DSLから読めるようにカウンタにも写す
+      if (event.amount === 0) return state;
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          [`bond.${event.npc}`]: event.total,
+        },
+      };
+    }
+    case "errandDone": {
+      // 依頼の達成：通算・依頼ごと・今日（日限と日の上限の基準）
+      const dailyN =
+        (state.counters["errand.daily.day"] === state.time.day
+          ? state.counters["errand.daily.n"]
+          : 0) ?? 0;
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "errand.done": (state.counters["errand.done"] ?? 0) + 1,
+          [`errand.done.${event.id}`]: (state.counters[`errand.done.${event.id}`] ?? 0) + 1,
+          [`errand.day.${event.id}`]: state.time.day,
+          "errand.daily.day": state.time.day,
+          "errand.daily.n": dailyN + 1,
+        },
+      };
+    }
+    case "journeyArrived": {
+      // 旅の累計（旅慣れを条件DSLから読める）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "journey.count": (state.counters["journey.count"] ?? 0) + 1,
         },
       };
     }

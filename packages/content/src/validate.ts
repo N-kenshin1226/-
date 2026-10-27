@@ -27,6 +27,8 @@ import { npcLifecycleFileSchema } from "./npc_lifecycle.schema.js";
 import { incidentsFileSchema } from "./incidents.schema.js";
 import { weatherFileSchema } from "./weather.schema.js";
 import { placesFileSchema } from "./places.schema.js";
+import { itemsFileSchema } from "./items.schema.js";
+import { lifeFileSchema } from "./life.schema.js";
 import { audioFileSchema } from "./audio.schema.js";
 import { weaponsFileSchema } from "./weapons.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
@@ -79,6 +81,8 @@ check("npc_lifecycle.json", npcLifecycleFileSchema);
 check("incidents.json", incidentsFileSchema);
 check("weather.json", weatherFileSchema);
 check("places.json", placesFileSchema);
+check("items.json", itemsFileSchema);
+check("life.json", lifeFileSchema);
 check("audio.json", audioFileSchema);
 check("weapons.json", weaponsFileSchema);
 check("crises/sample.json", crisesFileSchema);
@@ -253,6 +257,10 @@ try {
     "read.potential",
     "crisis.contrib",
     "mentor.fee",
+    /** P-02：人と過ごす行動の定数経験（口添え・弁舌が育つ） */
+    "social.gain",
+    /** P-02：賭け事の勝率に賭けの技能が効く係数フック */
+    "gamble.win",
   ]);
   const linkCoeffSkills = new Set<string>();
   const linkFlatSkills = new Set<string>();
@@ -1075,6 +1083,205 @@ try {
   }
 } catch (e) {
   console.error(`✗ 場所の突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 日々の営みの参照突き合わせ（P-02）：life.json が指す品物・技能・NPC・
+// アトム・町・場所が実在すること。場所の行動（gather 行動には採集表、
+// journey 行動には道、town 属性には町）も life.json と揃っていること
+try {
+  const lifeRaw = JSON.parse(readFileSync(join(root, "life.json"), "utf8")) as {
+    towns?: Record<string, { name?: string }>;
+    journeys?: { from?: string; to?: string; days?: number }[];
+    stroll?: Record<
+      string,
+      {
+        npc?: string;
+        atom?: string;
+        gain?: { skill?: string };
+        items?: Record<string, number>;
+        flag?: string;
+      }[]
+    >;
+    gather?: Record<string, { skill?: string; entries?: { item?: string; weather?: string[] }[] }>;
+    recipes?: { id?: string; inputs?: Record<string, number>; out?: string; skill?: string }[];
+    market?: {
+      stock?: { id?: string; towns?: string[] }[];
+      townFactor?: Record<string, Record<string, number>>;
+    };
+    errands?: {
+      id?: string;
+      town?: string;
+      need?: Record<string, number>;
+      reward?: {
+        bond?: { npc?: string };
+        gain?: { skill?: string };
+        items?: Record<string, number>;
+      };
+    }[];
+  };
+  const itemsRaw = JSON.parse(readFileSync(join(root, "items.json"), "utf8")) as {
+    items?: { id?: string; kind?: string }[];
+  };
+  const placesRaw = JSON.parse(readFileSync(join(root, "places.json"), "utf8")) as {
+    places?: { id?: string; town?: string; actions?: { type?: string; to?: string }[] }[];
+  };
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const voicesRaw = JSON.parse(readFileSync(join(root, "voices.json"), "utf8")) as {
+    npcs?: { id?: string }[];
+  };
+  const ordersRaw = JSON.parse(readFileSync(join(root, "orders.json"), "utf8")) as {
+    orders?: { id?: string; town?: string }[];
+  };
+  const weatherRaw = JSON.parse(readFileSync(join(root, "weather.json"), "utf8")) as {
+    kinds?: { id?: string }[];
+  };
+  const atomIds = new Set(
+    (readdirSync(join(root, "lore/atoms")) as string[])
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => f.slice(0, -".json".length)),
+  );
+  const townIds = new Set(Object.keys(lifeRaw.towns ?? {}));
+  const itemIds = new Set((itemsRaw.items ?? []).map((i) => i.id));
+  const mealIds = new Set((itemsRaw.items ?? []).filter((i) => i.kind === "meal").map((i) => i.id));
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const npcIds = new Set((voicesRaw.npcs ?? []).map((n) => n.id));
+  const weatherIds = new Set((weatherRaw.kinds ?? []).map((k) => k.id));
+  const placeIds = new Set((placesRaw.places ?? []).map((p) => p.id));
+  const bad: string[] = [];
+
+  // 散策の表が指す品物・NPC・アトム・技能
+  for (const [table, outcomes] of Object.entries(lifeRaw.stroll ?? {})) {
+    for (const o of outcomes) {
+      const label = `life.json stroll.${table}`;
+      if (o.npc !== undefined && !npcIds.has(o.npc)) bad.push(`${label}: 未定義のNPC ${o.npc}`);
+      if (o.atom !== undefined && !atomIds.has(o.atom)) {
+        bad.push(`${label}: 未定義のアトム ${o.atom}`);
+      }
+      if (o.gain?.skill !== undefined && !skillIds.has(o.gain.skill)) {
+        bad.push(`${label}: 未定義の技能 ${o.gain.skill}`);
+      }
+      for (const id of Object.keys(o.items ?? {})) {
+        if (!itemIds.has(id)) bad.push(`${label}: 未定義の品物 ${id}`);
+      }
+    }
+  }
+  // 採集の表：キーは gather 行動のある場所、品物・技能・天候は実在するもの
+  const gatherPlaces = new Set(
+    (placesRaw.places ?? [])
+      .filter((p) => (p.actions ?? []).some((a) => a.type === "gather"))
+      .map((p) => p.id),
+  );
+  for (const [place, table] of Object.entries(lifeRaw.gather ?? {})) {
+    const label = `life.json gather.${place}`;
+    if (!placeIds.has(place)) bad.push(`${label}: 場所 ${place} が places.json に無い`);
+    if (!gatherPlaces.has(place)) {
+      bad.push(`${label}: 場所 ${place} に gather 行動がない（採集表が無駄になる）`);
+    }
+    if (table.skill !== undefined && !skillIds.has(table.skill)) {
+      bad.push(`${label}: 未定義の技能 ${table.skill}`);
+    }
+    for (const e of table.entries ?? []) {
+      if (e.item !== undefined && !itemIds.has(e.item)) {
+        bad.push(`${label}: 未定義の品物 ${e.item}`);
+      }
+      for (const w of e.weather ?? []) {
+        if (!weatherIds.has(w)) bad.push(`${label}: 未定義の天候 ${w}`);
+      }
+    }
+  }
+  for (const p of placesRaw.places ?? []) {
+    if ((p.actions ?? []).some((a) => a.type === "gather") && !(p.id! in (lifeRaw.gather ?? {}))) {
+      bad.push(`places.json ${p.id}: gather 行動があるのに採集表がない`);
+    }
+  }
+  // レシピ：材料・仕上がりは実在の品物、仕上がりは meal、技能は実在
+  for (const r of lifeRaw.recipes ?? []) {
+    const label = `life.json recipes.${r.id ?? "?"}`;
+    for (const id of Object.keys(r.inputs ?? {})) {
+      if (!itemIds.has(id)) bad.push(`${label}: 未定義の材料 ${id}`);
+    }
+    if (r.out !== undefined && !mealIds.has(r.out)) {
+      bad.push(`${label}: 仕上がり ${r.out} が items.json に無い（kind=meal でない）`);
+    }
+    if (r.skill !== undefined && !skillIds.has(r.skill)) {
+      bad.push(`${label}: 未定義の技能 ${r.skill}`);
+    }
+  }
+  // 市場：並ぶ品・町係数のキーは実在の品物・町
+  for (const s of lifeRaw.market?.stock ?? []) {
+    if (s.id !== undefined && !itemIds.has(s.id)) {
+      bad.push(`life.json market.stock: 未定義の品物 ${s.id}`);
+    }
+    for (const t of s.towns ?? []) {
+      if (!townIds.has(t)) bad.push(`life.json market.stock ${s.id}: 未定義の町 ${t}`);
+    }
+  }
+  for (const [town, factors] of Object.entries(lifeRaw.market?.townFactor ?? {})) {
+    if (!townIds.has(town)) bad.push(`life.json market.townFactor: 未定義の町 ${town}`);
+    for (const id of Object.keys(factors)) {
+      if (id !== "*" && !itemIds.has(id)) {
+        bad.push(`life.json market.townFactor ${town}: 未定義の品物 ${id}`);
+      }
+    }
+  }
+  // 掲示板：町・品物・NPC・技能は実在するもの
+  for (const e of lifeRaw.errands ?? []) {
+    const label = `life.json errands.${e.id ?? "?"}`;
+    if (e.town !== undefined && !townIds.has(e.town)) {
+      bad.push(`${label}: 未定義の町 ${e.town}`);
+    }
+    for (const id of Object.keys(e.need ?? {})) {
+      if (!itemIds.has(id)) bad.push(`${label}: 未定義の納品 ${id}`);
+    }
+    if (e.reward?.bond?.npc !== undefined && !npcIds.has(e.reward.bond.npc)) {
+      bad.push(`${label}: 未定義のNPC ${e.reward.bond.npc}`);
+    }
+    if (e.reward?.gain?.skill !== undefined && !skillIds.has(e.reward.gain.skill)) {
+      bad.push(`${label}: 未定義の技能 ${e.reward.gain.skill}`);
+    }
+    for (const id of Object.keys(e.reward?.items ?? {})) {
+      if (!itemIds.has(id)) bad.push(`${label}: 未定義の報酬品 ${id}`);
+    }
+  }
+  // 場所の町属性・旅の行き先は実在の町。journey 行動の行き先には道がある
+  for (const p of placesRaw.places ?? []) {
+    const label = `places.json ${p.id ?? "?"}`;
+    if (p.town !== undefined && !townIds.has(p.town)) {
+      bad.push(`${label}: 未定義の町 ${p.town}`);
+    }
+    for (const a of p.actions ?? []) {
+      if (a.type === "journey") {
+        if (a.to === undefined || !townIds.has(a.to)) {
+          bad.push(`${label}: journey の行き先 ${a.to ?? "?"} が未定義の町`);
+          continue;
+        }
+        const from = p.town ?? "ardi";
+        const linked = (lifeRaw.journeys ?? []).some(
+          (j) => (j.from === from && j.to === a.to) || (j.from === a.to && j.to === from),
+        );
+        if (!linked) {
+          bad.push(`${label}: 町 ${from} から ${a.to} への道が life.json に無い`);
+        }
+      }
+    }
+  }
+  // 注文の町属性は実在の町
+  for (const o of ordersRaw.orders ?? []) {
+    if (o.town !== undefined && !townIds.has(o.town)) {
+      bad.push(`orders.json ${o.id ?? "?"}: 未定義の町 ${o.town}`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 日々の営みの参照が不正: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 日々の営みの参照（life/items ↔ places/skills/voices/atoms/weather）");
+  }
+} catch (e) {
+  console.error(`✗ 日々の営みの突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

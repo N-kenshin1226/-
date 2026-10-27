@@ -205,6 +205,27 @@ export interface CrisisState {
   outcome: "ongoing" | "resolved" | "ruin";
 }
 
+/**
+ * 日々の営みの状態（P-02「行動の種類を増やす」。v18〜）。
+ * 持ち物・人との仲・その日の食事と祈り・旅の途中経過を持つ。
+ * 日付と一緒に持つ欄は「その日だけ効くもの」を日またぎのリセットなしで表す
+ */
+export interface LifeState {
+  /** 今いる町（life.json towns の id。旅の到着で変わる） */
+  town: string;
+  /** 持ち物（items.json の id → 個数） */
+  items: Record<string, number>;
+  /** 人との仲の値（voices.json の npc id → 0〜100） */
+  bonds: Record<string, number>;
+  /** 食べた日とその食事の質（0〜100。その日の眠りにだけ効く） */
+  mealDay: number;
+  mealQuality: number;
+  /** 祈った日（その日の眠りが少し深くなる） */
+  prayedDay: number;
+  /** 旅の途中：行き先の町 id と残りの野営数。null なら町にいる */
+  journey: { to: string; daysLeft: number } | null;
+}
+
 export interface GameState {
   /** セーブスキーマのバージョン（save/ の SAVE_VERSION と一致させる） */
   version: number;
@@ -296,4 +317,10 @@ export interface GameState {
    * null は「未抽選」（v15 以前のセーブ → 次の季節の変わり目に抽選される）
    */
   crisis: CrisisState | null;
+  /**
+   * 日々の営み（P-02「行動の種類を増やす」。v18〜）。
+   * 持ち物・仲・食事・祈り・旅 —— 散策・採集・料理・賭け・市場・掲示板・
+   * 寄付が読み書きする欄
+   */
+  life: LifeState;
 }

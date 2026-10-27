@@ -517,7 +517,7 @@ describe("セーブ移行（v15 → v16）", () => {
     v15["version"] = 15;
     delete v15["crisis"];
     const restored = deserialize(JSON.stringify(v15));
-    expect(restored.version).toBe(17);
+    expect(restored.version).toBe(18); // v16（危機）以降の移行を経て最新版へ
     expect(restored.crisis).toBeNull();
 
     // 次の季節の変わり目に抽選される（新しい世界と同じ危機になる）

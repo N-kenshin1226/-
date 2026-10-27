@@ -582,6 +582,51 @@
       "targetQuality": 45,
       "rewardMoney": 80,
       "note": "教会の施療院で病人を看て回る"
+    },
+    {
+      "id": "order.bern_ale",
+      "kind": "brewing",
+      "name": "ベルンの黒ビール",
+      "targetQuality": 30,
+      "rewardMoney": 34,
+      "note": "山仕事の喉を潤す濃い目の一桶",
+      "town": "bergen"
+    },
+    {
+      "id": "order.bern_pack",
+      "kind": "leatherwork",
+      "name": "旅鞄の補修",
+      "targetQuality": 28,
+      "rewardMoney": 30,
+      "note": "街道を越える鞄。継ぎの丁寧さが要る",
+      "town": "bergen"
+    },
+    {
+      "id": "order.bern_cloak",
+      "kind": "tailoring",
+      "name": "山羊毛の外套",
+      "targetQuality": 32,
+      "rewardMoney": 38,
+      "note": "峠の風を凌ぐ厚手の仕立て",
+      "town": "bergen"
+    },
+    {
+      "id": "order.bern_caravan",
+      "kind": "bargaining",
+      "name": "隊商の仕切り",
+      "targetQuality": 30,
+      "rewardMoney": 36,
+      "note": "寄り合い商いの値段をまとめる",
+      "town": "bergen"
+    },
+    {
+      "id": "order.bern_woodcraft",
+      "kind": "craft",
+      "name": "木彫りの土産",
+      "targetQuality": 30,
+      "rewardMoney": 34,
+      "note": "旅人が持ち帰る小さな細工物",
+      "town": "bergen"
     }
   ]
 }

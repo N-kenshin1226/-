@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -121,6 +121,23 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
         player: { ...p, weapons: ["fist", "sword"], weapon: "sword" },
       };
     },
+    /**
+     * 17 → 18: 日々の営み（P-02「行動の種類を増やす」）。持ち物・仲・食事・
+     * 祈り・旅の欄を追加。旧セーブは基点の町 "ardi" にいて空荷の状態
+     */
+    17: (old) => ({
+      ...old,
+      version: 18,
+      life: {
+        town: "ardi",
+        items: {},
+        bonds: {},
+        mealDay: -1,
+        mealQuality: 0,
+        prayedDay: -1,
+        journey: null,
+      },
+    }),
   };
 
 export function serialize(state: GameState): string {
@@ -199,6 +216,7 @@ function assertShape(data: Record<string, unknown>): void {
     "tendency",
     "vows",
     "crisis",
+    "life",
   ];
   for (const key of required) {
     if (!(key in data)) throw new Error(`deserialize: ${key} がありません`);

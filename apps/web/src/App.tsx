@@ -23,6 +23,7 @@ import {
   eventLines,
   heirLife,
   incidentPendingChoice,
+  journeying,
   legacyArtifactName,
   loadChronicle,
   loadGame,
@@ -37,11 +38,11 @@ import {
   skyNow,
   t,
   tagsOf,
+  townName,
   tpl,
   wakeLines,
   type FateChoice,
 } from "./game.js";
-import { places } from "@trace/content";
 import { TravelVeil, type TravelFx, type TravelFxKind } from "./fx/travel.js";
 import { fxMs, motionOff } from "./fx/settings.js";
 import { AudioDirector } from "./fx/director.js";
@@ -78,6 +79,7 @@ import { HeirScreen, RebirthScreen, RetireScreen, SuccessionScreen } from "./scr
 import { EndingScreen } from "./screens/ending.js";
 import { NewsScreen, NoticeOverlay, WakeScreen } from "./screens/daily.js";
 import { SettingsScreen } from "./screens/settings.js";
+import { JourneyScreen, LifeScreen } from "./screens/life.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
 
 /** 幕の時間（P-01。「演出を短く」で短い側。theme.fx → --trv-* へ書き込む値） */
@@ -133,6 +135,9 @@ function sceneOf(s: Screen, lastPlace: string | null): SceneKind {
       return "desk";
     case "abyss":
       return "abyss";
+    // 旅の途中（P-02）：町と町の間は街道の景色
+    case "journey":
+      return "highway";
     case "combat":
       // 狩り場の景色のまま戦う（P-01。地域の情景があればそれを使う）
       return placeScene(s.place) ?? "night";
@@ -170,6 +175,8 @@ const HUD_SCREENS = new Set<Screen["name"]>([
   "records",
   "society",
   "mentor",
+  "life",
+  "journey",
 ]);
 
 /** 会話窓（世界の記録）を出す画面。起床・新聞・通知など別の窓が主役の画面や、
@@ -184,6 +191,8 @@ const LOG_SCREENS = new Set<Screen["name"]>([
   "abyss",
   "society",
   "mentor",
+  "life",
+  "journey",
 ]);
 
 export function App() {
@@ -566,9 +575,16 @@ export function App() {
     cfg.incidents !== undefined ? incidentPendingChoice(state, cfg.incidents) : [];
   const deferredIds =
     incidentDeferred.day === state.time.day ? incidentDeferred.ids : new Set<string>();
-  const autoIncidents = pendingIncidents.filter((o) => !deferredIds.has(o.def.id));
+  // 旅の途中（P-02）：見取り図・場所にはいられない —— 街道の窓に差し替える。
+  // その間は出来事の自動割り込みも届かない（人の届く範囲は町の中）
+  const onRoad = journeying(state);
+  const autoIncidents = onRoad ? [] : pendingIncidents.filter((o) => !deferredIds.has(o.def.id));
   const effScreen: Screen =
-    autoIncidents.length > 0 && screen.name === "menu" ? { name: "incident" } : screen;
+    onRoad && (screen.name === "menu" || screen.name === "place")
+      ? { name: "journey" }
+      : autoIncidents.length > 0 && screen.name === "menu"
+        ? { name: "incident" }
+        : screen;
   const deferIncident = (id: string) =>
     setIncidentDeferred({ day: state.time.day, ids: new Set([...deferredIds, id]) });
 
@@ -715,7 +731,7 @@ function TopChrome({ state, place }: { state: GameState; place?: { name: string;
     <>
       <Plate style={pos({ left: 28, top: 22 })} testId="place-name">
         <span style={{ fontFamily: theme.font.mincho, fontSize: 16 }}>
-          {place?.name ?? places.town}
+          {place?.name ?? townName(state.life.town)}
           <span style={{ color: theme.colors.world.dim, fontSize: 13 }}>
             {" "}
             ―― {place !== undefined && place.kind === "region" ? "街の外" : "宿場街"}
@@ -935,6 +951,20 @@ function ScreenView(props: {
       return (
         <MentorScreen state={state} place={screen.place} act={act} back={toBack(screen.place)} />
       );
+    case "life":
+      // 日々の営みの窓（P-02）：市場・料理・賭け・人・掲示板・祈り・食事・棚
+      return (
+        <LifeScreen
+          state={state}
+          view={screen.view}
+          place={screen.place}
+          act={act}
+          back={toBack(screen.place)}
+        />
+      );
+    case "journey":
+      // 旅の途中（P-02）：町と町の間の街道。野営で日が進む
+      return <JourneyScreen state={state} act={act} back={toMenu} />;
     case "status":
       return <StatusScreen state={state} back={toBack()} />;
     case "settings":

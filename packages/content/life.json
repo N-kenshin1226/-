@@ -1,0 +1,559 @@
+{
+  "version": 1,
+  "towns": {
+    "ardi": {
+      "name": "アルディ"
+    },
+    "bergen": {
+      "name": "ベルン"
+    }
+  },
+  "journeys": [
+    {
+      "from": "ardi",
+      "to": "bergen",
+      "days": 3
+    }
+  ],
+  "stroll": {
+    "town": [
+      {
+        "weight": 4,
+        "text": "――露店の裏で貨幣を拾った。",
+        "money": 4
+      },
+      {
+        "weight": 3,
+        "text": "――迷子の犬についていくと、軒先の植え込みに薬草が生えていた。",
+        "items": {
+          "herb": 1
+        }
+      },
+      {
+        "weight": 3,
+        "text": "――マルタと行き違い、立ち話に付き合った。",
+        "npc": "npc.marta",
+        "bond": 5
+      },
+      {
+        "weight": 3,
+        "text": "――ノラの露店を眺めていたら、目利きの手ほどきを受けた。",
+        "npc": "npc.nola",
+        "bond": 4,
+        "gain": {
+          "skill": "merchant_eye",
+          "amount": 1
+        }
+      },
+      {
+        "weight": 2,
+        "text": "――エーデルと坂道ですれ違った。静かな挨拶を交わした。",
+        "npc": "npc.edel",
+        "bond": 4
+      },
+      {
+        "weight": 3,
+        "text": "――石段で足を滑らせた。小さな擦り傷。",
+        "fatigue": 4
+      },
+      {
+        "weight": 3,
+        "text": "――行商人に値切りの極意を聞いた。",
+        "gain": {
+          "skill": "bargaining",
+          "amount": 1.5
+        }
+      },
+      {
+        "weight": 2,
+        "text": "――井戸端の洗い場に落ちていた木の実を拾った。",
+        "items": {
+          "nut": 1
+        }
+      },
+      {
+        "weight": 2,
+        "text": "――壁の落書きの陰に、古い記録の切れ端を見つけた。",
+        "atom": "rumor.storyteller"
+      },
+      {
+        "weight": 5,
+        "text": "――何事もない。ただ風が吹いていた。"
+      }
+    ],
+    "region": [
+      {
+        "weight": 3,
+        "text": "――獣道で木の実を拾った。",
+        "items": {
+          "nut": 1
+        }
+      },
+      {
+        "weight": 3,
+        "text": "――見慣れない花を見つけた。薬になるかもしれない。",
+        "items": {
+          "herb.wild": 1
+        }
+      },
+      {
+        "weight": 2,
+        "text": "――猟師ガロとすれ違った。獲物の気配を教えてもらった。",
+        "npc": "npc.garo",
+        "bond": 4
+      },
+      {
+        "weight": 2,
+        "text": "――旅人フェンと草むらで言葉を交わした。",
+        "npc": "npc.fenn",
+        "bond": 4
+      },
+      {
+        "weight": 2,
+        "text": "――古い標石に読みかけの文字を見つけた。",
+        "gain": {
+          "skill": "geography",
+          "amount": 2
+        }
+      },
+      {
+        "weight": 3,
+        "text": "――棘に腕を引っかけた。小さな傷。",
+        "fatigue": 4
+      },
+      {
+        "weight": 3,
+        "text": "――落ちていた財布を番小屋に届けた。礼を受けた。",
+        "money": 8
+      },
+      {
+        "weight": 2,
+        "text": "――土の匂いを嗅いだ。雨の気配が分かるようになってきた。",
+        "gain": {
+          "skill": "observation",
+          "amount": 2
+        }
+      },
+      {
+        "weight": 5,
+        "text": "――静かな一日。遠くで鳥が鳴いていた。"
+      }
+    ],
+    "road": [
+      {
+        "weight": 3,
+        "text": "――街道を行く商隊と行き交った。値段の噂を聞いた。",
+        "gain": {
+          "skill": "merchant_eye",
+          "amount": 1.5
+        }
+      },
+      {
+        "weight": 3,
+        "text": "――路傍に野の香草が群生していた。",
+        "items": {
+          "herb.wild": 1
+        }
+      },
+      {
+        "weight": 2,
+        "text": "――雨宿りで旅人と話した。行き先の地理を聞き出した。",
+        "gain": {
+          "skill": "geography",
+          "amount": 2
+        }
+      },
+      {
+        "weight": 3,
+        "text": "――足が棒になった。野営の準備に手間取った。",
+        "fatigue": 6
+      },
+      {
+        "weight": 2,
+        "text": "――荷車の陰で貨幣を拾った。",
+        "money": 5
+      },
+      {
+        "weight": 2,
+        "text": "――草の匂いを摘んで噛んだ。野の香草が手に入った。",
+        "items": {
+          "herb.wild": 1
+        },
+        "fatigue": -4
+      },
+      {
+        "weight": 5,
+        "text": "――何事もなく日が暮れた。"
+      }
+    ]
+  },
+  "gather": {
+    "forest": {
+      "skill": "gathering",
+      "difficulty": 15,
+      "entries": [
+        {
+          "item": "herb",
+          "weight": 3,
+          "n": [1, 2]
+        },
+        {
+          "item": "nut",
+          "weight": 3,
+          "n": [1, 3]
+        },
+        {
+          "item": "wood",
+          "weight": 2,
+          "n": [1, 2]
+        },
+        {
+          "item": "mushroom",
+          "weight": 2,
+          "n": [1, 2],
+          "seasons": [2, 3]
+        },
+        {
+          "item": "berry",
+          "weight": 2,
+          "n": [1, 2],
+          "seasons": [1, 2]
+        },
+        {
+          "item": "herb.wild",
+          "weight": 1,
+          "n": [1, 1]
+        },
+        {
+          "item": "honey",
+          "weight": 1,
+          "n": [1, 1],
+          "seasons": [0, 1, 2]
+        }
+      ]
+    },
+    "highway": {
+      "skill": "gathering",
+      "difficulty": 12,
+      "entries": [
+        {
+          "item": "herb",
+          "weight": 2,
+          "n": [1, 1]
+        },
+        {
+          "item": "nut",
+          "weight": 2,
+          "n": [1, 2]
+        },
+        {
+          "item": "ore.copper",
+          "weight": 1,
+          "n": [1, 1]
+        },
+        {
+          "item": "wood",
+          "weight": 2,
+          "n": [1, 2]
+        }
+      ]
+    },
+    "lake": {
+      "skill": "fishing",
+      "difficulty": 15,
+      "entries": [
+        {
+          "item": "fish.river",
+          "weight": 3,
+          "n": [1, 2]
+        },
+        {
+          "item": "fish.lake",
+          "weight": 2,
+          "n": [1, 1]
+        },
+        {
+          "item": "herb",
+          "weight": 1,
+          "n": [1, 1]
+        }
+      ]
+    },
+    "farm": {
+      "skill": "farming",
+      "difficulty": 10,
+      "entries": [
+        {
+          "item": "grain",
+          "weight": 3,
+          "n": [1, 3]
+        },
+        {
+          "item": "egg",
+          "weight": 2,
+          "n": [1, 2]
+        },
+        {
+          "item": "herb",
+          "weight": 1,
+          "n": [1, 1]
+        },
+        {
+          "item": "berry",
+          "weight": 1,
+          "n": [1, 1],
+          "seasons": [1, 2]
+        }
+      ]
+    },
+    "abyss": {
+      "skill": "mining",
+      "difficulty": 35,
+      "entries": [
+        {
+          "item": "ore.copper",
+          "weight": 3,
+          "n": [1, 2]
+        },
+        {
+          "item": "ore.iron",
+          "weight": 1,
+          "n": [1, 1]
+        }
+      ]
+    }
+  },
+  "recipes": [
+    {
+      "id": "meal.bread",
+      "name": "パン",
+      "inputs": {
+        "grain": 2,
+        "mat.flour": 1
+      },
+      "out": "meal.bread",
+      "skill": "cooking",
+      "difficulty": 22
+    },
+    {
+      "id": "meal.fish",
+      "name": "焼き魚",
+      "inputs": {
+        "fish.river": 1,
+        "mat.salt": 1
+      },
+      "out": "meal.fish",
+      "skill": "cooking",
+      "difficulty": 26
+    },
+    {
+      "id": "meal.stew",
+      "name": "シチュー",
+      "inputs": {
+        "nut": 1,
+        "herb": 1,
+        "mushroom": 1
+      },
+      "out": "meal.stew",
+      "skill": "cooking",
+      "difficulty": 32
+    },
+    {
+      "id": "meal.herb",
+      "name": "薬膳汁",
+      "inputs": {
+        "herb": 2,
+        "herb.wild": 1
+      },
+      "out": "meal.herb",
+      "skill": "medicinal_meal",
+      "difficulty": 48
+    }
+  ],
+  "market": {
+    "stock": [
+      {
+        "id": "mat.flour"
+      },
+      {
+        "id": "mat.salt"
+      },
+      {
+        "id": "mat.spice"
+      },
+      {
+        "id": "meal.bread"
+      },
+      {
+        "id": "herb",
+        "towns": ["bergen"]
+      },
+      {
+        "id": "mat.timber",
+        "towns": ["bergen"]
+      }
+    ],
+    "sellFactor": 0.55,
+    "buyFactor": 1.25,
+    "townFactor": {
+      "ardi": {
+        "*": 1
+      },
+      "bergen": {
+        "*": 1.08,
+        "herb": 0.7,
+        "meal.bread": 1.3,
+        "mat.timber": 0.8,
+        "grain": 1.2
+      }
+    }
+  },
+  "gamble": {
+    "stakes": [5, 15, 40],
+    "winFactor": 2
+  },
+  "social": {
+    "talk": {
+      "bond": 5
+    },
+    "drink": {
+      "cost": 8,
+      "bond": 10
+    },
+    "gift": {
+      "bondPerPrice": 0.6,
+      "cap": 20
+    }
+  },
+  "errands": [
+    {
+      "id": "err.herb",
+      "name": "薬草の納品",
+      "text": "教会へ薬草を届けてほしい。傷薬の仕込みに使う",
+      "need": {
+        "herb": 3
+      },
+      "reward": {
+        "money": 20,
+        "bond": {
+          "npc": "npc.edel",
+          "amount": 8
+        },
+        "gain": {
+          "skill": "gathering",
+          "amount": 3
+        }
+      }
+    },
+    {
+      "id": "err.wood",
+      "name": "職工区の材木運び",
+      "text": "細工師の仕事場へ木材を運んでほしい",
+      "need": {
+        "wood": 3
+      },
+      "reward": {
+        "money": 15,
+        "gain": {
+          "skill": "logging",
+          "amount": 3
+        }
+      }
+    },
+    {
+      "id": "err.fish",
+      "name": "宿屋の仕入れ",
+      "text": "麦穂亭の夕飯に川魚を用意してほしい",
+      "need": {
+        "fish.river": 2
+      },
+      "reward": {
+        "money": 18,
+        "bond": {
+          "npc": "npc.marta",
+          "amount": 6
+        },
+        "gain": {
+          "skill": "fishing",
+          "amount": 3
+        }
+      }
+    },
+    {
+      "id": "err.bread",
+      "name": "パンの配達",
+      "text": "焼きたてのパンを宿へ届けてほしい",
+      "need": {
+        "meal.bread": 1
+      },
+      "reward": {
+        "money": 14,
+        "bond": {
+          "npc": "npc.marta",
+          "amount": 5
+        },
+        "gain": {
+          "skill": "cooking",
+          "amount": 2
+        }
+      }
+    },
+    {
+      "id": "err.ore",
+      "name": "鍛冶場への銅納め",
+      "text": "鍛冶場に銅の原石を納めてほしい",
+      "need": {
+        "ore.copper": 2
+      },
+      "reward": {
+        "money": 30,
+        "bond": {
+          "npc": "npc.cum",
+          "amount": 8
+        },
+        "gain": {
+          "skill": "mining",
+          "amount": 3
+        }
+      }
+    },
+    {
+      "id": "err.spice",
+      "name": "旅商人の買い付け",
+      "text": "香辛料を買い付けてきてほしい。旅の支度に使う",
+      "need": {
+        "mat.spice": 2
+      },
+      "reward": {
+        "money": 34,
+        "gain": {
+          "skill": "bargaining",
+          "amount": 2
+        }
+      }
+    },
+    {
+      "id": "err.berry",
+      "name": "ベルンの菓子の素",
+      "text": "山葡萄を集めてほしい。菓子の仕込みに使う",
+      "town": "bergen",
+      "need": {
+        "berry": 3
+      },
+      "reward": {
+        "money": 22,
+        "bond": {
+          "npc": "npc.bern.vida",
+          "amount": 8
+        },
+        "gain": {
+          "skill": "gathering",
+          "amount": 3
+        }
+      }
+    }
+  ],
+  "pray": {
+    "alms": [5, 20]
+  }
+}

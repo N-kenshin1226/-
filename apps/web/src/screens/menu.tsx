@@ -13,13 +13,15 @@ import {
   originList,
   skillList,
   t,
-  townPlaces,
+  townName,
+  townOf,
+  townPlacesIn,
   townRumor,
   townVoice,
   tpl,
   windChips,
 } from "../game.js";
-import { places, type PlaceJson } from "@trace/content";
+import type { PlaceJson } from "@trace/content";
 import { playSfx } from "../fx/sound.js";
 import {
   DialogueBox,
@@ -39,8 +41,8 @@ import { theme } from "../theme.js";
 const W = theme.colors.world;
 
 /** 見取り図の印の並び（↑↓ の巡回順）：上から下へ、同じ高さなら左から右へ */
-function mapOrder(): PlaceJson[] {
-  return [...townPlaces].sort(
+function mapOrder(town: string): PlaceJson[] {
+  return [...townPlacesIn(town)].sort(
     (a, b) => (a.pos?.[1] ?? 0) - (b.pos?.[1] ?? 0) || (a.pos?.[0] ?? 0) - (b.pos?.[0] ?? 0),
   );
 }
@@ -85,7 +87,9 @@ export function MenuScreen({
   act: Act;
   log: readonly string[];
 }) {
-  const marks = useMemo(mapOrder, []);
+  // 見取り図は今いる町のものだけ（P-02：アルディとベルンは別の街）
+  const town = townOf(state);
+  const marks = useMemo(() => mapOrder(town), [town]);
   const [focus, setFocus] = useState(0);
   const focusRef = useRef(focus);
   focusRef.current = focus;
@@ -152,7 +156,7 @@ export function MenuScreen({
                 color: W.hi,
               }}
             >
-              {tpl(t.text.mapTitle, { town: places.town })}
+              {tpl(t.text.mapTitle, { town: townName(town) })}
             </div>
           </div>
           <div data-testid="map-pick" style={{ fontSize: 13, color: W.dim }}>

@@ -72,6 +72,17 @@ export type Screen =
   | { name: "society" }
   /** 師匠の訪問（P-01。place は師匠の居る場所 —— その場所の師だけが並ぶ） */
   | { name: "mentor"; place?: string }
+  /**
+   * 日々の営みの窓（P-02「行動の種類を増やす」）。view で窓の中身を選ぶ：
+   * 市場・料理・賭け・人との時間・掲示板・祈り・食事・持ち物棚。
+   * place は開いた場所（戻る先と住人の根拠）
+   */
+  | { name: "life"; view: LifeView; place?: string }
+  /**
+   * 旅の途中（P-02。町と町の間の街道。state.life.journey が立つ間だけ
+   * 開かれる窓 —— 野営で日が進み、残り日数が尽きると隣町に着く）
+   */
+  | { name: "journey" }
   | { name: "status" }
   /** 演出・効果音の設定（F-02）：音量・演出の長さ。localStorage に保存する */
   | { name: "settings" }
@@ -85,6 +96,9 @@ export type Screen =
   | { name: "rebirth"; prev: GameState; cause: "retire" | "oldAge" }
   /** 次代を継ぐ画面（T-48）：同じ世界 seed で新キャラ。弱い引継ぎ・年代記には刻まない */
   | { name: "heir"; prev: GameState; cause: "retire" | "oldAge" };
+
+/** 日々の営みの窓の種類（P-02。Screen "life" の view） */
+export type LifeView = "market" | "cook" | "gamble" | "social" | "board" | "pray" | "eat" | "shelf";
 
 /** step を1回実行する共通コールバック（App が持ち、各画面に props で渡す） */
 export type Act = (

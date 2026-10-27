@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "items": [
+    { "id": "herb", "name": "薬草", "kind": "gather", "price": 6 },
+    { "id": "herb.wild", "name": "野の香草", "kind": "gather", "price": 8 },
+    { "id": "nut", "name": "木の実", "kind": "gather", "price": 3, "food": 8 },
+    { "id": "berry", "name": "山葡萄", "kind": "gather", "price": 4, "food": 12 },
+    { "id": "mushroom", "name": "茸", "kind": "gather", "price": 5, "food": 8 },
+    { "id": "wood", "name": "木材", "kind": "gather", "price": 4 },
+    { "id": "ore.copper", "name": "銅原石", "kind": "gather", "price": 12 },
+    { "id": "ore.iron", "name": "鉄原石", "kind": "gather", "price": 18 },
+    { "id": "fish.river", "name": "川魚", "kind": "gather", "price": 7, "food": 10 },
+    { "id": "fish.lake", "name": "湖魚", "kind": "gather", "price": 9, "food": 12 },
+    { "id": "grain", "name": "麦", "kind": "gather", "price": 3 },
+    { "id": "egg", "name": "卵", "kind": "gather", "price": 5, "food": 15 },
+    { "id": "honey", "name": "蜂蜜", "kind": "gather", "price": 10, "food": 20 },
+    { "id": "mat.flour", "name": "小麦粉", "kind": "material", "price": 6 },
+    { "id": "mat.salt", "name": "塩", "kind": "material", "price": 4 },
+    { "id": "mat.spice", "name": "香辛料", "kind": "material", "price": 12 },
+    { "id": "mat.timber", "name": "良材", "kind": "material", "price": 14 },
+    { "id": "meal.stew", "name": "シチュー", "kind": "meal", "price": 14, "food": 30 },
+    { "id": "meal.fish", "name": "焼き魚", "kind": "meal", "price": 12, "food": 30 },
+    { "id": "meal.bread", "name": "パン", "kind": "meal", "price": 6, "food": 26 },
+    { "id": "meal.herb", "name": "薬膳汁", "kind": "meal", "price": 22, "food": 40 }
+  ]
+}

@@ -99,6 +99,27 @@ export type {
   PlaceActionType,
   PlaceScene,
 } from "./places.schema.js";
+// 品物と日々の営み（P-02「行動の種類を増やす」）
+export { items } from "./items.js";
+export { itemSchema, itemsFileSchema, ITEM_KINDS } from "./items.schema.js";
+export type { ItemJson, ItemsFile } from "./items.schema.js";
+export { life } from "./life.js";
+export {
+  errandSchema,
+  gatherEntrySchema,
+  gatherTableSchema,
+  lifeFileSchema,
+  lifeOutcomeSchema,
+  recipeSchema,
+} from "./life.schema.js";
+export type {
+  ErrandJson,
+  GatherEntryJson,
+  GatherTableJson,
+  LifeFile,
+  LifeOutcomeJson,
+  RecipeJson,
+} from "./life.schema.js";
 // 隠し要素（X-11、docs/03 §5。時刻・月齢・行動の組み合わせで出る発見）
 export { discoveries } from "./discoveries.js";
 export {
