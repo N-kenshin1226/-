@@ -57,7 +57,6 @@ import {
   crisisEpilogue,
   crisisFinaleOffers,
   crisisInvolvement,
-  crisisNpcAbsent,
   crisisOfferSpeaker,
   crisisRivalName,
   crisisSceneHaze,
@@ -67,6 +66,10 @@ import {
   crisisTypeOf,
   dailyDiscoveryHint,
   discoveryHintText,
+  drawRivalCast,
+  npcGoneReason,
+  npcLifeRecent,
+  npcLifeToday,
   occasionDef,
   occasionOffers,
   occasionSpeaker,
@@ -110,6 +113,7 @@ import {
   enemiesByArea,
   mentors,
   narration,
+  npcLifecycle,
   occasions,
   orders,
   origins,
@@ -235,6 +239,26 @@ export const cfg: StepConfig = {
   },
   /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
   discoveries: discoveries.discoveries,
+  /**
+   * NPCの歳月（X-12、docs/07 §3）：npc_lifecycle.json の出来事表＋師匠の人物
+   * 紐付け（mentors.json の npc）＋表示名の解決。ライバル（rival.<index>）の名は
+   * 世界シードの抽選から —— ランキング・危機の英雄と同じ顔ぶれになる
+   */
+  npcLife: {
+    npcs: npcLifecycle.npcs,
+    mentors: mentors.mentors,
+    name: (state, npcId) => {
+      if (npcId.startsWith("rival.")) {
+        const index = Number.parseInt(npcId.slice("rival.".length), 10);
+        return drawRivalCast(
+          state.seed,
+          { names: rivals.names, epithets: rivals.epithets },
+          balance.rivals,
+        )[index]?.name;
+      }
+      return voices.npcs.find((n) => n.id === npcId)?.name;
+    },
+  },
 };
 
 /** 運命の傾向の選択肢（T-45。UI で3択を出す用） */
@@ -773,6 +797,10 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
           ...(def?.foundText !== undefined ? [def.foundText] : []),
         ];
       }
+      // NPCの歳月（X-12）：通知Bランク —— 街の人物の物語が動いた一行。
+      // 記事文は core が {name} 解決済みで渡す（引退・結婚・死去・栄転・旅立ち）
+      case "npcEvent":
+        return [tpl(t.text.npcEvent, { name: e.name, text: e.text })];
       default:
         return [];
     }
@@ -869,6 +897,11 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
     .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
   // 隠し要素のヒント（X-11）：未発見の発見は噂として新聞に必ず混ぜる
   const hint = discoveryHintLine(state);
+  // NPCの歳月（X-12）：今日起きた街の人物の出来事は必ず記事になる
+  const npcEvents = npcLifeToday(state, cfg.npcLife).map((e) => ({
+    name: e.name,
+    text: e.text,
+  }));
   lines.push(
     ...narrator.narrate(
       {
@@ -877,6 +910,7 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
         works,
         deaths,
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
+        ...(npcEvents.length > 0 ? { npcEvents } : {}),
         ...(hint !== null ? { hints: [hint] } : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),
@@ -1205,16 +1239,17 @@ function crisisLogRefName(state: GameState, entry: { kind: string; ref?: string 
   if (entry.kind.startsWith("finale.")) {
     return type?.finales.find((f) => f.id === entry.ref)?.name ?? entry.ref;
   }
+  // ライバルの参照（"rival.<index>"）：英雄の記録（rival.hero）と歳月の記録
+  // （npc.retire など、X-12）の両方が指す。ライバルの抽選から名を解決する
+  if (entry.ref.startsWith("rival.")) {
+    return cfg.crisis !== undefined ? crisisRivalName(state, cfg.crisis, entry.ref) : entry.ref;
+  }
   if (entry.kind.startsWith("npc.")) {
     return (
       voices.npcs.find((n) => n.id === entry.ref)?.name ??
       canon.figures.find((f) => f.id === entry.ref)?.name ??
       entry.ref
     );
-  }
-  // 英雄として記録されたライバル（W-03）：ref は "rival.<index>"
-  if (entry.ref.startsWith("rival.") && cfg.crisis !== undefined) {
-    return crisisRivalName(state, cfg.crisis, entry.ref);
   }
   return entry.ref;
 }
@@ -1378,11 +1413,17 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
     .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
   // 隠し要素のヒント（X-11）：未発見の発見は噂として紙面に必ず混ぜる
   const hint = discoveryHintLine(state);
+  // NPCの歳月（X-12）：今日起きた街の人物の出来事は続報・噂の欄に必ず混ざる
+  const npcEvents = npcLifeToday(state, cfg.npcLife).map((e) => ({
+    name: e.name,
+    text: e.text,
+  }));
   const req = {
     deeds,
     works,
     deaths,
     ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
+    ...(npcEvents.length > 0 ? { npcEvents } : {}),
     ...(hint !== null ? { hints: [hint] } : {}),
     ...(prevLife !== undefined ? { prevLife } : {}),
     ...(topRival !== undefined ? { rival: topRival } : {}),
@@ -1418,7 +1459,7 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
   for (const w of works) recordLines.push(`《${w.name}》を仕上げた`);
 
   // 街の声：住人を2〜3人選び、話題があれば respect、無ければ greet。
-  // 危機の段階で街を離れた・亡くなった住人は紙面に出ない（W-04：人の不在で伝える）
+  // 危機の段階・歳月の退場で街に居なくなった住人は紙面に出ない（W-04/X-12：人の不在で伝える）
   const deed = deeds.includes("combat")
     ? "狩り"
     : deeds.includes("work")
@@ -1427,13 +1468,22 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
         ? "奉仕"
         : undefined;
   const npcRng = rng("npc");
-  const rest = voices.npcs.filter(
-    (n) => cfg.crisis === undefined || crisisNpcAbsent(state, n.id) === null,
-  );
+  const rest = voices.npcs.filter((n) => npcGoneReason(state, n.id) === null);
   const pool = [0, 1, 2].flatMap(() =>
     rest.length > 0 ? [rest.splice(npcRng.int(0, rest.length - 1), 1)[0]!] : [],
   );
-  const voiceLines = pool.map((npc) => {
+  // 歳月の出来事の話題（X-12）：最近の街の出来事を「聞いたかい？」と囁く声が
+  // 噂が残る期間のあいだ混ざる（口調は人物のまま、話題だけ差し替える）
+  const recent = npcLifeRecent(state, cfg.npcLife, balance.town.npcRumorDays);
+  const voiceLines = pool.map((npc, i) => {
+    if (i === 0 && recent.length > 0 && rng("vcomment").next() < 0.5) {
+      const ev = rng("vcomment-ev").pick(recent.map((r) => r.text));
+      return {
+        name: npc.name,
+        role: npc.role,
+        text: tpl(t.text.npcTownComment, { name: npc.name, text: ev }),
+      };
+    }
     const lr = npc.lines;
     const standing = state.society.standing;
     const by = lr.byStanding?.[standing];
@@ -1490,11 +1540,20 @@ export function townVoice(state: GameState): { name: string; role: string; text:
         : deeds.includes("donate")
           ? "奉仕"
           : undefined;
-  // 危機の段階で街を離れた・亡くなった住人は窓に出ない（W-04：人の不在で伝える）
-  const pool = voices.npcs.filter(
-    (n) => cfg.crisis === undefined || crisisNpcAbsent(state, n.id) === null,
-  );
+  // 危機の段階・歳月の退場で街に居なくなった住人は窓に出ない（W-04/X-12：人の不在で伝える）
+  const pool = voices.npcs.filter((n) => npcGoneReason(state, n.id) === null);
   const npc = rng.pick(pool.length > 0 ? pool : [...voices.npcs]);
+  // 歳月の出来事の話題（X-12）：最近の街の出来事を「聞いたかい？」と囁く。
+  // 噂が残る期間のあいだ、半分ほどの日で挨拶の代わりにこの話題になる
+  const recent = npcLifeRecent(state, cfg.npcLife, balance.town.npcRumorDays);
+  if (recent.length > 0 && rng.next() < 0.5) {
+    const ev = rng.pick(recent.map((r) => r.text));
+    return {
+      name: npc.name,
+      role: npc.role,
+      text: tpl(t.text.npcTownComment, { name: npc.name, text: ev }),
+    };
+  }
   const by = npc.lines.byStanding?.[state.society.standing];
   const lines =
     deed !== undefined ? (by?.respect ?? npc.lines.respect) : (by?.greet ?? npc.lines.greet);
@@ -1514,6 +1573,12 @@ export function townRumor(state: GameState): string {
     cfg.crisis !== undefined ? crisisStageLine(state, cfg.crisis, narration.crisis, rng) : null;
   if (crisis !== null && (state.crisis?.outcome === "ruin" || state.time.day % 2 === 0)) {
     return `噂 ―「${crisis}」`;
+  }
+  // 歳月の噂（X-12）：街の人物の出来事は噂が残る期間（balance.town.npcRumorDays）
+  // だけ下帯に混ざる。起きた日は必ず、あとは4日おきに取り上げられる
+  const recent = npcLifeRecent(state, cfg.npcLife, balance.town.npcRumorDays);
+  if (recent.length > 0 && (recent[0]!.day === state.time.day || state.time.day % 4 === 3)) {
+    return `噂 ―「${rng.pick(recent.map((r) => r.text))}」`;
   }
   // 隠し要素の噂（X-11）：未発見の発見のヒントを下帯の噂ローテーションに混ぜる。
   // 新聞には毎日載るので下帯では一日おき（危機の噂が優先する偶数日と交互）

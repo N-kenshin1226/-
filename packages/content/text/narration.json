@@ -65,7 +65,8 @@
         "{occasion}で敗れた者の名が、静かに街に残ったという。",
         "{occasion}の勝負は他者に譲った。それでも臨んだ名は記録に載る。"
       ],
-      "discoveryHint": ["風の噂：{text}", "酒場の噂：{text}"]
+      "discoveryHint": ["風の噂：{text}", "酒場の噂：{text}"],
+      "npcEvent": ["{text}", "続報 ―― {text}", "街の出来事として伝えられる ―― {text}"]
     }
   },
   "npcWord": {

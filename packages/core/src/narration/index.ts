@@ -40,6 +40,12 @@ export interface NarrationTemplates {
        * {text} には発見ごとのヒント文が入る —— 噂の枠組みはここで付ける
        */
       discoveryHint: string[];
+      /**
+       * NPCの歳月（X-12）：街の人物の物語が動いた日の記事。引退・結婚・死去・
+       * 栄転・旅立ち —— 見出しとは別に必ず載る確報。{name}/{text} を差し込む
+       * （text には出来事の記事文が入る）
+       */
+      npcEvent: string[];
     };
   };
   npcWord: {
@@ -100,6 +106,11 @@ export type NarrationRequest =
        * 噂の枠組みで包んで見出しの後に必ず載る（発見済みになるまで毎日）
        */
       hints?: readonly string[];
+      /**
+       * NPCの歳月（X-12）：今日起きた街の人物の出来事（引退・結婚・死去・栄転・
+       * 旅立ち）。name は表示名、text は出来事の記事文 —— 見出しの後に必ず載る確報
+       */
+      npcEvents?: readonly { name: string; text: string }[];
     }
   /** NPCの一言。deed は直近の話題（例: 狩り・仕事）、standing は立場ID（口調が変わる） */
   | { scene: "npcWord"; name: string; deed?: string; standing?: string }
@@ -206,6 +217,10 @@ export class TemplateProvider implements NarrationProvider {
             occasion: `《${o.name}》`,
           }),
         );
+        // NPCの歳月（X-12）：街の人物の物語が動いた日の記事は確報として必ず載せる
+        const npcEventLines = (req.npcEvents ?? []).map((e) =>
+          tpl(this.pick(L.npcEvent, rng), { name: e.name, text: e.text }),
+        );
         // 隠し要素のヒント（X-11）：見逃し対策として見出しの後に必ず載せる
         // （日替わりの噂ローテーション。呼び出し側が未発見のヒントを渡す限り出る）
         const hintLines = (req.hints ?? []).map((h) =>
@@ -215,6 +230,7 @@ export class TemplateProvider implements NarrationProvider {
           t.newspaper.header,
           tpl(this.pick(pool, rng), vars),
           ...occasionLines,
+          ...npcEventLines,
           ...hintLines,
         ];
       }

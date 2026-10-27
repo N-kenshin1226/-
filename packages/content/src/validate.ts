@@ -23,6 +23,7 @@ import { vowsFileSchema } from "./vows.schema.js";
 import { rivalsFileSchema } from "./rivals.schema.js";
 import { occasionsFileSchema } from "./occasions.schema.js";
 import { discoveriesFileSchema } from "./discoveries.schema.js";
+import { npcLifecycleFileSchema } from "./npc_lifecycle.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -69,6 +70,7 @@ check("vows.json", vowsFileSchema);
 check("rivals.json", rivalsFileSchema);
 check("occasions.json", occasionsFileSchema);
 check("discoveries.json", discoveriesFileSchema);
+check("npc_lifecycle.json", npcLifecycleFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
@@ -505,6 +507,50 @@ try {
   }
 } catch (e) {
   console.error(`✗ 行事の参照突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// NPCの歳月の参照突き合わせ（X-12）：対象は voices.json / canon.json の人物か、
+// ランキングのライバルの抽選順（rival.<index>、balance.rivals.size の範囲内）に限る。
+// 師匠のNPCが対象になると、発火時にその師匠は街を去り使えなくなる
+try {
+  const canonRaw = JSON.parse(readFileSync(join(root, "lore/canon.json"), "utf8")) as {
+    figures?: { id?: string }[];
+  };
+  const voicesRaw = JSON.parse(readFileSync(join(root, "voices.json"), "utf8")) as {
+    npcs?: { id?: string }[];
+  };
+  const balanceRaw = JSON.parse(readFileSync(join(root, "balance.json"), "utf8")) as {
+    rivals?: { size?: number };
+  };
+  const lifeRaw = JSON.parse(readFileSync(join(root, "npc_lifecycle.json"), "utf8")) as {
+    npcs?: { npcId?: string }[];
+  };
+  const npcIds = new Set([
+    ...(canonRaw.figures ?? []).map((f) => f.id),
+    ...(voicesRaw.npcs ?? []).map((n) => n.id),
+  ]);
+  const rivalSize = balanceRaw.rivals?.size ?? 0;
+  const bad: string[] = [];
+  for (const n of lifeRaw.npcs ?? []) {
+    const id = n.npcId ?? "";
+    if (id.startsWith("rival.")) {
+      const idx = Number.parseInt(id.slice("rival.".length), 10);
+      if (!Number.isFinite(idx) || idx < 0 || idx >= rivalSize) {
+        bad.push(`${id}: ライバルの抽選順がキャスト（${rivalSize}人）の範囲外`);
+      }
+      continue;
+    }
+    if (!npcIds.has(id)) bad.push(`${id}: voices/canon に無い人物`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ NPCの歳月の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ NPCの歳月の参照（npc_lifecycle ↔ voices/canon/rivals）");
+  }
+} catch (e) {
+  console.error(`✗ NPCの歳月の参照突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

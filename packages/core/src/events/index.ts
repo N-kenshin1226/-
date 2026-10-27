@@ -4,6 +4,7 @@ import {
   crisisOfferFlag,
   CRISIS_HERO_FLAG,
 } from "../crisis/index.js";
+import type { NpcLifeEventKind } from "../npclife/index.js";
 import {
   occasionAttemptDayKey,
   occasionJoinDayKey,
@@ -179,7 +180,23 @@ export type ActionEvent =
    * id は discoveries.json の id。flags["found.<id>"] は step 内で既に立っている
    * （アトムの unlock・書物・頂点の hidden 条件が同じ旗を読む）
    */
-  | { type: "discovery"; id: string };
+  | { type: "discovery"; id: string }
+  // ---- NPCの歳月（docs/07 §3、X-12） ----
+  /**
+   * 街の人物の物語が動いた（通知Bランク相当）。引退・結婚・死去・栄転・旅立ち。
+   * npcId は voices/canon の id か "rival.<index>"（ライバルの抽選順）。
+   * name/text は発火時に解決済みの表示名と記事文（{name} 置換済み）。
+   * day は起きた日。退場系は flags["npc.gone.<npcId>"]・世界の記録
+   * （crisis.log の npc.<kind> 行）に既に刻まれている
+   */
+  | {
+      type: "npcEvent";
+      npcId: string;
+      kind: NpcLifeEventKind;
+      name: string;
+      text: string;
+      day: number;
+    };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -389,6 +406,17 @@ export const counterSubscriber: Subscriber = (state, event) => {
           ...state.counters,
           "discovery.total": (state.counters["discovery.total"] ?? 0) + 1,
           [`discovery.found.${event.id}`]: (state.counters[`discovery.found.${event.id}`] ?? 0) + 1,
+        },
+      };
+    }
+    case "npcEvent": {
+      // 街の人物の物語が動いた累計（X-12。条件DSLから「街で起きた出来事」を読める）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "npc.events": (state.counters["npc.events"] ?? 0) + 1,
+          [`npc.events.${event.kind}`]: (state.counters[`npc.events.${event.kind}`] ?? 0) + 1,
         },
       };
     }

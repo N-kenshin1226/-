@@ -283,7 +283,8 @@
     "specialOrderExpFactor": 1.5,
     "specialOrderRewardFactor": 2,
     "specialOrderQualityFactor": 1.2,
-    "donationAmount": 50
+    "donationAmount": 50,
+    "npcRumorDays": 14
   },
   "rust": {
     "graceDays": 14,

@@ -75,6 +75,14 @@ export {
   discoverySeededSchema,
 } from "./discoveries.schema.js";
 export type { DiscoveriesFile, DiscoveryJson } from "./discoveries.schema.js";
+// NPCの歳月（X-12、docs/07 §3。師匠・ライバル・住人の物語が進み、終わる）
+export { npcLifecycle } from "./npc_lifecycle.js";
+export {
+  npcLifecycleFileSchema,
+  npcLifeEventSchema,
+  npcLifeNpcSchema,
+} from "./npc_lifecycle.schema.js";
+export type { NpcLifeEventJson, NpcLifecycleFile, NpcLifeNpcJson } from "./npc_lifecycle.schema.js";
 export { worldModsSchema } from "./world-mods.schema.js";
 // 世界の危機（W-01、docs/08）。型のスキーマはコンテンツと並べて crises/schema.ts に置く
 export { crises, crisisTypes, sampleCrises } from "./crises.js";

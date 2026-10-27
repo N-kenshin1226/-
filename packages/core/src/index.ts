@@ -318,3 +318,26 @@ export type {
   DiscoveryParams,
   DiscoverySeeded,
 } from "./discoveries/index.js";
+export {
+  NPC_LIFE_GONE_KINDS,
+  NPC_LIFE_LOG_PREFIX,
+  npcGoneReason,
+  npcLifeDoneKey,
+  npcLifeEvents,
+  npcLifeGoneFlag,
+  npcLifeLog,
+  npcLifeMark,
+  npcLifeMarkFlag,
+  npcLifeName,
+  npcLifeRecent,
+  npcLifeToday,
+} from "./npclife/index.js";
+export type {
+  NpcGoneReason,
+  NpcLifeConfig,
+  NpcLifeEventDef,
+  NpcLifeEventKind,
+  NpcLifeFired,
+  NpcLifeNpcDef,
+} from "./npclife/index.js";
+export { mentorAbsent } from "./mentors/index.js";

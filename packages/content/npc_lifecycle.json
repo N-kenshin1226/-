@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "npcs": [
+    {
+      "npcId": "npc.sado",
+      "name": "サド",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 1 }, "season": 0, "dayOfSeason": { "eq": 7 } } },
+          "kind": "marry",
+          "text": "門番のサドが祝言を挙げた。門の当直はしばらく甥に譲るという。"
+        }
+      ]
+    },
+    {
+      "npcId": "rival.1",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 1 }, "season": 2, "dayOfSeason": { "eq": 14 } } },
+          "kind": "retire",
+          "text": "ライバルの{name}が婚礼を挙げ、腕を置いて街の外へ移ったという。"
+        }
+      ]
+    },
+    {
+      "npcId": "npc.garo",
+      "name": "ガロ",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 2 }, "season": 0, "dayOfSeason": { "eq": 0 } } },
+          "kind": "retire",
+          "text": "猟師のガロが山を下り、若い弟子に猟場を譲ったという。老師匠の引退だ。"
+        }
+      ]
+    },
+    {
+      "npcId": "npc.marta",
+      "name": "マルタ",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 2 }, "season": 3, "dayOfSeason": { "eq": 21 } } },
+          "kind": "die",
+          "text": "宿屋のマルタが亡くなった。店は娘のミラが継いだという。"
+        }
+      ]
+    },
+    {
+      "npcId": "npc.fenn",
+      "name": "フェン",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 3 }, "season": 1, "dayOfSeason": { "eq": 0 } } },
+          "kind": "promote",
+          "text": "採掘場のまとめ役フェンが、領主の鉱山監督に抜擢されたという。"
+        }
+      ]
+    },
+    {
+      "npcId": "npc.edel",
+      "name": "エデル",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 3 }, "season": 1, "dayOfSeason": { "eq": 7 } } },
+          "kind": "depart",
+          "text": "礼拝堂の番人エデルが番を退き、生まれ故郷の丘へ帰ったという。"
+        }
+      ]
+    },
+    {
+      "npcId": "npc.nola",
+      "name": "ノラ",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 3 }, "season": 3, "dayOfSeason": { "eq": 14 } } },
+          "kind": "marry",
+          "text": "行商人のノラが嫁入りするという。相手は街道の向こうの大きな問屋の主人だとか。"
+        }
+      ]
+    },
+    {
+      "npcId": "npc.cum",
+      "name": "クム",
+      "events": [
+        {
+          "at": { "time": { "year": { "eq": 4 }, "season": 0, "dayOfSeason": { "eq": 0 } } },
+          "kind": "retire",
+          "text": "炭焼きのクムが鑪を譲り、長年の窯を畳んだという。火の番は弟子が引き継ぐ。"
+        }
+      ]
+    }
+  ]
+}

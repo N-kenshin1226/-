@@ -2,6 +2,7 @@
 import {
   canAct,
   canApprentice,
+  mentorAbsent,
   routeProgress,
   suggestGoals,
   visiblePinnacles,
@@ -186,7 +187,9 @@ export function MentorScreen({
   back: () => void;
 }) {
   const skillName = (id: string) => skillList.find((s) => s.id === id)?.name ?? id;
-  const current = state.mentor ? (mentorList.find((m) => m.id === state.mentor!.id) ?? null) : null;
+  // 現在の師匠：街に居なくなった師は教えられない（X-12。退場時に弟子入りは core で解消される）
+  const raw = state.mentor ? (mentorList.find((m) => m.id === state.mentor!.id) ?? null) : null;
+  const current = raw !== null && mentorAbsent(state, raw) === null ? raw : null;
 
   if (current) {
     const recommended = Math.round(state.player.skills[current.skill]?.value ?? 0) + 10;
@@ -271,7 +274,14 @@ export function MentorScreen({
   const entries: MenuEntry[] = [
     ...mentorList.flatMap((m): MenuEntry[] => {
       const ok = canApprentice(state, m.id, cfg.mentors, cfg.time);
-      const mark = ok ? t.text.mentorMarkOk : t.text.mentorMarkNg;
+      // 歳月・危機で街に居なくなった師は「引退した」などの印で示す（X-12）
+      const gone = mentorAbsent(state, m);
+      const mark =
+        gone !== null
+          ? tpl(t.text.mentorGone, { reason: t.display.npcGoneNames[gone] ?? gone })
+          : ok
+            ? t.text.mentorMarkOk
+            : t.text.mentorMarkNg;
       return [
         {
           id: `mentor-${m.id}`,

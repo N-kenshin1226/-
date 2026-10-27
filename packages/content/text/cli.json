@@ -96,6 +96,12 @@
     "occasionResultNames": {
       "win": "勝ちを収めた",
       "loss": "敗れた"
+    },
+    "npcGoneNames": {
+      "retire": "引退した",
+      "depart": "街を離れた",
+      "leave": "街を離れた",
+      "die": "亡くなった"
     }
   },
   "text": {
@@ -145,6 +151,8 @@
     "titleGainedFallback": "――称号《{name}》を獲得しました。",
     "skillUnlocked": "――身体が理屈を掴んだ。《{name}》を鍛えられるようになった。",
     "discoveryFound": "――何かを見つけました：《{name}》。",
+    "npcEvent": "――{text}",
+    "npcTownComment": "「聞いたかい？　{text}」",
     "quit": "――中断します。記録は眠りのあとに残ります。",
     "invalidInput": "――入力が読めません。番号か数値で答えてください。",
     "eof": "――入力が尽きました。終了します。",
@@ -293,6 +301,7 @@
     "mentorDescLine": "      ― {desc}",
     "mentorMarkOk": "（弟子入りできる）",
     "mentorMarkNg": "（まだ見込みなし）",
+    "mentorGone": "（{reason}）",
     "mentorMenuTrain": "  1) 稽古をつけてもらう（{fee}G・1行動）",
     "mentorMenuLeave": "  2) 弟子をやめる",
     "mentorMenuBack": "  3) 戻る",
@@ -323,6 +332,10 @@
       "finale.loss": "――《{name}》の報せが届いた。うまくいかなかったらしい。",
       "npc.leave": "――{name} が街を離れたという。",
       "npc.die": "――{name} の訃報が届いた。",
+      "npc.retire": "――{name} が引退したという。",
+      "npc.depart": "――{name} が街を離れたという。",
+      "npc.marry": "――{name} が祝言を挙げたという。",
+      "npc.promote": "――{name} が新しい役目に就いたという。",
       "end.resolved": "――世界の出来事は幕を閉じた。",
       "end.ruin": "――世界は滅びの影に沈んだ。",
       "finale.hero": "――《{name}》。あなたが世界の先陣を切り、勝ち取った。",

@@ -1,5 +1,6 @@
 import { evaluate, type Cond } from "../conditions/index.js";
 import type { Effect } from "../effects/index.js";
+import { npcGoneReason } from "../npclife/index.js";
 import type { GameState } from "../state/types.js";
 import type { TimeConfig } from "../time/index.js";
 
@@ -22,6 +23,12 @@ import type { TimeConfig } from "../time/index.js";
 /** core が必要とする師匠定義の最小形（content の Mentor と同じフィールドの部分集合） */
 export interface MentorDefLike {
   id: string;
+  /**
+   * 対応するNPC（voices/canon の id。X-12：その人物が歳月・危機で街に居なく
+   * なったら、師匠としても使えない —— 引退・死去・旅立ちで師弟は終わる。
+   * 省略時はその師匠の人物は特定されず、歳月の影響を受けない）
+   */
+  npc?: string;
   /** 担当スキル（skills.json の id。稽古と効果の対象） */
   skill: string;
   /** 弟子入りの条件（条件DSL。省略時は誰でも入門できる） */
@@ -43,14 +50,26 @@ export interface MentorsConfig {
   potentialMax: number;
 }
 
+/**
+ * その師匠の人物が街に居ないか（X-12：歳月の退場か危機の離散・死亡）。
+ * 居なければ入門・稽古・弟子期間の効果は使えない
+ */
+export function mentorAbsent(state: GameState, def: MentorDefLike): string | null {
+  return npcGoneReason(state, def.npc ?? def.id);
+}
+
 /** 現在の師匠の定義（弟子入りしていない・定義が見つからなければ null） */
 export function currentMentor(state: GameState, cfg?: MentorsConfig): MentorDefLike | null {
   if (cfg === undefined || state.mentor === null) return null;
   const id = state.mentor.id;
-  return cfg.mentors.find((m) => m.id === id) ?? null;
+  const def = cfg.mentors.find((m) => m.id === id) ?? null;
+  // 街に居なくなった師はもう教えられない。退場の発火時に弟子入りは解消されるが、
+  // 危機で居なくなった古いセーブなどへの保険としてここでも退場を優先する
+  if (def !== null && mentorAbsent(state, def) !== null) return null;
+  return def;
 }
 
-/** id の師匠に弟子入りできるか（条件達成・まだ師匠がいない） */
+/** id の師匠に弟子入りできるか（条件達成・まだ師匠がいない・その人物が街に居る） */
 export function canApprentice(
   state: GameState,
   id: string,
@@ -60,6 +79,7 @@ export function canApprentice(
   if (cfg === undefined || state.mentor !== null) return false;
   const def = cfg.mentors.find((m) => m.id === id);
   if (def === undefined) return false;
+  if (mentorAbsent(state, def) !== null) return false;
   return def.condition === undefined || evaluate(def.condition, state, time);
 }
 

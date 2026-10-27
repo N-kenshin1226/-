@@ -407,6 +407,11 @@ export const balanceSchema = z
         specialOrderQualityFactor: z.number().positive(),
         /** 街への寄付の1口の額（X-9 領主ルート。1行動で納めるG） */
         donationAmount: z.number().positive(),
+        /**
+         * NPCの歳月の出来事が街の噂・街の声に残る日数（X-12。
+         * 発火日からこの日数のあいだ噂が流れ、以後は年代記と新聞に残る）
+         */
+        npcRumorDays: z.number().int().min(1),
       })
       .strict(),
     /** 錆（02 §7）：未使用スキルの低下・床・再習得倍率・脳の容量 */

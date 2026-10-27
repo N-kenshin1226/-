@@ -40,6 +40,11 @@ export const cliTextSchema = z
         crisisStageNames: z.record(z.string(), z.string()),
         /** 勝負所の結果（X-10。win/loss → 記録行に差し込む表示語） */
         occasionResultNames: z.record(z.string(), z.string()),
+        /**
+         * NPCの歳月の退場語（X-12。記録行の kind → 表示語。retire 引退した /
+         * depart・leave 街を離れた / die 亡くなった）
+         */
+        npcGoneNames: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -314,6 +319,11 @@ export const cliTextSchema = z
         mentorDescLine: z.string(),
         mentorMarkOk: z.string(),
         mentorMarkNg: z.string(),
+        /**
+         * 師匠がNPCの歳月・危機で街に居ないときの印（X-12。
+         * {reason} に display.npcGoneNames の語が入る）
+         */
+        mentorGone: z.string(),
         mentorMenuTrain: z.string(),
         mentorMenuLeave: z.string(),
         mentorMenuBack: z.string(),
@@ -350,6 +360,16 @@ export const cliTextSchema = z
         skillUnlocked: z.string(),
         /** 隠し要素の発見（X-11、通知Bランク。{name} は発見名） */
         discoveryFound: z.string(),
+        /**
+         * NPCの歳月の出来事（X-12、通知Bランク。{name}/{text} に人物名と出来事文。
+         * 引退・結婚・死去・栄転・旅立ちが起きた日に出る）
+         */
+        npcEvent: z.string(),
+        /**
+         * NPCの歳月を受けた街の声のコメント行（X-12。街の声が「聞いたかい？」と
+         * 出来事を囁く口。{name}/{text} を差し込む）
+         */
+        npcTownComment: z.string(),
         quit: z.string(),
         invalidInput: z.string(),
         eof: z.string(),

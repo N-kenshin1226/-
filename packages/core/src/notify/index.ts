@@ -43,6 +43,11 @@ export function rankOf(
     // 大きな物語の区切り（頂点・終幕）ではなく、街で見つけた小さな発見
     case "discovery":
       return "B";
+    // NPCの歳月（X-12）：街の人物の物語が動いた知らせ（引退・結婚・死去・栄転）。
+    // 危機の記録（npc.leave などは記録行のみ）とは違い、平時の出来事として
+    // 淡々と知らせる —— 発見と同じ格のB
+    case "npcEvent":
+      return "B";
     default:
       return null; // slept / wakeReport / gainApplied / actionPerformed
   }

@@ -1,3 +1,4 @@
+import { npcGoneReason } from "../npclife/index.js";
 import { createRng } from "../rng/index.js";
 import type { GameState } from "../state/types.js";
 
@@ -137,11 +138,17 @@ export function drawRivalCast(
  * ライバルは日々少しずつ伸びるので、放っておくと順位を落とし、実績を積むと追い越せる
  */
 export function rivalsOf(state: GameState, pool: RivalNamePool, cfg: RivalsConfig): Rivalry {
-  const rivals = drawRivalCast(state.seed, pool, cfg).map((c) => ({
-    name: c.name,
-    epithet: c.epithet,
-    score: rivalScoreAt(c.base, c.growth, state.time.day),
-  }));
+  // 歳月・危機で街を去ったライバルは順位表から退場する（X-12。
+  // 結婚で腕を置いた者・亡くなった者はもう順位を競わない ——
+  // 名・二つ名・記録の参照（rival.<index>）は変わらず、出た順位の数だけ減る）
+  const rivals = drawRivalCast(state.seed, pool, cfg)
+    .map((c, index) => ({ c, index }))
+    .filter(({ index }) => npcGoneReason(state, `rival.${index}`) === null)
+    .map(({ c }) => ({
+      name: c.name,
+      epithet: c.epithet,
+      score: rivalScoreAt(c.base, c.growth, state.time.day),
+    }));
 
   const me = playerScore(state, cfg);
   // 同点は自分を上に（自慢帳は読み手のためにある）。ライバル同士の同点は名順で安定させる

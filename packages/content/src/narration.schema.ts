@@ -33,6 +33,11 @@ export const narrationSchema = z
              * 見逃し対策として未発見の間は見出しの後に必ず載る）
              */
             discoveryHint: z.array(z.string()).min(1),
+            /**
+             * NPCの歳月（X-12。{name}=人物名・{text}=出来事の記事文。
+             * 引退・結婚・死去など街の人物の物語が動いた日に、見出しの後に必ず載る）
+             */
+            npcEvent: z.array(z.string()).min(1),
           })
           .strict(),
       })

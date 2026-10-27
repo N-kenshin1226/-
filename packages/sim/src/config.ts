@@ -7,6 +7,7 @@ import {
   crisisTypes,
   discoveries,
   mentors,
+  npcLifecycle,
   occasions,
   pinnacles,
   rivals,
@@ -18,7 +19,7 @@ import {
   vows,
 } from "@trace/content";
 import { loadHiddenCrises } from "@trace/content/hidden";
-import type { CrisisConfig, StepConfig } from "@trace/core";
+import { drawRivalCast, type CrisisConfig, type StepConfig } from "@trace/core";
 
 /**
  * 世界の危機の設定（W-01、docs/08 §9）。
@@ -139,6 +140,26 @@ export function stepConfig(): StepConfig {
     },
     /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
     discoveries: discoveries.discoveries,
+    /**
+     * NPCの歳月（X-12、docs/07 §3）：npc_lifecycle.json の出来事表＋師匠の人物
+     * 紐付け（mentors.json の npc）＋表示名の解決。ライバル（rival.<index>）の名は
+     * 世界シードの抽選から —— ランキング・危機の英雄と同じ顔ぶれになる
+     */
+    npcLife: {
+      npcs: npcLifecycle.npcs,
+      mentors: mentors.mentors,
+      name: (state, npcId) => {
+        if (npcId.startsWith("rival.")) {
+          const index = Number.parseInt(npcId.slice("rival.".length), 10);
+          return drawRivalCast(
+            state.seed,
+            { names: rivals.names, epithets: rivals.epithets },
+            balance.rivals,
+          )[index]?.name;
+        }
+        return voices.npcs.find((n) => n.id === npcId)?.name;
+      },
+    },
   };
 }
 

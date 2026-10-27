@@ -29,6 +29,7 @@ import { rollTailwind, windFor, type TailwindConfig } from "./growth/tailwind.js
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
 import type { CombatConfig } from "./combat/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
+import { npcLifeEvents, type NpcLifeConfig } from "./npclife/index.js";
 import { checkPinnacles, type PinnacleRouteDef } from "./pinnacle/index.js";
 import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
 import { readAtom, type LoreConfig } from "./lore/index.js";
@@ -119,6 +120,16 @@ export interface StepConfig {
    * 発見フラグは頂点・称号の条件判定より先に立つので同じステップで効く
    */
   discoveries?: readonly DiscoveryDef[];
+  /**
+   * NPCの歳月（X-12、docs/07 §3。npc_lifecycle.json ＋ 師匠の人物紐付け）。
+   * 指定すると、行動後の状態で各人物の出来事条件（at）を評価し、満たした
+   * 出来事を発火させる：引退・結婚・死去・栄転・旅立ち。
+   * 発火は counters["npc.done.<npcId>.<i>"]・flags["npc.<kind>.<npcId>" 等]・
+   * 世界の記録（crisis.log の npc.<kind> 行）に刻まれ、npcEvent イベント
+   * （通知Bランク相当）を発行する。退場した人物は師匠・街の声・ランキングから
+   * 外れ、刻印は世代をまたぐ世界の記録として残る
+   */
+  npcLife?: NpcLifeConfig;
 }
 
 export type Command =
@@ -1080,6 +1091,30 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     next = res.state;
     for (const def of res.found) {
       const event: ActionEvent = { type: "discovery", id: def.id };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
+  }
+
+  // NPCの歳月（X-12、docs/07 §3）：行動後の状態で人物の出来事を評価する。
+  // 日またぎ（睡眠・休養）の結果の暦と、行動の刻印（counters/flags。購読者
+  // ループで反映済み）の両方が条件DSLから読める位置 —— 発見の判定の後で、
+  // 歳月の出来事が立てる旗印を称号・頂点の条件が拾えるように称号判定より前。
+  // 発火した出来事は世界の記録（crisis.log）と counters/flags に刻まれ、
+  // 二度は発火しない（その生の done 刻印＋世代をまたぐ記録の2層）
+  if (cfg.npcLife !== undefined) {
+    const res = npcLifeEvents(next, cfg.npcLife, cfg.time);
+    next = res.state;
+    for (const f of res.fired) {
+      const event: ActionEvent = {
+        type: "npcEvent",
+        npcId: f.npcId,
+        kind: f.kind,
+        name: f.name,
+        text: f.text,
+        day: f.day,
+      };
       for (const sub of subscribers) next = sub(next, event);
       next = recordAction(next, event, cfg.actionLogMax);
       events.push(event);

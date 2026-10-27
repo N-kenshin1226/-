@@ -61,6 +61,7 @@ import {
   dailyDiscoveryHint,
   discoveryHintText,
   isSkillUnlocked,
+  npcLifeToday,
   occasionDef,
   occasionOffers,
   occasionSpeaker,
@@ -474,6 +475,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           ...(def?.foundText !== undefined ? [def.foundText] : []),
         ];
       }
+      // NPCの歳月（X-12）：通知Bランク —— 街の人物の物語が動いた一行。
+      // 記事文は core が {name} 解決済みで渡す（引退・結婚・死去・栄転・旅立ち）
+      if (e.type === "npcEvent") {
+        return [tpl(t.text.npcEvent, { name: e.name, text: e.text })];
+      }
       return [];
     });
 
@@ -655,6 +661,11 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     // 隠し要素のヒント（X-11）：未発見の発見は噂として新聞に必ず混ぜる。
     // 発見済み（found.<id>）のヒントはここでは渡さず二度と出ない
     const hint = discoveryHintLine(state!);
+    // NPCの歳月（X-12）：今日起きた街の人物の出来事は必ず記事になる
+    const npcEvents = npcLifeToday(state!, cfg.npcLife).map((e) => ({
+      name: e.name,
+      text: e.text,
+    }));
     const lines = narrator.narrate(
       {
         scene: "newspaper",
@@ -662,6 +673,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         works,
         deaths,
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
+        ...(npcEvents.length > 0 ? { npcEvents } : {}),
         ...(hint !== null ? { hints: [hint] } : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),

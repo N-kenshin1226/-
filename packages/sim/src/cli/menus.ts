@@ -4,6 +4,7 @@ import {
   canApprentice,
   crisisRivalName,
   crisisTypeOf,
+  mentorAbsent,
   occasionDef,
   rivalsOf,
   routeProgress,
@@ -342,13 +343,22 @@ export async function mentorMenu(state: GameState, ctx: MenuCtx): Promise<GameSt
   for (let i = 0; i < mentors.mentors.length; i++) {
     const m = mentors.mentors[i]!;
     const ok = canApprentice(state, m.id, cfg.mentors, cfg.time);
+    // 歳月・危機で街に居なくなった師は「引退した」などの印で示す（X-12。
+    // 入門条件を満たしていても、街に居ない人には弟子入りできない）
+    const gone = mentorAbsent(state, m);
+    const mark =
+      gone !== null
+        ? tpl(t.text.mentorGone, { reason: t.display.npcGoneNames[gone] ?? gone })
+        : ok
+          ? t.text.mentorMarkOk
+          : t.text.mentorMarkNg;
     out(
       tpl(t.text.mentorListLine, {
         i: i + 1,
         name: m.name,
         skill: skillName(m.skill),
         fee: m.fee,
-        mark: ok ? t.text.mentorMarkOk : t.text.mentorMarkNg,
+        mark,
       }),
     );
     out(tpl(t.text.mentorDescLine, { desc: m.desc }));
@@ -481,17 +491,19 @@ export function recordsMenu(state: GameState, ctx: MenuCtx): GameState {
       if (entry.kind.startsWith("finale.")) {
         return type?.finales.find((f) => f.id === entry.ref)?.name ?? entry.ref;
       }
+      // ライバルの参照（"rival.<index>"）：英雄の記録（rival.hero）と歳月の記録
+      // （npc.retire など、X-12）の両方が指す。ライバルの抽選から名を解決する
+      if (entry.ref.startsWith("rival.")) {
+        return ctx.cfg.crisis !== undefined
+          ? crisisRivalName(state, ctx.cfg.crisis, entry.ref)
+          : entry.ref;
+      }
       if (entry.kind.startsWith("npc.")) {
         return (
           voices.npcs.find((n) => n.id === entry.ref)?.name ??
           canon.figures.find((f) => f.id === entry.ref)?.name ??
           entry.ref
         );
-      }
-      // 英雄として記録されたライバル（W-03）：ref は "rival.<index>" ——
-      // ライバルの抽選から名と二つ名を解決する
-      if (entry.ref.startsWith("rival.") && ctx.cfg.crisis !== undefined) {
-        return crisisRivalName(state, ctx.cfg.crisis, entry.ref);
       }
       return entry.ref;
     };

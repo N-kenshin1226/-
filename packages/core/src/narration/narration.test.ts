@@ -21,6 +21,7 @@ const text: NarrationTemplates = {
       occasionWin: ["{occasion}――見事な勝ちであった。"],
       occasionLoss: ["{occasion}――あえなく敗れたという。"],
       discoveryHint: ["風の噂：{text}", "酒場の噂：{text}"],
+      npcEvent: ["{text}", "続報 ―― {text}"],
     },
   },
   npcWord: {
