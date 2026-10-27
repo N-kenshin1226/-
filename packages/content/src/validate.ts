@@ -108,26 +108,34 @@ try {
   failed = true;
 }
 
-// スキルキーの突き合わせ：origins.json の affinity は skills.json の id に存在するものだけ
+// スキルキーの突き合わせ：origins.json の affinity / initialSkills（F-01）は
+// skills.json の id に存在するものだけ
 try {
   const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
     skills?: { id?: string }[];
   };
   const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
   const originsRaw = JSON.parse(readFileSync(join(root, "origins.json"), "utf8")) as {
-    origins?: { id?: string; affinity?: Record<string, unknown> }[];
+    origins?: {
+      id?: string;
+      affinity?: Record<string, unknown>;
+      initialSkills?: Record<string, unknown>;
+    }[];
   };
   const bad: string[] = [];
   for (const o of originsRaw.origins ?? []) {
     for (const key of Object.keys(o.affinity ?? {})) {
       if (!skillIds.has(key)) bad.push(`origins.json ${o.id ?? "?"}: スキル ${key}`);
     }
+    for (const key of Object.keys(o.initialSkills ?? {})) {
+      if (!skillIds.has(key)) bad.push(`origins.json ${o.id ?? "?"}: initialSkills ${key}`);
+    }
   }
   if (bad.length > 0) {
-    console.error(`✗ affinity キーが skills.json に無い: ${bad.join(", ")}`);
+    console.error(`✗ affinity/initialSkills キーが skills.json に無い: ${bad.join(", ")}`);
     failed = true;
   } else {
-    console.log("✓ affinity キー（origins ↔ skills）");
+    console.log("✓ affinity/initialSkills キー（origins ↔ skills）");
   }
 } catch (e) {
   console.error(`✗ affinity キーの突き合わせに失敗 (${String(e)})`);

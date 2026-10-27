@@ -406,6 +406,16 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       events.push({ type: "slept", from, to: next.time });
       events.push({ type: "wakeReport", report });
+      // ランク帯を越えた定着（F-01）：起床レポートの直後に節目のイベントを出す。
+      // 表示側はこれを起床ログの区切り・通知として描く（F-02 の演出材料）
+      for (const r of report.rankUps) {
+        events.push({
+          type: "skillRankUp",
+          skill: r.skill,
+          fromRank: r.fromRank,
+          toRank: r.toRank,
+        });
+      }
       events.push(...agingEvents);
       events.push(...crisisEvents);
       break;

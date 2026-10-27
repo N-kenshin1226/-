@@ -134,6 +134,12 @@ export function wakeBlock(
         delta: fmt(l.delta),
       }),
     );
+    // F-01：上限で削られた分は消えず、明日へ持ち越される —— その旨を1行滲ませる
+    if (l.carried !== undefined) {
+      lines.push(
+        tpl(w.carryoverLine, { name: skillNames.get(l.id) ?? l.id, amount: fmt(l.carried) }),
+      );
+    }
   }
   if (statLines.length > 0) {
     lines.push(

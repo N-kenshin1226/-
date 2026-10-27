@@ -13,14 +13,24 @@
       "name": "鍛冶屋の子",
       "desc": "槌音の中で育った。腕と目は鍛えられているが、畑違いのことには疎い",
       "potentialBase": 90,
-      "affinity": { "smithing": 30, "appraisal": 10, "mining": 10 }
+      "affinity": { "smithing": 30, "appraisal": 10, "mining": 10 },
+      "initialSkills": {
+        "smithing": { "min": 8, "max": 12 },
+        "appraisal": { "min": 3, "max": 5 },
+        "mining": { "min": 2, "max": 4 }
+      }
     },
     {
       "id": "origin.hunter_child",
       "name": "猟師の子",
       "desc": "山で獣の気配を読んで育った。街の仕事には不慣れだが、目は鋭い",
       "potentialBase": 95,
-      "affinity": { "observation": 25, "fishing": 15 }
+      "affinity": { "observation": 25, "fishing": 15 },
+      "initialSkills": {
+        "observation": { "min": 6, "max": 9 },
+        "fishing": { "min": 4, "max": 7 },
+        "evasion": { "min": 2, "max": 4 }
+      }
     }
   ]
 }

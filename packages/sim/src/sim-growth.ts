@@ -88,6 +88,32 @@ export function runGrowth(): number {
     }
   }
 
+  // ---- F-01「成長の爽快感」----
+  // 初日（1日目の睡眠明け）に主スキルがこれだけ伸びる —— 初日から伸びが見える
+  for (const botId of t.earlyGrowth.dayOneBots) {
+    const d1 = results.get(botId)!.days[0];
+    const v = d1?.mainSkill ?? 0;
+    ok(
+      "初日の伸び",
+      `${botId}: 初朝 +${v.toFixed(1)} （≥${t.earlyGrowth.dayOneMinGain}、${d1 ? `${d1.day}日目の朝` : "?"})`,
+      v >= t.earlyGrowth.dayOneMinGain,
+    );
+  }
+  // 最初のランクアップ（ランク帯を越えた節目）がこの日数以内に来る
+  for (const botId of t.earlyGrowth.rankUpBots) {
+    const r = results.get(botId)!;
+    const f = r.firsts.find((x) => x.key.startsWith("rankup:"));
+    const day =
+      f !== undefined
+        ? (r.days.find((d) => d.minutes >= f.minutes)?.day ?? Number.POSITIVE_INFINITY)
+        : Number.POSITIVE_INFINITY;
+    ok(
+      "最初のランクアップ",
+      `${botId}: ${day === Number.POSITIVE_INFINITY ? "期間内なし" : `${day}日目の朝`} （≤${t.earlyGrowth.firstRankUpDays}日）`,
+      day <= t.earlyGrowth.firstRankUpDays,
+    );
+  }
+
   // 方針間の差: 合計スキル増分の比 ≤ 1.3
   const total = (id: string) => results.get(id)!.days.at(-1)?.totalSkill ?? 0;
   const gap =

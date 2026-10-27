@@ -29,6 +29,13 @@ export type ActionEvent =
   | { type: "gainApplied"; skill: string; amount: number }
   /** 起床ログの構造化データ（睡眠時に発行） */
   | { type: "wakeReport"; report: WakeReport }
+  /**
+   * スキルのランク帯を越えた（F-01。02 §1 のランク表。睡眠の定着で value が
+   * 境目を跨いだとき、wakeReport の直後に発行する。通知Bランク相当 ——
+   * 起床ログの行として出る。rank は skillRanks の添字で、表示名は表示側が
+   * cli.json display.skillRankNames から引く）
+   */
+  | { type: "skillRankUp"; skill: string; fromRank: number; toRank: number }
   /** 称号を獲得した。rank は通知ランク（S/A/B）。suppressed はS予算超過 */
   | { type: "titleGained"; id: string; rank: "S" | "A" | "B"; suppressed?: boolean }
   /** 作品台帳に記録された */

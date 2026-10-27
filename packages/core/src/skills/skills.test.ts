@@ -49,7 +49,6 @@ const cfg: StepConfig = {
   sleep: {
     nightlyCapPerSkill: 99,
     nightlyCapTotal: 999,
-    carryoverRatio: 0,
     innFactors: { cheap: 1, normal: 1, good: 1 },
     dinnerFactors: { withDinner: 1, noDinner: 1 },
     qualityMin: 1,

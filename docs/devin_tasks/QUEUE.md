@@ -7,7 +7,7 @@
 | ID | 依頼文 | 依存 | 状態 | 備考 |
 |---|---|---|---|---|
 | F-06 | [F-06_first_hour.md](F-06_first_hour.md) | ― | todo | **最優先（刺激）**。最初の1時間＋置換漏れの不具合 |
-| F-01 | [F-01_growth_feel.md](F-01_growth_feel.md) | ― | todo | **最優先（刺激）**。成長の爽快感（定着上限・初期値・ランクアップ） |
+| F-01 | [F-01_growth_feel.md](F-01_growth_feel.md) | ― | done | **最優先（刺激）**。成長の爽快感（定着上限・初期値・ランクアップ）。全量持ち越し・ランク係数・集中ボーナス・出自の初期値。sim全ゲート通過（初日+4.4・3日目にランクアップ・方針間差1.21） |
 | F-02 | [F-02_juice.md](F-02_juice.md) | ― | todo | **最優先（刺激）**。演出と効果音 |
 | F-03 | [F-03_minigame_motion.md](F-03_minigame_motion.md) | F-02 | todo | **最優先（刺激）**。ミニゲームに動きと手応え |
 | F-04 | [F-04_combat_tension.md](F-04_combat_tension.md) | F-02 | todo | **最優先（刺激）**。戦闘の駆け引き |

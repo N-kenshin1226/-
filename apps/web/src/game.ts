@@ -622,6 +622,12 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       }
       case "kehai":
         return [t.text.kehai];
+      // ランク帯を越えた（F-01）：起床ログの節目行。名は skillRankNames で解く
+      case "skillRankUp": {
+        const name = skills.skills.find((s) => s.id === e.skill)?.name ?? e.skill;
+        const rank = t.display.skillRankNames[e.toRank] ?? String(e.toRank);
+        return [tpl(t.text.wake.rankUp, { name, rank })];
+      }
       // 強個体の討伐（T-44）：図鑑に刻んだ旨を1行出す
       case "uniqueDefeated":
         return [
@@ -850,6 +856,10 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   for (const l of report.lines.filter((x) => x.kind === "skill")) {
     const name = skills.skills.find((s) => s.id === l.id)?.name ?? l.id;
     lines.push(tpl(w.skillLine, { name, from: fmt(l.from), to: fmt(l.to), delta: fmt(l.delta) }));
+    // F-01：上限で削られた分は消えず持ち越される —— その旨を1行滲ませる
+    if (l.carried !== undefined) {
+      lines.push(tpl(w.carryoverLine, { name, amount: fmt(l.carried) }));
+    }
   }
   const statLines = report.lines.filter((x) => x.kind === "stat");
   if (statLines.length > 0) {
@@ -1794,9 +1804,14 @@ export interface WakePack {
   quality: string;
   inn: string;
   dinner: string;
-  /** 技能の変化行（名前・前→後・差分） */
-  skillLines: { name: string; from: number; to: number; delta: number }[];
+  /** 技能の変化行（名前・前→後・差分・翌日への持ち越し分） */
+  skillLines: { name: string; from: number; to: number; delta: number; carried?: number }[];
   statLines: { name: string; delta: number }[];
+  /**
+   * この睡眠で越えたランク帯（F-01。名前・到達ランク名は解決済み。
+   * F-02 の節目演出がここを読む）
+   */
+  rankUps: { name: string; rank: string; fromRank: number; toRank: number }[];
   gifts: string[];
   winds: { direction: WindDirection; label: string }[];
   /**
@@ -1826,7 +1841,14 @@ export function wakePack(
         from: l.from,
         to: l.to,
         delta: l.delta,
+        ...(l.carried !== undefined ? { carried: l.carried } : {}),
       })),
+    rankUps: report.rankUps.map((r) => ({
+      name: skills.skills.find((s) => s.id === r.skill)?.name ?? r.skill,
+      rank: t.display.skillRankNames[r.toRank] ?? String(r.toRank),
+      fromRank: r.fromRank,
+      toRank: r.toRank,
+    })),
     statLines: report.lines
       .filter((l) => l.kind === "stat")
       .map((l) => ({ name: t.display.statNames[l.id] ?? l.id, delta: l.delta })),

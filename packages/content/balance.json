@@ -44,7 +44,17 @@
   "sleep": {
     "nightlyCapPerSkill": 3.0,
     "nightlyCapTotal": 1.7,
-    "carryoverRatio": 0.5,
+    "focusShare": 0.5,
+    "skillRanks": [
+      { "at": 0, "capFactor": 2.0 },
+      { "at": 10, "capFactor": 1.5 },
+      { "at": 25, "capFactor": 1.2 },
+      { "at": 40, "capFactor": 1.1 },
+      { "at": 60, "capFactor": 1.0 },
+      { "at": 80, "capFactor": 1.0 },
+      { "at": 95, "capFactor": 1.0 },
+      { "at": 100, "capFactor": 1.0 }
+    ],
     "innFactors": {
       "cheap": 0.8,
       "normal": 1.0,

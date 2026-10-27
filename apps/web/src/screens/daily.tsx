@@ -7,7 +7,7 @@
 import type { CSSProperties } from "react";
 import type { ActionEvent, GameState, WakeReport } from "@trace/core";
 import { narration } from "@trace/content";
-import { dateLabel, endingPageLines, newsPack, t, wakePack, type Notice } from "../game.js";
+import { dateLabel, endingPageLines, newsPack, t, tpl, wakePack, type Notice } from "../game.js";
 import {
   BlessingWindow,
   CommandMenu,
@@ -123,50 +123,65 @@ export function WakeScreen({
         {/* 定着した技能：名前 ｜ 区切りゲージ ｜ from›to ｜ +delta */}
         <div style={{ margin: "16px 40px 0" }}>
           {p.skillLines.map((l) => (
-            <div
-              key={l.name}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "150px minmax(0,1fr) 150px 70px",
-                alignItems: "center",
-                gap: 16,
-                height: 52,
-                borderBottom: `1px solid ${B.frameInner}`,
-              }}
-            >
-              <span
+            <div key={l.name}>
+              <div
                 style={{
-                  fontFamily: theme.font.mincho,
-                  fontSize: 19,
-                  color: "#eaf8fb",
+                  display: "grid",
+                  gridTemplateColumns: "150px minmax(0,1fr) 150px 70px",
+                  alignItems: "center",
+                  gap: 16,
+                  height: 52,
+                  borderBottom: `1px solid ${B.frameInner}`,
                 }}
               >
-                《{l.name}》
-              </span>
-              <SegGauge from={l.from} to={l.to} />
-              <span
-                style={{
-                  fontFamily: theme.font.en,
-                  fontSize: 18,
-                  color: B.dim,
-                  textAlign: "right",
-                }}
-              >
-                {l.from.toFixed(1)} <span style={{ color: B.faint }}>›</span>{" "}
-                <span style={{ color: "#eaf8fb", fontWeight: 700 }}>{l.to.toFixed(1)}</span>
-              </span>
-              <span
-                style={{
-                  fontFamily: theme.font.en,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: l.delta < 0 ? theme.colors.warn : theme.colors.grow,
-                  textAlign: "right",
-                }}
-              >
-                {l.delta >= 0 ? "+" : ""}
-                {l.delta.toFixed(1)}
-              </span>
+                <span
+                  style={{
+                    fontFamily: theme.font.mincho,
+                    fontSize: 19,
+                    color: "#eaf8fb",
+                  }}
+                >
+                  《{l.name}》
+                </span>
+                <SegGauge from={l.from} to={l.to} />
+                <span
+                  style={{
+                    fontFamily: theme.font.en,
+                    fontSize: 18,
+                    color: B.dim,
+                    textAlign: "right",
+                  }}
+                >
+                  {l.from.toFixed(1)} <span style={{ color: B.faint }}>›</span>{" "}
+                  <span style={{ color: "#eaf8fb", fontWeight: 700 }}>{l.to.toFixed(1)}</span>
+                </span>
+                <span
+                  style={{
+                    fontFamily: theme.font.en,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: l.delta < 0 ? theme.colors.warn : theme.colors.grow,
+                    textAlign: "right",
+                  }}
+                >
+                  {l.delta >= 0 ? "+" : ""}
+                  {l.delta.toFixed(1)}
+                </span>
+              </div>
+              {/* F-01：上限で削られた分は消えない —— 明日への持ち越しを薄く滲ませる */}
+              {l.carried !== undefined && (
+                <p
+                  style={{
+                    margin: "2px 0 0",
+                    paddingLeft: 150 + 16,
+                    fontSize: 12,
+                    color: B.dim,
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  {tpl(t.text.wake.carryoverLine, { name: l.name, amount: l.carried.toFixed(1) })}
+                </p>
+              )}
             </div>
           ))}
           {p.skillLines.length === 0 && (

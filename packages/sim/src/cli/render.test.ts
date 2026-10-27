@@ -41,6 +41,7 @@ const baseReport = (): WakeReport => ({
   dinner: false,
   lines: [],
   tailwinds: [],
+  rankUps: [],
   surprises: [],
   fatigue: { from: 10, to: 0 },
   overwork: { active: false, became: false },

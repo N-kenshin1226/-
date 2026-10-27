@@ -71,7 +71,6 @@ const cfg: StepConfig = {
   sleep: {
     nightlyCapPerSkill: 8.0,
     nightlyCapTotal: 999,
-    carryoverRatio: 0.5,
     innFactors: { cheap: 0.8, normal: 1.0, good: 1.15 },
     dinnerFactors: { withDinner: 1.1, noDinner: 0.85 },
     qualityMin: 0.6,
@@ -282,8 +281,8 @@ describe("step: 睡眠の統合", () => {
     const death = r.events.find((e) => e.type === "deathByAge");
     expect(death?.type === "deathByAge" && death.age).toBe(55);
     expect(r.state.counters["death.count"]).toBe(1);
-    // 持ち越し 11.6 → 半減で 5.8
-    expect(r.state.player.skills.swordplay!.pending).toBeCloseTo(5.8, 10);
+    // 持ち越しは全量残る（F-01）：30 − 6.8 = 23.2 → 半減で 11.6
+    expect(r.state.player.skills.swordplay!.pending).toBeCloseTo(11.6, 10);
   });
 
   it("aging 未指定なら兆候も老衰も起きない（後方互換）", () => {
