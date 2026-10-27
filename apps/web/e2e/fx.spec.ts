@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newGame, serialize } from "@trace/core";
 import type { GameState } from "@trace/core";
+import { skipIntro } from "./helpers.js";
 
 /**
  * F-02 演出層（docs/devin_tasks/F-02_juice.md）：
@@ -38,6 +39,8 @@ test("B通知は右上の札で届く：報酬・納品・称号が重なり、�
 }) => {
   await page.goto("/?seed=e2e-fx-b");
   await page.getByTestId("origin-wanderer").click();
+  // F-06 の導入の会話窓が出たら読み進めてメニューへ（この種は年代記が空のため出る）
+  await skipIntro(page);
   await expect(page.getByTestId("menu")).toBeVisible();
 
   // 最初の仕事：初仕事の称号（B）＋納品＋報酬がまとめて届く。
@@ -193,6 +196,8 @@ test("reduced-motion の環境では数値は最初から最終値を示す", as
 test("環境設定：効果音のオン/オフと演出の長さを整え、端末に記録される", async ({ page }) => {
   await page.goto("/?seed=e2e-fx-set");
   await page.getByTestId("origin-wanderer").click();
+  // F-06 の導入の会話窓が出たら読み進めてメニューへ
+  await skipIntro(page);
   await expect(page.getByTestId("menu")).toBeVisible();
 
   await page.getByTestId("menu-settings").click();

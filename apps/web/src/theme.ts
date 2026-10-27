@@ -110,6 +110,18 @@ export const theme = {
     crestSwapMs: 500,
     /** 所持金の増減を拾う光の演出（ms） */
     coinFlashMs: 700,
+    /**
+     * 戦闘の演出（F-04）：1手の中で起きたことを1拍ずつ見せる間。
+     * 通常の一拍 / 大技・予兆・決着の長い一拍 / 浮かぶ数値の寿命 / 踏み込みの素早さ
+     */
+    combatBeatMs: 520,
+    combatBeatShortMs: 230,
+    combatBigMs: 880,
+    combatBigShortMs: 380,
+    combatFloaterMs: 900,
+    combatFloaterShortMs: 480,
+    combatLungeMs: 240,
+    combatOmenPulseMs: 1500,
     /** 効果音の既定音量（0〜1）。設定画面で変更・永続化される */
     defaultVolume: 0.6,
   },

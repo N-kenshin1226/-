@@ -230,6 +230,41 @@ export const balanceSchema = z
         preciseObserve: z.number().nonnegative(),
         deathPendingFactor: z.number().min(0).max(1),
         /**
+         * F-04（03 §4）：命中・会心・揺らぎ・対応行動。
+         * core/combat の CombatConfig に対応
+         */
+        /** 攻撃の命中率 = base + 剣術×perSwordplay + (敏捷−敵敏捷)×perAgilityDiff */
+        hitBase: z.number().min(0).max(1),
+        hitPerSwordplay: z.number().nonnegative(),
+        hitPerAgilityDiff: z.number().nonnegative(),
+        hitMin: z.number().min(0).max(1),
+        hitMax: z.number().min(0).max(1),
+        /** ダメージの揺らぎ範囲（最終威力に掛ける一様乱数） */
+        varianceMin: z.number().positive(),
+        varianceMax: z.number().positive(),
+        /** 会心率 = base + 剣術×perSwordplay、倍率 critFactor */
+        critBase: z.number().min(0).max(1),
+        critPerSwordplay: z.number().nonnegative(),
+        critFactor: z.number().min(1),
+        /** 敵の痛恨率・倍率 */
+        enemyCritBase: z.number().min(0).max(1),
+        enemyCritFactor: z.number().min(1),
+        /** 通常被弾の回避率 = base + 回避×perEvasion + (敏捷−敵敏捷)×perAgilityDiff */
+        evadeBase: z.number().min(0).max(1),
+        evadePerEvasion: z.number().nonnegative(),
+        evadePerAgilityDiff: z.number().nonnegative(),
+        evadeMax: z.number().min(0).max(1),
+        /** 見切り中の回避への上乗せ */
+        readEvadeBonus: z.number().nonnegative(),
+        /** 防御中に大技を受け止めたときの被ダメージ倍率 */
+        guardTelegraphFactor: z.number().min(0).max(1),
+        /** 大技をいなしたあとの反撃倍率（防御 / 見切り） */
+        counterFactor: z.number().min(1),
+        counterFactorRead: z.number().min(1),
+        /** 隙の持続（tick）と、いなした敵の次行動の遅れ（tick） */
+        openingTicks: z.number().int().positive(),
+        staggerTicks: z.number().int().nonnegative(),
+        /**
          * docs/06 §3B、T-44：強化版ユニーク（個体）との再戦。
          * 同種を afterKills 体倒すと強個体が狩り対象に現れる
          */

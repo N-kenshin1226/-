@@ -84,6 +84,13 @@ test("最初の一日：働けば称号が付き、寝れば起床の窓に成�
   await expect(page.getByTestId("log")).toContainText("称号");
   await expect(page.getByTestId("log")).not.toContainText("{");
 
+  // 初回の作品が自己ベストを更新した種ではA通知の窓が重なる（F-02）
+  // ―― 開いている間は背面へクリックが届かないので、Enter で畳んでから眠る
+  if (await page.getByTestId("notice-a").isVisible()) {
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("notice-a")).toBeHidden();
+  }
+
   // 宿で眠る → 起床の窓に昨日の頑張りの定着が載る（鍛冶の技能行）
   await page.getByTestId("menu-sleep").click();
   await page.getByTestId("inn-cheap").click();

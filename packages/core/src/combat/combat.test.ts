@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  combatIntent,
   combatResult,
   startCombat,
   telegraphLines,
   turn,
   type CombatConfig,
+  type CombatState,
   type EnemyDef,
 } from "./index.js";
 import { newGame } from "../state/newGame.js";
@@ -25,6 +27,28 @@ const cfg: CombatConfig = {
   observeBonus: 20,
   preciseObserve: 40,
   deathPendingFactor: 0.5,
+  hitBase: 0.86,
+  hitPerSwordplay: 0.002,
+  hitPerAgilityDiff: 0.012,
+  hitMin: 0.45,
+  hitMax: 0.98,
+  varianceMin: 0.8,
+  varianceMax: 1.25,
+  critBase: 0.08,
+  critPerSwordplay: 0.002,
+  critFactor: 1.8,
+  enemyCritBase: 0.05,
+  enemyCritFactor: 1.6,
+  evadeBase: 0.06,
+  evadePerEvasion: 0.004,
+  evadePerAgilityDiff: 0.008,
+  evadeMax: 0.7,
+  readEvadeBonus: 0.5,
+  guardTelegraphFactor: 0.15,
+  counterFactor: 2.4,
+  counterFactorRead: 2.8,
+  openingTicks: 16,
+  staggerTicks: 11,
 };
 
 const wolf: EnemyDef = {
@@ -125,6 +149,147 @@ describe("CT戦闘（03 §4）", () => {
       const open = dmg("attack");
       expect(blocked).toBeLessThan(open);
     }
+  });
+});
+
+/* ── F-04：戦闘の駆け引き ── */
+
+/** 挑戦差15以上の格上（街道の追い剥ぎ相当） */
+const bandit: EnemyDef = {
+  id: "bandit",
+  name: "追い剥ぎ",
+  hp: 72,
+  intervalTicks: 9,
+  challenge: 30,
+  agility: 7,
+  attack: { id: "shank", name: "短刀の一突き", power: 7 },
+  moves: { ambush: { id: "ambush", name: "不意の連撃", power: 28 } },
+  pattern: [
+    { type: "attack" },
+    { type: "attack" },
+    { type: "telegraph", move: "ambush", ticks: 8 },
+  ],
+};
+
+type Policy = (s: CombatState) => "attack" | "defend" | "observe" | "flee";
+const fight = (
+  enemy: EnemyDef,
+  player: ReturnType<typeof mkPlayer>,
+  policy: Policy,
+  seed: string,
+  maxTurns = 60,
+) => {
+  let s = startCombat(enemy, cfg, player);
+  while (!s.done && s.turn < maxTurns) s = turn(s, policy(s), enemy, cfg, { skill: 0, seed });
+  return s;
+};
+
+describe("F-04 駆け引き", () => {
+  it("乱数は全て ctx 由来 —— シードが違えばダメージ列が違う", () => {
+    const run = (seed: string) => {
+      let s = startCombat(wolf, cfg, mkPlayer(0));
+      const out: number[] = [];
+      while (!s.done && s.turn < 6) {
+        s = turn(s, "attack", wolf, cfg, { skill: 0, seed });
+        out.push(s.enemyHp);
+      }
+      return out;
+    };
+    expect(run("seed-a")).not.toEqual(run("seed-b"));
+    expect(run("seed-a")).toEqual(run("seed-a"));
+  });
+
+  it("敏捷差が開くと攻撃は外れ、複数シードで会心が出る", () => {
+    // HP を持たせて、命中判定が十分な回数積まれるようにする
+    const quick: EnemyDef = { ...wolf, agility: 30, hp: 200 };
+    let s = startCombat(quick, cfg, mkPlayer(0));
+    while (!s.done && s.turn < 8) s = turn(s, "attack", quick, cfg, CTX);
+    const misses = s.log.filter((e) => e.type === "playerMiss").length;
+    const hits = s.log.filter((e) => e.type === "playerAttack").length;
+    expect(misses).toBeGreaterThan(0);
+    expect(hits).toBeGreaterThan(0);
+    // 会心：十分なHPの敵相手に複数シードで少なくとも1回は出る
+    const dummy: EnemyDef = { ...wolf, hp: 500 };
+    let crits = 0;
+    for (let i = 0; i < 12; i++) {
+      const f = fight(dummy, mkPlayer(0), () => "attack", `crit-${i}`, 12);
+      crits += f.log.filter((e) => e.type === "playerAttack" && e.crit).length;
+    }
+    expect(crits).toBeGreaterThan(0);
+  });
+
+  it("予兆は必ず次の判断まで残る（見えたのに防げない事故がない）", () => {
+    let s = startCombat(bandit, cfg, mkPlayer(0, 5, 15));
+    let n = 0;
+    while (!s.done && n++ < 60) {
+      s = turn(s, "attack", bandit, cfg, { skill: 0, seed: "tell" });
+      // 判断時点で見えている予兆の発動は必ず未来（＝次の間合いで応じられる）
+      if (s.telegraph) expect(s.telegraph.dueTick).toBeGreaterThan(s.tick);
+    }
+  });
+
+  it("大技を防御で受け止めると隙が生まれ、次の攻撃が反撃になる", () => {
+    let s = startCombat(bandit, cfg, mkPlayer(0, 5, 15));
+    while (!s.telegraph && !s.done) s = turn(s, "attack", bandit, cfg, CTX);
+    expect(s.done).toBe(false);
+    s = turn(s, "defend", bandit, cfg, CTX);
+    const guarded = s.log.filter((e) => e.type === "enemyHit" && e.big && e.guarded);
+    expect(guarded.length).toBe(1);
+    expect(s.parries).toBe(1);
+    expect(s.openingFactor).toBeCloseTo(cfg.counterFactor);
+    // 反撃：必中・大きな一撃
+    const before = s.enemyHp;
+    s = turn(s, "attack", bandit, cfg, CTX);
+    const counter = s.log.find((e) => e.type === "playerAttack" && e.counter);
+    expect(counter).toBeDefined();
+    expect(before - s.enemyHp).toBeGreaterThan(s.playerAttack); // 反撃倍率分だけ通常より大きい
+  });
+
+  it("見切りで大技を躱せば無傷で大きな隙が生まれる", () => {
+    // 複数シードのどれかで見切り回避が起き、被弾0のまま隙が開く
+    let saw = false;
+    for (let i = 0; i < 8 && !saw; i++) {
+      let s = startCombat(bandit, cfg, mkPlayer(0, 5, 15));
+      while (!s.telegraph && !s.done)
+        s = turn(s, "attack", bandit, cfg, { skill: 0, seed: `read-${i}` });
+      if (s.done) continue;
+      s = turn(s, "observe", bandit, cfg, { skill: 0, seed: `read-${i}` });
+      const dodged = s.log.find((e) => e.type === "enemyMiss" && e.big);
+      if (dodged) {
+        saw = true;
+        expect(s.parries).toBe(1);
+        expect(s.openingFactor).toBeCloseTo(cfg.counterFactorRead);
+      }
+    }
+    expect(saw).toBe(true);
+  });
+
+  it("挑戦差15以上：攻撃連打は沈み、予兆への対応は生き残る", () => {
+    const underleveled = mkPlayer(0, 5, 15); // 剣術15 vs 挑戦30 = Δ15
+    const mash: Policy = () => "attack";
+    const guardOnTell: Policy = (s) => (s.telegraph ? "defend" : "attack");
+    for (let i = 0; i < 6; i++) {
+      const m = fight(bandit, underleveled, mash, `t-${i}`);
+      expect(combatResult(m).won).toBe(false);
+      expect(m.died).toBe(true);
+      const g = fight(bandit, underleveled, guardOnTell, `t-${i}`);
+      expect(combatResult(g).won).toBe(true);
+      expect(g.parries).toBeGreaterThan(0);
+    }
+  });
+
+  it("敵の意図（combatIntent）：予兆の有無・構え・隙を返す", () => {
+    let s = startCombat(bandit, cfg, mkPlayer(0, 5, 15));
+    expect(combatIntent(s, bandit, cfg).telegraph).toBeNull();
+    while (!s.telegraph && !s.done) s = turn(s, "attack", bandit, cfg, CTX);
+    const intent = combatIntent(s, bandit, cfg);
+    expect(intent.telegraph).not.toBeNull();
+    expect(intent.telegraph?.precise).toBe(false); // 観察0 → 技名は読めない
+    expect(intent.guarding).toBe(false);
+    s = turn(s, "defend", bandit, cfg, CTX);
+    const i2 = combatIntent(s, bandit, cfg);
+    expect(i2.telegraph).toBeNull(); // 発動済み
+    expect(i2.openingIn).toBeGreaterThan(0); // 受け止めたので隙
   });
 });
 

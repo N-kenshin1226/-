@@ -254,7 +254,7 @@
   },
   "combat": {
     "baseHp": 30,
-    "hpPerEndurance": 2,
+    "hpPerEndurance": 2.4,
     "attackBase": 5,
     "attackPerSwordplay": 0.15,
     "attackPerStrength": 0.2,
@@ -267,6 +267,28 @@
     "observeBonus": 20,
     "preciseObserve": 40,
     "deathPendingFactor": 0.5,
+    "hitBase": 0.86,
+    "hitPerSwordplay": 0.002,
+    "hitPerAgilityDiff": 0.012,
+    "hitMin": 0.45,
+    "hitMax": 0.98,
+    "varianceMin": 0.8,
+    "varianceMax": 1.25,
+    "critBase": 0.08,
+    "critPerSwordplay": 0.002,
+    "critFactor": 1.8,
+    "enemyCritBase": 0.05,
+    "enemyCritFactor": 1.6,
+    "evadeBase": 0.06,
+    "evadePerEvasion": 0.004,
+    "evadePerAgilityDiff": 0.008,
+    "evadeMax": 0.7,
+    "readEvadeBonus": 0.5,
+    "guardTelegraphFactor": 0.15,
+    "counterFactor": 2.4,
+    "counterFactorRead": 2.8,
+    "openingTicks": 16,
+    "staggerTicks": 11,
     "unique": {
       "afterKills": 3,
       "hpFactor": 1.6,
@@ -288,10 +310,21 @@
   },
   "weather": {
     "orderPrice": {
-      "clear": { "eloquence": 1.1, "performance": 1.1 },
+      "clear": {
+        "eloquence": 1.1,
+        "performance": 1.1
+      },
       "cloud": {},
-      "rain": { "mining": 0.8, "fishing": 1.2, "performance": 1.1 },
-      "snow": { "mining": 0.8, "fishing": 0.8, "performance": 1.1 }
+      "rain": {
+        "mining": 0.8,
+        "fishing": 1.2,
+        "performance": 1.1
+      },
+      "snow": {
+        "mining": 0.8,
+        "fishing": 0.8,
+        "performance": 1.1
+      }
     }
   },
   "rust": {
@@ -367,7 +400,10 @@
     "touchpoints": {
       "weightBase": 0.5,
       "offersPerStage": [1, 2, 3],
-      "contribution": { "work": 0.3, "combat": 0.5 }
+      "contribution": {
+        "work": 0.3,
+        "combat": 0.5
+      }
     },
     "involvement": {
       "stageThresholds": [40, 140, 300],
@@ -392,8 +428,14 @@
         "artisan": ["smithing", "mining", "appraisal", "prospecting", "fishing"]
       },
       "rivals": {
-        "growthPerBoundary": { "min": 4, "max": 10 },
-        "heroGrowthPerBoundary": { "min": 40, "max": 80 },
+        "growthPerBoundary": {
+          "min": 4,
+          "max": 10
+        },
+        "heroGrowthPerBoundary": {
+          "min": 40,
+          "max": 80
+        },
         "contribution": 3.0,
         "hastenWindow": 1
       }

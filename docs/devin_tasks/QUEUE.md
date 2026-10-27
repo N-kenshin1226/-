@@ -13,7 +13,7 @@
 | F-01 | [F-01_growth_feel.md](F-01_growth_feel.md) | ― | in_progress | **最優先（刺激）**。成長の爽快感（定着上限・初期値・ランクアップ） |
 | F-02 | [F-02_juice.md](F-02_juice.md) | ― | done | **最優先（刺激）**。演出と効果音。B=右上の札/A=加護の窓＋音/S=帯（1日1回・終幕は例外）。起床ログの数値・ゲージ・紋章の動き、Web Audio生成音、環境設定（音量・演出を短く）、演出フックは `apps/web/src/fx/`（F-03/F-04 は playSfx と CountUp 等を再利用） |
 | F-03 | [F-03_minigame_motion.md](F-03_minigame_motion.md) | F-02 | todo | **最優先（刺激）**。ミニゲームに動きと手応え |
-| F-04 | [F-04_combat_tension.md](F-04_combat_tension.md) | F-02 | todo | **最優先（刺激）**。戦闘の駆け引き |
+| F-04 | [F-04_combat_tension.md](F-04_combat_tension.md) | F-02 | done | **最優先（刺激）**。戦闘の駆け引き。命中/会心/揺らぎ・防御（受け止め→隙）・見切り（賭けの回避→大きな隙）を core/combat に。予兆は必ず次の判断の先に発動。格上（Δ≥15）は連打で沈む（単体テスト済）。敵シルエットSVG・双方HPゲージ・浮き文字・拍ごとの再生（スキップ可）・効果音は fx/combat.tsx |
 | F-05 | [F-05_daily_events.md](F-05_daily_events.md) | ― | in_progress | **最優先（刺激）**。日々の出来事・勝負所の絞り込み |
 | K-01 | [K-01_skills.md](K-01_skills.md) | ― | todo | **最優先（刺激）**。技能を約45種に（死んだ技能を作らない） |
 | K-02 | [K-02_arts.md](K-02_arts.md) | K-01, F-04 | todo | **最優先（刺激）**。武技約60・気力/魔力・状態異常・耐性・8+4枠の構成 |
