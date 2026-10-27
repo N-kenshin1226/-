@@ -22,7 +22,10 @@
           "type": "attack"
         }
       ],
-      "beast": true
+      "beast": true,
+      "resist": {
+        "pierce": 1.1
+      }
     },
     {
       "id": "wolf",
@@ -57,7 +60,11 @@
           "ticks": 8
         }
       ],
-      "beast": true
+      "beast": true,
+      "resist": {
+        "blunt": 0.8,
+        "pierce": 1.15
+      }
     },
     {
       "id": "boar",
@@ -92,7 +99,15 @@
           "ticks": 8
         }
       ],
-      "beast": true
+      "beast": true,
+      "resist": {
+        "slash": 0.7,
+        "pierce": 1.3,
+        "blunt": 0.9
+      },
+      "statusResist": {
+        "slow": 0.5
+      }
     },
     {
       "id": "bandit",
@@ -126,7 +141,14 @@
           "move": "ambush",
           "ticks": 8
         }
-      ]
+      ],
+      "resist": {
+        "slash": 1.15,
+        "pierce": 0.9
+      },
+      "statusResist": {
+        "poison": 0.7
+      }
     },
     {
       "id": "deserter",
@@ -163,7 +185,16 @@
           "move": "onslaught",
           "ticks": 10
         }
-      ]
+      ],
+      "resist": {
+        "slash": 0.6,
+        "pierce": 0.75,
+        "blunt": 1.45
+      },
+      "statusResist": {
+        "stun": 0.5,
+        "poison": 0.5
+      }
     }
   ]
 }

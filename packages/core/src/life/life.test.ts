@@ -504,14 +504,14 @@ describe("旅", () => {
   });
 });
 
-describe("セーブの移行（v17 → v18）", () => {
+describe("セーブの移行（v17 → v19）", () => {
   it("life 欄を基点の町・空荷で補って移行される", () => {
     const g = game();
     const v17 = JSON.parse(serialize(g)) as Record<string, unknown>;
     v17["version"] = 17;
     delete v17["life"];
     const restored = deserialize(JSON.stringify(v17));
-    expect(restored.version).toBe(18);
+    expect(restored.version).toBe(19); // v18（営み）→v19（武技）の2段移行
     expect(restored.life).toEqual({
       town: "ardi",
       items: {},

@@ -142,6 +142,15 @@ export type ActionEvent =
   | { type: "weaponBought"; id: string }
   /** 武器を持ち替えた（K-01。行動は消費しない。装備中の武器IDが変わる） */
   | { type: "weaponEquipped"; id: string }
+  // ---- 武技・資源・構成（K-02、docs/09） ----
+  /**
+   * 新しい武技・パッシブを閃いた（K-02、09 §7.1。技能値×使い方の傾きで
+   * 習得条件を満たしたとき。通知Bランク相当 —— 新しい技能の解放と同じ格。
+   * id は arts.json の id）
+   */
+  | { type: "artLearned"; id: string }
+  /** 武技の構成を組み替えた（K-02、09 §6。行動は消費しない。setBuild の確認） */
+  | { type: "buildChanged" }
   // ---- 世界の危機（docs/08、W-01） ----
   /** 世界の危機が抽選された（世界生成時。v15 以前のセーブでは次の季節の変わり目） */
   | { type: "crisisDrawn" }

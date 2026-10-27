@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -138,6 +138,35 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
         journey: null,
       },
     }),
+    /**
+     * 18 → 19: 武技・資源・構成（K-02）。気力・魔力・習得技・使用記録・
+     * 構成スロットを追加する。気力・魔力は空から始めて次の眠りで満たす
+     * （上限は stats から導出するのでここには数値の素は持たない）。
+     * 構成は装備中の武器を本命に据え、武器枠はもう1本を所持から選ぶ
+     */
+    18: (old) => {
+      const p = (old.player ?? {}) as Record<string, unknown>;
+      const owned = Array.isArray(p.weapons) ? (p.weapons as string[]) : [];
+      const equipped = typeof p.weapon === "string" ? p.weapon : "sword";
+      const alt = owned.find((w) => w !== equipped) ?? null;
+      return {
+        ...old,
+        version: 19,
+        player: {
+          ...p,
+          ki: 0,
+          mana: 0,
+          arts: {},
+          artTags: {},
+          skillTags: {},
+          build: {
+            slots: [null, null, null, null, null, null, null, null],
+            passives: [null, null, null, null],
+            weapons: [equipped, alt],
+          },
+        },
+      };
+    },
   };
 
 export function serialize(state: GameState): string {

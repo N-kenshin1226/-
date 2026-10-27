@@ -1,3 +1,4 @@
+import type { ArtState, BuildState } from "../arts/index.js";
 import type { RolledWind } from "../growth/tailwind.js";
 import type { RngState } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
@@ -68,6 +69,34 @@ export interface PlayerState {
   weapons: string[];
   /** 装備中の武器のID（戦闘の技能・威力・間隔がこれで変わる。v17〜） */
   weapon: string;
+  /* ── K-02（v18〜）：武技・気力/魔力・構成 ── */
+  /**
+   * 気力（docs/09 §2）。武技のコストに使い、睡眠で全回復、
+   * 戦闘中は経過 tick ごとに少し戻る。上限は stats から導出（kiMaxOf）
+   */
+  ki: number;
+  /** 魔力（docs/09 §2）。M-01 の魔法で使う枠。睡眠で全回復 */
+  mana: number;
+  /**
+   * 習得済みの武技・パッシブ（arts.json の id → 状態）。
+   * exp は定着済み経験、pending は睡眠で定着する分（Lv1〜10、09 §1）
+   */
+  arts: Record<string, ArtState>;
+  /**
+   * 技ごとの使用記録（09 §7.1）：artId → 使用タグ → 回数。
+   * 回数の集計だけを持ち、生の履歴は残さない（進化・合成 K-03 の土台）
+   */
+  artTags: Record<string, Record<string, number>>;
+  /**
+   * 技能の使い方の傾き（09 §7.1）：skillId → 使用タグ → 回数。
+   * 覚える技の順番・種類がこの傾きで変わる
+   */
+  skillTags: Record<string, Record<string, number>>;
+  /**
+   * 構成（09 §6）：戦闘技スロット8・パッシブ4・持ち替え武器2。
+   * 街で組み替える（setBuild コマンド。行動は消費しない）
+   */
+  build: BuildState;
 }
 
 /** 行動の記録（新規性・追い風の偏り判定などに使う直近N件） */

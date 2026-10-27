@@ -56,6 +56,14 @@ export const cliTextSchema = z
         enemyTraitNames: z.record(z.string(), z.string()),
         /** 技能の分野（K-01。skills.json の category → ステータス画面の見出し名） */
         skillCategories: z.record(z.string(), z.string()),
+        /** 敵に掛かる状態（K-02。combat の StatusId → 戦闘画面の表示名） */
+        statusNames: z.record(z.string(), z.string()),
+        /** 狙う・壊れた部位（K-02。combat の BodyPart → 表示名） */
+        partNames: z.record(z.string(), z.string()),
+        /** 武技の種別（K-02。combat の ArtKind → 技一覧の分類名） */
+        artKindNames: z.record(z.string(), z.string()),
+        /** 打撃の性質（K-02。combat の DamageType → 技の説明に出す表示名） */
+        damageTypeNames: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -158,6 +166,22 @@ export const cliTextSchema = z
         deathByAge: z.string(),
         combatFled: z.string(),
         combatGain: z.string(),
+        /* ── K-02：武技・資源・構成 ── */
+        /** 戦闘画面の気力の表示（{ki}/{max}） */
+        combatKiLine: z.string(),
+        /** 戦闘画面の武技コマンドの見出し */
+        combatArtsLabel: z.string(),
+        /** 新しい技を閃いた知らせ（K-02、通知Bランク。{name} は技名） */
+        artLearned: z.string(),
+        /** 構成画面（K-02）：見出し・各枠の見出し・空き枠・確定の行 */
+        buildHeader: z.string(),
+        buildArtsHeader: z.string(),
+        buildPassivesHeader: z.string(),
+        buildWeaponsHeader: z.string(),
+        buildSlotEmpty: z.string(),
+        buildSaved: z.string(),
+        /** ステータス画面の技タブの見出し（{n}=覚えた数） */
+        statusArtsHeader: z.string(),
         /** 深層ダンジョン（T-43。{light}/{floor}/{depth}/{best}/{name} を差し込む） */
         abyssStart: z.string(),
         abyssFloor: z.string(),
@@ -438,6 +462,8 @@ export const cliTextSchema = z
             agingWarn: z.string(),
             /** 老いの兆候：強い方（signSevereAt 超え。間隔を置いて繰り返す） */
             agingSevere: z.string(),
+            /** この睡眠でLvの上がった武技の行（K-02。{name}/{to}） */
+            artLevelUp: z.string(),
             /** 「妙に冴えている」日の行（R-01。冴えの朝に出る） */
             insight: z.string(),
             /** 体調が良い日の行（R-01） */

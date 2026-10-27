@@ -826,5 +826,32 @@
         "observation": 0.001
       }
     }
+  },
+  "arts": {
+    "slots": 8,
+    "passiveSlots": 4,
+    "weaponSlots": 2,
+    "kiBase": 20,
+    "kiPerEndurance": 1.5,
+    "kiRegenPerTick": 0.45,
+    "manaBase": 15,
+    "manaPerSpirit": 1.2,
+    "levelStep": 8,
+    "maxLevel": 10,
+    "levelPowerFactor": 0.04,
+    "levelStatusFactor": 0.08,
+    "expBase": 1.0,
+    "expChallengeFactor": 0.02,
+    "partBreakShare": 0.35,
+    "breakDamageFactor": 1.15,
+    "breakAgilityFactor": 0.5,
+    "breakMoveFactor": 0.5,
+    "breakStatusFactor": 1.5,
+    "staggerFactor": 1.15,
+    "parryFactor": 0.15,
+    "parryCounterFactor": 2.6,
+    "evadeArtBonus": 0.55,
+    "guardArtFactor": 0.25,
+    "styleShareMin": 0.15
   }
 }

@@ -101,18 +101,22 @@ export type { FishingConfig, FishingResult } from "./minigame/index.js";
 export { appraisalGame } from "./minigame/index.js";
 export type { AppraisalConfig, AppraisalResult } from "./minigame/index.js";
 export {
+  artSlotsOf,
   canFightUnique,
   combatIntent,
   combatResult,
   critChance,
+  enemyAgilityOf,
   enhancedEnemy,
   evadeChance,
   hitChance,
+  passiveFxOf,
   playerCombatStats,
   rollIndividual,
   startCombat,
   telegraphLines,
   turn as combatTurn,
+  usableArts,
 } from "./combat/index.js";
 export type {
   CombatAction,
@@ -132,6 +136,36 @@ export type {
   WeaponDef,
 } from "./combat/index.js";
 export { weaponDefOf } from "./combat/index.js";
+// 武技・資源・構成（K-02、docs/09）：技の定義・習得・レベル・構成の検証
+export {
+  artExpGain,
+  artExpToNext,
+  artLevelFor,
+  checkArtsLearn,
+  consolidateArts,
+  defaultBuild,
+  kiMaxOf,
+  learnedArtIds,
+  manaMaxOf,
+  normalizeBuild,
+  PASSIVE_HOOKS,
+  recordArtUse,
+  styleShare,
+} from "./arts/index.js";
+export type {
+  ArtDef,
+  ArtKind,
+  ArtLearn,
+  ArtRange,
+  ArtsConfig,
+  ArtState,
+  BodyPart,
+  BuildState,
+  DamageType,
+  PassiveHook,
+  ResponseKind,
+  StatusId,
+} from "./arts/index.js";
 // 技能リンク（K-01、balance.links）：技能がどこに効くかの結線を読む薄い層
 export { linkFlat, linkFlatCap, linkSum } from "./links/index.js";
 export type { SkillLinkDef, SkillLinks } from "./links/index.js";

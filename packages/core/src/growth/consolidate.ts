@@ -146,6 +146,16 @@ export interface WakeReport {
    * 表示側はテンプレート（cli.json wake.weatherLine）に差し込んで1行出す
    */
   weather?: { id: string; name: string; line: string };
+  /**
+   * この睡眠でレベルの上がった武技（K-02。使って貯めた経験が眠りで定着し、
+   * Lv の境目を越えた分だけ入る。表示側は wake.artLevelUp に差し込む）
+   */
+  arts?: { id: string; from: number; to: number }[];
+  /**
+   * この睡眠の定着で閃いた武技（K-02、09 §7.1。技能値×使い方の傾きで
+   * 覚える条件を満たしたもの。表示側は wake.artLearned に差し込む）
+   */
+  artsLearned?: string[];
 }
 
 export interface ConsolidateResult {

@@ -1,3 +1,13 @@
+import {
+  artExpGain,
+  checkArtsLearn,
+  consolidateArts,
+  kiMaxOf,
+  manaMaxOf,
+  normalizeBuild,
+  recordArtUse,
+  type ArtsConfig,
+} from "./arts/index.js";
 import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/index.js";
 import { evaluate, type Cond, type CondEnv } from "./conditions/index.js";
 import { checkDiscoveries, type DiscoveryDef } from "./discoveries/index.js";
@@ -39,7 +49,7 @@ import {
   type IncidentsConfig,
 } from "./incidents/index.js";
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
-import type { CombatConfig, WeaponDef } from "./combat/index.js";
+import { passiveFxOf, type CombatConfig, type WeaponDef } from "./combat/index.js";
 import {
   bondOf,
   canErrand,
@@ -228,6 +238,14 @@ export interface StepConfig {
   life?: LifeConfig;
   /** 品物の定義表（items.json の id → 定義。値段・食事の質・贈り物の価値に使う） */
   items?: Record<string, ItemDef>;
+  /**
+   * 武技・資源・構成（K-02、balance.arts ＋ arts.json の defs）。
+   * 指定すると：戦闘の使用記録が artTags/skillTags に畳まれ、使った技に
+   * 経験が入り（眠りで定着）、技能値×傾きで新しい技を閃き、気力・魔力が
+   * 眠りで満たされ、setBuild コマンドで構成を組み替えられる。
+   * 未指定の世界では武技関連はすべて働かない
+   */
+  arts?: ArtsConfig;
 }
 
 export type Command =
@@ -288,6 +306,13 @@ export type Command =
       weapon?: string;
       /** 相手が獣か（K-01。beast.exp の技能リンクが経験を入れるかの判定に使う） */
       beast?: boolean;
+      /**
+       * 戦闘の使用記録（K-02、combatResult.uses）。行動ごとの使用タグを
+       * artTags/skillTags に畳み、使った技（id のあるもの）に経験が入る
+       */
+      uses?: readonly { id?: string; skill: string; tags: string[] }[];
+      /** 戦闘終了時点の気力（K-02、combatResult.kiLeft。player.ki へ書き戻す） */
+      kiLeft?: number;
     }
   /**
    * 深層ダンジョンのランの結果を世界に反映する（06 §3B、T-43）。
@@ -307,6 +332,10 @@ export type Command =
        * 省略時は装備中の武器 —— この武器の技能に経験が入る）
        */
       weapon?: string;
+      /** ラン中の使用記録（K-02。combat と同じく artTags/skillTags・技の経験に畳む） */
+      uses?: readonly { id?: string; skill: string; tags: string[] }[];
+      /** ラン終了時点の気力（K-02） */
+      kiLeft?: number;
     }
   /** 打診を受けて立場・職業の認定を受ける（03 §1）。行動は消費しない */
   | { type: "acceptOffer"; id: string }
@@ -327,6 +356,18 @@ export type Command =
   | { type: "buyWeapon"; id: string }
   /** 武器を持ち替える（K-01。行動は消費しない —— 腰の物を替える一瞬） */
   | { type: "equipWeapon"; id: string }
+  /**
+   * 武技の構成を組み替える（K-02、09 §6。行動は消費しない —— 街での仕度）。
+   * 8枠の戦闘技スロット・4枠のパッシブ・持ち替える2本の武器を指定する。
+   * 習得していない技・種別の違う技・持っていない武器・重複は削られ、
+   * 残りが正規化されて入る（normalizeBuild）。武器枠の先頭は装備中の武器になる
+   */
+  | {
+      type: "setBuild";
+      slots?: (string | null)[];
+      passives?: (string | null)[];
+      weapons?: (string | null)[];
+    }
   /** 所持する書物を読む（行動を1回消費。素質回復・期間効果・知識フラグ） */
   | { type: "readBook"; id: string }
   /** 師匠に弟子入りする（02 §8、T-27。条件達成で認められる。行動は消費しない） */
@@ -629,6 +670,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     case "sleep":
     case "rest": {
       const from = next.time;
+      // K-02：眠りで閃いた技（起床ログの後にイベントとして出すため先に集める）
+      const learnedArts: string[] = [];
       // 行動0回で眠る日は休養日（オーバーワーク解除・素質回復）
       const restDay = !next.actionLog.some((e) => e.day === next.time.day);
 
@@ -706,6 +749,32 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       report.fatigue.to = next.player.fatigue;
       report.overwork = { active: overwork.active, became: becameOverwork };
       report.restDay = restDay;
+
+      // K-02：気力・魔力は眠りで満たす（09 §2）。上限は定着後の基礎能力から
+      // 引き、装備中のパッシブ（kiMax/manaMax）が乗る。
+      // 使って貯めた技の経験は眠りで定着し、定着で技能値が閾値を越えれば
+      // 新しい技を閃く（§7.1）—— どちらも起床ログに載る
+      if (cfg.arts !== undefined) {
+        // パッシブの気力・魔力上限ボーナスは戦闘と同じ解決（combat.arts を通す）
+        const fx = cfg.combat.arts !== undefined ? passiveFxOf(next.player, cfg.combat) : {};
+        next = {
+          ...next,
+          player: {
+            ...next.player,
+            ki: kiMaxOf(next.player.stats, cfg.arts, fx["kiMax"] ?? 0),
+            mana: manaMaxOf(next.player.stats, cfg.arts, fx["manaMax"] ?? 0),
+          },
+        };
+        const cons = consolidateArts(next, cfg.arts);
+        next = cons.state;
+        if (cons.levelUps.length > 0) report.arts = cons.levelUps;
+        const learn = checkArtsLearn(next, cfg.arts);
+        next = learn.state;
+        if (learn.learned.length > 0) {
+          report.artsLearned = learn.learned;
+          learnedArts.push(...learn.learned);
+        }
+      }
 
       // 翌日の追い風を抽選して保持し、起床ログに含める
       const rng = restoreRng(next.rng);
@@ -794,6 +863,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           toRank: r.toRank,
         });
       }
+      // 眠りで閃いた技（K-02）：起床ログの節目として出す
+      for (const id of learnedArts) events.push({ type: "artLearned", id });
       events.push(...agingEvents);
       events.push(...crisisEvents);
       break;
@@ -1060,6 +1131,43 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 獣との戦い（K-01）：狩猟・動物知識などに少し経験が入る（beast.exp）
       if (command.beast === true) grantLinkGains("beast.exp");
 
+      // K-02：戦闘の武技まわりを世界に畳む（09 §1・§7.1）。
+      // 気力の持ち越し → 使用記録の集計 → 技の経験（眠りで定着）→ 習得判定
+      if (cfg.arts !== undefined) {
+        if (command.kiLeft !== undefined) {
+          next = {
+            ...next,
+            player: { ...next.player, ki: Math.max(0, round1(command.kiLeft)) },
+          };
+        }
+        const uses = command.uses ?? [];
+        if (uses.length > 0) {
+          const rec = recordArtUse(next.player.artTags, next.player.skillTags, uses);
+          // 使った技に経験が入る（相手の格で上がる。09 §1）
+          const arts = { ...next.player.arts };
+          const weaponSkillVal = next.player.skills[usedWeaponSkill]?.value ?? 0;
+          const gain = artExpGain(command.difficulty, weaponSkillVal, cfg.arts);
+          for (const u of uses) {
+            if (u.id === undefined) continue;
+            const a = arts[u.id];
+            if (a !== undefined) arts[u.id] = { ...a, pending: a.pending + gain };
+          }
+          next = {
+            ...next,
+            player: {
+              ...next.player,
+              arts,
+              artTags: rec.artTags,
+              skillTags: rec.skillTags,
+            },
+          };
+        }
+        // 習得判定（09 §7.1）：使い方の傾き＋技能値で新しい技を閃く
+        const learn = checkArtsLearn(next, cfg.arts);
+        next = learn.state;
+        for (const id of learn.learned) events.push({ type: "artLearned", id });
+      }
+
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "combat", cfg.body);
       events.push({
@@ -1200,6 +1308,43 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 未決着の層（逃走・死亡・灯り切れで中断した戦闘）も失敗経験を入れる
       if (command.loss !== undefined) applyFight(command.loss, false);
 
+      // K-02：ラン中の武技まわりを畳む（combat と同じ処理。経験は最深の格で入る）
+      if (cfg.arts !== undefined) {
+        if (command.kiLeft !== undefined) {
+          next = {
+            ...next,
+            player: { ...next.player, ki: Math.max(0, round1(command.kiLeft)) },
+          };
+        }
+        const uses = command.uses ?? [];
+        if (uses.length > 0) {
+          const rec = recordArtUse(next.player.artTags, next.player.skillTags, uses);
+          const top = Math.max(
+            0,
+            ...(command.kills ?? []).map((k) => k.difficulty),
+            command.loss?.difficulty ?? 0,
+          );
+          const weaponSkillVal =
+            next.player.skills[
+              cfg.weapons?.[command.weapon ?? next.player.weapon]?.skill ?? "swordplay"
+            ]?.value ?? 0;
+          const gain = artExpGain(top, weaponSkillVal, cfg.arts);
+          const arts = { ...next.player.arts };
+          for (const u of uses) {
+            if (u.id === undefined) continue;
+            const a = arts[u.id];
+            if (a !== undefined) arts[u.id] = { ...a, pending: a.pending + gain };
+          }
+          next = {
+            ...next,
+            player: { ...next.player, arts, artTags: rec.artTags, skillTags: rec.skillTags },
+          };
+        }
+        const learn = checkArtsLearn(next, cfg.arts);
+        next = learn.state;
+        for (const id of learn.learned) events.push({ type: "artLearned", id });
+      }
+
       // 潜行自体：時間を1行動分だけ進め、負荷を積む
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "abyss", cfg.body);
@@ -1326,6 +1471,26 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (next.player.weapon === command.id) break;
       next = { ...next, player: { ...next.player, weapon: command.id } };
       events.push({ type: "weaponEquipped", id: command.id });
+      break;
+    }
+    case "setBuild": {
+      // 武技の構成（K-02、09 §6）：行動は消費しない（街での仕度）。
+      // 指定を正規化して入る —— 未習得・種別違い・重複・未所持の武器は削られる
+      if (cfg.arts === undefined) break;
+      const build = normalizeBuild(next, command, cfg.arts);
+      // 武器枠の先頭を本命として装備に反映する（構成の武器と装備を一致させる）
+      const main = build.weapons[0];
+      next = {
+        ...next,
+        player: {
+          ...next.player,
+          build,
+          ...(typeof main === "string" && next.player.weapons.includes(main)
+            ? { weapon: main }
+            : {}),
+        },
+      };
+      events.push({ type: "buildChanged" });
       break;
     }
     case "readBook": {
@@ -2214,3 +2379,5 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
   return { state: next, events };
 }
+
+const round1 = (n: number) => Math.round(n * 10) / 10;

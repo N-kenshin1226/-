@@ -413,7 +413,7 @@ describe("セーブ v17（K-01）", () => {
     delete p.weapon;
     v16.player = p;
     const restored = deserialize(JSON.stringify(v16));
-    expect(restored.version).toBe(18); // v17（武器）を経て最新版へ
+    expect(restored.version).toBe(SAVE_VERSION); // v17（武器）・v18（営み）・v19（武技）を経て最新版へ
     expect(restored.player.weapons).toEqual(["fist", "sword"]);
     expect(restored.player.weapon).toBe("sword");
   });
@@ -435,7 +435,39 @@ describe("セーブ v17（K-01）", () => {
     expect(restored.player.skills["swordplay"]!.potential).toBe(100);
   });
 
-  it("SAVE_VERSION は 18（v18 は P-02 日々の営みの追加）", () => {
-    expect(SAVE_VERSION).toBe(18);
+  it("v17 のセーブは営み・気力・魔力・習得技・使用記録・構成を補って最新版へ移行される（P-02＋K-02）", () => {
+    const s = newGame("seed", "名無し", {
+      skillIds: SKILL_IDS,
+      initialPotential: 100,
+      initialStatValue: 10,
+    });
+    const v17: Record<string, unknown> = {
+      ...(JSON.parse(serialize(s)) as Record<string, unknown>),
+      version: 17,
+    };
+    const p = { ...(v17.player as Record<string, unknown>) };
+    delete p.ki;
+    delete p.mana;
+    delete p.arts;
+    delete p.artTags;
+    delete p.skillTags;
+    delete p.build;
+    v17.player = p;
+    const restored = deserialize(JSON.stringify(v17));
+    expect(restored.version).toBe(19);
+    expect(restored.player.ki).toBe(0);
+    expect(restored.player.mana).toBe(0);
+    expect(restored.player.arts).toEqual({});
+    expect(restored.player.artTags).toEqual({});
+    expect(restored.player.skillTags).toEqual({});
+    // 構成：装備中の武器が本命、もう1本が持ち替え（K-01 の初期装備は素手＋剣）
+    expect(restored.player.build.slots).toEqual(Array(8).fill(null));
+    expect(restored.player.build.passives).toEqual(Array(4).fill(null));
+    expect(restored.player.build.weapons[0]).toBe("sword");
+    expect(restored.player.build.weapons[1]).toBe("fist");
+  });
+
+  it("SAVE_VERSION は 19（v17=武器、v18=P-02 日々の営み、v19=K-02 武技・資源・構成）", () => {
+    expect(SAVE_VERSION).toBe(19);
   });
 });

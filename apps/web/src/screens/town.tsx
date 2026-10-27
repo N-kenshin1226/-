@@ -4,6 +4,7 @@
  */
 import { useState } from "react";
 import {
+  artExpToNext,
   canAct,
   describe,
   isSkillUnlocked,
@@ -14,6 +15,7 @@ import {
 } from "@trace/core";
 import { SKILL_CATEGORIES, titles } from "@trace/content";
 import {
+  artDefs,
   bioLines,
   bookList,
   cfg,
@@ -423,8 +425,183 @@ export function ArmsScreen({ state, act, back }: { state: GameState; act: Act; b
   );
 }
 
+// ---- 武技の構成（K-02、09 §6） ----
+/**
+ * 戦闘技8枠・パッシブ4枠・持ち替え武器2本を街で組み替える画面。
+ * 覚えた技から選んでスロットを埋め、「これで行く」で setBuild を発行する。
+ * 技をまだ覚えていない世界では空の枠だけが並ぶ
+ */
+export function BuildScreen({
+  state,
+  act,
+  back,
+}: {
+  state: GameState;
+  act: Act;
+  back: () => void;
+}) {
+  const artsCfg = cfg.arts;
+  const learned = state.player.arts;
+  // 習得済みの技を種別で分ける（スロットは種別ごとに別枠）
+  const combatArts = Object.keys(learned).filter((id) => artDefs[id]?.kind !== "passive");
+  const passiveArts = Object.keys(learned).filter((id) => artDefs[id]?.kind === "passive");
+  // 下書き：現在の構成を写して編集する（確定まで世界には出さない）
+  const [slots, setSlots] = useState<(string | null)[]>([...state.player.build.slots]);
+  const [passives, setPassives] = useState<(string | null)[]>([...state.player.build.passives]);
+  const [weaponsPick, setWeaponsPick] = useState<(string | null)[]>([
+    ...state.player.build.weapons,
+  ]);
+  const maxSlots = artsCfg?.slots ?? slots.length;
+  const maxPassives = artsCfg?.passiveSlots ?? passives.length;
+  const maxWeapons = artsCfg?.weaponSlots ?? weaponsPick.length;
+
+  /** スロット列の切り替え：入っていれば外す、空きがあれば詰めて入れる */
+  const toggle =
+    (list: (string | null)[], set: (v: (string | null)[]) => void, max: number) => (id: string) => {
+      const i = list.indexOf(id);
+      if (i >= 0) {
+        const next = [...list];
+        next[i] = null;
+        set(next);
+      } else {
+        const open = list.indexOf(null);
+        if (open < 0 || open >= max) return;
+        const next = [...list];
+        next[open] = id;
+        set(next);
+      }
+    };
+
+  const skillName = (id: string) => skillList.find((s) => s.id === id)?.name ?? id;
+  /** 技の1行の補足（種別・技能・気力・Lv） */
+  const artSub = (id: string) => {
+    const d = artDefs[id];
+    if (d === undefined) return "";
+    const kind = t.display.artKindNames[d.kind] ?? d.kind;
+    const lv = learned[id]?.lv ?? 0;
+    return d.kind === "passive"
+      ? `${kind}・${skillName(d.skill)}・Lv${lv}`
+      : `${kind}・${skillName(d.skill)}・気力 ${d.ki}・Lv${lv}`;
+  };
+
+  const slotMark = (list: (string | null)[], id: string) => {
+    const i = list.indexOf(id);
+    return i >= 0 ? `${i + 1}` : "・";
+  };
+
+  const entries: MenuEntry[] = [
+    {
+      kind: "header",
+      text: tpl(t.text.buildArtsHeader, {
+        n: slots.filter((s) => s !== null).length,
+        max: maxSlots,
+      }),
+    },
+    ...combatArts.map((id): MenuEntry => {
+      const d = artDefs[id]!;
+      return {
+        id: `build-art-${id}`,
+        label: `[${slotMark(slots, id)}] 《${d.name}》`,
+        sub: artSub(id),
+        onPick: () => toggle(slots, setSlots, maxSlots)(id),
+      };
+    }),
+    ...(combatArts.length === 0 ? [{ kind: "divider" } satisfies MenuEntry] : []),
+    {
+      kind: "header",
+      text: tpl(t.text.buildPassivesHeader, {
+        n: passives.filter((s) => s !== null).length,
+        max: maxPassives,
+      }),
+    },
+    ...passiveArts.map((id): MenuEntry => {
+      const d = artDefs[id]!;
+      return {
+        id: `build-pa-${id}`,
+        label: `[${slotMark(passives, id)}] 《${d.name}》`,
+        sub: artSub(id),
+        onPick: () => toggle(passives, setPassives, maxPassives)(id),
+      };
+    }),
+    { kind: "header", text: t.text.buildWeaponsHeader },
+    ...state.player.weapons.map((id): MenuEntry => {
+      const i = weaponsPick.indexOf(id);
+      return {
+        id: `build-wp-${id}`,
+        label: `[${i >= 0 ? i + 1 : "・"}] 《${weaponDefs[id]?.name ?? id}》`,
+        sub: i === 0 ? "構えの本命" : i === 1 ? "持ち替え" : undefined,
+        onPick: () => {
+          // 武器枠は順番が意味を持つ（[0] が構え）。外す→詰め直し、入れる→末尾へ
+          if (i >= 0) {
+            const rest = weaponsPick.filter((w) => w !== id && w !== null);
+            setWeaponsPick([...rest, ...Array(maxWeapons - rest.length).fill(null)]);
+          } else {
+            const cur = weaponsPick.filter((w) => w !== null);
+            if (cur.length >= maxWeapons) return;
+            setWeaponsPick([...cur, id, ...Array(maxWeapons - cur.length - 1).fill(null)]);
+          }
+        },
+      };
+    }),
+    { kind: "divider" },
+    {
+      id: "build-save",
+      label: "これで行く",
+      primary: true,
+      onPick: () =>
+        act(
+          { type: "setBuild", slots, passives, weapons: weaponsPick },
+          { format: (ev) => eventLines(ev, state) },
+        ),
+    },
+  ];
+
+  return (
+    <div data-testid="screen-build" className="scene">
+      <Paper
+        style={{ ...pos({ left: 300, top: 90, width: 680, height: 560 }), padding: "26px 34px" }}
+      >
+        <div
+          style={{
+            textAlign: "center",
+            borderBottom: `3px double ${theme.colors.paper.text}`,
+            paddingBottom: 8,
+            marginBottom: 12,
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontFamily: theme.font.mincho,
+              fontWeight: 800,
+              fontSize: 28,
+              letterSpacing: "0.2em",
+              color: theme.colors.paper.head,
+            }}
+          >
+            武技の構え
+          </p>
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: theme.colors.paper.dim }}>
+            {t.text.buildHeader}
+          </p>
+        </div>
+        <div className="scroll" style={{ height: "80%", overflowY: "auto" }}>
+          <CommandMenu paper entries={entries} onBack={back} />
+        </div>
+      </Paper>
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "枠に入れる／外す"],
+          ["Esc", "戻る"],
+        ]}
+      />
+    </div>
+  );
+}
+
 // ---- 能力（Status見本） ----
-const TABS = ["技能", "称号", "経歴", "年代記"] as const;
+const TABS = ["技能", "技", "称号", "経歴", "年代記"] as const;
 /** 分野の並び（K-01。コンテンツ定義の分野順で棚を並べる） */
 const SKILL_CATEGORY_ORDER = SKILL_CATEGORIES;
 
@@ -621,9 +798,10 @@ export function StatusScreen({ state, back }: { state: GameState; back: () => vo
           </BlessingWindow>
         </>
       )}
-      {tab === 1 && <TitlesPanel state={state} />}
-      {tab === 2 && <BioPanel state={state} />}
-      {tab === 3 && <ChroniclePanel />}
+      {tab === 1 && <ArtsPanel state={state} />}
+      {tab === 2 && <TitlesPanel state={state} />}
+      {tab === 3 && <BioPanel state={state} />}
+      {tab === 4 && <ChroniclePanel />}
       <HintBar
         bless
         items={[
@@ -835,6 +1013,105 @@ function SkillDetail({ state, skillId }: { state: GameState; skillId: string }) 
 }
 
 /** 称号タブ */
+/**
+ * 技タブ（K-02、09 §1）：覚えた武技・パッシブの一覧。
+ * 種別ごとに束ね、構えに入っている印・Lv・次のLvまでの経験を出す
+ */
+function ArtsPanel({ state }: { state: GameState }) {
+  const arts = state.player.arts;
+  const ids = Object.keys(arts).filter((id) => artDefs[id] !== undefined);
+  const order: readonly string[] = ["attack", "response", "support", "passive"];
+  const inSlot = (id: string) => state.player.build.slots.includes(id);
+  const inPassive = (id: string) => state.player.build.passives.includes(id);
+  const cfgArts = cfg.arts;
+  return (
+    <BlessingWindow
+      style={{ ...pos({ left: 424, top: 92, right: 40, bottom: 70 }), padding: "18px 24px" }}
+      corners={["tr", "bl"]}
+    >
+      <WinHead kicker="ARTS" title={tpl(t.text.statusArtsHeader, { n: ids.length })} bless />
+      <div className="scroll b" style={{ maxHeight: "78%", overflowY: "auto" }}>
+        {ids.length === 0 && (
+          <p style={{ color: B.dim }}>――覚えた技はまだない。技能を使い込めば、閃くときが来る。</p>
+        )}
+        {order.map((kind) => {
+          const rows = ids
+            .map((id) => ({ id, def: artDefs[id]! }))
+            .filter((a) => a.def.kind === kind)
+            .sort(
+              (a, b) => a.def.skill.localeCompare(b.def.skill) || a.def.learn.at - b.def.learn.at,
+            );
+          if (rows.length === 0) return null;
+          return (
+            <div key={kind}>
+              <div
+                style={{
+                  padding: "8px 2px 4px",
+                  fontFamily: theme.font.en,
+                  fontSize: 12,
+                  letterSpacing: "0.25em",
+                  color: B.dim,
+                  borderBottom: `1px solid ${B.frame}`,
+                  marginBottom: 4,
+                }}
+              >
+                ── {t.display.artKindNames[kind] ?? kind} ──
+              </div>
+              {rows.map(({ id, def }) => {
+                const a = arts[id]!;
+                const next = cfgArts === undefined ? null : artExpToNext(a, cfgArts);
+                const mark = inSlot(id) ? "構" : inPassive(id) ? "受" : "・";
+                const skillName = skillList.find((s) => s.id === def.skill)?.name ?? def.skill;
+                return (
+                  <div
+                    key={id}
+                    data-testid={`art-${id}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 10,
+                      padding: "7px 4px",
+                      borderBottom: `1px solid ${B.frameInner}`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: theme.font.en,
+                        fontSize: 13,
+                        color: theme.colors.grow,
+                        width: 20,
+                      }}
+                    >
+                      {mark}
+                    </span>
+                    <span style={{ fontFamily: theme.font.mincho, fontSize: 18, color: "#eaf8fb" }}>
+                      《{def.name}》
+                    </span>
+                    <span
+                      style={{ fontFamily: theme.font.en, fontSize: 14, color: theme.colors.grow }}
+                    >
+                      Lv{a.lv}
+                      {a.pending > 0 ? "+" : ""}
+                    </span>
+                    <span style={{ fontSize: 12, color: B.dim }}>
+                      {skillName}
+                      {def.kind !== "passive" ? `・気力 ${def.ki}` : ""}
+                      {next !== null ? `・次Lv ${Math.round(a.exp)}/${next}` : "・極"}
+                    </span>
+                    <span style={{ fontSize: 12, color: B.dim, flex: 1, textAlign: "right" }}>
+                      {def.desc}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </BlessingWindow>
+  );
+}
+
 function TitlesPanel({ state }: { state: GameState }) {
   return (
     <BlessingWindow

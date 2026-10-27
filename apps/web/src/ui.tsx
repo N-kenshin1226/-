@@ -67,6 +67,8 @@ export type Screen =
   | { name: "lore"; atomId?: string }
   /** 武器屋（K-01）：武器の棚。購入と持ち替えは行動を消費しない */
   | { name: "arms" }
+  /** 武技の構え（K-02、09 §6）：戦闘技・パッシブ・持ち替え武器の構成。行動は消費しない */
+  | { name: "build" }
   | { name: "book" }
   | { name: "records" }
   | { name: "society" }

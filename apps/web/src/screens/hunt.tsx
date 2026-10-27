@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   combatIntent,
   combatResult,
+  usableArts,
   type AbyssRun,
   type CombatAction,
   type GameState,
+  type StatusId,
 } from "@trace/core";
 import type { EnemyJson } from "@trace/content";
 import { balance } from "@trace/content";
@@ -63,8 +65,10 @@ function displayedHp(cs: CombatState, playback: Playback): { you: number; foe: n
   let dealt = 0;
   let taken = 0;
   for (const e of playback.pending) {
-    if (e.type === "playerAttack") dealt += e.damage ?? 0;
-    if (e.type === "enemyHit") taken += e.damage ?? 0;
+    // K-02：武技の一撃と状態の継続ダメージも敵の体力を削る
+    if (e.type === "playerAttack" || e.type === "playerArt" || e.type === "statusTick")
+      dealt += e.damage ?? 0;
+    if (e.type === "enemyHit" || e.type === "parried") taken += e.damage ?? 0;
   }
   return { you: cs.playerHp + taken, foe: cs.enemyHp + dealt };
 }
@@ -122,19 +126,27 @@ function CombatArena({
   const last = playback.last;
   const omen = cs.telegraph !== null || playback.pending.some((e) => e.type === "telegraph");
   const intent = combatIntent(cs, def, cfg.combat);
-  const foeHit = last?.type === "playerAttack";
-  const youHurt = last?.type === "enemyHit" && last.guarded !== true;
+  const foeHit = last?.type === "playerAttack" || last?.type === "playerArt";
+  const youHurt = (last?.type === "enemyHit" && last.guarded !== true) || last?.type === "parried";
   const beatCls =
     last === null
       ? "dim"
-      : last.type === "playerAttack" && (last.crit === true || last.counter === true)
+      : (last.type === "playerAttack" || last.type === "playerArt") &&
+          (last.crit === true || last.counter === true)
         ? "crit"
         : (last.type === "enemyHit" && (last.big === true || last.crit === true)) ||
             last.type === "lost"
           ? "big"
-          : last.type === "won" || last.type === "counter"
+          : last.type === "won" ||
+              last.type === "counter" ||
+              last.type === "interrupted" ||
+              last.type === "partBroken"
             ? "crit"
             : "";
+  // K-02：敵に掛かっている状態と壊れた部位（状態は残り tick を出す）
+  const statuses = Object.entries(cs.enemyStatus).filter(
+    (e): e is [StatusId, { until: number; power: number }] => e[1] !== undefined,
+  );
   return (
     <div>
       <div className="cbt-names">
@@ -148,6 +160,30 @@ function CombatArena({
         <CbtHpGauge value={hp.you} max={cs.playerHpMax} side="player" testId="combat-hp-you" />
         <CbtHpGauge value={hp.foe} max={cs.enemyHpMax} side="enemy" testId="combat-hp-foe" />
       </div>
+      {/* K-02：気力の帯と敵の状態・部位（武技のある世界だけ出す） */}
+      {(cs.playerKiMax > 0 || statuses.length > 0 || cs.brokenParts.length > 0) && (
+        <div className="cbt-names" style={{ margin: "0 16px 4px", fontSize: 12 }}>
+          <span data-testid="combat-ki" style={{ color: W.dim }}>
+            {tpl(t.text.combatKiLine, {
+              ki: Math.round(cs.playerKi * 10) / 10,
+              max: cs.playerKiMax,
+            })}
+          </span>
+          <span data-testid="combat-foe-state">
+            {statuses.map(([id, st]) => (
+              <span key={id} className="chip" data-status={id}>
+                {t.display.statusNames[id] ?? id}
+                {st.until > cs.tick ? ` ${st.until - cs.tick}` : ""}
+              </span>
+            ))}
+            {cs.brokenParts.map((p) => (
+              <span key={p} className="chip" data-part={p}>
+                {t.display.partNames[p] ?? p}破壊
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
       <div className="cbt-stage" data-testid="combat-stage">
         <div
           className={[
@@ -212,6 +248,42 @@ function switchEntries(
     }),
     { kind: "divider" },
     { id: "combat-switch-back", label: "戻る", onPick: cancel },
+  ];
+}
+
+/* ── K-02：武技の選択 ── */
+
+/**
+ * 武技のコマンド列（K-02）：構成スロットの技を並べる。
+ * 使えるのは装備中の武器技能のもの＋気力が足りるものだけ
+ * （使えない技は理由を出して選べない —— 行動の空費を防ぐ）
+ */
+function artEntries(
+  cs: CombatState,
+  doAction: (a: CombatAction) => void,
+  cancel: () => void,
+): MenuEntry[] {
+  const usable = new Set(usableArts(cs, cfg.combat).map((a) => a.def.id));
+  return [
+    ...cs.artSlots.map((a): MenuEntry => {
+      const match = usable.has(a.def.id);
+      const afford = cs.playerKi >= a.def.ki;
+      const ok = match && afford;
+      const sub = !match
+        ? "構えが合わない"
+        : !afford
+          ? `気力が足りない（${a.def.ki}）`
+          : `気力 ${a.def.ki}・CT×${a.def.ct}`;
+      return {
+        id: `combat-art-${a.def.id}`,
+        label: `《${a.def.name}》 Lv${a.lv}`,
+        sub,
+        disabled: !ok,
+        onPick: () => doAction({ type: "art", id: a.def.id }),
+      };
+    }),
+    { kind: "divider" },
+    { id: "combat-art-back", label: "戻る", onPick: cancel },
   ];
 }
 
@@ -338,6 +410,8 @@ export function CombatScreen({
   const [cs, setCs] = useState<CombatState>(() => beginCombat(state, enemy));
   // 持ち替えの一覧を開いているか（K-01。武器を2つ以上持っていると選べる）
   const [weaponPick, setWeaponPick] = useState(false);
+  // 武技の一覧を開いているか（K-02。構成に技が入っていると選べる）
+  const [artPick, setArtPick] = useState(false);
   // 決着後に戻る先（P-01）：戦いの起きた場所 —— 場所を経由しない導線は見取り図へ
   const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   /** 世界補正込みの敵定義（意図の表示が解決側と一致するよう同じものを使う） */
@@ -443,6 +517,10 @@ export function CombatScreen({
       weapon: cs.playerWeapon,
       // 獣との戦いなら beast.exp の技能リンク（狩猟・動物知識）に経験が入る
       ...(enemy.beast === true ? { beast: true } : {}),
+      // 武技まわり（K-02）：使用記録（技・技能の傾きと技の経験に畳む）と
+      // 残った気力（戦闘をまたいで一日続く）を世界へ渡す
+      uses: r.uses,
+      kiLeft: r.kiLeft,
     });
     push(
       r.won
@@ -472,38 +550,61 @@ export function CombatScreen({
           },
           () => setWeaponPick(false),
         )
-      : [
-          ...(
-            [
-              ["attack", "攻撃"],
-              ["defend", "防御"],
-              ["observe", "見切り"],
-              ["flee", "逃げる"],
-            ] as const
-          ).map(([a, label]): MenuEntry => ({
-            id: `combat-${a}`,
-            label,
-            onPick: () => doAction(a),
-          })),
-          // 武器の持ち替え（K-01）：2つ以上持っていると選べる。1行動を消費する
-          ...(cs.ownedWeapons.length > 1
-            ? [
-                {
-                  id: "combat-weapons",
-                  label: t.text.combatSwitchLabel,
-                  sub: tpl(t.text.combatWeaponLine, { name: weaponName(cs.playerWeapon) }),
-                  onPick: () => setWeaponPick(true),
-                } satisfies Extract<MenuEntry, { id: string }>,
-              ]
-            : []),
-          { kind: "divider" },
-          {
-            id: "combat-giveup",
-            label: "あきらめる",
-            danger: true,
-            onPick: () => setScreen(backTo),
-          },
-        ]
+      : artPick
+        ? artEntries(
+            cs,
+            (a) => {
+              setArtPick(false);
+              doAction(a);
+            },
+            () => setArtPick(false),
+          )
+        : [
+            ...(
+              [
+                ["attack", "攻撃"],
+                ["defend", "防御"],
+                ["observe", "見切り"],
+                ["flee", "逃げる"],
+              ] as const
+            ).map(([a, label]): MenuEntry => ({
+              id: `combat-${a}`,
+              label,
+              onPick: () => doAction(a),
+            })),
+            // 武技（K-02）：構成スロットに技が入っていると選べる。1行動を消費する
+            ...(cs.artSlots.length > 0
+              ? [
+                  {
+                    id: "combat-arts",
+                    label: t.text.combatArtsLabel,
+                    sub: tpl(t.text.combatKiLine, {
+                      ki: Math.round(cs.playerKi * 10) / 10,
+                      max: cs.playerKiMax,
+                    }),
+                    onPick: () => setArtPick(true),
+                  } satisfies Extract<MenuEntry, { id: string }>,
+                ]
+              : []),
+            // 武器の持ち替え（K-01）：2つ以上持っていると選べる。1行動を消費する
+            ...(cs.ownedWeapons.length > 1
+              ? [
+                  {
+                    id: "combat-weapons",
+                    label: t.text.combatSwitchLabel,
+                    sub: tpl(t.text.combatWeaponLine, { name: weaponName(cs.playerWeapon) }),
+                    onPick: () => setWeaponPick(true),
+                  } satisfies Extract<MenuEntry, { id: string }>,
+                ]
+              : []),
+            { kind: "divider" },
+            {
+              id: "combat-giveup",
+              label: "あきらめる",
+              danger: true,
+              onPick: () => setScreen(backTo),
+            },
+          ]
     : [
         {
           id: "combat-finish",
@@ -564,11 +665,16 @@ export function AbyssScreen({
   const [cs, setCs] = useState<CombatState | null>(null);
   // 持ち替えの一覧を開いているか（K-01）
   const [weaponPick, setWeaponPick] = useState(false);
+  // 武技の一覧を開いているか（K-02）
+  const [artPick, setArtPick] = useState(false);
   /** 現在戦っている層の敵（撃破で run.floor が進んでも表示が変わらないよう保持する） */
   const [enemy, setEnemy] = useState<EnemyJson | null>(null);
   /** その層の個体差の抽選鍵（R-01。層が進むたびに dive で立て直す） */
   const [encKey, setEncKey] = useState("");
   const [loss, setLoss] = useState<{ enemyId: string; difficulty: number } | null>(null);
+  // K-02：ランを通した使用記録と、層をまたいで持ち越す気力
+  const [usesAcc, setUsesAcc] = useState<{ id?: string; skill: string; tags: string[] }[]>([]);
+  const [kiLeft, setKiLeft] = useState<number | null>(null);
   // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
   /** 戦闘中の敵の世界補正済み定義（意図の表示用。解決側と同じものを使う） */
@@ -593,7 +699,10 @@ export function AbyssScreen({
     push(tpl(t.text.combatStart, { name: enemyDisplayName(state, e, key) }));
     setEnemy(e);
     setEncKey(key);
-    setCs(beginCombat(state, e, key));
+    // K-02：気力は層をまたいで持ち越す（前の層で使った分は戻らない）
+    setCs(
+      beginCombat(state, e, key, kiLeft === null ? undefined : { ...state.player, ki: kiLeft }),
+    );
     playback.queue([]);
   };
 
@@ -630,6 +739,11 @@ export function AbyssScreen({
       // 灯り切れで未決着のまま中断した層
       setLoss({ enemyId: enemy.id, difficulty });
     }
+    // K-02：この層の戦闘が閉じたら（決着・灯り切れどちらでも）使用記録と残りの気力を畳む
+    if (next.done || cur.done) {
+      setUsesAcc((acc) => [...acc, ...next.uses]);
+      setKiLeft(next.playerKi);
+    }
     if (cur.done && cur.end !== null) push(endLine(cur.end));
     setRun(cur);
   };
@@ -651,6 +765,9 @@ export function AbyssScreen({
         ...(loss !== null ? { loss } : {}),
         // ラン中に最後に使った武器（K-01。持ち替えたまま終わればその武器の技能に経験）
         weapon: cs?.playerWeapon ?? state.player.weapon,
+        // K-02：ランを通した使用記録と残りの気力
+        uses: usesAcc,
+        ...(kiLeft !== null ? { kiLeft } : {}),
       },
       {
         format: (ev) => [
@@ -733,33 +850,56 @@ export function AbyssScreen({
                     },
                     () => setWeaponPick(false),
                   )
-                : [
-                    ...(
-                      [
-                        ["attack", "攻撃"],
-                        ["defend", "防御"],
-                        ["observe", "見切り"],
-                        ["flee", "逃げる"],
-                      ] as const
-                    ).map(([a, label]): MenuEntry => ({
-                      id: `combat-${a}`,
-                      label,
-                      onPick: () => doAction(a),
-                    })),
-                    // 武器の持ち替え（K-01。層の中でも構えを変えられる）
-                    ...(cs.ownedWeapons.length > 1
-                      ? [
-                          {
-                            id: "combat-weapons",
-                            label: t.text.combatSwitchLabel,
-                            sub: tpl(t.text.combatWeaponLine, {
-                              name: weaponName(cs.playerWeapon),
-                            }),
-                            onPick: () => setWeaponPick(true),
-                          } satisfies Extract<MenuEntry, { id: string }>,
-                        ]
-                      : []),
-                  ]
+                : artPick
+                  ? artEntries(
+                      cs,
+                      (a) => {
+                        setArtPick(false);
+                        doAction(a);
+                      },
+                      () => setArtPick(false),
+                    )
+                  : [
+                      ...(
+                        [
+                          ["attack", "攻撃"],
+                          ["defend", "防御"],
+                          ["observe", "見切り"],
+                          ["flee", "逃げる"],
+                        ] as const
+                      ).map(([a, label]): MenuEntry => ({
+                        id: `combat-${a}`,
+                        label,
+                        onPick: () => doAction(a),
+                      })),
+                      // 武技（K-02。層の中でも技は使える —— 気力だけが限り）
+                      ...(cs.artSlots.length > 0
+                        ? [
+                            {
+                              id: "combat-arts",
+                              label: t.text.combatArtsLabel,
+                              sub: tpl(t.text.combatKiLine, {
+                                ki: Math.round(cs.playerKi * 10) / 10,
+                                max: cs.playerKiMax,
+                              }),
+                              onPick: () => setArtPick(true),
+                            } satisfies Extract<MenuEntry, { id: string }>,
+                          ]
+                        : []),
+                      // 武器の持ち替え（K-01。層の中でも構えを変えられる）
+                      ...(cs.ownedWeapons.length > 1
+                        ? [
+                            {
+                              id: "combat-weapons",
+                              label: t.text.combatSwitchLabel,
+                              sub: tpl(t.text.combatWeaponLine, {
+                                name: weaponName(cs.playerWeapon),
+                              }),
+                              onPick: () => setWeaponPick(true),
+                            } satisfies Extract<MenuEntry, { id: string }>,
+                          ]
+                        : []),
+                    ]
             }
           />
         ) : (
