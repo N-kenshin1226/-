@@ -360,7 +360,9 @@ export function MinigameScreen({
         </div>
         <div style={{ margin: "0 16px" }}>
           {isTimingKind(kind) && <TimingView kind={kind} gs={gs as TimingState} onTick={setGs} />}
-          {isBoardKind(kind) && <BoardView kind={kind} gs={gs as BoardState} onTick={setGs} />}
+          {isBoardKind(kind) && (
+            <BoardView kind={kind} name={order.name} gs={gs as BoardState} onTick={setGs} />
+          )}
           {kind === "negotiation" && <NegotiationView gs={gs as DealState} onTick={setGs} />}
         </div>
         {res.done && (
@@ -426,12 +428,6 @@ function TimingView({
   const elapsed = startRef.current === null ? 0 : performance.now() - startRef.current;
   const next = gs.beats[gs.cursor];
   const near = next !== undefined && Math.abs(elapsed - next) <= gs.halfWidth;
-  const beatText =
-    kind === "performance"
-      ? t.text.performanceBeat
-      : kind === "fishing"
-        ? t.text.fishingBeat
-        : t.text.workBeat;
   const pressLabel =
     kind === "performance"
       ? t.text.performancePress
@@ -441,7 +437,15 @@ function TimingView({
   return (
     <div style={{ marginTop: 4 }}>
       <div style={{ fontSize: 13, color: W.dim }}>
-        {tpl(beatText, { n: gs.cursor + 1 })}（{gs.hits} 命中 / 判定窓 ±{Math.round(gs.halfWidth)}
+        {tpl(
+          kind === "performance"
+            ? t.text.performanceBeat
+            : kind === "fishing"
+              ? t.text.fishingBeat
+              : t.text.workBeat,
+          { n: gs.cursor + 1 },
+        )}
+        （{gs.hits} 命中 / 判定窓 ±{Math.round(gs.halfWidth)}
         ms）
       </div>
       <div style={{ letterSpacing: 6, fontSize: 22, margin: "8px 0" }}>
@@ -488,22 +492,26 @@ function TimingView({
 /** 盤面推理系の皮の共通画面（採掘・鑑定）。マスを1つずつ開く */
 function BoardView({
   kind,
+  name,
   gs,
   onTick,
 }: {
   kind: MinigameKind;
+  /** 注文の名（{name} の差し込み元。テンプレートを素のまま出さない） */
+  name: string;
   gs: BoardState;
   onTick: (s: BoardState) => void;
 }) {
-  const startText = kind === "appraisal" ? t.text.appraisalStart : t.text.miningStart;
-  const hintText = kind === "appraisal" ? t.text.appraisalHint : t.text.miningHint;
   const foundNoun = kind === "appraisal" ? "真品" : "鉱石";
   return (
     <div style={{ marginTop: 4 }}>
       <div style={{ fontSize: 13, color: W.dim }}>
         {gs.lastHint === null
-          ? startText
-          : tpl(hintText, { radius: gs.hintRadius, n: gs.lastHint })}
+          ? tpl(kind === "appraisal" ? t.text.appraisalStart : t.text.miningStart, { name })
+          : tpl(kind === "appraisal" ? t.text.appraisalHint : t.text.miningHint, {
+              radius: gs.hintRadius,
+              n: gs.lastHint,
+            })}
         （{foundNoun} {gs.ores}/{gs.oresTotal}）
       </div>
       <div

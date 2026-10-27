@@ -89,11 +89,17 @@ export function TitleScreen({
       sub: o.desc,
       onPick: () => startNew(o.id),
     })),
-    { kind: "divider" },
-    { kind: "header", text: "―― 選ばなくても始められる ――" },
-    ...tendencyEntries(fate, setFate),
-    { kind: "divider" },
-    ...vowEntries(fate, setFate),
+    // 運命の傾向・誓約は2周目以降（年代記に1件以上あるとき）だけ出す（F-06。
+    // 1周目は名前と出自だけで始める —— 最初の1時間を読みやすく整える）
+    ...(lives > 0
+      ? ([
+          { kind: "divider" },
+          { kind: "header", text: "―― 選ばなくても始められる ――" },
+          ...tendencyEntries(fate, setFate),
+          { kind: "divider" },
+          ...vowEntries(fate, setFate),
+        ] satisfies MenuEntry[])
+      : []),
   ];
   return (
     <div data-testid="app" className="scene">

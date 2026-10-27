@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { skipIntro } from "./helpers.js";
 
 // T-40 引退と転生：引退 → 確認 → 伝記 → 継ぎ方の選択（T-48）→ 伝記＋継承 → 新しい生（06 §1「一生＝1周」）
 test("引退から転生まで通せる（年代記に1頁残る）", async ({ page }) => {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
 
   // 引退はいつでも選べる。確認は1回（思いとどまると何も起きない）
   await page.getByTestId("menu-retire").click();
@@ -58,6 +60,7 @@ test("引退から転生まで通せる（年代記に1頁残る）", async ({ p
 test("遺物を選んで継承できる", async ({ page }) => {
   await page.goto("/?seed=e2e-artifact");
   await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
 
   // 《釘の束》を簡易判定で1本作る
   await page.getByTestId("menu-work").click();
@@ -82,6 +85,7 @@ test("遺物を選んで継承できる", async ({ page }) => {
 test("引退から「この世界で次代を継ぐ」へ進める（年代記には刻まない）", async ({ page }) => {
   await page.goto("/?seed=e2e-heir");
   await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
 
   await page.getByTestId("menu-retire").click();
   await page.getByTestId("retire-yes").click();

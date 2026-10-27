@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { skipIntro } from "./helpers.js";
 
 // T-47 ライバル・ランキング（簡易版）：街の記録に順位表が出る。
 // ライバルの名は世界シードから決まるので、同じシードなら同じ顔ぶれになる
 test("街の記録にライバル・ランキングが出る（自分の行に印が付く）", async ({ page }) => {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
   await page.getByTestId("menu-records").click();
 
   const view = page.getByTestId("records-rivals");
@@ -24,6 +26,7 @@ test("同じシードでは同じ順位表が出る（決定論）", async ({ pa
   const readRows = async () => {
     await page.goto("/?seed=e2e-rivals");
     await page.getByTestId("origin-wanderer").click();
+    await skipIntro(page);
     await page.getByTestId("menu-records").click();
     return (await page.getByTestId("records-rivals").innerText())
       .split("\n")

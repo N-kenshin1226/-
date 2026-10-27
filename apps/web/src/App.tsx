@@ -52,6 +52,7 @@ import {
 } from "./ui.js";
 import { theme } from "./theme.js";
 import { TitleScreen } from "./screens/title.js";
+import { IntroScreen } from "./screens/intro.js";
 import { MenuScreen } from "./screens/menu.js";
 import { BookScreen, SleepScreen, StatusScreen, TrainScreen } from "./screens/town.js";
 import { MinigameScreen, WorkModeScreen, WorkScreen } from "./screens/work.js";
@@ -227,7 +228,9 @@ export function App() {
     saveGame(s);
     setState(s);
     setLog([t.text.banner, "", t.text.intro]);
-    setScreen({ name: "menu" });
+    // 導入の会話窓（F-06）：年代記に頁が無い＝初めての生のときだけ挟む。
+    // 2周目以降の始め方を知っているプレイヤーには出さない
+    setScreen(loadChronicle().lives.length === 0 ? { name: "intro" } : { name: "menu" });
   };
 
   /** 引退の確認に応答する（T-40。06 §1：引退はいつでも選べる。確認は1回） */
@@ -552,6 +555,8 @@ function ScreenView(props: {
   } = props;
   const toMenu = () => setScreen({ name: "menu" });
   switch (screen.name) {
+    case "intro":
+      return <IntroScreen name={state.player.name} setScreen={setScreen} />;
     case "wake":
       return (
         <WakeScreen

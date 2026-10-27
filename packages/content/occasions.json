@@ -2,6 +2,16 @@
   "version": 1,
   "occasions": [
     {
+      "id": "debut.inn_recital",
+      "name": "宿場の披露目",
+      "kind": "debut",
+      "speaker": { "kind": "npc", "id": "npc.marta" },
+      "line": "今夜、うちの店で小さな余興をやるんだ。新顔のあんた、一曲披露してみないかい",
+      "require": { "time": { "day": { "lte": 3 } } },
+      "vessel": { "kind": "minigame", "skill": "performance", "targetQuality": 20 },
+      "win": { "money": 20, "renown": 1, "flags": ["occasion.inn_recital"] }
+    },
+    {
       "id": "exhibition.craft_fair",
       "name": "炉前の品評会",
       "kind": "exhibition",

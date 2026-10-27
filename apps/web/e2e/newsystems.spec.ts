@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { skipIntro } from "./helpers.js";
 import {
   dailyDiscoveryHint,
   discoveryHintText,
@@ -82,7 +83,7 @@ const fade = (page: Page) => page.waitForTimeout(400);
 async function startNewGame(page: Page, seed = SEED) {
   await page.goto(`/?seed=${seed}`);
   await page.getByTestId("origin-wanderer").click();
-  await expect(page.getByTestId("menu")).toBeVisible();
+  await skipIntro(page);
 }
 
 test("天候：起床画面に『今日の空』の行が出て、朝刊にも風景の行が載る（X-13）", async ({ page }) => {

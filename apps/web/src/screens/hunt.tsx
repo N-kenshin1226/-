@@ -225,7 +225,13 @@ export function CombatScreen({
           ],
         },
       );
-      push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
+      push(
+        r.won
+          ? tpl(t.text.combatWon, { name: enemy.name })
+          : r.fled
+            ? t.text.combatFled
+            : t.text.combatLost,
+      );
       setScreen({ name: "menu" });
       return;
     }
@@ -246,7 +252,13 @@ export function CombatScreen({
           ],
         },
       );
-      push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
+      push(
+        r.won
+          ? tpl(t.text.combatWon, { name: enemy.name })
+          : r.fled
+            ? t.text.combatFled
+            : t.text.combatLost,
+      );
       setScreen({ name: "menu" });
       return;
     }
@@ -265,7 +277,13 @@ export function CombatScreen({
       // 接点の相手なら接点の id を渡す（W-02。勝利時に備えへ寄与。逃げ・敗北では何も起きない）
       ...(touchpoint !== undefined ? { touchpoint } : {}),
     });
-    push(r.won ? t.text.combatWon : r.fled ? t.text.combatFled : t.text.combatLost);
+    push(
+      r.won
+        ? tpl(t.text.combatWon, { name: enemy.name })
+        : r.fled
+          ? t.text.combatFled
+          : t.text.combatLost,
+    );
     // 死亡時は伝記が生成される（06 §1。蘇生するが記録は残る）
     if (r.died) {
       push(bioLines(state, "death", true));

@@ -8,7 +8,12 @@ test("キーボードだけで1日遊べる（選択→鍛錬→宿→起床）"
   await expect(page.getByRole("heading", { name: "TRACE" })).toBeVisible();
   await page.waitForTimeout(250);
 
-  // タイトル：コマンド列は 出自3 → 傾向3 → 誓約5 の順。先頭が流れてきた孤児（Enter のみ）
+  // タイトル：1周目のコマンド列は出自3つだけ（F-06。傾向・誓約は2周目以降）。
+  // 先頭が流れてきた孤児（Enter のみ）
+  await page.keyboard.press("Enter");
+  // 初めての生では導入の会話窓が挟まる ―― Enter で2頁を読み進める
+  await expect(page.getByTestId("screen-intro")).toBeVisible();
+  await page.keyboard.press("Enter");
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("menu")).toBeVisible();
 
@@ -28,8 +33,13 @@ test("キーボードだけで1日遊べる（選択→鍛錬→宿→起床）"
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  // 「宿で眠る」は10番目。↓ を9回（ヘッダ・区切りは飛ばされる）
-  for (let i = 0; i < 9; i++) await page.keyboard.press("ArrowDown");
+  // 「宿で眠る」は10番目。↓ を9回（ヘッダ・区切りは飛ばされる）。
+  // 序盤の披露目の打診が届いている日（F-06）は「勝負所」が1つ増えて11番目
+  const occasionUp = await page
+    .getByTestId("menu-occasion")
+    .isVisible()
+    .catch(() => false);
+  for (let i = 0; i < (occasionUp ? 10 : 9); i++) await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("screen-sleep")).toBeVisible();
 

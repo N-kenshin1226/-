@@ -8,6 +8,8 @@ import type { MinigameKind, Order } from "./game.js";
 
 export type Screen =
   | { name: "menu" }
+  /** 導入の会話窓（F-06。初めての生の冒頭にだけ出る短い案内） */
+  | { name: "intro" }
   /** 起床の窓（UI-01：Wake見本）。寝た直後の step で wakeReport が出た時だけ開く */
   | { name: "wake"; report: WakeReport; events: ActionEvent[]; atHome: boolean }
   /** 朝刊（UI-01：News見本）。起床画面から、または街の記録から開く */

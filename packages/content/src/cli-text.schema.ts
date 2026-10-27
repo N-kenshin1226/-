@@ -52,6 +52,12 @@ export const cliTextSchema = z
         playerName: z.string(),
         banner: z.string(),
         intro: z.string(),
+        /**
+         * 初めての生の冒頭に出す導入（F-06。会話窓で2頁。{name} にプレイヤー名。
+         * introWelcome=どこにいるか・何ができるか、introGuide=行動と「寝ると成長が定着する」）
+         */
+        introWelcome: z.string(),
+        introGuide: z.string(),
         saveFound: z.string(),
         choiceResume: z.string(),
         choiceNew: z.string(),

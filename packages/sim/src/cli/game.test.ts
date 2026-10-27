@@ -719,7 +719,13 @@ describe("X-10 勝負所の行事", () => {
     g.player.skills["eloquence"]!.value = 30;
     const seeded = {
       ...g,
-      counters: { ...g.counters, "occasion.offer.day.deal.grand_bargain": g.time.day },
+      counters: {
+        ...g.counters,
+        "occasion.offer.day.deal.grand_bargain": g.time.day,
+        // 序盤の披露目（F-06）は初日にも届きうる —— この通しは大取引だけを見たいので
+        // 「昨日届いた」履歴にして、今日の抽選と勝負所の並びから外す（cooldown 内）
+        "occasion.offer.day.debut.inn_recital": g.time.day - 1,
+      },
     };
     writeFileSync(savePath, serialize(seeded));
 
