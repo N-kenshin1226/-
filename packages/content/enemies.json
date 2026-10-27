@@ -95,7 +95,7 @@
       "id": "bandit",
       "name": "追い剥ぎ",
       "area": "highway",
-      "hp": 60,
+      "hp": 72,
       "intervalTicks": 9,
       "challenge": 30,
       "agility": 7,
@@ -108,7 +108,7 @@
         "ambush": {
           "id": "ambush",
           "name": "不意の連撃",
-          "power": 16
+          "power": 28
         }
       },
       "pattern": [
@@ -129,7 +129,7 @@
       "id": "deserter",
       "name": "脱走兵",
       "area": "highway",
-      "hp": 90,
+      "hp": 98,
       "intervalTicks": 11,
       "challenge": 40,
       "agility": 6,
@@ -142,7 +142,7 @@
         "onslaught": {
           "id": "onslaught",
           "name": "渾身の薙ぎ払い",
-          "power": 22
+          "power": 30
         }
       },
       "pattern": [

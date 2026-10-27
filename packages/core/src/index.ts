@@ -101,8 +101,12 @@ export { appraisalGame } from "./minigame/index.js";
 export type { AppraisalConfig, AppraisalResult } from "./minigame/index.js";
 export {
   canFightUnique,
+  combatIntent,
   combatResult,
+  critChance,
   enhancedEnemy,
+  evadeChance,
+  hitChance,
   playerCombatStats,
   startCombat,
   telegraphLines,
@@ -112,6 +116,7 @@ export type {
   CombatAction,
   CombatConfig,
   CombatEvent,
+  CombatIntent,
   CombatResult,
   CombatState,
   EnemyDef,

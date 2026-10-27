@@ -12,6 +12,12 @@
  *   playSfx("coin")     … 報酬の銅貨
  *   playSfx("tag")      … 札の滑り込み（控えめ）
  *   playSfx("miss")     … 外れ・空振り
+ *   playSfx("crit")     … 会心・隙への反撃（鋭い高音）
+ *   playSfx("guard")    … 防御で受け止めた音（鈍い金属音）
+ *   playSfx("dodge")    … 躱し・見切りの風切り
+ *   playSfx("omen")     … 予兆の低音（大技が来る）
+ *   playSfx("heavy")    … 大技の被弾（重い一撃）
+ *   playSfx("counter")  … 体勢が崩れた合図（反撃の機）
  *
  * 初回はユーザー操作の中で呼ばれるため AudioContext を遅延生成し、
  * 自動再生ポリシーで吊り下がっていれば resume を試す。設定オフ・
@@ -20,7 +26,21 @@
 import { getFxSettings } from "./settings.js";
 
 export type SoundId =
-  "tag" | "coin" | "hit" | "miss" | "notice" | "fanfare" | "rankup" | "wake" | "world";
+  | "tag"
+  | "coin"
+  | "hit"
+  | "miss"
+  | "crit"
+  | "guard"
+  | "dodge"
+  | "omen"
+  | "heavy"
+  | "counter"
+  | "notice"
+  | "fanfare"
+  | "rankup"
+  | "wake"
+  | "world";
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -137,6 +157,38 @@ const RECIPES: Record<SoundId, (c: AudioContext, t0: number) => void> = {
   },
   // 外れ：芯だけ薄く
   miss: (c, t) => thump(c, t, { dur: 0.06, vol: 0.18, cutoff: 1400 }),
+  // 会心・反撃：甲高い一閃＋硬い芯
+  crit: (c, t) => {
+    thump(c, t, { dur: 0.1, vol: 0.5, cutoff: 1000 });
+    tone(c, t, { f: 2400, to: 3200, type: "triangle", dur: 0.09, vol: 0.22 });
+    tone(c, t, { f: 160, to: 80, type: "sine", dur: 0.16, vol: 0.45 });
+  },
+  // 受け止め：鈍い金属の擦れ合い
+  guard: (c, t) => {
+    thump(c, t, { dur: 0.07, vol: 0.35, cutoff: 500 });
+    tone(c, t, { f: 320, to: 240, type: "square", dur: 0.08, vol: 0.1 });
+  },
+  // 躱し：風を裂く薄いノイズ
+  dodge: (c, t) => {
+    thump(c, t, { dur: 0.1, vol: 0.12, cutoff: 2400 });
+    tone(c, t, { f: 900, to: 400, type: "sine", dur: 0.1, vol: 0.08 });
+  },
+  // 予兆：腹に響く低い唸り
+  omen: (c, t) => {
+    tone(c, t, { f: 130, to: 98, type: "sawtooth", dur: 0.5, vol: 0.16 });
+    tone(c, t, { f: 65, type: "sine", at: 0.05, dur: 0.5, vol: 0.2 });
+  },
+  // 大技の被弾：低く重い芯を二度
+  heavy: (c, t) => {
+    thump(c, t, { dur: 0.16, vol: 0.6, cutoff: 420 });
+    tone(c, t, { f: 110, to: 55, type: "sine", dur: 0.3, vol: 0.5 });
+    tone(c, t, { f: 82, to: 49, type: "sine", at: 0.05, dur: 0.34, vol: 0.3 });
+  },
+  // 体勢が崩れた：駆け上がる二音（反撃の機）
+  counter: (c, t) => {
+    tone(c, t, { f: 587, type: "triangle", dur: 0.08, vol: 0.18 });
+    tone(c, t, { f: 880, type: "triangle", at: 0.07, dur: 0.14, vol: 0.2 });
+  },
   // A通知の窓：銀青の輝きの和音
   notice: (c, t) => {
     tone(c, t, { f: 660, type: "triangle", dur: 0.18, vol: 0.2 });

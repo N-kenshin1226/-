@@ -28,6 +28,28 @@ const combat: CombatConfig = {
   observeBonus: 20,
   preciseObserve: 40,
   deathPendingFactor: 0.5,
+  hitBase: 0.86,
+  hitPerSwordplay: 0.002,
+  hitPerAgilityDiff: 0.012,
+  hitMin: 0.45,
+  hitMax: 0.98,
+  varianceMin: 0.8,
+  varianceMax: 1.25,
+  critBase: 0.08,
+  critPerSwordplay: 0.002,
+  critFactor: 1.8,
+  enemyCritBase: 0.05,
+  enemyCritFactor: 1.6,
+  evadeBase: 0.06,
+  evadePerEvasion: 0.004,
+  evadePerAgilityDiff: 0.008,
+  evadeMax: 0.7,
+  readEvadeBonus: 0.5,
+  guardTelegraphFactor: 0.15,
+  counterFactor: 2.4,
+  counterFactorRead: 2.8,
+  openingTicks: 16,
+  staggerTicks: 11,
 };
 
 const base = (
@@ -294,7 +316,9 @@ describe("与ダメージ（damageVs）への接続", () => {
     const ctx = { skill: 0, seed: "fx-combat" };
     const afterPlain = turn(plain, "attack", wolf, combat, ctx);
     const afterBuffed = turn(buffed, "attack", wolf, combat, ctx);
-    expect(30 - afterBuffed.enemyHp).toBeCloseTo((30 - afterPlain.enemyHp) * 1.5, 1);
+    // F-04：攻撃力は 0.1 刻みに丸められ、ダメージには揺らぎが乗るので
+    // 同じシードの乱数列でも比は厳密には 1.5 に乗らない —— 整数精度で十分
+    expect(30 - afterBuffed.enemyHp).toBeCloseTo((30 - afterPlain.enemyHp) * 1.5, 0);
   });
 
   it("activeEffects は獲得称号＋認定職だけを拾う", () => {

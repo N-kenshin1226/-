@@ -1,8 +1,8 @@
 /** 狩り（CT戦闘）と深層ダンジョン画面（UI-01：世界の窓＋コマンド列で統一） */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  combatIntent,
   combatResult,
-  telegraphLines,
   type AbyssRun,
   type CombatAction,
   type GameState,
@@ -19,6 +19,7 @@ import {
   crisisEnemyTouchpoints,
   endRun,
   enemyAreas,
+  enemyDefOf,
   eventLines,
   killFloor,
   newAbyssRun,
@@ -29,6 +30,13 @@ import {
   uniqueOf,
   type CombatState,
 } from "../game.js";
+import {
+  CbtHpGauge,
+  EnemyFigure,
+  FloaterLayer,
+  useCombatPlayback,
+  type Playback,
+} from "../fx/combat.js";
 import {
   CellGauge,
   CommandMenu,
@@ -45,36 +53,121 @@ import { theme } from "../theme.js";
 
 const W = theme.colors.world;
 
-/** 戦闘窓の頭：敵名と体力ゲージ */
-function CombatStatus({ cs, enemyName }: { cs: CombatState; enemyName: string }) {
+/* ── F-04：戦闘の舞台 ── */
+
+/** 再生中に隠れている被弾・傷を差し戻して、拍に合わせて体力が動くようにする */
+function displayedHp(cs: CombatState, playback: Playback): { you: number; foe: number } {
+  let dealt = 0;
+  let taken = 0;
+  for (const e of playback.pending) {
+    if (e.type === "playerAttack") dealt += e.damage ?? 0;
+    if (e.type === "enemyHit") taken += e.damage ?? 0;
+  }
+  return { you: cs.playerHp + taken, foe: cs.enemyHp + dealt };
+}
+
+/** 敵の意図・こちらの構えの帯（予兆は発動の前に必ず見える） */
+function IntentLine({ cs, def }: { cs: CombatState; def: ReturnType<typeof enemyDefOf> }) {
+  const intent = combatIntent(cs, def, cfg.combat);
   return (
-    <div style={{ margin: "0 16px 10px" }}>
-      <p
-        style={{
-          margin: "0 0 6px",
-          fontFamily: theme.font.mincho,
-          fontSize: 20,
-          fontWeight: 700,
-          color: theme.colors.bad,
-        }}
-      >
-        {enemyName}
-      </p>
-      <p
-        style={{
-          margin: 0,
-          fontFamily: theme.font.mincho,
-          fontSize: 17,
-          fontWeight: 700,
-          color: W.hi,
-        }}
-      >
-        {tpl(t.text.combatStatus, {
-          playerHp: Math.max(0, cs.playerHp),
-          playerMax: cs.playerHpMax,
-          enemy: enemyName,
-          enemyHp: Math.max(0, cs.enemyHp),
-        })}
+    <div className="cbt-intent" data-testid="combat-intent">
+      {intent.telegraph !== null ? (
+        <>
+          <span className="tag">予兆</span>
+          <span>
+            {intent.telegraph.precise
+              ? `《${intent.telegraph.name}》――あと ${intent.telegraph.dueIn} tick`
+              : "何かを仕掛けてくる気配がする"}
+          </span>
+        </>
+      ) : (
+        <span style={{ color: W.dim }}>
+          {cs.done
+            ? "――"
+            : intent.next?.kind === "telegraph"
+              ? "敵の間が空く"
+              : "――間合いを計っている"}
+        </span>
+      )}
+      {intent.guarding && <span className="chip">防御</span>}
+      {intent.reading && <span className="chip">見切り</span>}
+      {intent.openingIn > 0 && <span className="chip">隙 あと{intent.openingIn}tick</span>}
+    </div>
+  );
+}
+
+/**
+ * 戦闘の舞台（F-04）：敵の影・双方の体力・浮き文字・直近の一拍。
+ * 狩りの CombatScreen と深層の AbyssScreen で共用する
+ */
+function CombatArena({
+  cs,
+  enemy,
+  def,
+  playback,
+}: {
+  cs: CombatState;
+  enemy: EnemyJson;
+  /** 世界補正済みの敵定義（enemyDefOf。意図の表示に使う） */
+  def: ReturnType<typeof enemyDefOf>;
+  playback: Playback;
+}) {
+  const hp = displayedHp(cs, playback);
+  const last = playback.last;
+  const omen = cs.telegraph !== null || playback.pending.some((e) => e.type === "telegraph");
+  const intent = combatIntent(cs, def, cfg.combat);
+  const foeHit = last?.type === "playerAttack";
+  const youHurt = last?.type === "enemyHit" && last.guarded !== true;
+  const beatCls =
+    last === null
+      ? "dim"
+      : last.type === "playerAttack" && (last.crit === true || last.counter === true)
+        ? "crit"
+        : (last.type === "enemyHit" && (last.big === true || last.crit === true)) ||
+            last.type === "lost"
+          ? "big"
+          : last.type === "won" || last.type === "counter"
+            ? "crit"
+            : "";
+  return (
+    <div>
+      <div className="cbt-names">
+        <span className="cbt-name">{t.text.combatYou}</span>
+        <span className="cbt-name foe">
+          {enemy.name}
+          {"uniqueVariant" in enemy && enemy.uniqueVariant ? "（強個体）" : ""}
+        </span>
+      </div>
+      <div className="cbt-names" style={{ margin: "0 16px 6px" }}>
+        <CbtHpGauge value={hp.you} max={cs.playerHpMax} side="player" testId="combat-hp-you" />
+        <CbtHpGauge value={hp.foe} max={cs.enemyHpMax} side="enemy" testId="combat-hp-foe" />
+      </div>
+      <div className="cbt-stage" data-testid="combat-stage">
+        <div
+          className={[
+            "cbt-you",
+            youHurt ? "hurt" : "",
+            intent.guarding ? "guard" : "",
+            intent.reading ? "read" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <div className="cbt-you-fig" />
+        </div>
+        <div className="cbt-foe">
+          <EnemyFigure
+            id={enemy.id}
+            unique={"uniqueVariant" in enemy && enemy.uniqueVariant === true}
+            omen={omen && !cs.done}
+            dead={cs.done && cs.won}
+            hit={foeHit}
+          />
+        </div>
+        <FloaterLayer items={playback.floaters} />
+      </div>
+      <p className={`cbt-beat ${beatCls}`} data-testid="combat-beat">
+        {last !== null ? last.text : "　"}
       </p>
     </div>
   );
@@ -187,23 +280,29 @@ export function CombatScreen({
   push: Push;
 }) {
   const [cs, setCs] = useState<CombatState>(() => beginCombat(state, enemy));
-  const [printed, setPrinted] = useState(0);
+  /** 世界補正込みの敵定義（意図の表示が解決側と一致するよう同じものを使う） */
+  const def = useMemo(() => enemyDefOf(state, enemy), [state, enemy]);
   const [announced, setAnnounced] = useState(false);
+  // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
+  const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
 
   useEffect(() => {
     if (!announced) {
       push(tpl(t.text.combatStart, { name: enemy.name }));
       setAnnounced(true);
     }
-    const fresh = cs.log.slice(printed);
-    if (fresh.length > 0) {
-      push(fresh.map((e) => `\u3000${e.text}`));
-      setPrinted(cs.log.length);
-    }
-  }, [cs, printed, announced, enemy.name, push]);
+  }, [announced, enemy.name, push]);
 
   const doAction = (a: CombatAction) => {
-    setCs(playCombatTurn(cs, a, enemy, state));
+    // 再生中の入力は「早送り」（残りを一気に出す。連打でも演出を待たされない）
+    if (playback.busy) {
+      playback.skip();
+      return;
+    }
+    if (cs.done) return;
+    const next = playCombatTurn(cs, a, enemy, state);
+    playback.queue(next.log.slice(cs.log.length));
+    setCs(next);
   };
 
   const finish = () => {
@@ -294,13 +393,14 @@ export function CombatScreen({
   };
 
   // コマンド列は一本（キー入力が競合しないよう、戦闘中も確定後も同じ列を使う）
+  // 再生中はボタンが「早送り」になる（表示は同じ：行動そのものは積まない）
   const entries: MenuEntry[] = !cs.done
     ? [
         ...(
           [
             ["attack", "攻撃"],
             ["defend", "防御"],
-            ["observe", "観察"],
+            ["observe", "見切り"],
             ["flee", "逃げる"],
           ] as const
         ).map(([a, label]): MenuEntry => ({
@@ -335,24 +435,20 @@ export function CombatScreen({
   return (
     <div data-testid="screen-combat" className="scene">
       <WorldFrame
-        style={{ ...pos({ left: 340, top: 150, width: 600 }), padding: "16px 4px 12px" }}
+        style={{ ...pos({ left: 320, top: 110, width: 640 }), padding: "16px 4px 12px" }}
         corners={["tl", "tr", "bl", "br"]}
       >
         <div style={{ margin: "0 16px 8px" }}>
           <Kicker text="COMBAT" />
         </div>
-        {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
-          <p key={i} style={{ margin: "0 16px 4px", fontSize: 13, color: theme.colors.special }}>
-            {l}
-          </p>
-        ))}
-        <CombatStatus cs={cs} enemyName={enemy.name} />
+        <IntentLine cs={cs} def={def} />
+        <CombatArena cs={cs} enemy={enemy} def={def} playback={playback} />
         <CommandMenu entries={entries} onBack={() => setScreen({ name: "menu" })} />
       </WorldFrame>
       <HintBar
         items={[
           ["↑↓", "選択"],
-          ["Enter", "決定"],
+          ["Enter", playback.busy ? "早送り" : "決定"],
           ["Esc", "戻る"],
         ]}
       />
@@ -381,17 +477,13 @@ export function AbyssScreen({
   /** 現在戦っている層の敵（撃破で run.floor が進んでも表示が変わらないよう保持する） */
   const [enemy, setEnemy] = useState<EnemyJson | null>(null);
   const [loss, setLoss] = useState<{ enemyId: string; difficulty: number } | null>(null);
-  const [printed, setPrinted] = useState(0);
-
-  // 戦闘ログは出た分だけ追記する
-  useEffect(() => {
-    if (cs === null) return;
-    const fresh = cs.log.slice(printed);
-    if (fresh.length > 0) {
-      push(fresh.map((e) => `\u3000${e.text}`));
-      setPrinted(cs.log.length);
-    }
-  }, [cs, printed, push]);
+  // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
+  const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
+  /** 戦闘中の敵の世界補正済み定義（意図の表示用。解決側と同じものを使う） */
+  const abyssDef = useMemo(
+    () => (enemy === null ? null : enemyDefOf(state, enemy)),
+    [state, enemy],
+  );
 
   const endLine = (end: NonNullable<AbyssRun["end"]>) =>
     end === "light"
@@ -408,13 +500,20 @@ export function AbyssScreen({
     push(tpl(t.text.combatStart, { name: e.name }));
     setEnemy(e);
     setCs(beginCombat(state, e));
-    setPrinted(0);
+    playback.queue([]);
   };
 
   const doAction = (a: CombatAction) => {
     if (cs === null || cs.done || run.done || enemy === null) return;
+    // 再生中の入力は「早送り」
+    if (playback.busy) {
+      playback.skip();
+      return;
+    }
     // 逃走判定の乱数はラン×層で分ける（同じ行動時刻の連戦で同じ結果にしない）
+    const prevLen = cs.log.length;
     const next = playCombatTurn(cs, a, enemy, state, `${run.seed}:f${run.floor}`);
+    playback.queue(next.log.slice(prevLen));
     setCs(next);
     const r = combatResult(next);
     let cur = { ...run, kills: [...run.kills] };
@@ -508,17 +607,10 @@ export function AbyssScreen({
           {/* 灯りの残量：セルゲージで（上限＝ランの初期灯り＝maxTurns） */}
           <CellGauge value={Math.max(0, run.light)} max={balance.abyss.maxTurns} cells={10} />
         </div>
-        {cs !== null && enemy !== null && (
+        {cs !== null && enemy !== null && abyssDef !== null && (
           <>
-            {telegraphLines(cs, enemy, cfg.combat).map((l, i) => (
-              <p
-                key={i}
-                style={{ margin: "0 16px 4px", fontSize: 13, color: theme.colors.special }}
-              >
-                {l}
-              </p>
-            ))}
-            <CombatStatus cs={cs} enemyName={enemy.name} />
+            <IntentLine cs={cs} def={abyssDef} />
+            <CombatArena cs={cs} enemy={enemy} def={abyssDef} playback={playback} />
             {cs.done && cs.won && (
               <p style={{ margin: "0 16px 8px", fontSize: 13, color: theme.colors.special }}>
                 {tpl(t.text.abyssCleared, { name: enemy.name })}
@@ -532,7 +624,7 @@ export function AbyssScreen({
               [
                 ["attack", "攻撃"],
                 ["defend", "防御"],
-                ["observe", "観察"],
+                ["observe", "見切り"],
                 ["flee", "逃げる"],
               ] as const
             ).map(([a, label]) => ({

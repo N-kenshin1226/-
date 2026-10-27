@@ -1226,3 +1226,313 @@ button {
     transition: none;
   }
 }
+
+/* ── F-04: 戦闘の舞台（敵の影・体力・予兆・浮き文字） ── */
+/* 間合い：プレイヤー側（左）と敵（右）が向き合う横長の場 */
+.cbt-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 0 16px 6px;
+  padding: 4px 10px 0;
+  min-height: 148px;
+}
+.cbt-you {
+  position: relative;
+  width: 120px;
+  text-align: center;
+}
+.cbt-you-fig {
+  width: 30px;
+  height: 64px;
+  margin: 0 auto 2px;
+  border-radius: 8px 8px 3px 3px;
+  background: linear-gradient(180deg, var(--t-bless-glow), var(--t-bless-frame));
+  box-shadow: 0 0 14px rgba(143, 199, 212, 0.35);
+  opacity: 0.92;
+}
+.cbt-foe {
+  position: relative;
+  width: 170px;
+  text-align: center;
+}
+.cbt-foe-img {
+  display: block;
+  margin: 0 auto;
+  transform-origin: 50% 90%;
+  transition: transform var(--t-fx-combat-lunge-ms) ease-out;
+}
+.cbt-foe-img .foe-body {
+  fill: #14121d;
+  stroke: var(--t-world-frame);
+  stroke-width: 2;
+}
+.cbt-foe-img .foe-shadow {
+  fill: rgba(0, 0, 0, 0.55);
+}
+.cbt-foe-img .foe-eye {
+  fill: var(--t-bad);
+  stroke: none;
+}
+.cbt-foe-img.unique .foe-body {
+  stroke: var(--t-world-light);
+}
+.cbt-foe-img.unique .foe-eye {
+  fill: var(--t-special);
+}
+/* 予兆：敵の輪郭が赤く滲んで脈打つ */
+.cbt-foe-img.omen {
+  animation: cbtOmen var(--t-fx-combat-omen-pulse-ms) ease-in-out infinite;
+}
+@keyframes cbtOmen {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(232, 139, 120, 0));
+  }
+  45% {
+    filter: drop-shadow(0 0 16px rgba(232, 139, 120, 0.85));
+    transform: translateX(-6px) scale(1.04);
+  }
+}
+/* 被弾：影が小さく揺れる */
+.cbt-foe-img.struck {
+  animation: cbtStruck var(--t-fx-combat-lunge-ms) ease-out;
+}
+@keyframes cbtStruck {
+  0% {
+    transform: translateX(10px);
+    filter: brightness(2.2) drop-shadow(0 0 10px rgba(255, 243, 207, 0.8));
+  }
+  100% {
+    transform: translateX(0);
+    filter: none;
+  }
+}
+.cbt-foe-img.dead {
+  transform: rotate(8deg) translateY(12px);
+  opacity: 0.35;
+  transition:
+    transform 0.5s ease-in,
+    opacity 0.5s ease-in;
+}
+/* こちらが被弾したときの揺れ */
+.cbt-you.hurt .cbt-you-fig {
+  animation: cbtHurt var(--t-fx-combat-lunge-ms) ease-out;
+}
+@keyframes cbtHurt {
+  0% {
+    transform: translateX(-9px);
+    filter: brightness(0.4) drop-shadow(0 0 8px rgba(232, 139, 120, 0.9));
+  }
+  100% {
+    transform: translateX(0);
+    filter: none;
+  }
+}
+/* 防御の構え：淡い弧 */
+.cbt-you.guard .cbt-you-fig {
+  box-shadow:
+    0 0 0 3px rgba(232, 199, 127, 0.5),
+    0 0 18px rgba(232, 199, 127, 0.5);
+}
+.cbt-you.read .cbt-you-fig {
+  box-shadow:
+    0 0 0 3px rgba(143, 224, 239, 0.55),
+    0 0 18px rgba(143, 224, 239, 0.55);
+}
+
+/* 体力ゲージ */
+.cbt-hp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 46%;
+  font-family: var(--t-font-en);
+}
+.cbt-hp-bar {
+  flex: 1;
+  height: 7px;
+  border: 1px solid var(--t-cell-edge);
+  background: var(--t-bar-off);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cbt-hp-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--t-fx-combat-beat-ms) ease-out;
+}
+.cbt-hp-player .cbt-hp-fill {
+  background: linear-gradient(90deg, var(--t-cell-on), var(--t-cell-on-edge));
+}
+.cbt-hp-enemy .cbt-hp-fill {
+  background: linear-gradient(90deg, var(--t-bad), var(--t-warn));
+}
+.cbt-hp-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t-world-hi);
+  min-width: 64px;
+  text-align: right;
+}
+.cbt-hp-max {
+  font-size: 11px;
+  color: var(--t-world-dim);
+}
+.cbt-names {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 16px 2px;
+}
+.cbt-name {
+  font-family: var(--t-font-mincho);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--t-world-dim);
+}
+.cbt-name.foe {
+  color: var(--t-bad);
+  font-size: 17px;
+}
+
+/* 浮き文字：傷・躱し・会心がふわっと立つ */
+.cbt-floaters {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.cbt-floater {
+  position: absolute;
+  font-family: var(--t-font-en);
+  font-weight: 800;
+  font-size: 22px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  animation: cbtFloat var(--t-fx-combat-floater-ms) ease-out forwards;
+  white-space: nowrap;
+}
+.cbt-floater.enemy {
+  right: 46px;
+}
+.cbt-floater.player {
+  left: 30px;
+}
+.cbt-f-hit {
+  color: var(--t-world-hi);
+}
+.cbt-f-crit {
+  color: var(--t-special);
+  font-size: 27px;
+}
+.cbt-f-miss {
+  color: var(--t-world-dim);
+  font-size: 15px;
+}
+.cbt-f-hurt {
+  color: var(--t-warn);
+}
+.cbt-f-big {
+  color: var(--t-bad);
+  font-size: 28px;
+}
+.cbt-f-guard {
+  color: var(--t-bless-glow);
+  font-size: 17px;
+}
+.cbt-f-dodge {
+  color: var(--t-bless-light);
+  font-size: 17px;
+}
+.cbt-f-omen {
+  color: var(--t-bad);
+  font-size: 30px;
+}
+.cbt-f-counter {
+  color: var(--t-special);
+  font-size: 16px;
+}
+@keyframes cbtFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  30% {
+    transform: translateY(-2px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+
+/* 戦況の一行（直近の出来事を大きく見せる） */
+.cbt-beat {
+  margin: 0 16px 8px;
+  min-height: 26px;
+  font-family: var(--t-font-mincho);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--t-world-text);
+}
+.cbt-beat.crit {
+  color: var(--t-special);
+}
+.cbt-beat.big {
+  color: var(--t-bad);
+}
+.cbt-beat.dim {
+  color: var(--t-world-dim);
+  font-weight: 400;
+}
+
+/* 予兆・意図の帯 */
+.cbt-intent {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 16px 6px;
+  min-height: 22px;
+  font-size: 14px;
+  color: var(--t-special);
+}
+.cbt-intent .tag {
+  font-family: var(--t-font-sys);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--t-bad);
+  border: 1px solid var(--t-bad);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+.cbt-intent .chip {
+  font-family: var(--t-font-sys);
+  font-size: 11px;
+  color: var(--t-bless-glow);
+  border: 1px solid var(--t-bless-cell-edge);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cbt-foe-img.omen,
+  .cbt-foe-img.struck,
+  .cbt-you.hurt .cbt-you-fig,
+  .cbt-floater {
+    animation: none;
+  }
+  .cbt-floater {
+    opacity: 1;
+    transform: none;
+  }
+  .cbt-hp-fill,
+  .cbt-foe-img,
+  .cbt-foe-img.dead {
+    transition: none;
+  }
+}

@@ -46,6 +46,7 @@ import {
   suggestGoals,
   telegraphLines,
   combatResult,
+  combatIntent,
   combatTurn,
   specialOrderOf as coreSpecialOrderOf,
   TENDENCY_IDS,
@@ -1218,7 +1219,16 @@ export function playCombatTurn(
   return combatTurn(cs, action, def, cfg.combat, seed === undefined ? ctx : { ...ctx, seed });
 }
 
-export { combatResult, telegraphLines, suggestGoals, sleepQuality };
+/**
+ * 戦闘画面が使う、世界補正済みの敵定義（F-04）。
+ * beginCombat/playCombatTurn と同じ def を返すので、表示（予兆の名前・次行動）が
+ * 解決側とずれない
+ */
+export function enemyDefOf(state: GameState, enemy: EnemyJson): EnemyDef {
+  return worldEnemyDef(state, enemy);
+}
+
+export { combatResult, combatIntent, telegraphLines, suggestGoals, sleepQuality };
 export {
   crisisAreaClosed,
   crisisEnemyChallengeBonus,

@@ -130,6 +130,8 @@ export const cliTextSchema = z
         uniqueName: z.string(),
         combatStart: z.string(),
         combatStatus: z.string(),
+        /** 戦闘画面のこちら側の呼び名（F-04） */
+        combatYou: z.string(),
         combatPrompt: z.string(),
         combatWon: z.string(),
         /** 強個体討伐の知らせ（T-44。{name} は素の敵名） */

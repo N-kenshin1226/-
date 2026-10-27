@@ -7,10 +7,27 @@ import { ctxRng, type MiniGameCtx } from "../minigame/types.js";
  *   その間に敵の行動予定が来れば敵が動く（速い敵は1行動に2回動く）
  * - 敵の行動は固定ルールのパターン（enemies.json）。大技の前に「予兆」が出る
  * - 予兆の精度は《観察》で上がる：低いと「狼が唸っている」、高いと技名＋残りtick
- * - 「観察」行動は1ターン使う代わりに予兆の精度を底上げする
- * - 「防御」は次の自分の行動まで受けるダメージを軽減する（予兆読みへの対応）
+ * - 「見切り」は1行動を使う代わりに予兆の精度を底上げし、その間は回避に大きな
+ *   ボーナスが乗る（F-04。読み切れれば大技を無傷で躱し、大きな隙が生まれる）
+ * - 「防御」は次の自分の行動まで受けるダメージを軽減する。大技を防御で受け止めると
+ *   敵の体勢が崩れ（隙＋次行動の遅れ）、次の一撃が確実な反撃になる
+ *
+ * F-04 の駆け引き：
+ * - 攻撃には命中判定（外れることがある）・ダメージの揺らぎ・会心がある
+ * - 敵の攻撃にも揺らぎと痛恨（会心）がある。通常被弾は《回避》でごく僅かに躱せる
+ * - 大技は防御（確実に軽減＋反撃の隙）か見切り（賭けの完全回避＋大きな隙）で
+ *   対応する。対応しないと大きな傷を負う —— 格上では連打だけでは沈む
+ *
+ * 乱数はすべて ctx のシードから fork して引く（turn 番号＋用途ラベル）。
+ * 同じシード・同じ行動列なら必ず同じ結果になる（決定性）。
  *
  * 戦闘はここに閉じ、結果は step の combat コマンドで GameState に反映する。
+ * K-02（武技・気力・状態異常）への拡張口：
+ *   - CombatAction に { type:"art"; id } 形の行動を足す場合、turn 冒頭の
+ *     switch に解決枝を追加する。導出値は CombatState の playerXxx に乗せる
+ *   - CombatEvent.type / フラグに技の結果種別を足せば UI・SE が拾える
+ *   - 敵の耐性・弱点は EnemyMove/EnemyDef にフィールドを足す（zod 側も）
+ *   - 「隙」（openingUntil/openingFactor）は武器技の追撃・崩し大技の土台になる
  */
 
 export interface EnemyMove {
@@ -34,7 +51,7 @@ export interface EnemyDef {
   intervalTicks: number;
   /** gain の挑戦差に使う相手の強さ */
   challenge: number;
-  /** 逃走の抵抗に使う敏捷相当値 */
+  /** 逃走の抵抗・命中回避の差分に使う敏捷相当値 */
   agility: number;
   attack: EnemyMove;
   moves: Record<string, EnemyMove>;
@@ -53,17 +70,57 @@ export interface CombatConfig {
   ctBase: number;
   ctPerAgility: number;
   ctMin: number;
-  /** 防御中に受けるダメージの倍率 */
+  /** 防御中に受ける通常ダメージの倍率 */
   defendFactor: number;
   /** 逃走成功率 = base + (敏捷 − 敵敏捷) × perAgility（0〜1 にクランプ） */
   fleeBase: number;
   fleePerAgility: number;
-  /** 「観察」行動で予兆精度に乗るボーナス */
+  /** 「見切り」行動で予兆精度に乗るボーナス */
   observeBonus: number;
   /** 予兆が精密になる観察の閾値（これ未満は曖昧表示） */
   preciseObserve: number;
   /** 死亡時に失う未定着経験の割合（03 §4「50%」） */
   deathPendingFactor: number;
+
+  /* ── F-04：命中・会心・揺らぎ・対応行動 ── */
+  /** 攻撃の命中率 = base + 剣術 × perSwordplay + (敏捷 − 敵敏捷) × perAgilityDiff */
+  hitBase: number;
+  hitPerSwordplay: number;
+  hitPerAgilityDiff: number;
+  /** 命中率の上下限（hitMin〜hitMax にクランプ） */
+  hitMin: number;
+  hitMax: number;
+  /** ダメージの揺らぎ（最終威力に掛ける一様乱数の範囲。敵・味方共通） */
+  varianceMin: number;
+  varianceMax: number;
+  /** 会心率 = base + 剣術 × perSwordplay。会心の倍率は critFactor */
+  critBase: number;
+  critPerSwordplay: number;
+  critFactor: number;
+  /** 敵の痛恨率・倍率（被弾側の揺らぎと緊張） */
+  enemyCritBase: number;
+  enemyCritFactor: number;
+  /**
+   * 通常被弾の回避率 = base + 回避 × perEvasion + (敏捷 − 敵敏捷) × perAgilityDiff
+   * （0〜evadeMax にクランプ。防御中は回避判定をしない —— 受け止める構え）
+   */
+  evadeBase: number;
+  evadePerEvasion: number;
+  evadePerAgilityDiff: number;
+  evadeMax: number;
+  /** 見切り中の回避への上乗せ（大技も躱せる賭けの一手） */
+  readEvadeBonus: number;
+  /** 防御中に予兆の大技を受け止めたときの被ダメージ倍率（defendFactor より強い） */
+  guardTelegraphFactor: number;
+  /** 大技を防御で受け止めたあとの反撃倍率（次の攻撃が確定命中＋この倍率） */
+  counterFactor: number;
+  /** 大技を見切りで躱したあとの反撃倍率（防御より大きい隙） */
+  counterFactorRead: number;
+  /** 隙の持続（tick）。反撃は次の攻撃1回だけ有効 */
+  openingTicks: number;
+  /** 大技をいなした敵の次行動の遅れ（tick。体勢崩しの間、敵は間を置く） */
+  staggerTicks: number;
+
   /** 強化版ユニーク（T-44）。省略時は強個体なし */
   unique?: UniqueConfig;
 }
@@ -81,30 +138,53 @@ export interface CombatEvent {
   tick: number;
   type:
     | "playerAttack"
+    | "playerMiss"
     | "playerDefend"
     | "playerObserve"
     | "playerFlee"
     | "enemyHit"
+    | "enemyMiss"
     | "telegraph"
+    | "counter"
     | "fled"
     | "won"
     | "lost";
   text: string;
   damage?: number;
+  /** 会心（playerAttack / enemyHit） */
+  crit?: boolean;
+  /** 予兆の大技による被弾・回避（enemyHit / enemyMiss） */
+  big?: boolean;
+  /** 防御で受け止めた被弾（enemyHit） */
+  guarded?: boolean;
+  /** 隙への反撃としての一撃（playerAttack） */
+  counter?: boolean;
 }
 
 export interface CombatState {
   tick: number;
+  /** プレイヤーの行動数（乱数 fork のラベルに使う。同じ行動列は同じ乱数列） */
+  turn: number;
   playerHp: number;
   playerHpMax: number;
   enemyHp: number;
+  /** 敵の体力上限（開始時点。ゲージの max に使う） */
+  enemyHpMax: number;
   enemyIdx: number;
-  /** 次に敵のパターンが進む tick */
+  /** 次に敵のパターンが進む tick（体勢崩しで後ろへずれる） */
   enemyNextAt: number;
   telegraph: Telegraph | null;
   /** 防御姿勢が有効な上限 tick（この tick までに受けるダメージを軽減） */
   defendUntil: number;
-  /** 観察行動を使ったか（予兆の精度を底上げ） */
+  /** 見切りが有効な上限 tick（この tick まで回避に大きなボーナス） */
+  readUntil: number;
+  /**
+   * 敵の隙（大技をいなした報酬）。この tick までの攻撃が確定命中・
+   * openingFactor 倍の反撃になる。0/0 なら隙なし
+   */
+  openingUntil: number;
+  openingFactor: number;
+  /** 見切り行動を使ったか（予兆の精度を底上げ） */
   observed: boolean;
   fleeAttempts: number;
   done: boolean;
@@ -113,11 +193,17 @@ export interface CombatState {
   died: boolean;
   damageTaken: number;
   hitsTaken: number;
+  /** 敵の攻撃を躱した回数（F-04） */
+  dodges: number;
+  /** 大技を対応行動でいなした回数（受け止め＋見切り。F-04） */
+  parries: number;
   /** プレイヤーの導出値（startCombat で確定） */
   playerAttack: number;
   playerCt: number;
   playerObserve: number;
   playerAgility: number;
+  playerSwordplay: number;
+  playerEvasion: number;
   log: CombatEvent[];
 }
 
@@ -130,6 +216,9 @@ export interface CombatResult {
   ticks: number;
 }
 
+const clamp = (lo: number, hi: number, v: number) => Math.min(hi, Math.max(lo, v));
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
 /**
  * プレイヤー側の戦闘数値（stats + スキルから導出）。
  * attackFactor は称号などの与ダメージ倍率（effects の damageVs。既定1）
@@ -138,7 +227,15 @@ export function playerCombatStats(
   player: { stats: Record<string, number>; skills: Record<string, { value: number }> },
   cfg: CombatConfig,
   attackFactor = 1,
-): { hp: number; attack: number; ct: number; agility: number; observe: number } {
+): {
+  hp: number;
+  attack: number;
+  ct: number;
+  agility: number;
+  observe: number;
+  swordplay: number;
+  evasion: number;
+} {
   const agility = player.stats["agility"] ?? 0;
   return {
     hp: Math.round(cfg.baseHp + (player.stats["endurance"] ?? 0) * cfg.hpPerEndurance),
@@ -153,6 +250,8 @@ export function playerCombatStats(
     ct: Math.max(cfg.ctMin, cfg.ctBase - agility * cfg.ctPerAgility),
     agility,
     observe: player.skills["observation"]?.value ?? 0,
+    swordplay: player.skills["swordplay"]?.value ?? 0,
+    evasion: player.skills["evasion"]?.value ?? 0,
   };
 }
 
@@ -166,13 +265,18 @@ export function startCombat(
   const p = playerCombatStats(player, cfg, attackFactor);
   return {
     tick: 0,
+    turn: 0,
     playerHp: p.hp,
     playerHpMax: p.hp,
     enemyHp: enemy.hp,
+    enemyHpMax: enemy.hp,
     enemyIdx: 0,
     enemyNextAt: Math.max(1, Math.round(enemy.intervalTicks / 2)),
     telegraph: null,
     defendUntil: -1,
+    readUntil: -1,
+    openingUntil: 0,
+    openingFactor: 0,
     observed: false,
     fleeAttempts: 0,
     done: false,
@@ -181,15 +285,46 @@ export function startCombat(
     died: false,
     damageTaken: 0,
     hitsTaken: 0,
+    dodges: 0,
+    parries: 0,
     playerAttack: p.attack,
     playerCt: p.ct,
     playerObserve: p.observe,
     playerAgility: p.agility,
+    playerSwordplay: p.swordplay,
+    playerEvasion: p.evasion,
     log: [],
   };
 }
 
-/** 予兆の3行表示（精度は観察＋観察行動ボーナスで決まる） */
+/** 攻撃の命中率（敵の敏捷との差と剣術で変わる。隙への反撃は必中） */
+export function hitChance(state: CombatState, enemy: EnemyDef, cfg: CombatConfig): number {
+  return clamp(
+    cfg.hitMin,
+    cfg.hitMax,
+    cfg.hitBase +
+      state.playerSwordplay * cfg.hitPerSwordplay +
+      (state.playerAgility - enemy.agility) * cfg.hitPerAgilityDiff,
+  );
+}
+
+/** 会心率（隙への反撃は必ず会心扱い） */
+export function critChance(state: CombatState, cfg: CombatConfig): number {
+  return clamp(0, 1, cfg.critBase + state.playerSwordplay * cfg.critPerSwordplay);
+}
+
+/** 被弾の回避率。見切り中は readEvadeBonus が乗る。防御中は 0（受け止める構え） */
+export function evadeChance(state: CombatState, enemy: EnemyDef, cfg: CombatConfig): number {
+  if (state.tick <= state.defendUntil) return 0;
+  const base =
+    cfg.evadeBase +
+    state.playerEvasion * cfg.evadePerEvasion +
+    (state.playerAgility - enemy.agility) * cfg.evadePerAgilityDiff;
+  const reading = state.tick <= state.readUntil;
+  return clamp(0, cfg.evadeMax, base + (reading ? cfg.readEvadeBonus : 0));
+}
+
+/** 予兆の3行表示（精度は観察＋見切りボーナスで決まる） */
 export function telegraphLines(
   state: CombatState,
   enemy: EnemyDef,
@@ -203,10 +338,75 @@ export function telegraphLines(
     return [
       `――${enemy.name}が後ろ足に重心を移した`,
       `\u3000\u3000《${t.name}》（あと${remaining}tick）`,
-      "\u3000\u3000防御でやり過ごせる",
+      "\u3000\u3000防御か見切りでやり過ごせる",
     ];
   }
-  return [`――${enemy.name}が唸っている。`, "\u3000\u3000何かを仕掛けてくる気配がする", ""];
+  return [
+    `――${enemy.name}が唸っている。`,
+    "\u3000\u3000何かを仕掛けてくる気配がする",
+    "\u3000\u3000防御か見切りを",
+  ];
+}
+
+/**
+ * 敵の意図（F-04）：次に予定されている敵の行動と、いま有効な構え・隙。
+ * 予兆の中身が読めるのは精度が preciseObserve 以上のときだけ（それ未満は
+ * 「何か来る」まで分かるが名までは読めない）。UI・CLI の表示用。
+ */
+export interface CombatIntent {
+  /** 発動待ちの予兆。precise=false なら name は不詳（曖昧表示向け） */
+  telegraph: { name: string; dueIn: number; precise: boolean } | null;
+  /**
+   * 敵の次の行動予定（予兆発動とは別の、パターン上の一手）。
+   * 精度が足りないときは kind/name を伏せて null 寄りの情報にする
+   */
+  next: { dueIn: number; kind: "attack" | "telegraph"; name: string | null } | null;
+  /** いま有効な構え（防御/見切り。表示チップ用） */
+  guarding: boolean;
+  reading: boolean;
+  /** 攻撃を抉れる隙が残っている tick 数（0 なら隙なし） */
+  openingIn: number;
+}
+
+export function combatIntent(state: CombatState, enemy: EnemyDef, cfg: CombatConfig): CombatIntent {
+  const eff = state.playerObserve + (state.observed ? cfg.observeBonus : 0);
+  const precise = eff >= cfg.preciseObserve;
+  const t = state.telegraph;
+  const telegraph =
+    t === null
+      ? null
+      : {
+          name: precise ? t.name : "",
+          dueIn: precise ? Math.max(0, t.dueTick - state.tick) : -1,
+          precise,
+        };
+  let next: CombatIntent["next"] = null;
+  if (!state.done && state.enemyHp > 0) {
+    const step = enemy.pattern[state.enemyIdx % enemy.pattern.length];
+    const dueIn = Math.max(0, state.enemyNextAt - state.tick);
+    if (step !== undefined) {
+      // 観察行動を取っていれば「あと何tickで動くか」は掴める（中身は精度次第）
+      const known = state.observed || precise;
+      next = known
+        ? {
+            dueIn,
+            kind: step.type,
+            name: precise
+              ? step.type === "telegraph" && step.move !== undefined
+                ? (enemy.moves[step.move]?.name ?? step.move)
+                : enemy.attack.name
+              : null,
+          }
+        : { dueIn: -1, kind: "attack", name: null };
+    }
+  }
+  return {
+    telegraph,
+    next,
+    guarding: state.tick <= state.defendUntil,
+    reading: state.tick <= state.readUntil,
+    openingIn: Math.max(0, state.openingUntil - state.tick),
+  };
 }
 
 /**
@@ -221,18 +421,40 @@ export function turn(
   ctx: MiniGameCtx,
 ): CombatState {
   if (state.done) return state;
-  const s: CombatState = { ...state, log: [...state.log] };
+  const s: CombatState = { ...state, log: [...state.log], turn: state.turn + 1 };
   const push = (e: Omit<CombatEvent, "tick">, tick = s.tick) => s.log.push({ ...e, tick });
 
   // 1. プレイヤー行動
   const endTick = s.tick + s.playerCt;
   switch (action) {
     case "attack": {
-      s.enemyHp -= s.playerAttack;
+      // 隙への反撃：体勢を崩した敵への一撃は必中・会心扱い（F-04）
+      const opening = s.openingFactor > 0 && s.tick <= s.openingUntil;
+      const r = ctxRng(ctx, `atk-${s.turn}`);
+      if (!opening && r.next() >= hitChance(s, enemy, cfg)) {
+        push({ type: "playerMiss", text: `攻撃――${enemy.name}に躱された。` });
+        break;
+      }
+      const crit = opening || r.next() < critChance(s, cfg);
+      const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
+      const dmg = round1(
+        s.playerAttack * spread * (crit ? cfg.critFactor : 1) * (opening ? s.openingFactor : 1),
+      );
+      s.enemyHp -= dmg;
+      if (opening) {
+        s.openingUntil = 0;
+        s.openingFactor = 0;
+      }
       push({
         type: "playerAttack",
-        text: `攻撃――${enemy.name}に ${s.playerAttack} の一撃。`,
-        damage: s.playerAttack,
+        damage: dmg,
+        ...(crit ? { crit: true } : {}),
+        ...(opening ? { counter: true } : {}),
+        text: opening
+          ? `隙を突く――${enemy.name}に ${dmg} の一撃。`
+          : crit
+            ? `会心――${enemy.name}に ${dmg} の一撃。`
+            : `攻撃――${enemy.name}に ${dmg} の傷。`,
       });
       break;
     }
@@ -243,7 +465,8 @@ export function turn(
     }
     case "observe": {
       s.observed = true;
-      push({ type: "playerObserve", text: "敵の動きを観察した。" });
+      s.readUntil = endTick;
+      push({ type: "playerObserve", text: "敵の動きを見切る。" });
       break;
     }
     case "flee": {
@@ -272,16 +495,76 @@ export function turn(
   }
 
   // 2. 時間を進めて、その間の敵行動を順に解決する
-  const absorb = (tick: number, move: EnemyMove) => {
-    const dmg =
-      tick <= s.defendUntil ? Math.max(1, Math.round(move.power * cfg.defendFactor)) : move.power;
+  //    被弾ごとに独立した乱数列（`evd-ターン-序数`）を fork する —— 決定的
+  let absorbIdx = 0;
+  /** 大技をいなした報酬：隙（反撃）＋体勢崩し（敵の次行動を遅らせる） */
+  const openUp = (tick: number, factor: number) => {
+    s.openingUntil = tick + cfg.openingTicks;
+    s.openingFactor = factor;
+    s.enemyNextAt += cfg.staggerTicks;
+    s.parries++;
+    push({ type: "counter", text: `――${enemy.name}の体勢が大きく崩れた。` }, tick);
+  };
+  const absorb = (tick: number, move: EnemyMove, big: boolean) => {
+    const r = ctxRng(ctx, `evd-${s.turn}-${absorbIdx++}`);
+    // 回避判定（防御中は躱さない —— 受け止める構えの分だけ揺らぎが無い）
+    const evade =
+      tick <= s.defendUntil
+        ? 0
+        : clamp(
+            0,
+            cfg.evadeMax,
+            cfg.evadeBase +
+              s.playerEvasion * cfg.evadePerEvasion +
+              (s.playerAgility - enemy.agility) * cfg.evadePerAgilityDiff +
+              (tick <= s.readUntil ? cfg.readEvadeBonus : 0),
+          );
+    if (r.next() < evade) {
+      s.dodges++;
+      push(
+        {
+          type: "enemyMiss",
+          ...(big ? { big: true } : {}),
+          text:
+            tick <= s.readUntil
+              ? `${enemy.name}の《${move.name}》――見切って躱した。`
+              : `${enemy.name}の《${move.name}》――とっさに躱した。`,
+        },
+        tick,
+      );
+      // 見切りで大技を躱せば大きな隙が生まれる
+      if (big && tick <= s.readUntil) openUp(tick, cfg.counterFactorRead);
+      return;
+    }
+    const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
+    // 大技は揺らぎはあっても痛恨にはならない（対応すべき「約束された一撃」として読めるよう）
+    const crit = !big && r.next() < cfg.enemyCritBase;
+    let dmg = move.power * spread * (crit ? cfg.enemyCritFactor : 1);
+    const guarded = tick <= s.defendUntil;
+    if (guarded) dmg *= big ? cfg.guardTelegraphFactor : cfg.defendFactor;
+    dmg = Math.max(1, Math.round(dmg));
     s.playerHp -= dmg;
     s.damageTaken += dmg;
     s.hitsTaken++;
     push(
-      { type: "enemyHit", text: `${enemy.name}の《${move.name}》――${dmg} の傷。`, damage: dmg },
+      {
+        type: "enemyHit",
+        damage: dmg,
+        ...(crit ? { crit: true } : {}),
+        ...(big ? { big: true } : {}),
+        ...(guarded ? { guarded: true } : {}),
+        text: guarded
+          ? `${enemy.name}の《${move.name}》――受け止めた（${dmg}）。`
+          : big
+            ? `${enemy.name}の《${move.name}》――${dmg} の大傷。`
+            : crit
+              ? `${enemy.name}の《${move.name}》――痛恨。${dmg} の傷。`
+              : `${enemy.name}の《${move.name}》――${dmg} の傷。`,
+      },
       tick,
     );
+    // 大技を防御で受け止めれば隙が生まれる
+    if (big && guarded) openUp(tick, cfg.counterFactor);
   };
 
   let t = s.tick;
@@ -290,7 +573,7 @@ export function turn(
     if (s.telegraph && s.telegraph.dueTick <= t) {
       const mv = enemy.moves[s.telegraph.move];
       s.telegraph = null;
-      if (mv) absorb(t, mv);
+      if (mv) absorb(t, mv, true);
     }
     // 敵のパターン行動
     if (s.enemyNextAt <= t) {
@@ -302,11 +585,14 @@ export function turn(
         s.telegraph = {
           move: step.move,
           name: mv?.name ?? step.move,
-          dueTick: t + (step.ticks ?? enemy.intervalTicks),
+          // F-04：発動は必ず現在の間合い（この行動の時間枠）の「先」に置く。
+          // 予兆が見えてから次の判断まで必ず1手挟まる = 応じる機会が必ずある
+          // （この枠の中で完結してしまうと、玩家は見えたのに防げない事故になる）
+          dueTick: Math.max(t + (step.ticks ?? enemy.intervalTicks), endTick + 1),
         };
         push({ type: "telegraph", text: `${enemy.name}に予兆が見える。` }, t);
       } else {
-        absorb(t, enemy.attack);
+        absorb(t, enemy.attack, false);
       }
     }
     t++;
