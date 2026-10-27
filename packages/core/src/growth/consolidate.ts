@@ -76,6 +76,12 @@ export interface WakeReport {
   overwork: { active: boolean; became: boolean };
   /** 行動0回で眠った休養日か */
   restDay: boolean;
+  /**
+   * 今朝の天候（X-13。天候表が設定された世界でだけ入る）。
+   * id/name は weather.json の種類、line はその日の風景の行 ——
+   * 表示側はテンプレート（cli.json wake.weatherLine）に差し込んで1行出す
+   */
+  weather?: { id: string; name: string; line: string };
 }
 
 export interface ConsolidateResult {

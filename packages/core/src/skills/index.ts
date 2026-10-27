@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import type { GameState } from "../state/types.js";
 import type { TimeConfig } from "../time/index.js";
 
@@ -28,12 +28,13 @@ export function unlockSkills(
   state: GameState,
   defs: readonly SkillUnlockDef[],
   time: TimeConfig,
+  env?: CondEnv,
 ): { state: GameState; unlocked: string[] } {
   const unlocked: string[] = [];
   let flags = state.flags;
   for (const def of defs) {
     if (def.condition === undefined || flags[unlockFlag(def.id)] === true) continue;
-    if (evaluate(def.condition, state, time)) {
+    if (evaluate(def.condition, state, time, env)) {
       if (flags === state.flags) flags = { ...state.flags };
       flags[unlockFlag(def.id)] = true;
       unlocked.push(def.id);

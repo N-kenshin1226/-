@@ -22,6 +22,7 @@ const text: NarrationTemplates = {
       occasionLoss: ["{occasion}――あえなく敗れたという。"],
       discoveryHint: ["風の噂：{text}", "酒場の噂：{text}"],
       npcEvent: ["{text}", "続報 ―― {text}"],
+      weather: ["今朝の空は{weather}。{line}"],
     },
   },
   npcWord: {
@@ -197,6 +198,21 @@ describe("TemplateProvider（07 §6）", () => {
     expect(two).toHaveLength(4);
     // 渡さなければ出ない（発見済みのヒントは呼び出し側が渡さない）
     expect(provider.narrate({ scene: "newspaper", deeds: ["wait"] }, rng())).toHaveLength(2);
+  });
+
+  it("新聞：天候が渡されれば見出しの後に空の行が載る（X-13。渡さなければ出ない）", () => {
+    const lines = provider.narrate(
+      {
+        scene: "newspaper",
+        deeds: ["work"],
+        weather: { name: "雨", line: "雨が石畳を濡らしている。" },
+      },
+      rng(),
+    );
+    expect(lines).toHaveLength(3);
+    expect(lines[2]).toBe("今朝の空は雨。雨が石畳を濡らしている。");
+    // 渡さなければ出ない（天候表の無い世界では呼び出し側が渡さない）
+    expect(provider.narrate({ scene: "newspaper", deeds: ["work"] }, rng())).toHaveLength(2);
   });
 
   it("新聞：勘違い系の見出しが一定確率で混ざる", () => {

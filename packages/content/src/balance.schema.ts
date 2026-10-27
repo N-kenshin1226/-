@@ -414,6 +414,21 @@ export const balanceSchema = z
         npcRumorDays: z.number().int().min(1),
       })
       .strict(),
+    /**
+     * 天候（X-13、docs/03 §2「日替わりの要因は2つまで」の1枠）。
+     * 空の種類・季節の重み・風景の行は weather.json が持ち、
+     * ここには注文の報酬への日替わり係数だけを置く（core/weather の
+     * WeatherConfig.orderPrice。天候は seed+day から導出するので状態を持たない）
+     */
+    weather: z
+      .object({
+        /**
+         * 天候id → 仕事の kind → 報酬係数（雨の日は採掘系が渋い、など微変）。
+         * kind "*" はその天候の全種別の既定値。未設定の組み合わせは 1
+         */
+        orderPrice: z.record(z.string(), z.record(z.string(), z.number().positive())),
+      })
+      .strict(),
     /** 錆（02 §7）：未使用スキルの低下・床・再習得倍率・脳の容量 */
     rust: z
       .object({

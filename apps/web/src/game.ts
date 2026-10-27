@@ -73,6 +73,7 @@ import {
   occasionDef,
   occasionOffers,
   occasionSpeaker,
+  weatherOf,
   withWorldMods,
   worldFactor,
   worldMods,
@@ -125,6 +126,7 @@ import {
   titles,
   voices,
   vows,
+  weather,
   type EnemyJson,
   type Order,
   type Origin,
@@ -240,6 +242,12 @@ export const cfg: StepConfig = {
   /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
   discoveries: discoveries.discoveries,
   /**
+   * 天候（X-13、docs/03 §2・§5）：weather.json の種類表＋balance.weather の
+   * 注文係数。空は seed+day から導出する値 —— {weather} 条件の判定・
+   * 注文の日替わり係数・起床レポートと新聞の風景の行に使う
+   */
+  weather: { kinds: weather.kinds, orderPrice: balance.weather.orderPrice },
+  /**
    * NPCの歳月（X-12、docs/07 §3）：npc_lifecycle.json の出来事表＋師匠の人物
    * 紐付け（mentors.json の npc）＋表示名の解決。ライバル（rival.<index>）の名は
    * 世界シードの抽選から —— ランキング・危機の英雄と同じ顔ぶれになる
@@ -260,6 +268,13 @@ export const cfg: StepConfig = {
     },
   },
 };
+
+/**
+ * 条件DSLの評価環境（X-13）：{weather} など state に無い語彙の判定に使う
+ * コンテンツ設定。step 内の判定と同じものを、画面側（棚・打診・接点の一覧）
+ * の評価にも渡す
+ */
+export const condEnv = cfg.weather !== undefined ? { weather: cfg.weather } : undefined;
 
 /** 運命の傾向の選択肢（T-45。UI で3択を出す用） */
 export const tendencyIds = TENDENCY_IDS;
@@ -846,6 +861,10 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   }
   if (report.lines.length === 0) lines.push(w.noChange);
   if (report.restDay) lines.push(w.restDayLine);
+  // 天候（X-13）：今朝の空の風景を1行滲ませる（常時のステータス表示にはしない）
+  if (report.weather !== undefined) {
+    lines.push(tpl(w.weatherLine, { weather: report.weather.name, line: report.weather.line }));
+  }
   const winds = report.tailwinds.map((x) => x.label).join(" ／ ");
   lines.push(winds ? tpl(w.windsLine, { winds }) : w.windsNone);
   for (const s of report.surprises) lines.push(s);
@@ -909,6 +928,9 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
         deeds,
         works,
         deaths,
+        ...(report.weather !== undefined
+          ? { weather: { name: report.weather.name, line: report.weather.line } }
+          : {}),
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
         ...(npcEvents.length > 0 ? { npcEvents } : {}),
         ...(hint !== null ? { hints: [hint] } : {}),
@@ -976,7 +998,7 @@ export interface CrisisOrder extends Order {
   crisis: true;
 }
 export function crisisOrders(state: GameState): CrisisOrder[] {
-  return crisisTouchpointOffers(state, cfg.crisis, cfg.time).flatMap((o) =>
+  return crisisTouchpointOffers(state, cfg.crisis, cfg.time, condEnv).flatMap((o) =>
     o.order !== undefined
       ? [
           {
@@ -995,7 +1017,7 @@ export function crisisOrders(state: GameState): CrisisOrder[] {
 /** 狩りの敵ID → 今日の接点ID（接点の相手には「異変：」の印を付ける。W-02） */
 export function crisisEnemyTouchpoints(state: GameState): Map<string, string> {
   const map = new Map<string, string>();
-  for (const o of crisisTouchpointOffers(state, cfg.crisis, cfg.time)) {
+  for (const o of crisisTouchpointOffers(state, cfg.crisis, cfg.time, condEnv)) {
     if (o.vessel === "combat" && o.enemyId !== undefined) map.set(o.enemyId, o.def.id);
   }
   return map;
@@ -1418,10 +1440,19 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
     name: e.name,
     text: e.text,
   }));
+  // 天候（X-13）：朝刊は今日の空の風景を滲ませる（seed+day の導出値）
+  const weatherReq =
+    cfg.weather === undefined
+      ? undefined
+      : (() => {
+          const w = weatherOf(state.seed, state.time.day, cfg.weather, cfg.time);
+          return { name: w.kind.name, line: w.line };
+        })();
   const req = {
     deeds,
     works,
     deaths,
+    ...(weatherReq !== undefined ? { weather: weatherReq } : {}),
     ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
     ...(npcEvents.length > 0 ? { npcEvents } : {}),
     ...(hint !== null ? { hints: [hint] } : {}),
@@ -1768,6 +1799,11 @@ export interface WakePack {
   statLines: { name: string; delta: number }[];
   gifts: string[];
   winds: { direction: WindDirection; label: string }[];
+  /**
+   * 今朝の天候の1行（X-13。テンプレート cli.json wake.weatherLine 済みの文。
+   * 天候表の無い世界では null —— 窓の外の風景としてだけ滲ませる）
+   */
+  weather: string | null;
   overwork: boolean;
   restDay: boolean;
   others: string[];
@@ -1796,6 +1832,13 @@ export function wakePack(
       .map((l) => ({ name: t.display.statNames[l.id] ?? l.id, delta: l.delta })),
     gifts: report.surprises,
     winds: report.tailwinds.map((x) => ({ direction: x.direction, label: x.label })),
+    weather:
+      report.weather === undefined
+        ? null
+        : tpl(t.text.wake.weatherLine, {
+            weather: report.weather.name,
+            line: report.weather.line,
+          }),
     overwork: report.overwork.active,
     restDay: report.restDay,
     others: eventLines(events, state),

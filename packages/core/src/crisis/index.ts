@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import type { ActionEvent } from "../events/index.js";
 import { npcGoneReason } from "../npclife/index.js";
 import { reachedPinnacles, routeProgress, type PinnacleRouteDef } from "../pinnacle/index.js";
@@ -688,6 +688,7 @@ export function crisisTouchpointWeight(
   def: CrisisTouchpointDef,
   cfg: CrisisConfig,
   time: TimeConfig,
+  env?: CondEnv,
 ): number {
   const tp = cfg.touchpoints;
   const crisis = state.crisis;
@@ -696,11 +697,11 @@ export function crisisTouchpointWeight(
   const stage = crisis.stageIndex;
   if (def.fromStage !== undefined && stage < def.fromStage) return 0;
   if (def.toStage !== undefined && stage > def.toStage) return 0;
-  if (def.require !== undefined && !evaluate(def.require, state, time)) return 0;
+  if (def.require !== undefined && !evaluate(def.require, state, time, env)) return 0;
   if (touchpointDoneToday(state, def)) return 0;
   let w = tp.weightBase;
   for (const a of def.affinity ?? []) {
-    if (evaluate(a.cond, state, time)) w += a.weight;
+    if (evaluate(a.cond, state, time, env)) w += a.weight;
   }
   return w;
 }
@@ -735,6 +736,7 @@ export function crisisTouchpointOffers(
   state: GameState,
   cfg: CrisisConfig | undefined,
   time: TimeConfig,
+  env?: CondEnv,
 ): CrisisTouchpointOffer[] {
   if (cfg === undefined) return [];
   const tp = cfg.touchpoints;
@@ -743,7 +745,7 @@ export function crisisTouchpointOffers(
   const type = crisisTypeOf(state, cfg);
   if (type === undefined) return [];
   const pool = (type.touchpoints ?? [])
-    .map((def) => ({ def, weight: crisisTouchpointWeight(state, def, cfg, time) }))
+    .map((def) => ({ def, weight: crisisTouchpointWeight(state, def, cfg, time, env) }))
     .filter((x) => x.weight > 0);
   if (pool.length === 0) return [];
   // 関与が段階2（支えた）に届くと注文や依頼が増える（W-03、docs/08 §6。
@@ -801,8 +803,9 @@ export function crisisTouchpointForWork(
   time: TimeConfig,
   orderId: string,
   kind: string,
+  env?: CondEnv,
 ): CrisisTouchpointDef | null {
-  const hit = crisisTouchpointOffers(state, cfg, time).find((o) => o.order?.id === orderId);
+  const hit = crisisTouchpointOffers(state, cfg, time, env).find((o) => o.order?.id === orderId);
   if (hit === undefined || hit.def.offer === undefined) return null;
   return hit.def.offer.kind === kind ? hit.def : null;
 }
@@ -817,8 +820,9 @@ export function crisisTouchpointForCombat(
   time: TimeConfig,
   tpId: string,
   enemyId: string,
+  env?: CondEnv,
 ): CrisisTouchpointDef | null {
-  const hit = crisisTouchpointOffers(state, cfg, time).find(
+  const hit = crisisTouchpointOffers(state, cfg, time, env).find(
     (o) => o.vessel === "combat" && o.def.id === tpId,
   );
   if (hit === undefined) return null;

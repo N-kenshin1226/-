@@ -68,6 +68,7 @@ import {
   reachedPinnacles,
   TENDENCY_IDS,
   TemplateProvider,
+  weatherOf,
   worldFactor,
   worldMods,
   type CrisisFieldId,
@@ -148,6 +149,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
   const { io } = opts;
   const t = cliText;
   const cfg = opts.cfg ?? stepConfig();
+  // 条件DSLの評価環境（X-13）：{weather} など state に無い語彙の判定に使う
+  // コンテンツ設定。step 内の判定と同じものを、画面側の一覧表示にも渡す
+  const condEnv = cfg.weather !== undefined ? { weather: cfg.weather } : undefined;
   const savePath = opts.savePath ?? defaultSavePath();
   const seed = opts.seed ?? process.env.TRACE_SEED ?? "TRACE-M0";
   const skillList = skills.skills.map((s) => ({ id: s.id, name: s.name, unlock: s.unlock }));
@@ -673,12 +677,21 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       name: e.name,
       text: e.text,
     }));
+    // 天候（X-13）：朝刊は今日の空の風景を滲ませる（seed+day の導出値）
+    const weatherReq =
+      cfg.weather === undefined
+        ? undefined
+        : (() => {
+            const w = weatherOf(state!.seed, state!.time.day, cfg.weather, cfg.time);
+            return { name: w.kind.name, line: w.line };
+          })();
     const lines = narrator.narrate(
       {
         scene: "newspaper",
         deeds,
         works,
         deaths,
+        ...(weatherReq !== undefined ? { weather: weatherReq } : {}),
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
         ...(npcEvents.length > 0 ? { npcEvents } : {}),
         ...(hint !== null ? { hints: [hint] } : {}),
@@ -904,6 +917,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     outAll,
     ask,
     cfg,
+    condEnv,
     t,
     save,
     applyTitles: (events: ActionEvent[]) => applyTitles(events),
@@ -1214,7 +1228,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // 印は示すだけ —— 受けても受けなくてもよく、無視する側には何も起きない
       const crisisOrders: Order[] =
         cfg.crisis !== undefined
-          ? crisisTouchpointOffers(state, cfg.crisis, cfg.time).flatMap((o) =>
+          ? crisisTouchpointOffers(state, cfg.crisis, cfg.time, condEnv).flatMap((o) =>
               o.order !== undefined
                 ? [
                     {
@@ -1331,7 +1345,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       // 危機の接点（W-02）：今日の接点の相手には「異変：」の印を付ける（敵ID→接点ID）
       const tpEnemies = new Map<string, string>();
       if (cfg.crisis !== undefined) {
-        for (const o of crisisTouchpointOffers(state, cfg.crisis, cfg.time)) {
+        for (const o of crisisTouchpointOffers(state, cfg.crisis, cfg.time, condEnv)) {
           if (o.vessel === "combat" && o.enemyId !== undefined) tpEnemies.set(o.enemyId, o.def.id);
         }
       }

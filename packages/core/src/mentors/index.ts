@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import type { Effect } from "../effects/index.js";
 import { npcGoneReason } from "../npclife/index.js";
 import type { GameState } from "../state/types.js";
@@ -75,12 +75,13 @@ export function canApprentice(
   id: string,
   cfg: MentorsConfig | undefined,
   time: TimeConfig,
+  env?: CondEnv,
 ): boolean {
   if (cfg === undefined || state.mentor !== null) return false;
   const def = cfg.mentors.find((m) => m.id === id);
   if (def === undefined) return false;
   if (mentorAbsent(state, def) !== null) return false;
-  return def.condition === undefined || evaluate(def.condition, state, time);
+  return def.condition === undefined || evaluate(def.condition, state, time, env);
 }
 
 /** 師匠に弟子入りする（行動は消費しない。打診の受諾と同じ扱い） */
@@ -89,8 +90,9 @@ export function apprentice(
   id: string,
   cfg: MentorsConfig | undefined,
   time: TimeConfig,
+  env?: CondEnv,
 ): { state: GameState; ok: boolean } {
-  if (!canApprentice(state, id, cfg, time)) return { state, ok: false };
+  if (!canApprentice(state, id, cfg, time, env)) return { state, ok: false };
   return {
     state: { ...state, mentor: { id, sinceDay: state.time.day } },
     ok: true,

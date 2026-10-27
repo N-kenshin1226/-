@@ -343,6 +343,8 @@ export const cliTextSchema = z
             statJoiner: z.string(),
             windsLine: z.string(),
             windsNone: z.string(),
+            /** 天候（X-13）：今朝の空の1行。{weather}=空の表示名・{line}=風景の行 */
+            weatherLine: z.string(),
             noChange: z.string(),
             restDayLine: z.string(),
             /** 錆びたスキルがあった朝の行（{name}/{loss}） */

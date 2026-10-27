@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import type { GameState } from "../state/types.js";
 import type { TimeConfig } from "../time/index.js";
 
@@ -168,6 +168,7 @@ export function npcLifeEvents(
   state: GameState,
   cfg: NpcLifeConfig | undefined,
   time: TimeConfig,
+  env?: CondEnv,
 ): { state: GameState; fired: NpcLifeFired[] } {
   const fired: NpcLifeFired[] = [];
   if (cfg === undefined) return { state, fired };
@@ -183,7 +184,7 @@ export function npcLifeEvents(
       if (next.crisis?.log.some((l) => l.kind === logKind && l.ref === npc.npcId) === true) {
         continue;
       }
-      if (!evaluate(ev.at, next, time)) continue;
+      if (!evaluate(ev.at, next, time, env)) continue;
 
       const day = next.time.day;
       const name = npcLifeName(next, cfg, npc.npcId);

@@ -65,5 +65,11 @@ export const condSchema: z.ZodType<Cond> = z.lazy(() =>
           .strict(),
       })
       .strict(),
+    /** 今日の天候（X-13。weather.json の kind id の集合一致） */
+    z
+      .object({
+        weather: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
+      })
+      .strict(),
   ]),
 );

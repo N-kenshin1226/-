@@ -38,6 +38,11 @@ export const narrationSchema = z
              * 引退・結婚・死去など街の人物の物語が動いた日に、見出しの後に必ず載る）
              */
             npcEvent: z.array(z.string()).min(1),
+            /**
+             * 天候（X-13。{weather}=空の表示名・{line}=weather.json の風景の行。
+             * 天候表のある世界では見出しの後に毎朝1行載る。{season}/{day} も可）
+             */
+            weather: z.array(z.string()).min(1),
           })
           .strict(),
       })

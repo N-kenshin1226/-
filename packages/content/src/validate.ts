@@ -24,6 +24,7 @@ import { rivalsFileSchema } from "./rivals.schema.js";
 import { occasionsFileSchema } from "./occasions.schema.js";
 import { discoveriesFileSchema } from "./discoveries.schema.js";
 import { npcLifecycleFileSchema } from "./npc_lifecycle.schema.js";
+import { weatherFileSchema } from "./weather.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -71,6 +72,7 @@ check("rivals.json", rivalsFileSchema);
 check("occasions.json", occasionsFileSchema);
 check("discoveries.json", discoveriesFileSchema);
 check("npc_lifecycle.json", npcLifecycleFileSchema);
+check("weather.json", weatherFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
@@ -551,6 +553,97 @@ try {
   }
 } catch (e) {
   console.error(`✗ NPCの歳月の参照突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 天候の突き合わせ（X-13）：seasonWeights の列数は balance.time.seasonsPerYear と
+// 一致し、各季節に出る天候が1つ以上あること。balance.weather.orderPrice の
+// キーは weather.json の天候id、内側のキーは skills.json の技能idか "*" のみ。
+// 条件DSLの {weather} が指す天候idも weather.json に存在すること
+try {
+  const weatherRaw = JSON.parse(readFileSync(join(root, "weather.json"), "utf8")) as {
+    kinds?: { id?: string; seasonWeights?: number[] }[];
+  };
+  const balanceRaw = JSON.parse(readFileSync(join(root, "balance.json"), "utf8")) as {
+    time?: { seasonsPerYear?: number };
+    weather?: { orderPrice?: Record<string, Record<string, unknown>> };
+  };
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const kindIds = new Set((weatherRaw.kinds ?? []).map((k) => k.id));
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const seasons = balanceRaw.time?.seasonsPerYear ?? 0;
+  const bad: string[] = [];
+  for (const k of weatherRaw.kinds ?? []) {
+    const w = k.seasonWeights ?? [];
+    if (w.length !== seasons) {
+      bad.push(
+        `weather.json ${k.id ?? "?"}: seasonWeights の長さ ${w.length} ≠ seasonsPerYear ${seasons}`,
+      );
+    }
+  }
+  // 各季節（列）に重みのある天候が1つ以上無いとその季節に空が決められない
+  for (let s = 0; s < seasons; s++) {
+    const any = (weatherRaw.kinds ?? []).some((k) => (k.seasonWeights?.[s] ?? 0) > 0);
+    if (!any) bad.push(`季節 ${s}: 出る天候がない`);
+  }
+  for (const [wid, kinds] of Object.entries(balanceRaw.weather?.orderPrice ?? {})) {
+    if (!kindIds.has(wid)) bad.push(`balance.weather.orderPrice: 未定義の天候 ${wid}`);
+    for (const key of Object.keys(kinds)) {
+      if (key !== "*" && !skillIds.has(key)) {
+        bad.push(`balance.weather.orderPrice ${wid}: 未定義の系統 ${key}`);
+      }
+    }
+  }
+  // 条件DSLの {weather} が指す天候idを、条件を持つJSON全部から集めて検査する
+  // （{weather: id|string[]} というキーは条件オブジェクトにしか現れない）
+  const collectWeather = (v: unknown, out: Set<string>): void => {
+    if (Array.isArray(v)) {
+      for (const x of v) collectWeather(x, out);
+      return;
+    }
+    if (typeof v !== "object" || v === null) return;
+    for (const [key, val] of Object.entries(v as Record<string, unknown>)) {
+      if (key === "weather" && (typeof val === "string" || Array.isArray(val))) {
+        const ids = Array.isArray(val) ? val : [val];
+        for (const id of ids) if (typeof id === "string") out.add(id);
+        continue;
+      }
+      collectWeather(val, out);
+    }
+  };
+  const condFiles = [
+    "discoveries.json",
+    "occasions.json",
+    "titles.json",
+    "society.json",
+    "books.json",
+    "mentors.json",
+    "pinnacles.json",
+    "npc_lifecycle.json",
+    "vows.json",
+    "crises/sample.json",
+  ];
+  const usedWeather = new Set<string>();
+  for (const name of condFiles) {
+    try {
+      collectWeather(JSON.parse(readFileSync(join(root, name), "utf8")), usedWeather);
+    } catch {
+      // 読めないファイルは個別の check() が失敗を報告しているのでここでは飛ばす
+    }
+  }
+  for (const id of usedWeather) {
+    if (!kindIds.has(id)) bad.push(`条件DSLの天候 ${id} が weather.json に無い`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 天候の参照が不正: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 天候の参照（weather ↔ balance/skills/条件DSL）");
+  }
+} catch (e) {
+  console.error(`✗ 天候の突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

@@ -144,6 +144,10 @@ export function wakeBlock(
   }
   if (report.lines.length === 0) lines.push(w.noChange);
   if (report.restDay) lines.push(w.restDayLine);
+  // 天候（X-13）：今朝の空の風景を1行滲ませる（常時のステータス表示にはしない）
+  if (report.weather !== undefined) {
+    lines.push(tpl(w.weatherLine, { weather: report.weather.name, line: report.weather.line }));
+  }
 
   const winds = report.tailwinds.map(windLabel).join(" ／ ");
   lines.push(winds ? tpl(w.windsLine, { winds }) : w.windsNone);

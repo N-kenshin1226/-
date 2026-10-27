@@ -140,6 +140,7 @@
       "statJoiner": " ／ ",
       "windsLine": "本日の追い風：{winds}",
       "windsNone": "本日の追い風：とくになし",
+      "weatherLine": "――今日の空は{weather}。{line}",
       "noChange": "――体は昨日と同じです。",
       "restDayLine": "――よく休みました。素質が少し戻ります。",
       "saved": "――記録が残されました。",

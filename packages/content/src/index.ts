@@ -67,6 +67,10 @@ export {
   occasionsFileSchema,
 } from "./occasions.schema.js";
 export type { OccasionJson, OccasionsFile } from "./occasions.schema.js";
+// 天候（X-13、docs/03 §2・§5。世界シード×日付で決まる日替わりの空）
+export { weather } from "./weather.js";
+export { weatherFileSchema, weatherKindSchema } from "./weather.schema.js";
+export type { WeatherFile, WeatherKindJson } from "./weather.schema.js";
 // 隠し要素（X-11、docs/03 §5。時刻・月齢・行動の組み合わせで出る発見）
 export { discoveries } from "./discoveries.js";
 export {

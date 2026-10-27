@@ -1,5 +1,5 @@
 import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/index.js";
-import { evaluate, type Cond } from "./conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "./conditions/index.js";
 import { checkDiscoveries, type DiscoveryDef } from "./discoveries/index.js";
 import {
   addHeroContribution,
@@ -48,6 +48,7 @@ import {
 } from "./occasions/index.js";
 import { unlockSkills } from "./skills/index.js";
 import { restoreRng } from "./rng/index.js";
+import { weatherOf, weatherPriceFactor, type WeatherConfig } from "./weather/index.js";
 import type { CrisisFieldId, GameState, SkillId } from "./state/types.js";
 import {
   advance as advanceTime,
@@ -130,6 +131,14 @@ export interface StepConfig {
    * 外れ、刻印は世代をまたぐ世界の記録として残る
    */
   npcLife?: NpcLifeConfig;
+  /**
+   * 天候（X-13、docs/03 §2「日替わりの要因は2つまで」の1枠＋§5の語彙）。
+   * weather.json の種類表＋balance.weather の注文係数。
+   * 天候は seed+day から導出する値（state.rng は消費しない、GameState に欄は足さない）：
+   * 指定すると (a) 条件DSLの {weather} 語彙が効き、(b) 仕事の報酬に
+   * 天候の係数が乗り、(c) 起床レポートに今日の空の風景の行が載る
+   */
+  weather?: WeatherConfig;
 }
 
 export type Command =
@@ -287,6 +296,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // 傾向・誓約は step 中に変化しないので入力 state から一度だけ計算する
   const fate = worldMods(state, cfg.tendency, cfg.vows);
 
+  // 条件DSLの評価環境（X-13）：{weather} など state から導出する語彙に使う
+  // コンテンツ設定。天候表が無い世界では {weather} 条件は成立しない
+  const condEnv: CondEnv = cfg.weather !== undefined ? { weather: cfg.weather } : {};
+
   switch (command.type) {
     case "wait": {
       next.time = advanceTime(next.time, cfg.time);
@@ -364,6 +377,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       next.time = sleepTime(next.time);
       next = resetDailyNotify(next); // 日付が変わると通知予算はリセット
+
+      // 天候（X-13）：新しい朝の空を seed+day から導出して起床レポートに載せる。
+      // 風景として滲ませるだけ —— 常時ステータス表示にはしない（W-04 の間接表現と同系統）
+      if (cfg.weather !== undefined) {
+        const w = weatherOf(next.seed, next.time.day, cfg.weather, cfg.time);
+        report.weather = { id: w.kind.id, name: w.kind.name, line: w.line };
+      }
 
       // 加齢（T-36）：新しい朝の年齢で「老いの兆候」と老衰死を判定する（06 §1）
       const agingEvents: ActionEvent[] = [];
@@ -508,14 +528,16 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         events.push({ type: "tierUp", kind: command.kind, tier: recorded.work.tier });
       }
       // 報酬が入る（注文の約定額があればそれ、無ければ市場価値。認定の値段変化と
-      // 傾向・誓約の報酬係数（T-45/T-46）、危機の物価変動（W-01）を乗せる）
+      // 傾向・誓約の報酬係数（T-45/T-46）、危機の物価変動（W-01）、
+      // 天候の日替わり係数（X-13、03 §2「日替わりの要因」の1枠）を乗せる）
       const pay = Math.max(
         0,
         Math.round(
           (command.rewardMoney ?? recorded.work.marketValue) *
             priceFactor(effects, command.kind) *
             worldFactor(fate, "rewardFactor") *
-            crisisPriceFactor(next, cfg.crisis, command.kind),
+            crisisPriceFactor(next, cfg.crisis, command.kind) *
+            weatherPriceFactor(next, cfg.weather, cfg.time, command.kind),
         ),
       );
       next = {
@@ -534,6 +556,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           cfg.time,
           command.order,
           command.kind,
+          condEnv,
         );
         if (tp !== null) {
           const amount = cfg.crisis.touchpoints?.contribution.work ?? 0;
@@ -637,6 +660,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           cfg.time,
           command.touchpoint,
           command.enemyId,
+          condEnv,
         );
         if (tp !== null) {
           const amount = cfg.crisis.touchpoints?.contribution.combat ?? 0;
@@ -810,7 +834,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     }
     case "buyBook": {
       // 購入は行動を消費しない（書店への立ち寄り。認定の受諾と同じ扱い）
-      const res = buyBook(next, command.id, cfg.books, cfg.time);
+      const res = buyBook(next, command.id, cfg.books, cfg.time, condEnv);
       if (!res.ok) break;
       next = res.state;
       events.push({ type: "bookBought", id: command.id });
@@ -841,7 +865,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     }
     case "apprentice": {
       // 弟子入り：行動は消費しない（会話の一瞬。認定の受諾と同じ扱い）
-      const res = apprentice(next, command.id, cfg.mentors, cfg.time);
+      const res = apprentice(next, command.id, cfg.mentors, cfg.time, condEnv);
       if (!res.ok) break;
       next = res.state;
       events.push({ type: "mentorApprenticed", id: command.id });
@@ -1087,7 +1111,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // within の条件が行動ログを読むので購読者ループの後、
   // found.<id> を頂点・称号の条件から使えるように称号判定より前に置く
   if (cfg.discoveries !== undefined) {
-    const res = checkDiscoveries(next, cfg.discoveries, cfg.time);
+    const res = checkDiscoveries(next, cfg.discoveries, cfg.time, condEnv);
     next = res.state;
     for (const def of res.found) {
       const event: ActionEvent = { type: "discovery", id: def.id };
@@ -1104,7 +1128,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // 発火した出来事は世界の記録（crisis.log）と counters/flags に刻まれ、
   // 二度は発火しない（その生の done 刻印＋世代をまたぐ記録の2層）
   if (cfg.npcLife !== undefined) {
-    const res = npcLifeEvents(next, cfg.npcLife, cfg.time);
+    const res = npcLifeEvents(next, cfg.npcLife, cfg.time, condEnv);
     next = res.state;
     for (const f of res.fired) {
       const event: ActionEvent = {
@@ -1129,7 +1153,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // 段の達成は flags["pinnacle.<route>.<stage>"] に刻み、最終段（S）の頂点称号は
   // そのフラグを条件に持つ既存の称号判定がこの直後に拾う（二重管理を避ける）
   if (cfg.pinnacles) {
-    const prog = checkPinnacles(next, cfg.pinnacles, cfg.time);
+    const prog = checkPinnacles(next, cfg.pinnacles, cfg.time, condEnv);
     next = prog.state;
     for (const r of prog.reached) {
       const event: ActionEvent = {
@@ -1148,7 +1172,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
   for (const def of cfg.titles) {
     if (next.titles.includes(def.id)) continue;
-    if (evaluate(def.condition, next, cfg.time)) {
+    if (evaluate(def.condition, next, cfg.time, condEnv)) {
       next = { ...next, titles: [...next.titles, def.id] };
       titleEvents.push({ type: "titleGained", id: def.id, rank: def.rank });
       // 通知予算：Sは1日1回。超過したSは抑制フラグで格下げ表示にする
@@ -1168,7 +1192,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   }
   // 派生スキルの解放判定（02：素スキルが育つと派生が開花。解放は flags に記録）
   if (cfg.skillUnlocks) {
-    const u = unlockSkills(next, cfg.skillUnlocks, cfg.time);
+    const u = unlockSkills(next, cfg.skillUnlocks, cfg.time, condEnv);
     next = u.state;
     for (const id of u.unlocked) {
       const event: ActionEvent = { type: "skillUnlocked", id };
@@ -1189,7 +1213,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   }
 
   // 立場・職業の打診（条件を満たしたらオファーが溜まる。通知Aランク相当）
-  for (const offer of newOffers(next, cfg.society, cfg.time)) {
+  for (const offer of newOffers(next, cfg.society, cfg.time, condEnv)) {
     next = {
       ...next,
       society: {
@@ -1200,7 +1224,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     events.push({ type: "offerReceived", kind: offer.kind, id: offer.id });
   }
   // 人生目標の達成：宣言していた目標が満たされたら報酬（pending）を付与
-  const achieved = goalAchieved(next, cfg.society, cfg.time);
+  const achieved = goalAchieved(next, cfg.society, cfg.time, condEnv);
   if (achieved) {
     next = {
       ...next,
@@ -1236,7 +1260,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // 独立した抽選で決まる（state.rng は消費しない）。届いた打診には日付が刻まれ、
   // 応えるも応えないも自由 —— 断っても不利益はなく、街の日常は続く
   if (cfg.occasions !== undefined) {
-    for (const def of occasionPending(next, cfg.occasions, cfg.time)) {
+    for (const def of occasionPending(next, cfg.occasions, cfg.time, condEnv)) {
       const event: ActionEvent = { type: "occasionOffered", id: def.id, kind: def.kind };
       for (const sub of subscribers) next = sub(next, event);
       next = recordAction(next, event, cfg.actionLogMax);

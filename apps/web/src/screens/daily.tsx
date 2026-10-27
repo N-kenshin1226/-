@@ -59,7 +59,8 @@ export function WakeScreen({
           textShadow: "0 1px 3px #000",
         }}
       >
-        窓の外が白んでいく。身体の奥で、昨日の何かが形になった。
+        窓の外が白んでいく。{p.weather ?? ""}
+        {p.weather !== null ? " " : ""}身体の奥で、昨日の何かが形になった。
       </p>
       <BlessingWindow
         style={pos({ left: 270, top: 84, width: 740, height: 560 })}

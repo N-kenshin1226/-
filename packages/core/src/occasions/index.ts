@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import { npcGoneReason } from "../npclife/index.js";
 import { createRng } from "../rng/index.js";
 import { drawRivalCast, type RivalsConfig, type RivalNamePool } from "../rivals/index.js";
@@ -157,6 +157,7 @@ function eligible(
   state: GameState,
   cfg: OccasionsConfig,
   time: TimeConfig,
+  env?: CondEnv,
 ): boolean {
   const day = state.time.day;
   if (speakerGone(def.speaker, state, cfg)) return false;
@@ -164,7 +165,7 @@ function eligible(
     const offset = def.every.offset ?? 0;
     if (day < offset || (day - offset) % def.every.days !== 0) return false;
   }
-  if (def.require !== undefined && !evaluate(def.require, state, time)) return false;
+  if (def.require !== undefined && !evaluate(def.require, state, time, env)) return false;
   // 同じ行事が再び届くまでの間隔。今日既に届いたものは「抽選結果の一部」として残す
   // （抽選は日のセットとして決定的 —— 届いた分を除くと残りの枠が別の抽選にずれる）
   const last = state.counters[occasionOfferDayKey(def.id)];
@@ -183,9 +184,14 @@ function eligible(
  * 届いた打診を含む「その日の行事の集合」を返す。上限は offersPerDay。
  * 候補がいても届かない日がある（offerChance）し、2件目は secondChance 任せ
  */
-function drawOccasions(state: GameState, cfg: OccasionsConfig, time: TimeConfig): OccasionDef[] {
+function drawOccasions(
+  state: GameState,
+  cfg: OccasionsConfig,
+  time: TimeConfig,
+  env?: CondEnv,
+): OccasionDef[] {
   const day = state.time.day;
-  const pool = cfg.occasions.filter((d) => eligible(d, state, cfg, time));
+  const pool = cfg.occasions.filter((d) => eligible(d, state, cfg, time, env));
   if (pool.length === 0) return [];
   const rng = createRng(`${state.seed}:occasions:${day}`);
   if (!rng.chance(cfg.offerChance)) return [];
@@ -210,6 +216,7 @@ export function occasionPending(
   state: GameState,
   cfg: OccasionsConfig,
   time: TimeConfig,
+  env?: CondEnv,
 ): OccasionDef[] {
   const day = state.time.day;
   const delivered = cfg.occasions.filter(
@@ -217,7 +224,7 @@ export function occasionPending(
   ).length;
   const remaining = cfg.offersPerDay - delivered;
   if (remaining <= 0) return [];
-  return drawOccasions(state, cfg, time)
+  return drawOccasions(state, cfg, time, env)
     .filter((d) => state.counters[occasionOfferDayKey(d.id)] !== day)
     .slice(0, remaining);
 }
