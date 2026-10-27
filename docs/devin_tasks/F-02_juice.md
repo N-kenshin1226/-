@@ -15,9 +15,19 @@
 5. 演出はすべて Enter / クリックで飛ばせる。設定で「演出を短く」を選べる
 
 ### 受け入れ基準
-- [ ] 称号・自己ベスト・ランクアップ・報酬が、記録欄ではなく画面上の演出で分かる
-- [ ] 効果音が鳴る（設定でオフにできる）。e2e では音をオフにして動く
-- [ ] すべての演出を飛ばせる
+- [x] 称号・自己ベスト・ランクアップ・報酬が、記録欄ではなく画面上の演出で分かる
+- [x] 効果音が鳴る（設定でオフにできる）。e2e では音をオフにして動く
+- [x] すべての演出を飛ばせる
+
+### 実装メモ（2025-10-27）
+- **B**：右上に滑り込む札（`.fx-tag`、右上の `FxTagLayer`）。色調は title（金）/coin（銅貨）/whisper（銀青の囁き）/plain。数秒で退場し、クリックでも畳める。重なり上限 `theme.fx.tagMax`
+- **A**：加護の層（銀青）の光る窓に変更（従来は金の世界層）。`glowPulseB` の呼吸する輝き＋窓の開く音。`titleGained(A)`・`tierUp`・`skillUnlocked`・`offerReceived`・`abyssEnded(newBest)` も A の窓に載せた（従来は記録の1行のみ）
+- **S**：既存の中央の帯（世界初の通知）を維持。1日1回は core の `notify.sToday` に加え、表示側 `applySessionCap` でも同日の重複 S を A に畳む。**例外**：`openEnding`（終幕）は世界に一度の結末なので予算の外
+- **数字の動き**：`CountUp`（easeOutCubic）、`SegGauge` の伸び分はマスが順に灯る、階級が変わる行は `CrestShift` で紋章が入れ替わる、所持金は `MoneyCount` で数がめくれて光る
+- **効果音**：`fx/sound.ts` が Web Audio でその場生成（tag/coin/hit/miss/notice/fanfare/rankup/wake/world）。外部ファイルなし。槌音は仕事ミニゲーム（命中・外れ・鉱石・交渉の手）にも接続済み
+- **設定**：メニュー「環境設定」（`screen-settings`）で 効果音オン/オフ・音量・演出を短く。`localStorage["trace.fx.v1"]` に保存。`prefers-reduced-motion` では全演出を静止に倒す
+- **スキップ**：モーダルは `useHotkeys(map, active, capture=true)` が capture フェーズで全キーを吸収。Enter/Esc/クリックで閉じる
+- **F-03/F-04 へのフック**：`playSfx(id)`・`CountUp`・`FxTagLayer`・`CrestShift`・`Notice.sound`（通知ごとの音の指定）、`tagsOf`/`applySessionCap`（純粋関数）
 
 ### 共通
 - 背景：オーナーが実際に遊んだ感想は **「刺激があんまりない」**。このタスクの目的は、それを直すこと。仕様の細部より「遊んで気持ちいいか」を優先してよい（変えた点は判断ログに書く）

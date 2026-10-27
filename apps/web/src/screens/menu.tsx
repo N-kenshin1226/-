@@ -174,6 +174,12 @@ export function MenuScreen({
       onPick: () => setScreen({ name: "news", events: [] }),
     },
     {
+      id: "menu-settings",
+      label: "環境設定",
+      sub: "音と演出",
+      onPick: () => setScreen({ name: "settings" }),
+    },
+    {
       id: "menu-retire",
       label: "引退する",
       onPick: () => setScreen({ name: "retire" }),

@@ -49,11 +49,16 @@ const rebirth = async (page: import("@playwright/test").Page): Promise<void> => 
   await page.getByTestId("rebirth-born").click();
 };
 
-/** 《釘の束》（簡易判定・報酬15G）を1回納める */
+/** 《釘の束》（簡易判定・報酬15G）を1回納める。自己ベスト等のA窓が出たら畳む（F-02） */
 const workNail = async (page: import("@playwright/test").Page): Promise<void> => {
   await page.getByTestId("menu-work").click();
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
+  for (let i = 0; i < 4; i++) {
+    const n = page.locator('[data-testid="notice-a"], [data-testid="notice-s"]');
+    if ((await n.count()) === 0) break;
+    await n.first().click();
+  }
 };
 
 test("剣術を極めた生は、次の世界の書店に《剣鬼の手記》を遺す", async ({ page }) => {

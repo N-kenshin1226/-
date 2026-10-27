@@ -131,6 +131,7 @@ import {
   type Order,
   type Origin,
 } from "@trace/content";
+import type { SoundId } from "./fx/sound.js";
 
 export const t = cliText;
 
@@ -1631,7 +1632,7 @@ export interface Notice {
   sub: string;
   /** 報酬の行（称号・作品・見聞の断片など） */
   rewards: { label: string; name: string; sub?: string }[];
-  /** 帯の欧文の小見出し（S。省略時は WORLD FIRST） */
+  /** 欧文の小見出し（S=帯の上段・A=窓の頭。省略時は WORLD FIRST / NOTICE） */
   kicker?: string;
   /** 帯の導入文（S。省略時は「この世界で、初めての記録です」） */
   lead?: string;
@@ -1644,6 +1645,8 @@ export interface Notice {
   dialogue?: { speaker: string; lines: string[]; hint?: string };
   /** 閉じたあと結末画面（世界の年代記の一頁）を開く（W-04：終幕の通知） */
   openEnding?: boolean;
+  /** 開くときの効果音（F-02。省略時はランクの既定：S=world・A=notice） */
+  sound?: SoundId;
 }
 
 export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
@@ -1670,6 +1673,67 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         title: def?.name ?? e.id,
         sub: "世界で初めての記録です",
         rewards,
+        sound: "world",
+      });
+    }
+    // Aランクの称号（F-02）：珍しい称号は扇の音とともに光る窓で届く
+    if (e.type === "titleGained" && !e.suppressed && e.rank === "A") {
+      const def = titles.titles.find((x) => x.id === e.id);
+      const name = def?.name ?? e.id;
+      out.push({
+        rank: "A",
+        kicker: "NEW TITLE",
+        title: `《${name}》`,
+        sub: "――新しい称号を獲得しました。",
+        rewards: [{ label: "称号", name: `《${name}》` }],
+        sound: "fanfare",
+      });
+    }
+    // 自己ベストの更新（F-02）：ティアの切れ目は Aランクの出来事
+    if (e.type === "tierUp") {
+      const kind = skills.skills.find((s) => s.id === e.kind)?.name ?? e.kind;
+      out.push({
+        rank: "A",
+        kicker: "NEW RECORD",
+        title: `ティア ${e.tier} ―― 自己ベスト`,
+        sub: `《${kind}》の作品が、あなたの記録を塗り替えました。`,
+        rewards: [{ label: "記録", name: `${kind}・ティア${e.tier}` }],
+        sound: "rankup",
+      });
+    }
+    // 派生スキルの解放（F-02。03 §6：派生スキルはAランク）
+    if (e.type === "skillUnlocked") {
+      const name = skills.skills.find((s) => s.id === e.id)?.name ?? e.id;
+      out.push({
+        rank: "A",
+        kicker: "NEW SKILL",
+        title: `《${name}》`,
+        sub: "――身体が理屈を掴んだ。新しい技能を鍛えられるようになりました。",
+        rewards: [{ label: "技能", name: `《${name}》` }],
+        sound: "rankup",
+      });
+    }
+    // 立場・職業の認定の打診（03 §1。通知Aランク相当）
+    if (e.type === "offerReceived") {
+      const name = offerName(e.id);
+      out.push({
+        rank: "A",
+        kicker: "OFFER",
+        title: `《${name}》への打診`,
+        sub: "――認定の話が届きました。目標と認定で応えられます。",
+        rewards: [{ label: "打診", name: `《${name}》` }],
+        sound: "notice",
+      });
+    }
+    // 深層の自己ベスト（T-43。newBest は Aランク相当の出来事）
+    if (e.type === "abyssEnded" && e.newBest) {
+      out.push({
+        rank: "A",
+        kicker: "BEST DEPTH",
+        title: `深層 第${e.best}層`,
+        sub: tpl(t.text.abyssBest, { best: e.best }),
+        rewards: [{ label: "深層", name: `第${e.best}層` }],
+        sound: "rankup",
       });
     }
     if (e.type === "uniqueDefeated") {
@@ -1679,6 +1743,7 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         title: `《${name}》を討伐`,
         sub: "強個体は図鑑に刻まれました",
         rewards: [{ label: "図鑑", name: `《${name}》` }],
+        sound: "fanfare",
       });
     }
     if (e.type === "pinnacleStageReached" && e.rank !== "B") {
@@ -1689,6 +1754,7 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         title: stage?.name ?? e.stage,
         sub: `${route?.name ?? e.route} ―― 頂点への段`,
         rewards: [{ label: "頂点", name: `《${route?.name ?? e.route}》` }],
+        sound: e.rank === "S" ? "world" : "rankup",
       });
     }
     if (e.type === "goalAchieved") {
@@ -1698,6 +1764,7 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         title: `人生目標《${name}》を達成`,
         sub: "誓いは果たされました",
         rewards: [{ label: "人生目標", name: `《${name}》` }],
+        sound: "fanfare",
       });
     }
     // 決着の場面への打診（W-03・W-04、docs/08 §6）：関与が段階3・4に届いた証。
@@ -1720,6 +1787,7 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
           lines: [tpl(offer.line, { name })],
           hint: offer.hint,
         },
+        sound: "notice",
       });
     }
     // 終幕（W-04、docs/08 §7）：危機の決着は世界級の出来事 ―― ランクSの通知。
@@ -1747,6 +1815,7 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
           { label: n.worldPage, name: `《${type?.name ?? ""}》` },
           ...(stage !== "" ? [{ label: n.involvement, name: `《${stage}》` }] : []),
         ],
+        sound: "world",
       });
     }
     // 自分で起こした決着（W-03）：英雄の記録は世界級の出来事。成がS、不成でもA
@@ -1759,6 +1828,7 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
           ? "あなたが率いた決着は、世界の記録に刻まれました"
           : "備えは足りませんでした",
         rewards: [{ label: "決着の場面", name: `《${name}》` }],
+        sound: e.success ? "world" : "notice",
       });
     }
     // 勝負所の行事（X-10、docs/03 §2）：勝ちは物語を動かすAランクの出来事。
@@ -1767,9 +1837,11 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
       const name = occasionName(e.id);
       out.push({
         rank: "A",
+        kicker: "VICTORY",
         title: `《${name}》で勝ちを収めた`,
         sub: "勝負所の結果は、あなたの評判を動かします",
         rewards: [{ label: "勝負所", name: `《${name}》` }],
+        sound: "fanfare",
       });
     }
     // ライバルの英雄（W-03）：自分でなくとも世界は進む ―― 記録として届くAランク
@@ -1783,6 +1855,7 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         title: `${name} が英雄となった`,
         sub: "世界はあなたを待たずに、決着へ進みました",
         rewards: [{ label: "英雄", name }],
+        sound: "notice",
       });
     }
   }
@@ -1843,4 +1916,141 @@ export function wakePack(
     restDay: report.restDay,
     others: eventLines(events, state),
   };
+}
+
+/* ======== F-02: 演出層（B通知の札・セッションのS予算） ======== */
+
+/**
+ * B通知の札の一条（F-02、docs/03 §6）。画面右上に滑り込み数秒で消える軽い知らせ。
+ * 文は cli.json の定型文か event の解決済みテキストを使う（文体の一元管理）
+ */
+export interface FxTag {
+  text: string;
+  /** title=称号（金） / coin=報酬（金） / whisper=気配・世界の動き（銀青） / plain=平常 */
+  tone: "title" | "coin" | "whisper" | "plain";
+}
+
+/**
+ * step のイベント列 → Bランクの札（F-02）。
+ * 記録の1行しか無かった出来事（通常称号・納品・報酬・発見・歳月・気配など）を
+ * 右上の札として映す。モーダルにはしない ―― 下の画面の操作は通る。
+ * S/A になる出来事（noticesOf で窓になるもの）はここには入れない
+ */
+export function tagsOf(events: ActionEvent[], state?: GameState): FxTag[] {
+  const out: FxTag[] = [];
+  for (const e of events) {
+    switch (e.type) {
+      case "titleGained": {
+        const def = titles.titles.find((x) => x.id === e.id);
+        const name = def?.name ?? e.id;
+        if (e.suppressed) {
+          // 今日の世界の刻印が尽きた称号（S予算超過）：控えめな囁きの札
+          out.push({ text: tpl(t.text.titleSuppressed, { name }), tone: "whisper" });
+        } else if (e.rank === "B") {
+          out.push({
+            text: def?.message ?? tpl(t.text.titleGainedFallback, { name }),
+            tone: "title",
+          });
+        }
+        break;
+      }
+      // 納品・報酬の小さな演出（F-02 §4：お金・作品の受け取りを目に見える形に）
+      case "workRecorded":
+        out.push({
+          text: tpl(t.text.workDelivered, { name: workName(e.work, state) }),
+          tone: "plain",
+        });
+        break;
+      case "moneyPaid":
+        out.push({ text: tpl(t.text.moneyPaid, { amount: e.amount }), tone: "coin" });
+        break;
+      case "donated":
+        out.push({ text: tpl(t.text.societyDonated, { amount: e.amount }), tone: "coin" });
+        break;
+      // 気配（03 §6）：条件は明かさず、銀青の囁きとして滲ませる
+      case "kehai":
+        out.push({ text: t.text.kehai, tone: "whisper" });
+        break;
+      // 頂点ルートの中間段（Bランクの段）：pinnacles.json の通知文を札で届ける
+      case "pinnacleStageReached": {
+        if (e.rank !== "B") break;
+        const notice = pinnacles.pinnacles
+          .find((r) => r.id === e.route)
+          ?.stages.find((s) => s.id === e.stage)?.notice;
+        out.push({ text: notice ?? `――頂点への段《${e.stage}》に至りました。`, tone: "title" });
+        break;
+      }
+      // 隠し要素（X-11）：発見名だけ札で知らせる（語りは記録と新聞が担う）
+      case "discovery": {
+        const def = cfg.discoveries?.find((d) => d.id === e.id);
+        out.push({ text: tpl(t.text.discoveryFound, { name: def?.name ?? e.id }), tone: "plain" });
+        break;
+      }
+      // NPCの歳月（X-12）：街の人物の物語が動いた一行
+      case "npcEvent":
+        out.push({ text: tpl(t.text.npcEvent, { name: e.name, text: e.text }), tone: "plain" });
+        break;
+      // 勝負所の行事（X-10）：打診と敗北は札で届く（勝ちはAの窓）
+      case "occasionOffered":
+        out.push({
+          text: tpl(t.text.occasionOffered, { name: occasionName(e.id) }),
+          tone: "plain",
+        });
+        break;
+      case "occasionAttempted":
+        if (!e.won) {
+          out.push({ text: tpl(t.text.occasionLost, { name: occasionName(e.id) }), tone: "plain" });
+        }
+        break;
+      // 世界の危機の機微（W-01）：季節の変わり目・決着の場面の結果は
+      // 銀青の囁きとして滲ませる（終幕はSの窓が担う）
+      case "crisisStageChanged": {
+        const line = crisisLogLine("stage", crisisRefName(e.stage, "stages"));
+        if (line !== null) out.push({ text: line, tone: "whisper" });
+        break;
+      }
+      case "crisisFinale": {
+        const line = crisisLogLine(
+          e.success ? "finale.win" : "finale.loss",
+          crisisRefName(e.id, "finales"),
+        );
+        if (line !== null) out.push({ text: line, tone: "whisper" });
+        break;
+      }
+      // 接点を果たした（W-02）：世界の備えに足された旨
+      case "crisisTouchpoint":
+        out.push({
+          text: tpl(t.text.crisisTouchpointDone, {
+            field: t.display.crisisFieldNames[e.field] ?? e.field,
+          }),
+          tone: "plain",
+        });
+        break;
+      default:
+        break;
+    }
+  }
+  return out;
+}
+
+/**
+ * S通知は「1日に1回まで」（03 §6・D-13・F-02）。称号のS予算はcoreが
+ * suppressedで握るが、称号以外のS（頂点の段・決着の成功）も同じ日に
+ * 重なった場合は表示側で畳む ―― その日に既に S を出していれば（sShown=true）、
+ * 後続の S は A の窓として届ける（刻印・報酬は失わない）。
+ * 例外：終幕への接続（openEnding）は世界に一度の結末なので予算の外 ――
+ * 数えも畳みもしない（W-04：率いた決着の帯のあとに、必ず終幕の帯が来る）
+ */
+export function applySessionCap(
+  notices: Notice[],
+  sShown: boolean,
+): { notices: Notice[]; sShown: boolean } {
+  let shown = sShown;
+  const out = notices.map((n) => {
+    if (n.rank !== "S" || n.openEnding === true) return n;
+    if (shown) return { ...n, rank: "A" as const };
+    shown = true;
+    return n;
+  });
+  return { notices: out, sShown: shown };
 }

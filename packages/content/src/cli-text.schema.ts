@@ -306,6 +306,8 @@ export const cliTextSchema = z
         vowLine: z.string(),
         vowChosen: z.string(),
         moneyPaid: z.string(),
+        /** F-02：納品の札（右上に滑り込む短い知らせ） */
+        workDelivered: z.string(),
         /** 書店（T-26）：店頭の見出し・一覧行・購入/読了/効果の各行 */
         bookShopHeader: z.string(),
         bookPick: z.string(),

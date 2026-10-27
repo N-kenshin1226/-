@@ -176,8 +176,13 @@ export function CommandMenu({
   );
 }
 
-/** 画面ごとの補助キー（修飾キーなしの単打のみ拾う） */
-export function useHotkeys(map: Record<string, () => void>, active = true): void {
+/**
+ * 画面ごとの補助キー（修飾キーなしの単打のみ拾う）。
+ * capture=true にすると capture フェーズで受け取り、拾ったキーは
+ * それ以降の伝播を止める —— モーダル（通知・演出の窓）が開いている間、
+ * Enter/Esc が背面のコマンド列へ漏れないようにするため（F-02）
+ */
+export function useHotkeys(map: Record<string, () => void>, active = true, capture = false): void {
   const ref = useRef(map);
   ref.current = map;
   useEffect(() => {
@@ -186,14 +191,21 @@ export function useHotkeys(map: Record<string, () => void>, active = true): void
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if ((e.target as HTMLElement | null)?.tagName === "INPUT") return;
       const fn = ref.current[e.key.toLowerCase()] ?? ref.current[e.key];
+      if (capture) {
+        // モーダル：割当のあるキーは実行し、無いキーも含めて背面へは一切漏らさない
+        e.preventDefault();
+        e.stopPropagation();
+        fn?.();
+        return;
+      }
       if (fn) {
         e.preventDefault();
         fn();
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [active]);
+    window.addEventListener("keydown", onKey, capture);
+    return () => window.removeEventListener("keydown", onKey, capture);
+  }, [active, capture]);
 }
 
 /* ── キーキャップと操作ガイド ── */

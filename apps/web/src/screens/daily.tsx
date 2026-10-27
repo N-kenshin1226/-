@@ -2,11 +2,13 @@
  * 一日の節目の窓（UI-01）：
  *   WakeScreen    … 起床ログ（Wake見本：加護の窓・区切りゲージ・贈り物の帯）
  *   NewsScreen    … 朝刊（News見本：紙・三面記事・街の声）
- *   NoticeOverlay … S/A通知（Notice見本：S=画面中央の帯、A=光る窓）
+ *   NoticeOverlay … S/A通知（Notice見本：S=画面中央の帯、A=加護の層の光る窓）
  */
-import type { CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import type { ActionEvent, GameState, WakeReport } from "@trace/core";
 import { narration } from "@trace/content";
+import { CountUp, CrestShift } from "../fx/fx.js";
+import { playSfx } from "../fx/sound.js";
 import { dateLabel, endingPageLines, newsPack, t, wakePack, type Notice } from "../game.js";
 import {
   BlessingWindow,
@@ -17,6 +19,7 @@ import {
   SegGauge,
   WindChip,
   pos,
+  skillBandOf,
   useHotkeys,
   type Screen,
 } from "../ui.js";
@@ -45,6 +48,8 @@ export function WakeScreen({
   const news = () => setScreen({ name: "news", events });
   const status = () => setScreen({ name: "status" });
   useHotkeys({ s: status, n: news });
+  // 起床の鈴（F-02）：窓が開くと一度だけ鳴る
+  useEffect(() => playSfx("wake"), []);
   return (
     <div data-testid="screen-wake" className="scene">
       {/* 朝の気配の一文（見本の最上段。白んでいく窓の外） */}
@@ -120,14 +125,15 @@ export function WakeScreen({
           <span style={{ color: "#eaf8fb", fontWeight: 700 }}>{p.quality}</span>
         </p>
 
-        {/* 定着した技能：名前 ｜ 区切りゲージ ｜ from›to ｜ +delta */}
+        {/* 定着した技能：名前 ｜ 紋章 ｜ 区切りゲージ ｜ from›to ｜ +delta。
+            数値はカウントアップ、ゲージは伸びるように光る（F-02） */}
         <div style={{ margin: "16px 40px 0" }}>
           {p.skillLines.map((l) => (
             <div
               key={l.name}
               style={{
                 display: "grid",
-                gridTemplateColumns: "150px minmax(0,1fr) 150px 70px",
+                gridTemplateColumns: "150px 34px minmax(0,1fr) 150px 70px",
                 alignItems: "center",
                 gap: 16,
                 height: 52,
@@ -143,7 +149,9 @@ export function WakeScreen({
               >
                 《{l.name}》
               </span>
-              <SegGauge from={l.from} to={l.to} />
+              {/* 熟練の階級が変わった行は紋章が入れ替わる */}
+              <CrestShift from={skillBandOf(l.from).crest} to={skillBandOf(l.to).crest} size={30} />
+              <SegGauge from={l.from} to={l.to} animate />
               <span
                 style={{
                   fontFamily: theme.font.en,
@@ -153,7 +161,13 @@ export function WakeScreen({
                 }}
               >
                 {l.from.toFixed(1)} <span style={{ color: B.faint }}>›</span>{" "}
-                <span style={{ color: "#eaf8fb", fontWeight: 700 }}>{l.to.toFixed(1)}</span>
+                <CountUp
+                  from={l.from}
+                  to={l.to}
+                  digits={1}
+                  testId={`wake-skill-${l.name}`}
+                  style={{ color: "#eaf8fb", fontWeight: 700 }}
+                />
               </span>
               <span
                 style={{
@@ -165,7 +179,7 @@ export function WakeScreen({
                 }}
               >
                 {l.delta >= 0 ? "+" : ""}
-                {l.delta.toFixed(1)}
+                <CountUp from={0} to={l.delta} digits={1} />
               </span>
             </div>
           ))}
@@ -196,7 +210,7 @@ export function WakeScreen({
                 {s.name}{" "}
                 <span style={{ fontFamily: theme.font.en, color: theme.colors.grow }}>
                   {s.delta >= 0 ? "+" : ""}
-                  {s.delta.toFixed(1)}
+                  <CountUp from={0} to={s.delta} digits={1} />
                 </span>
               </span>
             ))}
@@ -511,8 +525,12 @@ export function NoticeOverlay({
     onClose();
     if (notice.openEnding === true) onEnd?.();
   };
-  useHotkeys({ enter: done, escape: done });
+  // F-02：モーダルはキーを capture で握る ―― Enter/Esc が背面の窓に漏れない。
+  // Enter・クリックのどちらでも飛ばせる（スキップ可能が演出の要件）
+  useHotkeys({ enter: done, escape: done }, true, true);
   const isS = notice.rank === "S";
+  // 開くときの効果音（F-02）：通知ごとの音、無ければランクの既定（S=鐘・A=窓）
+  useEffect(() => playSfx(notice.sound ?? (isS ? "world" : "notice")), [notice, isS]);
   // 終幕の通知：その世界の年代記の一頁の予告を帯の内側に差す（W-04）
   const page = notice.openEnding === true ? endingPageLines(state).slice(-4) : [];
   return (
@@ -692,10 +710,11 @@ export function NoticeOverlay({
           </DialogueBox>
         </div>
       ) : (
-        /* A：中央に光る窓 */
+        /* A：画面中央に開く加護の層（銀青）の光る窓（F-02。通知の決まり：
+            A＝窓の中の光る枠 / 人の言葉は金、システムの声は銀青） */
         <section
           aria-label="通知"
-          className="glow-pulse"
+          className="glow-pulse-b"
           style={{
             position: "absolute",
             left: "50%",
@@ -704,9 +723,9 @@ export function NoticeOverlay({
             width: 620,
             padding: "40px 44px",
             textAlign: "center",
-            background: "linear-gradient(180deg, rgba(24,24,38,.96), rgba(11,11,19,.97))",
-            boxShadow: theme.frame.world,
-            border: `1px solid ${theme.colors.world.edge}`,
+            background: `linear-gradient(180deg, ${B.bgTop}, ${B.bgBottom})`,
+            boxShadow: theme.frame.bless,
+            border: `1px solid ${B.edge}`,
           }}
         >
           <p
@@ -716,19 +735,19 @@ export function NoticeOverlay({
               fontWeight: 700,
               fontSize: 13,
               letterSpacing: "0.6em",
-              color: "#e8c77f",
+              color: B.glow,
             }}
           >
-            NOTICE
+            {notice.kicker ?? "NOTICE"}
           </p>
           <h1
+            className="notice-a-title"
             style={{
               margin: "14px 0 0",
               fontFamily: theme.font.mincho,
               fontWeight: 800,
               fontSize: 34,
-              color: "#fff3cf",
-              textShadow: "0 0 18px rgba(232,199,127,.45)",
+              color: B.hi,
             }}
           >
             {notice.title}
@@ -738,7 +757,7 @@ export function NoticeOverlay({
               margin: "10px 0 0",
               fontFamily: theme.font.mincho,
               fontSize: 15,
-              color: "#e8dcbf",
+              color: B.text,
             }}
           >
             {notice.sub}

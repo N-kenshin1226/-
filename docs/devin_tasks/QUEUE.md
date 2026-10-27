@@ -11,7 +11,7 @@
 | R-01 | [R-01_randomness.md](R-01_randomness.md) | ― | todo | **最優先（刺激）**。リアルな揺らぎ（主人公だけに有利／不利にしない） |
 | S-01 | [S-01_audio.md](S-01_audio.md) | P-01 | todo | **最優先（刺激）**。BGM・環境音・効果音 |
 | F-01 | [F-01_growth_feel.md](F-01_growth_feel.md) | ― | in_progress | **最優先（刺激）**。成長の爽快感（定着上限・初期値・ランクアップ） |
-| F-02 | [F-02_juice.md](F-02_juice.md) | ― | in_progress | **最優先（刺激）**。演出と効果音 |
+| F-02 | [F-02_juice.md](F-02_juice.md) | ― | done | **最優先（刺激）**。演出と効果音。B=右上の札/A=加護の窓＋音/S=帯（1日1回・終幕は例外）。起床ログの数値・ゲージ・紋章の動き、Web Audio生成音、環境設定（音量・演出を短く）、演出フックは `apps/web/src/fx/`（F-03/F-04 は playSfx と CountUp 等を再利用） |
 | F-03 | [F-03_minigame_motion.md](F-03_minigame_motion.md) | F-02 | todo | **最優先（刺激）**。ミニゲームに動きと手応え |
 | F-04 | [F-04_combat_tension.md](F-04_combat_tension.md) | F-02 | todo | **最優先（刺激）**。戦闘の駆け引き |
 | F-05 | [F-05_daily_events.md](F-05_daily_events.md) | ― | in_progress | **最優先（刺激）**。日々の出来事・勝負所の絞り込み |
