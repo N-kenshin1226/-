@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "discoveries": [
+    {
+      "id": "moon_bell",
+      "name": "月下の鐘",
+      "foundText": "――夜霧の先、橋の袂に苔むした小さな鐘を見つけた。",
+      "hint": "{weekday}の夜、{moon}にだけ鳴る鐘があるという。足を止めた者だけがその音を聞く",
+      "condition": {
+        "and": [
+          { "time": { "timeOfDay": "night" } },
+          { "within": { "days": 1, "kind": "wait", "atLeast": 1 } }
+        ]
+      },
+      "setFlags": ["heard.moon_bell"],
+      "seeded": { "weekday": true, "moon": true }
+    },
+    {
+      "id": "old_forge",
+      "name": "旧鍛冶場",
+      "foundText": "――焼けた壁の向こうに、まだ息づく炉の跡を見つけた。",
+      "hint": "{weekday}の夕、旧街道で追い剥ぎを追い払った帰りに、焼け跡の方から槌の音がしたという",
+      "condition": {
+        "and": [
+          { "time": { "timeOfDay": "evening" } },
+          { "within": { "days": 1, "kind": "combat", "target": "bandit", "atLeast": 1 } }
+        ]
+      },
+      "setFlags": [],
+      "seeded": { "weekday": true }
+    },
+    {
+      "id": "night_market",
+      "name": "裏の夜市",
+      "foundText": "――橋の袂に、夜だけ立つ小さな市を見つけた。",
+      "hint": "{moon}の夜にだけ開く市があるという。働き続けた者の目にだけ見えるらしい",
+      "condition": {
+        "and": [{ "time": { "timeOfDay": "night" } }, { "counter": "action.work", "gte": 5 }]
+      },
+      "setFlags": [],
+      "seeded": { "moon": true }
+    },
+    {
+      "id": "taboo_codex",
+      "name": "封じの写本",
+      "foundText": "――古書店の奥の棚に、黒い紐で綴じられた一冊を見つけた。",
+      "hint": "古書店の奥の棚に、店主も売らない写本があるという。読み続けて目が肥えた者にだけ見えるらしい",
+      "condition": {
+        "and": [
+          { "counter": "action.read", "gte": 8 },
+          { "skill": "observation", "gte": 20 }
+        ]
+      },
+      "setFlags": []
+    }
+  ]
+}

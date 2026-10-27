@@ -19,6 +19,12 @@
       "evening": "夕",
       "night": "夜"
     },
+    "moonNames": {
+      "new": "新月",
+      "waxing": "上弦の月",
+      "full": "満月",
+      "waning": "下弦の月"
+    },
     "statNames": {
       "strength": "筋力",
       "endurance": "持久",
@@ -138,6 +144,7 @@
     },
     "titleGainedFallback": "――称号《{name}》を獲得しました。",
     "skillUnlocked": "――身体が理屈を掴んだ。《{name}》を鍛えられるようになった。",
+    "discoveryFound": "――何かを見つけました：《{name}》。",
     "quit": "――中断します。記録は眠りのあとに残ります。",
     "invalidInput": "――入力が読めません。番号か数値で答えてください。",
     "eof": "――入力が尽きました。終了します。",

@@ -173,7 +173,13 @@ export type ActionEvent =
    * 同日の再挑戦は counters["occasion.attempt.day.<id>"]、勝敗は
    * occasion.won/lost（全体・行事別・種類別）と旗印 flags["occasion.won.<id>"|...] に刻む
    */
-  | { type: "occasionAttempted"; id: string; kind: string; score: number; won: boolean };
+  | { type: "occasionAttempted"; id: string; kind: string; score: number; won: boolean }
+  /**
+   * 隠し要素を見つけた（X-11、docs/03 §5。通知Bランク相当）。
+   * id は discoveries.json の id。flags["found.<id>"] は step 内で既に立っている
+   * （アトムの unlock・書物・頂点の hidden 条件が同じ旗を読む）
+   */
+  | { type: "discovery"; id: string };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;
@@ -373,6 +379,17 @@ export const counterSubscriber: Subscriber = (state, event) => {
           [kindKey]: (state.counters[kindKey] ?? 0) + 1,
         },
         flags: { ...state.flags, [idKey]: true },
+      };
+    }
+    case "discovery": {
+      // 見つけた隠し要素の累計（条件DSL・伝記から「何かを見つけた」を読める。X-11）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "discovery.total": (state.counters["discovery.total"] ?? 0) + 1,
+          [`discovery.found.${event.id}`]: (state.counters[`discovery.found.${event.id}`] ?? 0) + 1,
+        },
       };
     }
     default:

@@ -5,6 +5,7 @@ import {
   canon,
   cliText,
   crisisTypes,
+  discoveries,
   mentors,
   occasions,
   pinnacles,
@@ -136,6 +137,8 @@ export function stepConfig(): StepConfig {
         .filter((e) => e.reward !== null)
         .map((e) => ({ eventId: e.id, facts: e.reward!.facts, flag: e.reward!.flag })),
     },
+    /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
+    discoveries: discoveries.discoveries,
   };
 }
 

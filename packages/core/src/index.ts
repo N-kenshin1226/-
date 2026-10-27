@@ -303,3 +303,18 @@ export type {
   CrisisLogEntry,
   CrisisState,
 } from "./state/types.js";
+export {
+  checkDiscoveries,
+  dailyDiscoveryHint,
+  discoveryHintText,
+  discoveryParams,
+  foundFlagKey,
+  resolveDiscoveryCondition,
+  unfoundDiscoveries,
+} from "./discoveries/index.js";
+export type {
+  DiscoveryDef,
+  DiscoveryHintNames,
+  DiscoveryParams,
+  DiscoverySeeded,
+} from "./discoveries/index.js";

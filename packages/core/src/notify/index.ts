@@ -39,6 +39,10 @@ export function rankOf(
       return "B";
     case "occasionAttempted":
       return event.won ? "A" : "B";
+    // 隠し要素（X-11）：日常の噂で発見できる手がかりの答え合わせ —— B。
+    // 大きな物語の区切り（頂点・終幕）ではなく、街で見つけた小さな発見
+    case "discovery":
+      return "B";
     default:
       return null; // slept / wakeReport / gainApplied / actionPerformed
   }

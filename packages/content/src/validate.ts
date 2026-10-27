@@ -22,6 +22,7 @@ import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 import { vowsFileSchema } from "./vows.schema.js";
 import { rivalsFileSchema } from "./rivals.schema.js";
 import { occasionsFileSchema } from "./occasions.schema.js";
+import { discoveriesFileSchema } from "./discoveries.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -67,6 +68,7 @@ check("pinnacles.json", pinnaclesFileSchema);
 check("vows.json", vowsFileSchema);
 check("rivals.json", rivalsFileSchema);
 check("occasions.json", occasionsFileSchema);
+check("discoveries.json", discoveriesFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は

@@ -34,6 +34,12 @@ export interface NarrationTemplates {
        */
       occasionWin: string[];
       occasionLoss: string[];
+      /**
+       * 隠し要素のヒント（X-11）：未発見の発見がある限り日替わりの噂に混ざる
+       * （見逃し対策。03 §5「見逃し対策として必ず噂のヒントを置く」）。
+       * {text} には発見ごとのヒント文が入る —— 噂の枠組みはここで付ける
+       */
+      discoveryHint: string[];
     };
   };
   npcWord: {
@@ -89,6 +95,11 @@ export type NarrationRequest =
        * （name は行事名 —— 《》は語り層が付ける）
        */
       occasions?: readonly { name: string; won: boolean }[];
+      /**
+       * 隠し要素のヒント（X-11）：未発見の発見があれば当日のヒント文。
+       * 噂の枠組みで包んで見出しの後に必ず載る（発見済みになるまで毎日）
+       */
+      hints?: readonly string[];
     }
   /** NPCの一言。deed は直近の話題（例: 狩り・仕事）、standing は立場ID（口調が変わる） */
   | { scene: "npcWord"; name: string; deed?: string; standing?: string }
@@ -195,7 +206,17 @@ export class TemplateProvider implements NarrationProvider {
             occasion: `《${o.name}》`,
           }),
         );
-        return [t.newspaper.header, tpl(this.pick(pool, rng), vars), ...occasionLines];
+        // 隠し要素のヒント（X-11）：見逃し対策として見出しの後に必ず載せる
+        // （日替わりの噂ローテーション。呼び出し側が未発見のヒントを渡す限り出る）
+        const hintLines = (req.hints ?? []).map((h) =>
+          tpl(this.pick(L.discoveryHint, rng), { text: h }),
+        );
+        return [
+          t.newspaper.header,
+          tpl(this.pick(pool, rng), vars),
+          ...occasionLines,
+          ...hintLines,
+        ];
       }
       case "npcWord": {
         // 立場が分かっていれば口調を差し替える（voices.json／narration.json の byStanding）
