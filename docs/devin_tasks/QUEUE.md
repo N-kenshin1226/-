@@ -92,3 +92,4 @@
 | X-13 | [X-13_weather.md](X-13_weather.md) | T-27, T-45 | done |
 | X-14 | [X-14_pinnacle_balance.md](X-14_pinnacle_balance.md) | T-16, T-45 | done |
 | X-15 | [X-15_e2e_new_systems.md](X-15_e2e_new_systems.md) | T-20 | done |
+| X-16 | [X-16_weather_discoveries.md](X-16_weather_discoveries.md) | T-45 | doing |
