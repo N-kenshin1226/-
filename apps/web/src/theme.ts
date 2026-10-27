@@ -160,6 +160,17 @@ export const theme = {
     sleepInShortMs: 450,
     /** 効果音の既定音量（0〜1）。設定画面で変更・永続化される */
     defaultVolume: 0.6,
+    /** BGM の既定音量（0〜1。全体音量に掛ける系統ゲイン） */
+    defaultMusicVolume: 0.5,
+    /** 環境音の既定音量（0〜1） */
+    defaultAmbientVolume: 0.55,
+    /**
+     * 音の仕組み（S-01）：場面の切り替えで曲・環境音を追い越す
+     * クロスフェードの長さ（ms）と、ループを先読みする間隔（ms）
+     */
+    audioCrossfadeMs: 1400,
+    audioAheadMs: 1100,
+    audioTickMs: 240,
   },
   /** コマンド行の高さ（決まりごと: 44px 以上） */
   cmdHeight: 44,

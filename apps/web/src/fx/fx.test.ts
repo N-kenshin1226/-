@@ -143,4 +143,29 @@ describe("parseFxSettings", () => {
     expect(parseFxSettings('{"volume":-2}')!.volume).toBe(0);
     expect(parseFxSettings('{"volume":"x"}')!.volume).toBe(FX_DEFAULTS.volume);
   });
+
+  it("S-01：旧形式（F-02の3項目）を読むと新系統は既定に倒れ、sound=false は全ミュート", () => {
+    // F-02 時代の保存値：sound/volume/shortFx だけ
+    const old = parseFxSettings('{"sound":false,"volume":0.3,"shortFx":true}');
+    expect(old.sound).toBe(false); // 全系統のミュート（e2e互換の要）
+    expect(old.volume).toBe(0.3);
+    expect(old.shortFx).toBe(true);
+    // 新しい系統の項目は「鳴らす・既定音量」に倒れる
+    expect(old.sfx).toBe(true);
+    expect(old.music).toBe(true);
+    expect(old.ambient).toBe(true);
+    expect(old.musicVolume).toBe(FX_DEFAULTS.musicVolume);
+    expect(old.ambientVolume).toBe(FX_DEFAULTS.ambientVolume);
+  });
+
+  it("S-01：系統ごとの音量・ミュートも 0〜1 に収めて読む", () => {
+    const s = parseFxSettings(
+      '{"music":false,"musicVolume":9,"ambientVolume":-1,"sfx":false,"sfxVolume":0.4}',
+    );
+    expect(s.music).toBe(false);
+    expect(s.musicVolume).toBe(1);
+    expect(s.ambientVolume).toBe(0);
+    expect(s.sfx).toBe(false);
+    expect(s.sfxVolume).toBe(0.4);
+  });
 });

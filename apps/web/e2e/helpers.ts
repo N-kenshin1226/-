@@ -71,7 +71,13 @@ export async function gotoPlace(page: Page, placeId: string): Promise<void> {
   // 行動の合間に届いた出来事の会話窓が自動割り込みで掴んでいることがある ——
   // 「あとにする」で先送りにしてから見取り図を使う（Escでは戻らないので注意）
   for (let i = 0; i < 3; i++) {
-    if (!(await page.getByTestId("screen-incident").isVisible().catch(() => false))) break;
+    if (
+      !(await page
+        .getByTestId("screen-incident")
+        .isVisible()
+        .catch(() => false))
+    )
+      break;
     const defer = page.getByTestId("incident-defer");
     if (await defer.isVisible().catch(() => false)) await defer.click();
     else await page.getByTestId("incident-next").click();

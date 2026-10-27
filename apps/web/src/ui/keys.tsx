@@ -2,10 +2,12 @@
  * キーボード操作（UI-01、README 決まりごと4・5）：
  *   CommandMenu … ↑↓ で選び Enter で決定。選択中は三角カーソル＋金の帯。
  *                  使えない項目は飛ばす。Esc は onBack。マウスでも操作できる。
+ *                  カーソル・決定・戻るに効果音が付く（S-01。音は playSfx 経由）
  *   KeyHints    … 画面下に常に出す操作ガイド（キーキャップ付き）
  *   useHotkeys  … 画面ごとの補助キー（S＝ステータス、N＝新聞、Q/E＝タブなど）
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { playSfx } from "../fx/sound.js";
 
 /* ── 項目 ── */
 export interface CmdItem {
@@ -97,9 +99,12 @@ export function CommandMenu({
         i = (i + dir + list.length) % list.length;
         if (!list[i]!.disabled) break;
       }
+      // 動けなかった（全滅・端）ときは音も出さない
+      if (i === focusRef.current && list[i]?.disabled !== false) return;
       // ref を先に進める（連打時に React の描画を待たず次のキーを正しく数える）
       focusRef.current = i;
       setFocus(i);
+      playSfx("cursor");
     };
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement | null)?.tagName === "INPUT") return;
@@ -114,11 +119,15 @@ export function CommandMenu({
           break;
         case "Enter": {
           const it = itemsRef.current[focusRef.current];
-          if (it && !it.disabled) it.onPick();
+          if (it && !it.disabled) {
+            playSfx("confirm");
+            it.onPick();
+          }
           e.preventDefault();
           break;
         }
         case "Escape":
+          playSfx("back");
           onBackRef.current?.();
           e.preventDefault();
           break;
@@ -154,12 +163,16 @@ export function CommandMenu({
             className={`cmd${bless ? " b" : ""}${paper ? " p" : ""}${on ? " on" : ""}${e.danger === true ? " danger" : ""}${e.primary === true ? " primary" : ""}${e.gold === true ? " gold" : ""}`}
             onMouseEnter={() => {
               if (!e.disabled) {
+                if (focusRef.current !== idx) playSfx("cursor");
                 focusRef.current = idx;
                 setFocus(idx);
               }
             }}
             onClick={() => {
-              if (!e.disabled) e.onPick();
+              if (!e.disabled) {
+                playSfx("confirm");
+                e.onPick();
+              }
             }}
           >
             {e.label}

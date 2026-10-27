@@ -20,6 +20,7 @@ import {
   windChips,
 } from "../game.js";
 import { places, type PlaceJson } from "@trace/content";
+import { playSfx } from "../fx/sound.js";
 import {
   DialogueBox,
   HintBar,
@@ -95,18 +96,31 @@ export function MenuScreen({
   useHotkeys({
     arrowup: () => {
       const n = marksRef.current.length;
-      if (n > 0) setFocus((((focusRef.current - 1) % n) + n) % n);
+      if (n > 0) {
+        setFocus((((focusRef.current - 1) % n) + n) % n);
+        playSfx("cursor");
+      }
     },
     arrowdown: () => {
       const n = marksRef.current.length;
-      if (n > 0) setFocus((focusRef.current + 1) % n);
+      if (n > 0) {
+        setFocus((focusRef.current + 1) % n);
+        playSfx("cursor");
+      }
     },
     enter: () => {
       const m = marksRef.current[focusRef.current];
+      // 向かう場所の音（扉・足音）は遷移側（go）が鳴らすのでここではカーソルだけ
       if (m !== undefined) enter(m.id);
     },
-    s: () => setScreen({ name: "status" }),
-    n: () => setScreen({ name: "news", events: [] }),
+    s: () => {
+      playSfx("confirm");
+      setScreen({ name: "status" });
+    },
+    n: () => {
+      playSfx("confirm");
+      setScreen({ name: "news", events: [] });
+    },
   });
 
   const voice = townVoice(state);
