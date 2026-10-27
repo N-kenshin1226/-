@@ -6,7 +6,7 @@
 
 | ID | 依頼文 | 依存 | 状態 | 備考 |
 |---|---|---|---|---|
-| F-06 | [F-06_first_hour.md](F-06_first_hour.md) | ― | todo | **最優先（刺激）**。最初の1時間＋置換漏れの不具合 |
+| F-06 | [F-06_first_hour.md](F-06_first_hour.md) | ― | done | 開始画面の出し分け＋導入の窓＋披露目の行事＋置換漏れ修正と回帰テスト |
 | F-01 | [F-01_growth_feel.md](F-01_growth_feel.md) | ― | todo | **最優先（刺激）**。成長の爽快感（定着上限・初期値・ランクアップ） |
 | F-02 | [F-02_juice.md](F-02_juice.md) | ― | todo | **最優先（刺激）**。演出と効果音 |
 | F-03 | [F-03_minigame_motion.md](F-03_minigame_motion.md) | F-02 | todo | **最優先（刺激）**。ミニゲームに動きと手応え |

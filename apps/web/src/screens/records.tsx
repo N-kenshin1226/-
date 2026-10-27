@@ -88,7 +88,10 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
               })}
             </div>
           ))}
-          <PaperHead>{t.text.recordsTitles.split("：")[0] ?? "称号"}</PaperHead>
+          <PaperHead>
+            {/* recordsTitles は「称号：{titles}」のテンプレート。見出しには名札部分だけ使う */}
+            {tpl(t.text.recordsTitles, { titles: "" }).split("：")[0]}
+          </PaperHead>
           <div style={{ color: P.text }}>
             {state.titles
               .map((id) => `《${titles.titles.find((x) => x.id === id)?.name ?? id}》`)

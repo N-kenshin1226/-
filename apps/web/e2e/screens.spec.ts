@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { skipIntro } from "./helpers.js";
 
 // X-8: UI-01 で未カバーだった画面の e2e。
 // 見るだけの画面（能力・立場・書店・新聞）は表示確認、
@@ -8,7 +9,7 @@ import { expect, test, type Page } from "@playwright/test";
 async function startNewGame(page: Page) {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
-  await expect(page.getByTestId("menu")).toBeVisible();
+  await skipIntro(page);
 }
 
 test("能力画面が開ける（タブ帯・技能行）", async ({ page }) => {

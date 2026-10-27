@@ -50,7 +50,12 @@ const saveOf = (seed: string): string => {
         eloquence: { ...g.player.skills["eloquence"]!, value: 30 },
       },
     },
-    counters: { ...g.counters, "occasion.offer.day.deal.grand_bargain": g.time.day },
+    counters: {
+      ...g.counters,
+      "occasion.offer.day.deal.grand_bargain": g.time.day,
+      // 序盤の披露目（F-06）が初日の抽選で混ざらないよう、届いた履歴にして抑える
+      "occasion.offer.day.debut.inn_recital": g.time.day - 1,
+    },
   };
   return serialize(patched);
 };

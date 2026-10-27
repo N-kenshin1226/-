@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newGame, serialize } from "@trace/core";
+import { skipIntro } from "./helpers.js";
 
 /**
  * W-02 危機の接点（docs/08 §5）：「異変：」の印つきの注文・敵が日常に混ざる。
@@ -41,7 +42,7 @@ test("接点の注文が仕事に混ざる（異変：印。こなすと世界�
   // shot-0 の世界：初日（兆し）から鍛冶の接点《警備隊への武具納入》が注文に混ざる
   await page.goto("/?seed=shot-0");
   await page.getByTestId("origin-wanderer").click();
-  await expect(page.getByTestId("menu")).toBeVisible();
+  await skipIntro(page);
   await page.getByTestId("menu-work").click();
   const scr = page.getByTestId("screen-work");
   await expect(scr).toBeVisible();

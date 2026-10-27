@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { skipIntro } from "./helpers.js";
 
 test("トップ画面に TRACE と表示される", async ({ page }) => {
   await page.goto("/");
@@ -10,6 +11,7 @@ test("トップ画面に TRACE と表示される", async ({ page }) => {
 test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ page }) => {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
 
   // 1日目：メニュー→鍛錬→仕事→寝る
   await expect(page.getByTestId("status")).toContainText("所持金");
@@ -65,6 +67,7 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
 test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）", async ({ page }) => {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
 
   await page.getByTestId("menu-abyss").click();
   await expect(page.getByTestId("screen-abyss")).toBeVisible();
@@ -105,6 +108,7 @@ test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）
 test("師匠画面が開ける（T-27。初期状態では入門条件未達）", async ({ page }) => {
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
   await page.getByTestId("menu-mentor").click();
   await expect(page.getByTestId("screen-mentor")).toBeVisible();
   await expect(page.getByTestId("mentor-mentor.garo")).toContainText("ガロ");

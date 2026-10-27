@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { skipIntro } from "./helpers.js";
 
 // UI-01（README 決まりごと1）：1280×720 の固定キャンバスが、
 // ウィンドウサイズに合わせて等倍で拡大縮小し、余白は黒帯になること。
@@ -37,7 +38,7 @@ test("小さいウィンドウでもメイン画面の全要素が収まる", as
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/?seed=e2e-stage");
   await page.getByTestId("origin-wanderer").click();
-  await expect(page.getByTestId("menu")).toBeVisible();
+  await skipIntro(page);
   // 常設クロームと主要部品が viewport 内に見える
   for (const id of ["status", "menu-work", "menu-sleep"] as const) {
     const box = await page.getByTestId(id).boundingBox();
