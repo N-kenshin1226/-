@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { miningGame, newGame, serialize } from "@trace/core";
 import type { BoardState, GameState } from "@trace/core";
+import { placeAct } from "./helpers.js";
 
 /**
  * F-03 ミニゲームの動き（docs/devin_tasks/F-03_minigame_motion.md）：
@@ -42,12 +43,13 @@ const putSave = (s: string) => {
 async function commitAndSettle(page: Page): Promise<void> {
   await page.keyboard.press("Enter");
   for (let i = 0; i < 6; i++) {
+    // 仕事を納めたあとは場所の画面（P-01）か見取り図に帰る
+    if ((await page.getByTestId("place").count()) > 0) return;
     if ((await page.getByTestId("menu").count()) > 0) return;
     const n = page.locator('[data-testid="notice-a"], [data-testid="notice-s"]');
     if ((await n.count()) === 0) break;
     await n.first().click();
   }
-  await expect(page.getByTestId("menu")).toBeVisible();
 }
 
 test("鍛冶（タイミング系）：拍レールが動き、窓の内側で打てば命中が刻まれて結果が開く", async ({
@@ -68,8 +70,8 @@ test("鍛冶（タイミング系）：拍レールが動き、窓の内側で�
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  // 仕事 → 釘の束 → 「自分でやる」でミニゲームへ
-  await page.getByTestId("menu-work").click();
+  // 仕事 → 釘の束 → 「自分でやる」でミニゲームへ（鍛冶の注文は鍛冶場に届く —— P-01）
+  await placeAct(page, "forge", "work");
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-manual").click();
   await expect(page.getByTestId("minigame")).toBeVisible();
@@ -140,7 +142,8 @@ test("採掘（盤面系）：キーで選んで掘ると鉱石が光り、品�
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  await page.getByTestId("menu-work").click();
+  // 鉱石の仕事はギルドの注文板に届く（P-01）
+  await placeAct(page, "guild", "work");
   await page.getByTestId("order-order.ore_survey").click();
   await page.getByTestId("work-manual").click();
   await expect(page.getByTestId("minigame")).toBeVisible();

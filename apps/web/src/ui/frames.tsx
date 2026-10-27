@@ -113,9 +113,17 @@ export function Paper({
 }
 
 /** 名札プレート（場所名・会話窓の話し手） */
-export function Plate({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+export function Plate({
+  children,
+  style,
+  testId,
+}: {
+  children: ReactNode;
+  style?: CSSProperties;
+  testId?: string;
+}) {
   return (
-    <div className="plate" style={style}>
+    <div className="plate" style={style} data-testid={testId}>
       {children}
     </div>
   );

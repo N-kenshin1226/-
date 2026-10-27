@@ -15,7 +15,9 @@ import {
   eventLines,
   mentorAwayToday,
   mentorList,
+  mentorsAt,
   offerName,
+  placeOf,
   pinnacleList,
   skillList,
   societyDefs,
@@ -181,17 +183,28 @@ export function SocietyScreen({
 // ---- 師匠（T-27。弟子入りで担当スキルの伸びが上がり、稽古で素質が戻る） ----
 export function MentorScreen({
   state,
+  place,
   act,
   back,
 }: {
   state: GameState;
+  /** 師匠の居る場所（P-01。その場所に住む師だけが並ぶ） */
+  place?: string;
   act: Act;
   back: () => void;
 }) {
   const skillName = (id: string) => skillList.find((s) => s.id === id)?.name ?? id;
+  // 場所に居る師だけを並べる（P-01：師はそれぞれの住まいで教える）
+  const placeDef = placeOf(place);
+  const here = placeDef !== undefined ? mentorsAt(placeDef) : mentorList;
   // 現在の師匠：街に居なくなった師は教えられない（X-12。退場時に弟子入りは core で解消される）
   const raw = state.mentor ? (mentorList.find((m) => m.id === state.mentor!.id) ?? null) : null;
-  const current = raw !== null && mentorAbsent(state, raw) === null ? raw : null;
+  // この場所に居る師匠が今の師なら稽古の画面、違う場所の師に弟子入り中なら
+  // その場所の師の一覧を出す（師は居る場所でしか教えない）
+  const current =
+    raw !== null && mentorAbsent(state, raw) === null && here.some((m) => m.id === raw.id)
+      ? raw
+      : null;
 
   if (current) {
     const recommended = Math.round(state.player.skills[current.skill]?.value ?? 0) + 10;
@@ -282,7 +295,7 @@ export function MentorScreen({
   }
 
   const entries: MenuEntry[] = [
-    ...mentorList.flatMap((m): MenuEntry[] => {
+    ...here.flatMap((m): MenuEntry[] => {
       const ok = canApprentice(state, m.id, cfg.mentors, cfg.time, condEnv);
       // 歳月・危機で街に居なくなった師は「引退した」などの印で示す（X-12）
       const gone = mentorAbsent(state, m);

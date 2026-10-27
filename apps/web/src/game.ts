@@ -104,8 +104,10 @@ import {
   type LifeCause,
   type MiniGameCtx,
   type NewGameConfig,
+  type Rng,
   type StepConfig,
   type TendencyId,
+  type TimeOfDay,
   type TimingInput,
   type TimingState,
   type WindDirection,
@@ -130,6 +132,7 @@ import {
   orders,
   origins,
   pinnacles,
+  places,
   rivals,
   skills,
   society,
@@ -141,6 +144,8 @@ import {
   type EnemyJson,
   type Order,
   type Origin,
+  type PlaceJson,
+  type VoiceNpc,
 } from "@trace/content";
 import type { SoundId } from "./fx/sound.js";
 
@@ -278,6 +283,8 @@ export const cfg: StepConfig = {
    * 注文の日替わり係数・起床レポートと新聞の風景の行に使う
    */
   weather: { kinds: weather.kinds, orderPrice: balance.weather.orderPrice },
+  /** 移動（P-01、docs/03 §2）：街の外への移動が消費する行動数 */
+  travel: balance.travel,
   /**
    * NPCの歳月（X-12、docs/07 §3）：npc_lifecycle.json の出来事表＋師匠の人物
    * 紐付け（mentors.json の npc）＋表示名の解決。ライバル（rival.<index>）の名は
@@ -336,6 +343,68 @@ export const pinnacleList = pinnacles.pinnacles;
 export const bookList = books.books;
 export const mentorList = mentors.mentors;
 export const narrator = new TemplateProvider(narration);
+
+/* ── 場所（P-01、docs/03 §2） ──
+ * 街の中の場所は見取り図から選び、場所ごとに景色・住人・行動が変わる。
+ * 街の外（region）は門から出て行く —— 移動は行動を消費する（core の travel）。
+ * 「どこに何があるか」は places.json が持ち、ここでは引くだけ */
+
+export const placeList = places.places;
+/** 街の中の場所（見取り図に印が出る。並びは places.json 順） */
+export const townPlaces = placeList.filter((p) => p.kind === "town");
+/** 街の外の地域（門から出て行く先） */
+export const regionPlaces = placeList.filter((p) => p.kind === "region");
+
+export function placeOf(id: string | undefined): PlaceJson | undefined {
+  return placeList.find((p) => p.id === id);
+}
+export function placeName(id: string | undefined): string {
+  return placeOf(id)?.name ?? id ?? "";
+}
+
+/** 場所に居る師匠（npcs と mentors.json の人物紐付けで見る） */
+export function mentorsAt(place: PlaceJson) {
+  return mentorList.filter((m) => place.npcs.includes(m.npc));
+}
+
+/**
+ * 場所に届く注文の技能か（work 行動の kinds。default の受け皿は
+ * 「どこにも割り当たっていない注文」だけを受ける）
+ */
+export function placeTakesKind(place: PlaceJson, kind: string): boolean {
+  const work = place.actions.filter((a) => a.type === "work");
+  if (work.some((a) => a.kinds?.includes(kind))) return true;
+  if (!work.some((a) => a.default === true)) return false;
+  return !placeList.some(
+    (p) => p.id !== place.id && p.actions.some((a) => a.type === "work" && a.kinds?.includes(kind)),
+  );
+}
+
+/** 街の外への移動が消費する行動数（balance.travel。街の中は 0） */
+export function travelOutCost(): number {
+  return cfg.travel?.outsideCost ?? 1;
+}
+
+/**
+ * 湖畔の釣り（P-01）：注文ではない野趣 —— 報酬欄は空で、台帳の
+ * 市場価値がそのまま入る（work コマンドの rewardMoney 省略と同じ扱い）
+ */
+export const LAKE_ORDER = {
+  id: "lake.fish",
+  kind: "fishing",
+  name: "湖の釣り",
+  note: "納める先のない釣り。釣果は台帳にだけ残る",
+  targetQuality: 40,
+  rewardMoney: 0,
+} satisfies Order;
+
+/** 現在の空（P-01）：背景の時間帯・天候はここから引く（導出値なので状態は持たない） */
+export function skyNow(state: GameState): { tod: TimeOfDay; weather: string } {
+  const d = describe(state.time, cfg.time);
+  const w =
+    cfg.weather !== undefined ? weatherOf(state.seed, state.time.day, cfg.weather, cfg.time) : null;
+  return { tod: d.timeOfDay, weather: w?.kind.id ?? "clear" };
+}
 
 /**
  * 作品の表示名：注文名（特別注文は元の注文名、接点の注文は接点の品名）＞スキル名の順。
@@ -1569,6 +1638,9 @@ function deedLabel(kind: string, target?: string): string {
       return "街への奉仕";
     case "wait":
       return "休息";
+    case "travel":
+      // 街の外への移動（P-01）：行き先の場所名まで記録欄に出す
+      return `${placeName(target)}への移動`;
     default:
       return kind;
   }
@@ -1747,6 +1819,34 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
 /** メイン画面の会話窓：その日の街の住人の一言（日替わり・決定的） */
 export function townVoice(state: GameState): { name: string; role: string; text: string } {
   const rng = createRng(`${state.seed}:voice:${state.time.day}`);
+  // 危機の段階・歳月の退場で街に居なくなった住人は窓に出ない（W-04/X-12：人の不在で伝える）
+  const pool = voices.npcs.filter((n) => npcGoneReason(state, n.id) === null);
+  const npc = rng.pick(pool.length > 0 ? pool : [...voices.npcs]);
+  return npcVoiceLine(state, rng, npc);
+}
+
+/**
+ * 場所の会話窓（P-01）：その場所に居る人の一言（日替わり・決定的）。
+ * 居る人が皆いなくなっていたら null —— 場所の描写だけが残る
+ */
+export function placeVoice(
+  state: GameState,
+  place: PlaceJson,
+): { name: string; role: string; text: string } | null {
+  const pool = voices.npcs.filter(
+    (n) => place.npcs.includes(n.id) && npcGoneReason(state, n.id) === null,
+  );
+  if (pool.length === 0) return null;
+  const rng = createRng(`${state.seed}:pvoice:${place.id}:${state.time.day}`);
+  return npcVoiceLine(state, rng, rng.pick(pool));
+}
+
+/** 住人の一言を決める（townVoice/placeVoice 共用） */
+function npcVoiceLine(
+  state: GameState,
+  rng: Rng,
+  npc: VoiceNpc,
+): { name: string; role: string; text: string } {
   const deeds = state.actionLog.filter((a) => a.day === state.time.day - 1).map((a) => a.kind);
   const deed = deeds.includes("combat")
     ? "狩り"
@@ -1757,9 +1857,6 @@ export function townVoice(state: GameState): { name: string; role: string; text:
         : deeds.includes("donate")
           ? "奉仕"
           : undefined;
-  // 危機の段階・歳月の退場で街に居なくなった住人は窓に出ない（W-04/X-12：人の不在で伝える）
-  const pool = voices.npcs.filter((n) => npcGoneReason(state, n.id) === null);
-  const npc = rng.pick(pool.length > 0 ? pool : [...voices.npcs]);
   // 歳月の出来事の話題（X-12）：最近の街の出来事を「聞いたかい？」と囁く。
   // 噂が残る期間のあいだ、半分ほどの日で挨拶の代わりにこの話題になる
   const recent = npcLifeRecent(state, cfg.npcLife, balance.town.npcRumorDays);

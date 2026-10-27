@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import { gotoPlace, placeAct } from "./helpers.js";
 import { incidentOutcome, newGame, serialize } from "@trace/core";
 
 /**
@@ -103,9 +104,11 @@ test("日々の出来事：割り込み → 応え → 結末と小さな効果 
   await expect(log).toContainText("革の小袋ごと落ちていた");
   await expect(log).toContainText(expectedOutcome(seed, "incident.garo_invite", "follow"));
 
-  // 先送りした分はメニューの「届いた出来事」から応え直せる
-  await expect(page.getByTestId("menu-incident")).toBeVisible();
-  await page.getByTestId("menu-incident").click();
+  // 先送りした分は「届いた出来事」から応え直せる（P-01：出来事は宿屋に届く。
+  // 見取り図の印にも届き物の印が出る）
+  await gotoPlace(page, "inn");
+  await expect(page.getByTestId("place-incident")).toBeVisible();
+  await page.getByTestId("place-incident").click();
   await expect(scr).toBeVisible();
   await expect(page.getByTestId("incident-name")).toContainText("野良猫の尾行");
   await page.getByTestId("incident-choice-pet").click();
@@ -130,13 +133,15 @@ test("仕事：勝負所の印は今日の勝負所の注文にだけ付く（�
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  await page.getByTestId("menu-work").click();
+  // 鍛冶の注文は鍛冶場に届く（P-01：仕事は場所に属する）
+  await placeAct(page, "forge", "work");
   const work = page.getByTestId("screen-work");
   await expect(work).toBeVisible();
   // 勝負所の注文だけ「勝負所：」の印。日常の注文には付かない
   await expect(page.getByTestId("order-order.dagger")).toContainText("勝負所：短剣の注文");
   await expect(page.getByTestId("order-order.nail")).not.toContainText("勝負所");
-  await expect(page.getByTestId("order-order.ore_survey")).not.toContainText("勝負所");
+  // 鉱脈の試掘（採掘）はギルドに届く注文 —— 鍛冶場の注文板には出ない（P-01）
+  await expect(page.getByTestId("order-order.ore_survey")).toHaveCount(0);
   await page.screenshot({ path: "e2e/artifacts/trace-work-showdown.png", fullPage: true });
 
   // 勝負所の注文を手動で仕上げる → 開始行に「勝負所です」と出る

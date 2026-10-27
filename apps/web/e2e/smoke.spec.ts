@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { skipIntro } from "./helpers.js";
+import { placeAct, skipIntro, toMap, travelTo, waitVeil } from "./helpers.js";
 
 test("トップ画面に TRACE と表示される", async ({ page }) => {
   await page.goto("/");
@@ -13,21 +13,22 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
-  // 1日目：メニュー→鍛錬→仕事→寝る
+  // 1日目：見取り図→ギルドで鍛錬→鍛冶場で仕事→宿で寝る（P-01：行動は場所に属する）
   await expect(page.getByTestId("status")).toContainText("所持金");
-  await expect(page.getByTestId("menu-train")).toBeVisible();
+  await expect(page.getByTestId("menu-place-guild")).toBeVisible();
   await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-menu.png", fullPage: true });
 
-  await page.getByTestId("menu-train").click();
+  await placeAct(page, "guild", "train");
   await page.getByTestId("skill-smithing").click();
   await page.getByTestId("diff-10").click();
   await expect(page.getByTestId("log")).toContainText("未定着");
-  // 難度を選んだあとは「選び直す」で技能一覧へ戻り、そこから街へ戻る
+  // 難度を選んだあとは「選び直す」で技能一覧へ戻り、そこからギルドへ戻る
   await page.getByRole("button", { name: "選び直す" }).click();
   await page.getByRole("button", { name: "戻る" }).click();
+  await toMap(page); // 見取り図へ
 
-  await page.getByTestId("menu-work").click();
+  await placeAct(page, "forge", "work");
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
   await expect(page.getByTestId("log")).toContainText("品質");
@@ -38,9 +39,10 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
     await best.click();
   }
 
-  await page.getByTestId("menu-sleep").click();
+  await placeAct(page, "inn", "sleep");
   await page.getByTestId("inn-cheap").click();
   await expect(page.getByTestId("screen-wake")).toBeVisible();
+  await waitVeil(page); // 眠りの幕が開ききるまで待つ
   await expect(page.getByTestId("log")).toContainText("起床");
   await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-wake.png", fullPage: true });
@@ -48,12 +50,15 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
 
   // 2日目：行動がリセットされている（寝ると翌日になる）
   await expect(page.getByTestId("status")).toContainText("残り行動 5/5");
-  await page.getByTestId("menu-hunt").click();
+  // 狩りは街の外（門 → 森。移動は1行動を消費）
+  await travelTo(page, "forest");
+  await page.getByTestId("place-hunt").click();
   await expect(page.getByTestId("enemy-wolf")).toBeVisible();
   await page.getByRole("button", { name: "戻る" }).click();
+  await toMap(page); // 森 → 門 → 見取り図
 
-  // 見聞録を読む（1行動消費）
-  await page.getByTestId("menu-lore").click();
+  // 見聞録を読む（教会で。1行動消費）
+  await placeAct(page, "church", "lore");
   await page
     .getByTestId(/^atom-/)
     .first()
@@ -62,10 +67,12 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
   await expect(page.getByTestId("log")).toContainText("《");
   await page.getByRole("button", { name: "一覧へ" }).click();
   await page.getByRole("button", { name: "戻る" }).click();
+  await toMap(page); // 見取り図へ
 
   // 3日目まで進める（安宿で寝る）
-  await page.getByTestId("menu-sleep").click();
+  await placeAct(page, "inn", "sleep");
   await page.getByTestId("inn-cheap").click();
+  await waitVeil(page);
   await page.getByTestId("wake-done").click();
   await expect(page.getByTestId("status")).toContainText("3日");
 });
@@ -75,7 +82,9 @@ test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
-  await page.getByTestId("menu-abyss").click();
+  // 深層の穴は街の外（門から出る。移動は1行動を消費）
+  await travelTo(page, "abyss");
+  await page.getByTestId("place-abyss").click();
   await expect(page.getByTestId("screen-abyss")).toBeVisible();
   await page.getByTestId("abyss-dive").click();
 
@@ -108,7 +117,8 @@ test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）
   if (await best.isVisible().catch(() => false)) await best.click();
 
   // 街の記録に深層の自己ベストが残る（counters 由来の派生表示）
-  await page.getByTestId("menu-records").click();
+  await toMap(page); // 深層 → 門 → 見取り図
+  await placeAct(page, "guild", "records");
   await expect(page.getByTestId("screen-records")).toContainText("深層：自己ベスト 第1層");
   await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-abyss.png", fullPage: true });
@@ -118,7 +128,9 @@ test("師匠画面が開ける（T-27。初期状態では入門条件未達）"
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
-  await page.getByTestId("menu-mentor").click();
+  // 師はそれぞれの住まいで教える（P-01）：剣の師ガロは近郊の森に居る
+  await travelTo(page, "forest");
+  await page.getByTestId("place-mentor").click();
   await expect(page.getByTestId("screen-mentor")).toBeVisible();
   await expect(page.getByTestId("mentor-mentor.garo")).toContainText("ガロ");
   await expect(page.getByTestId("screen-mentor")).toContainText("まだ見込みなし");

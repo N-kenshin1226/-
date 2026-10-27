@@ -8,6 +8,11 @@ import type { MinigameKind, Order } from "./game.js";
 
 export type Screen =
   | { name: "menu" }
+  /**
+   * 場所の画面（P-01、docs/03 §2）：見取り図から選んだ場所の情景・住人・行動。
+   * place は places.json の場所 id（街の中の場所・街の外の地域のどちらも）
+   */
+  | { name: "place"; place: string }
   /** 導入の会話窓（F-06。初めての生の冒頭にだけ出る短い案内） */
   | { name: "intro" }
   /** 起床の窓（UI-01：Wake見本）。寝た直後の step で wakeReport が出た時だけ開く */
@@ -16,14 +21,31 @@ export type Screen =
   | { name: "news"; events: ActionEvent[] }
   | { name: "train" }
   | { name: "sleep" }
-  | { name: "work" }
-  | { name: "workMode"; order: Order }
+  /** 場所に届いた注文の一覧（P-01。place は届いた場所の id —— 戻る先と景色の根拠） */
+  | { name: "work"; place?: string }
+  | { name: "workMode"; order: Order; place?: string }
   /** 決着の場面の勝負所なら finale に場面の id が入る（結果は危機の備えへ。W-03）。
       勝負所の行事なら occasion に行事の id が入る（結果は行事の勝敗へ。X-10） */
-  | { name: "minigame"; kind: MinigameKind; order: Order; finale?: string; occasion?: string }
-  | { name: "hunt" }
-  /** 危機の接点の相手なら touchpoint に接点の id が入る（勝ったときだけ寄与。W-02） */
-  | { name: "combat"; enemy: EnemyJson; touchpoint?: string; finale?: string; occasion?: string }
+  | {
+      name: "minigame";
+      kind: MinigameKind;
+      order: Order;
+      finale?: string;
+      occasion?: string;
+      place?: string;
+    }
+  /** 獲物選び（P-01。place は狩りの場＝地域の id。敵のエリアと帰る場所に使う） */
+  | { name: "hunt"; place?: string }
+  /** 危機の接点の相手なら touchpoint に接点の id が入る（勝ったときだけ寄与。W-02）。
+      place は戦いの起きた場所（P-01。決着後に戻る先） */
+  | {
+      name: "combat";
+      enemy: EnemyJson;
+      touchpoint?: string;
+      finale?: string;
+      occasion?: string;
+      place?: string;
+    }
   /** 決着の場面（W-03、docs/08 §6）：打診への応え・勝負所・自分で起こす */
   | { name: "crisis" }
   /** 勝負所の行事（X-10、docs/03 §2）：人物から届いた打診への応えと勝負所 */
@@ -46,7 +68,8 @@ export type Screen =
   | { name: "book" }
   | { name: "records" }
   | { name: "society" }
-  | { name: "mentor" }
+  /** 師匠の訪問（P-01。place は師匠の居る場所 —— その場所の師だけが並ぶ） */
+  | { name: "mentor"; place?: string }
   | { name: "status" }
   /** 演出・効果音の設定（F-02）：音量・演出の長さ。localStorage に保存する */
   | { name: "settings" }

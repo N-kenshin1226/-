@@ -417,6 +417,12 @@
     "recordsOccasions": "── 勝負所の記録 ──",
     "recordsOccasionsNone": "  まだ勝負所に臨んだ記録はない。",
     "recordsOccasionsLine": "  {day}日目：《{name}》――{result}",
+    "mapTitle": "{town}見取り図",
+    "mapPick": "どこへ向かいますか",
+    "travelLine": "――{name}へ向かった。",
+    "travelReturn": "街へ戻る",
+    "placeHere": "ここにいる人",
+    "placeBack": "見取り図へ",
     "resetConfirm": "――この街での全ての記録を消します。よろしいですか"
   }
 }

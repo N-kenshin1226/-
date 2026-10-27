@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newGame, serialize } from "@trace/core";
 import type { GameState } from "@trace/core";
+import { gotoPlace, placeAct, waitVeil } from "./helpers.js";
 
 /**
  * W-04 終幕の見せ方（docs/08 §3・§7）：
@@ -80,10 +81,13 @@ test("何もしないままでも世界は終幕へ進む ―― S通知から�
   }, saveNearEnding("shot-w04-idle"));
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
-  // 打診は届いていないので「決着の場面」の項目は出ない（クエスト一覧ではない）
-  await expect(page.getByTestId("menu-crisis")).toHaveCount(0);
-  // 普通に一日を終える ―― すると世界は自分で決着へ進む
-  await page.getByTestId("menu-rest").click();
+  // 打診は届いていないので「決着の場面」の項目は出ない（クエスト一覧ではない。
+  // 決着の場面はギルドの行動 —— ギルドを開いて項目が無いことを見る。P-01）
+  await gotoPlace(page, "guild");
+  await expect(page.getByTestId("place-crisis")).toHaveCount(0);
+  // 普通に一日を終える ―― すると世界は自分で決着へ進む（家で休む。眠りの幕を待つ）
+  await placeAct(page, "home", "rest");
+  await waitVeil(page);
   // 結末はランクSの通知として届く（起きる前に帯が世界を遮る）
   await expect(page.getByTestId("notice-s")).toBeVisible();
   await expect(page.getByTestId("notice-s")).toContainText("終 幕");
@@ -106,7 +110,7 @@ test("段階4の打診は会話の窓の人物が運び、率いた先にも終�
   }, saveStage4("shot-w04-lead"));
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
-  await page.getByTestId("menu-crisis").click();
+  await placeAct(page, "guild", "crisis");
   const scr = page.getByTestId("screen-crisis");
   await expect(scr).toBeVisible();
   // 届いた打診は会話の窓で人物が持ちかける（勢力の使いの名札つき）

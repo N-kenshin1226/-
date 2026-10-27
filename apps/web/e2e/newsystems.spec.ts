@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { skipIntro } from "./helpers.js";
+import { placeAct, skipIntro, toMap, waitVeil } from "./helpers.js";
 import {
   dailyDiscoveryHint,
   discoveryHintText,
@@ -90,7 +90,8 @@ test("天候：起床画面に『今日の空』の行が出て、朝刊にも�
   await startNewGame(page);
   // 家で休む → 1日目の朝。天候は seed+day から決定的
   const w = weatherOf(SEED, 1, WEATHER_CFG, TIME);
-  await page.getByTestId("menu-rest").click();
+  await placeAct(page, "home", "rest");
+  await waitVeil(page);
   const wake = page.getByTestId("screen-wake");
   await expect(wake).toBeVisible();
   // 起床レポートの最上段：cli.json wake.weatherLine（――今日の空は{weather}。{line}）
@@ -110,7 +111,8 @@ test("天候：起床画面に『今日の空』の行が出て、朝刊にも�
 
 test("発見ヒント：未発見の発見は朝刊の噂と街の噂に必ず回る（X-11）", async ({ page }) => {
   await startNewGame(page);
-  await page.getByTestId("menu-rest").click();
+  await placeAct(page, "home", "rest");
+  await waitVeil(page);
   await page.getByTestId("wake-done").click();
   await expect(page.getByTestId("menu")).toBeVisible();
 
@@ -125,7 +127,8 @@ test("発見ヒント：未発見の発見は朝刊の噂と街の噂に必ず�
 
   // 朝刊：この世界シードでは発見ヒントが続報・噂の欄に載る
   // （紙面は2本までの決定的な切り出し —— 載る並びのシードを選んである）
-  await page.getByTestId("menu-news").click();
+  // 今朝の新聞は宿屋（朝食の席）に届く（P-01）
+  await placeAct(page, "inn", "news");
   const news = page.getByTestId("screen-news");
   await expect(news).toBeVisible();
   await expect(news).toContainText(hint);
@@ -155,7 +158,7 @@ test("発見：雨の日に足を止めると《雨宿りの井戸》を見つ�
 
   // 何か行動する → step 末尾の発見判定で《雨宿りの井戸》が見つかる
   const rainWell = DISCOVERIES.find((d) => d.id === "rain_well")!;
-  await page.getByTestId("menu-train").click();
+  await placeAct(page, "guild", "train");
   await page.getByTestId("skill-observation").click();
   await page.getByTestId("diff-0").click();
 
@@ -198,7 +201,8 @@ test("歳月：NPCの出来事が起床レポート・街の噂・朝刊・街�
   const sadoText = sado.events[0]!.text.replaceAll("{name}", "サド");
 
   // 家で休む → 発火日の朝。起床レポートの「世界からの贈り物」欄に歳月の一行
-  await page.getByTestId("menu-rest").click();
+  await placeAct(page, "home", "rest");
+  await waitVeil(page);
   const wake = page.getByTestId("screen-wake");
   await expect(wake).toBeVisible();
   await expect(wake).toContainText(sadoText);
@@ -210,8 +214,8 @@ test("歳月：NPCの出来事が起床レポート・街の噂・朝刊・街�
   await expect(page.getByTestId("menu")).toContainText(`噂 ―「${sadoText}」`);
 
   // 朝刊：街の人物の出来事は続報・噂の欄に必ず記事になる
-  // （この世界シードでは紙面に載る並びになることを確認済み）
-  await page.getByTestId("menu-news").click();
+  // （この世界シードでは紙面に載る並びになることを確認済み。新聞は宿屋に届く —— P-01）
+  await placeAct(page, "inn", "news");
   const news = page.getByTestId("screen-news");
   await expect(news).toBeVisible();
   await expect(news).toContainText(sadoText);
@@ -219,9 +223,11 @@ test("歳月：NPCの出来事が起床レポート・街の噂・朝刊・街�
   await page.screenshot({ path: "e2e/artifacts/trace-x15-news-npclife.png", fullPage: true });
 
   // 街の記録：「世界の出来事」欄に人生の印が刻まれる（{day}日目：――サド が祝言を挙げたという。）
+  // P-01：記録はギルドの掲示板に属する —— Esc で宿屋へ戻り、見取り図からギルドへ
   await page.keyboard.press("Escape");
+  await toMap(page);
   await expect(page.getByTestId("menu")).toBeVisible();
-  await page.getByTestId("menu-records").click();
+  await placeAct(page, "guild", "records");
   const records = page.getByTestId("records-crisis");
   await expect(records).toBeVisible();
   await expect(records).toContainText(`${sadoDay + 1}日目`);

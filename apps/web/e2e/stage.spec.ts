@@ -39,8 +39,8 @@ test("小さいウィンドウでもメイン画面の全要素が収まる", as
   await page.goto("/?seed=e2e-stage");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
-  // 常設クロームと主要部品が viewport 内に見える
-  for (const id of ["status", "menu-work", "menu-sleep"] as const) {
+  // 常設クロームと主要部品が viewport 内に見える（P-01：見取り図の窓・名札・HUD）
+  for (const id of ["status", "menu", "place-name"] as const) {
     const box = await page.getByTestId(id).boundingBox();
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(-1);

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { dismissFx, skipIntro } from "./helpers.js";
+import { dismissFx, placeAct, skipIntro, travelTo, waitVeil } from "./helpers.js";
 
 /**
  * F-06 最初の1時間：開始画面の出し分けと導入の会話窓、
@@ -77,8 +77,8 @@ test("最初の一日：働けば称号が付き、寝れば起床の窓に成�
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
-  // 仕事（釘打ち）を1回こなす → 初めての仕事の称号
-  await page.getByTestId("menu-work").click();
+  // 仕事（釘打ち）を1回こなす → 初めての仕事の称号（鍛冶の注文は鍛冶場に届く。P-01）
+  await placeAct(page, "forge", "work");
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
   await expect(page.getByTestId("log")).toContainText("称号");
@@ -94,7 +94,7 @@ test("最初の一日：働けば称号が付き、寝れば起床の窓に成�
   }
 
   // 宿で眠る → 起床の窓に昨日の頑張りの定着が載る（鍛冶の技能行）
-  await page.getByTestId("menu-sleep").click();
+  await placeAct(page, "inn", "sleep");
   await page.getByTestId("inn-cheap").click();
   const wake = page.getByTestId("screen-wake");
   await expect(wake).toBeVisible();
@@ -107,9 +107,12 @@ test("戦闘に勝つと敵の名前入りの勝利文が出る（{name} 置換�
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
-  await page.getByTestId("menu-hunt").click();
+  // 狩りは街の外（門 → 近郊の森。P-01：移動は1行動を消費）
+  await travelTo(page, "forest");
+  await page.getByTestId("place-hunt").click();
   // 森の野犬（hp10）は初期の腕前でも2〜3発で倒せる ―― 念のため20回まで攻撃
   await page.getByTestId("enemy-stray_dog").click();
+  await waitVeil(page); // 戦闘開始の幕が開ききるまで待つ（幕はクリックを呑む）
   for (let i = 0; i < 20; i++) {
     if (
       await page

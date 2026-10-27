@@ -1,0 +1,389 @@
+/**
+ * 場所の画面（P-01、docs/03 §2）：選んだ場所の情景・住人・行動。
+ *   左：その場所でできる行動のコマンド列・右：そこに居る人
+ *   行動の中身は places.json の actions が持ち、ここでは画面へ写すだけ。
+ *   街の外への移動（travel）は行動を消費し、街（門）へ戻るだけなら消費しない
+ */
+import { canAct, npcGoneReason, type GameState } from "@trace/core";
+import { voices, type PlaceActionJson, type PlaceJson } from "@trace/content";
+import {
+  cfg,
+  crisisFinaleOffers,
+  eventLines,
+  incidentPendingChoice,
+  LAKE_ORDER,
+  mentorsAt,
+  occasionOffers,
+  placeOf,
+  placeVoice,
+  t,
+  tpl,
+  travelOutCost,
+} from "../game.js";
+import {
+  CommandMenu,
+  DialogueBox,
+  HintBar,
+  Kicker,
+  WorldFrame,
+  pos,
+  type Act,
+  type MenuEntry,
+  type Screen,
+} from "../ui.js";
+import { theme } from "../theme.js";
+
+const W = theme.colors.world;
+
+export function PlaceScreen({
+  state,
+  place,
+  setScreen,
+  act,
+  log,
+}: {
+  state: GameState;
+  /** places.json の場所 id */
+  place: string;
+  setScreen: (s: Screen) => void;
+  act: Act;
+  log: readonly string[];
+}) {
+  const def = placeOf(place);
+  const canActNow = canAct(state.time, cfg.time);
+  if (def === undefined) return null;
+  const p = def;
+  const voice = placeVoice(state, p);
+  // そこに居る人（居た人も退場の印つきで示す —— 人の不在で伝える。X-12）
+  const residents = voices.npcs.filter((n) => p.npcs.includes(n.id));
+  // 帰る先：街の場所からは見取り図へ、街の外からは門へ（行き来は行動を消費しない）
+  const back: Screen = p.kind === "region" ? { name: "place", place: "gate" } : { name: "menu" };
+
+  /** 外への移動（行動を消費する）または街への帰還（消費しない） */
+  const travel = (to: string) => {
+    const dest = placeOf(to);
+    if (dest === undefined) return;
+    if (dest.kind === "region") {
+      act(
+        { type: "travel", to },
+        {
+          format: (ev) => [tpl(t.text.travelLine, { name: dest.name }), ...eventLines(ev, state)],
+        },
+      );
+    }
+    setScreen({ name: "place", place: to });
+  };
+
+  const entries: MenuEntry[] = [
+    { kind: "header", text: p.kind === "region" ? "REGION" : "PLACE" },
+    ...p.actions.flatMap((a): MenuEntry[] =>
+      actionEntries(a, p, state, canActNow, setScreen, act, travel),
+    ),
+    { kind: "divider" },
+    {
+      id: "place-back",
+      label:
+        p.kind === "region" ? `${t.text.travelReturn}（${t.text.placeBack}）` : t.text.placeBack,
+      onPick: () => setScreen(back),
+    },
+  ];
+
+  return (
+    <div data-testid="place" data-place={p.id} className="scene">
+      {/* 左のコマンド窓：場所の名・情景の一行・行動の列 */}
+      <WorldFrame
+        style={{ ...pos({ left: 28, top: 120, width: 560, bottom: 200 }), padding: "14px 4px" }}
+      >
+        <div style={{ margin: "2px 14px 10px" }}>
+          <Kicker text={p.kind === "region" ? "REGION" : "PLACE"} />
+          <div
+            style={{
+              fontFamily: theme.font.mincho,
+              fontSize: 24,
+              fontWeight: 800,
+              color: W.hi,
+              marginTop: 2,
+            }}
+          >
+            {p.name}
+          </div>
+          <div style={{ marginTop: 4, fontSize: 13, color: W.dim }}>{p.desc}</div>
+        </div>
+        <div className="scroll" style={{ maxHeight: "74%", overflowY: "auto" }}>
+          <CommandMenu testId="place-commands" entries={entries} onBack={() => setScreen(back)} />
+        </div>
+      </WorldFrame>
+
+      {/* 右の窓：ここに居る人 */}
+      {residents.length > 0 && (
+        <WorldFrame
+          style={{ ...pos({ right: 28, top: 196, width: 300 }), padding: "14px 18px" }}
+          corners={["tl", "br"]}
+        >
+          <Kicker text={t.text.placeHere} />
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
+            {residents.map((n) => {
+              const gone = npcGoneReason(state, n.id);
+              return (
+                <div key={n.id} data-testid={`place-npc-${n.id}`}>
+                  <div
+                    style={{
+                      fontFamily: theme.font.mincho,
+                      fontSize: 16,
+                      color: gone !== null ? W.faint : W.hi,
+                    }}
+                  >
+                    {n.name}
+                    {gone !== null && (
+                      <span style={{ fontSize: 11, color: W.faint }}>
+                        {" "}
+                        ―― {t.display.npcGoneNames[gone] ?? gone}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: W.faint }}>{n.role}</div>
+                </div>
+              );
+            })}
+          </div>
+        </WorldFrame>
+      )}
+
+      {/* 会話窓：その場所に居る人の一言（居なければ情景の一行）＋記録の末尾 */}
+      <DialogueBox
+        speaker={voice !== null ? `${voice.role} ${voice.name}` : p.name}
+        style={pos({ left: 620, right: 28, bottom: 58, height: 132 })}
+      >
+        {log.length > 0 && (
+          <div
+            data-testid="log"
+            style={{
+              fontSize: 12,
+              color: W.dim,
+              lineHeight: 1.6,
+              maxHeight: 40,
+              overflow: "hidden",
+            }}
+          >
+            {log.slice(-10).map((l, i) => (
+              <div key={i}>{l}</div>
+            ))}
+          </div>
+        )}
+        <div style={{ fontFamily: theme.font.mincho, fontSize: 20, color: "#f4ecd8" }}>
+          {voice !== null ? voice.text : p.desc}
+        </div>
+      </DialogueBox>
+
+      <HintBar
+        items={[
+          ["↑↓", "選択"],
+          ["Enter", "決定"],
+          ["Esc", p.kind === "region" ? "街へ戻る" : "見取り図へ"],
+        ]}
+      />
+    </div>
+  );
+}
+
+/** 場所の行動 → コマンド列の項目（P-01。中身は places.json の actions） */
+function actionEntries(
+  a: PlaceActionJson,
+  place: PlaceJson,
+  state: GameState,
+  canActNow: boolean,
+  setScreen: (s: Screen) => void,
+  act: Act,
+  travel: (to: string) => void,
+): MenuEntry[] {
+  switch (a.type) {
+    case "work":
+      return [
+        {
+          id: "place-work",
+          label: "仕事",
+          sub: "届いている注文",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "work", place: place.id }),
+        },
+      ];
+    case "train":
+      return [
+        {
+          id: "place-train",
+          label: "鍛錬",
+          sub: "技を磨く",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "train" }),
+        },
+      ];
+    case "hunt":
+      return [
+        {
+          id: "place-hunt",
+          label: "獲物を探す",
+          sub: "狩り",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "hunt", place: place.id }),
+        },
+      ];
+    case "fish":
+      return [
+        {
+          id: "place-fish",
+          label: "釣りをする",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "workMode", order: LAKE_ORDER, place: place.id }),
+        },
+      ];
+    case "abyss":
+      return [
+        {
+          id: "place-abyss",
+          label: "深層に潜る",
+          sub: "灯りが尽きるまで",
+          disabled: !canActNow,
+          onPick: () => setScreen({ name: "abyss" }),
+        },
+      ];
+    case "book":
+      return [{ id: "place-book", label: "書店", onPick: () => setScreen({ name: "book" }) }];
+    case "news":
+      return [
+        {
+          id: "place-news",
+          label: "今朝の新聞",
+          sub: "届いた朝刊",
+          onPick: () => setScreen({ name: "news", events: [] }),
+        },
+      ];
+    case "lore":
+      return [{ id: "place-lore", label: "見聞録", onPick: () => setScreen({ name: "lore" }) }];
+    case "society":
+      return [
+        { id: "place-society", label: "目標と認定", onPick: () => setScreen({ name: "society" }) },
+      ];
+    case "records":
+      return [
+        { id: "place-records", label: "街の記録", onPick: () => setScreen({ name: "records" }) },
+      ];
+    case "mentor": {
+      const here = mentorsAt(place);
+      return [
+        {
+          id: "place-mentor",
+          label: "師匠を訪ねる",
+          ...(here.length > 0 ? { sub: here.map((m) => m.name).join("・") } : {}),
+          onPick: () => setScreen({ name: "mentor", place: place.id }),
+        },
+      ];
+    }
+    case "sleep":
+      return [
+        {
+          id: "place-sleep",
+          label: "宿で眠る",
+          sub: "一日を終える",
+          primary: true,
+          onPick: () => setScreen({ name: "sleep" }),
+        },
+      ];
+    case "rest":
+      return [
+        {
+          id: "place-rest",
+          label: "家で休む",
+          sub: "無料",
+          onPick: () => act({ type: "rest" }, { atHome: true }),
+        },
+      ];
+    case "status":
+      return [
+        {
+          id: "place-status",
+          label: "能力を見る",
+          sub: "鏡の前で",
+          onPick: () => setScreen({ name: "status" }),
+        },
+      ];
+    case "settings":
+      return [
+        { id: "place-settings", label: "環境設定", onPick: () => setScreen({ name: "settings" }) },
+      ];
+    case "incident":
+      // 届いた出来事（F-05）：応えを待つものがある日だけ項目が出る
+      return cfg.incidents !== undefined && incidentPendingChoice(state, cfg.incidents).length > 0
+        ? [
+            {
+              id: "place-incident",
+              label: "届いた出来事",
+              sub: "応えを待つ声",
+              gold: true,
+              onPick: () => setScreen({ name: "incident" }),
+            },
+          ]
+        : [];
+    case "crisis":
+      // 決着の場面（W-03）：打診が届いている・請けている・率いられるときだけ出る
+      return canActNow &&
+        crisisFinaleOffers(state, cfg.crisis).some(
+          (o) => o.joinable || (o.joined && !o.attempted) || o.leadable,
+        )
+        ? [
+            {
+              id: "place-crisis",
+              label: "決着の場面",
+              sub: "世界からの打診",
+              gold: true,
+              onPick: () => setScreen({ name: "crisis" }),
+            },
+          ]
+        : [];
+    case "occasion":
+      // 勝負所の行事（X-10）：届いた打診がある日だけ出る
+      return canActNow &&
+        cfg.occasions !== undefined &&
+        occasionOffers(state, cfg.occasions).some((o) => !o.attempted)
+        ? [
+            {
+              id: "place-occasion",
+              label: "勝負所の行事",
+              sub: "届いた打診",
+              gold: true,
+              onPick: () => setScreen({ name: "occasion" }),
+            },
+          ]
+        : [];
+    case "retire":
+      return [
+        { id: "place-retire", label: "引退する", onPick: () => setScreen({ name: "retire" }) },
+      ];
+    case "reset":
+      return [
+        {
+          id: "place-reset",
+          label: "記録を消す",
+          danger: true,
+          onPick: () => setScreen({ name: "reset" }),
+        },
+      ];
+    case "travel": {
+      const dest = placeOf(a.to);
+      // 街（門）へ戻るだけなら行動を消費しない —— 戻れなくなる日を作らない
+      const out = dest !== undefined && dest.kind === "region";
+      const cost = out ? travelOutCost() : 0;
+      const afford = state.time.action + cost <= cfg.time.actionsPerDay;
+      return [
+        {
+          id: `place-go-${a.to}`,
+          label: a.to === "gate" ? t.text.travelReturn : `${dest?.name ?? a.to}へ`,
+          ...(cost > 0 ? { sub: `行動 ${cost}` } : {}),
+          disabled: !afford,
+          onPick: () => travel(a.to!),
+        },
+      ];
+    }
+  }
+}
+
+export {};

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { skipIntro } from "./helpers.js";
+import { placeAct, skipIntro } from "./helpers.js";
 
 // T-40 引退と転生：引退 → 確認 → 伝記 → 継ぎ方の選択（T-48）→ 伝記＋継承 → 新しい生（06 §1「一生＝1周」）
 test("引退から転生まで通せる（年代記に1頁残る）", async ({ page }) => {
@@ -7,14 +7,14 @@ test("引退から転生まで通せる（年代記に1頁残る）", async ({ p
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
-  // 引退はいつでも選べる。確認は1回（思いとどまると何も起きない）
-  await page.getByTestId("menu-retire").click();
+  // 引退はいつでも選べる。確認は1回（思いとどまると何も起きない。P-01：引退は自宅の行動）
+  await placeAct(page, "home", "retire");
   await expect(page.getByTestId("screen-retire")).toContainText("引退しますか");
   await page.getByTestId("retire-no").click();
-  await expect(page.getByTestId("menu")).toBeVisible();
+  await expect(page.getByTestId("place")).toHaveAttribute("data-place", "home");
   await expect(page.getByTestId("log")).toContainText("引退は思いとどまった");
 
-  await page.getByTestId("menu-retire").click();
+  await page.getByTestId("place-retire").click();
   await page.getByTestId("retire-yes").click();
 
   // 継ぎ方の選択（T-48）：転生か次代か。転生を選ぶとその時点で年代記に刻まれる
@@ -62,8 +62,9 @@ test("遺物を選んで継承できる", async ({ page }) => {
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
-  // 《釘の束》を簡易判定で1本作る（F-02：初めての作品は自己ベストのA窓が重なる）
-  await page.getByTestId("menu-work").click();
+  // 《釘の束》を簡易判定で1本作る（F-02：初めての作品は自己ベストのA窓が重なる。
+  // 鍛冶の注文は鍛冶場に届く —— P-01）
+  await placeAct(page, "forge", "work");
   await page.getByTestId("order-order.nail").click();
   await page.getByTestId("work-simple").click();
   await expect(page.getByTestId("log")).toContainText("品質");
@@ -73,7 +74,7 @@ test("遺物を選んで継承できる", async ({ page }) => {
     await n.first().click();
   }
 
-  await page.getByTestId("menu-retire").click();
+  await placeAct(page, "home", "retire");
   await page.getByTestId("retire-yes").click();
   await page.getByTestId("succession-rebirth").click();
   const rebirth = page.getByTestId("screen-rebirth");
@@ -92,7 +93,7 @@ test("引退から「この世界で次代を継ぐ」へ進める（年代記�
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
-  await page.getByTestId("menu-retire").click();
+  await placeAct(page, "home", "retire");
   await page.getByTestId("retire-yes").click();
   await page.getByTestId("succession-heir").click();
 

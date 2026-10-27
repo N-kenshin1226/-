@@ -166,6 +166,8 @@ export function stepConfig(): StepConfig {
      * 注文の日替わり係数・起床レポートと新聞の風景の行に使う
      */
     weather: { kinds: weather.kinds, orderPrice: balance.weather.orderPrice },
+    /** 移動（P-01、docs/03 §2）：街の外への移動が消費する行動数 */
+    travel: balance.travel,
     /**
      * NPCの歳月（X-12、docs/07 §3）：npc_lifecycle.json の出来事表＋師匠の人物
      * 紐付け（mentors.json の npc）＋表示名の解決。ライバル（rival.<index>）の名は

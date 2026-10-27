@@ -104,7 +104,8 @@
       "work": 10,
       "combat": 20,
       "occasion": 14,
-      "abyss": 24
+      "abyss": 24,
+      "travel": 6
     },
     "fatigueDefaultPerAction": 2,
     "fatigueRecover": 60,
@@ -131,6 +132,10 @@
         "strength": 2,
         "endurance": 3,
         "agility": 2
+      },
+      "travel": {
+        "endurance": 2,
+        "agility": 1
       }
     },
     "statGainPerLoad": 0.05,
@@ -390,6 +395,9 @@
     "specialOrderQualityFactor": 1.2,
     "donationAmount": 50,
     "npcRumorDays": 14
+  },
+  "travel": {
+    "outsideCost": 1
   },
   "weather": {
     "orderPrice": {

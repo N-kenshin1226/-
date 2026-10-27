@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { skipIntro } from "./helpers.js";
+import { placeAct, skipIntro } from "./helpers.js";
 import { newGame, serialize } from "@trace/core";
 
 /**
@@ -52,8 +52,9 @@ test("起床画面：集中した夜の伸び・持ち越し・ランクアッ�
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  // 上宿・夕食ありで眠る（質を上げて定着を太くする）。宿を選んだ時点で眠るので夕食を先に確定させる
-  await page.getByTestId("menu-sleep").click();
+  // 上宿・夕食ありで眠る（質を上げて定着を太くする）。宿を選んだ時点で眠るので夕食を先に確定させる。
+  // 宿は宿屋にある（P-01）
+  await placeAct(page, "inn", "sleep");
   await page.getByTestId("dinner-yes").click();
   await page.getByTestId("inn-good").click();
 

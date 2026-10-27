@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { skipIntro } from "./helpers.js";
+import { placeAct, skipIntro } from "./helpers.js";
 
 // T-47 ライバル・ランキング（簡易版）：街の記録に順位表が出る。
 // ライバルの名は世界シードから決まるので、同じシードなら同じ顔ぶれになる
@@ -7,7 +7,8 @@ test("街の記録にライバル・ランキングが出る（自分の行に�
   await page.goto("/?seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
-  await page.getByTestId("menu-records").click();
+  // 街の記録はギルドの掲示板（P-01）
+  await placeAct(page, "guild", "records");
 
   const view = page.getByTestId("records-rivals");
   await expect(view).toContainText("街のランキング");
@@ -27,7 +28,8 @@ test("同じシードでは同じ順位表が出る（決定論）", async ({ pa
     await page.goto("/?seed=e2e-rivals");
     await page.getByTestId("origin-wanderer").click();
     await skipIntro(page);
-    await page.getByTestId("menu-records").click();
+    // 街の記録はギルドの掲示板（P-01）
+    await placeAct(page, "guild", "records");
     return (await page.getByTestId("records-rivals").innerText())
       .split("\n")
       .filter((l) => l.includes("位"));

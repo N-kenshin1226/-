@@ -26,6 +26,7 @@ import { discoveriesFileSchema } from "./discoveries.schema.js";
 import { npcLifecycleFileSchema } from "./npc_lifecycle.schema.js";
 import { incidentsFileSchema } from "./incidents.schema.js";
 import { weatherFileSchema } from "./weather.schema.js";
+import { placesFileSchema } from "./places.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -75,6 +76,7 @@ check("discoveries.json", discoveriesFileSchema);
 check("npc_lifecycle.json", npcLifecycleFileSchema);
 check("incidents.json", incidentsFileSchema);
 check("weather.json", weatherFileSchema);
+check("places.json", placesFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
 // 立場キーの突き合わせ：voices.json / narration.json の byStanding は
@@ -718,6 +720,81 @@ try {
   }
 } catch (e) {
   console.error(`✗ 天候の突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// 場所の突き合わせ（P-01、docs/03 §2）：場所に居る人は voices.json の npc、
+// work の技能は skills.json の id。注文は全てどこかの場所に届くこと
+// （kinds に入っているか、default の受け皿があること）、師匠は全員どこかの
+// 場所に居ること、狩りをする地域には enemies.json に敵がいること
+try {
+  const placesRaw = JSON.parse(readFileSync(join(root, "places.json"), "utf8")) as {
+    places?: {
+      id?: string;
+      npcs?: string[];
+      actions?: { type?: string; kinds?: string[]; default?: boolean }[];
+    }[];
+  };
+  const voicesRaw = JSON.parse(readFileSync(join(root, "voices.json"), "utf8")) as {
+    npcs?: { id?: string }[];
+  };
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const ordersRaw = JSON.parse(readFileSync(join(root, "orders.json"), "utf8")) as {
+    orders?: { kind?: string }[];
+  };
+  const mentorsRaw = JSON.parse(readFileSync(join(root, "mentors.json"), "utf8")) as {
+    mentors?: { id?: string; npc?: string }[];
+  };
+  const enemiesRaw = JSON.parse(readFileSync(join(root, "enemies.json"), "utf8")) as {
+    enemies?: { area?: string }[];
+  };
+  const npcIds = new Set((voicesRaw.npcs ?? []).map((n) => n.id));
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const enemyAreas = new Set((enemiesRaw.enemies ?? []).map((e) => e.area));
+  const bad: string[] = [];
+  const coveredKinds = new Set<string>();
+  let hasDefault = false;
+  const residentNpcs = new Set<string>();
+  for (const p of placesRaw.places ?? []) {
+    for (const n of p.npcs ?? []) {
+      if (!npcIds.has(n)) bad.push(`places.json ${p.id ?? "?"}: 未定義のNPC ${n}`);
+      residentNpcs.add(n);
+    }
+    for (const a of p.actions ?? []) {
+      if (a.type === "work") {
+        if (a.default === true) hasDefault = true;
+        for (const k of a.kinds ?? []) {
+          if (!skillIds.has(k)) bad.push(`places.json ${p.id ?? "?"}: 未定義の技能 ${k}`);
+          coveredKinds.add(k);
+        }
+      }
+      if (a.type === "hunt" && !enemyAreas.has(p.id)) {
+        bad.push(`places.json ${p.id ?? "?"}: 狩りの地域だが enemies.json に敵がいない`);
+      }
+    }
+  }
+  if (!hasDefault) {
+    for (const o of ordersRaw.orders ?? []) {
+      if (o.kind !== undefined && !coveredKinds.has(o.kind)) {
+        bad.push(`orders.json: 技能 ${o.kind} の注文が届く場所がない`);
+      }
+    }
+  }
+  for (const m of mentorsRaw.mentors ?? []) {
+    if (m.npc !== undefined && !residentNpcs.has(m.npc)) {
+      bad.push(`mentors.json ${m.id ?? "?"}: 師匠 ${m.npc} の居場所がない`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 場所の参照が不正: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 場所の参照（places ↔ voices/skills/orders/mentors/enemies）");
+  }
+} catch (e) {
+  console.error(`✗ 場所の突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

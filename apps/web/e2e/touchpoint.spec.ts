@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { newGame, serialize } from "@trace/core";
-import { skipIntro } from "./helpers.js";
+import { placeAct, skipIntro } from "./helpers.js";
 
 /**
  * W-02 危機の接点（docs/08 §5）：「異変：」の印つきの注文・敵が日常に混ざる。
@@ -43,7 +43,8 @@ test("接点の注文が仕事に混ざる（異変：印。こなすと世界�
   await page.goto("/?seed=shot-0");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
-  await page.getByTestId("menu-work").click();
+  // 鍛冶の接点は鍛冶場の注文に混ざる（P-01）
+  await placeAct(page, "forge", "work");
   const scr = page.getByTestId("screen-work");
   await expect(scr).toBeVisible();
   await expect(scr).toContainText("異変：警備隊への武具納入");
@@ -65,7 +66,10 @@ test("接点の相手が狩りに混ざる（拡大段階。異変：印の敵�
   );
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
-  await page.getByTestId("menu-hunt").click();
+  // 狼のいる森へ出る（P-01：門 → 行動を消費して森へ）
+  await placeAct(page, "gate", "go-forest");
+  await expect(page.getByTestId("place")).toHaveAttribute("data-place", "forest");
+  await page.getByTestId("place-hunt").click();
   const scr = page.getByTestId("screen-hunt");
   await expect(scr).toBeVisible();
   await expect(scr).toContainText("異変：");

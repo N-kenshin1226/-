@@ -1,8 +1,9 @@
 /**
- * メイン画面（UI-01：Main見本）
- *   左：コマンド列（行動／街／眠る）・右：人物カードと技能上位・右下：住人の会話窓
+ * メイン画面＝街の見取り図（P-01、docs/03 §2：場所と移動）
+ *   左：見取り図の窓（街の場所を↑↓・マウスで選ぶ）・右：人物カードと技能上位
  *   下帯：噂と操作ガイド。行動できるかは canAct（core）だけを見る
  */
+import { useMemo, useRef, useState } from "react";
 import { canAct, describe, isSkillUnlocked, type GameState } from "@trace/core";
 import {
   cfg,
@@ -11,14 +12,18 @@ import {
   occasionOffers,
   originList,
   skillList,
+  t,
+  townPlaces,
   townRumor,
   townVoice,
+  tpl,
   windChips,
 } from "../game.js";
+import { places, type PlaceJson } from "@trace/content";
 import {
-  CommandMenu,
   DialogueBox,
   HintBar,
+  Kicker,
   SkillBar,
   WindChip,
   WorldFrame,
@@ -26,17 +31,52 @@ import {
   skillBandOf,
   useHotkeys,
   type Act,
-  type MenuEntry,
   type Screen,
 } from "../ui.js";
 import { theme } from "../theme.js";
 
 const W = theme.colors.world;
 
+/** 見取り図の印の並び（↑↓ の巡回順）：上から下へ、同じ高さなら左から右へ */
+function mapOrder(): PlaceJson[] {
+  return [...townPlaces].sort(
+    (a, b) => (a.pos?.[1] ?? 0) - (b.pos?.[1] ?? 0) || (a.pos?.[0] ?? 0) - (b.pos?.[0] ?? 0),
+  );
+}
+
+/** 場所に届き物の印（P-01）：出来事・打診はその届く場所の印で光らせる */
+function placePip(state: GameState, place: PlaceJson): boolean {
+  const types = new Set(place.actions.map((a) => a.type));
+  if (
+    types.has("incident") &&
+    cfg.incidents !== undefined &&
+    incidentPendingChoice(state, cfg.incidents).length > 0
+  ) {
+    return true;
+  }
+  if (
+    types.has("crisis") &&
+    canAct(state.time, cfg.time) &&
+    crisisFinaleOffers(state, cfg.crisis).some(
+      (o) => o.joinable || (o.joined && !o.attempted) || o.leadable,
+    )
+  ) {
+    return true;
+  }
+  if (
+    types.has("occasion") &&
+    canAct(state.time, cfg.time) &&
+    cfg.occasions !== undefined &&
+    occasionOffers(state, cfg.occasions).some((o) => !o.attempted)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function MenuScreen({
   state,
   setScreen,
-  act,
   log,
 }: {
   state: GameState;
@@ -44,14 +84,35 @@ export function MenuScreen({
   act: Act;
   log: readonly string[];
 }) {
-  const canActNow = canAct(state.time, cfg.time);
-  const voice = townVoice(state);
-  const rumor = townRumor(state);
-  const winds = windChips(state);
+  const marks = useMemo(mapOrder, []);
+  const [focus, setFocus] = useState(0);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+  const marksRef = useRef(marks);
+  marksRef.current = marks;
+
+  const enter = (id: string) => setScreen({ name: "place", place: id });
   useHotkeys({
+    arrowup: () => {
+      const n = marksRef.current.length;
+      if (n > 0) setFocus((((focusRef.current - 1) % n) + n) % n);
+    },
+    arrowdown: () => {
+      const n = marksRef.current.length;
+      if (n > 0) setFocus((focusRef.current + 1) % n);
+    },
+    enter: () => {
+      const m = marksRef.current[focusRef.current];
+      if (m !== undefined) enter(m.id);
+    },
     s: () => setScreen({ name: "status" }),
     n: () => setScreen({ name: "news", events: [] }),
   });
+
+  const voice = townVoice(state);
+  const rumor = townRumor(state);
+  const winds = windChips(state);
+  const focused = marks[focus];
 
   // 人物カードに出す技能：値上位3件（見本はよく使う3技を並べている）
   const top3 = skillList
@@ -60,158 +121,99 @@ export function MenuScreen({
     .sort((a, b) => b.st.value - a.st.value)
     .slice(0, 3);
 
-  const entries: MenuEntry[] = [
-    { kind: "header", text: "ACTION" },
-    {
-      id: "menu-work",
-      label: "仕事",
-      sub: "注文に応える",
-      disabled: !canActNow,
-      onPick: () => setScreen({ name: "work" }),
-    },
-    {
-      id: "menu-train",
-      label: "鍛錬",
-      sub: "技を磨く",
-      disabled: !canActNow,
-      onPick: () => setScreen({ name: "train" }),
-    },
-    {
-      id: "menu-hunt",
-      label: "狩りに出る",
-      sub: "街の外",
-      disabled: !canActNow,
-      onPick: () => setScreen({ name: "hunt" }),
-    },
-    {
-      id: "menu-abyss",
-      label: "深層に潜る",
-      sub: "灯りが尽きるまで",
-      disabled: !canActNow,
-      onPick: () => setScreen({ name: "abyss" }),
-    },
-    // 決着の場面（W-03、docs/08 §6）：打診が届いている・請けている・率いられる
-    // ときだけ項目が出る。届いていなければ世界の危機は日常の裏で進むだけ
-    ...(canActNow &&
-    crisisFinaleOffers(state, cfg.crisis).some(
-      (o) => o.joinable || (o.joined && !o.attempted) || o.leadable,
-    )
-      ? [
-          {
-            id: "menu-crisis",
-            label: "決着の場面",
-            sub: "世界からの打診",
-            gold: true,
-            onPick: () => setScreen({ name: "crisis" }),
-          } satisfies MenuEntry,
-        ]
-      : []),
-    // 勝負所の行事（X-10、docs/03 §2）：届いた打診がある日だけ項目が出る。
-    // 届いていなければ街の行事は日常の裏で過ぎるだけ（クエストボードにしない）
-    ...(canActNow &&
-    cfg.occasions !== undefined &&
-    occasionOffers(state, cfg.occasions).some((o) => !o.attempted)
-      ? [
-          {
-            id: "menu-occasion",
-            label: "勝負所の行事",
-            sub: "届いた打診",
-            gold: true,
-            onPick: () => setScreen({ name: "occasion" }),
-          } satisfies MenuEntry,
-        ]
-      : []),
-    // 日々の出来事（F-05）：応えは会話の一瞬（行動を消費しない）ので、
-    // 行動残が無い日でも届いた分には応えられる（寝る前の応え直しの窓口）
-    ...(cfg.incidents !== undefined && incidentPendingChoice(state, cfg.incidents).length > 0
-      ? [
-          {
-            id: "menu-incident",
-            label: "届いた出来事",
-            sub: "応えを待つ声",
-            gold: true,
-            onPick: () => setScreen({ name: "incident" }),
-          } satisfies MenuEntry,
-        ]
-      : []),
-    { kind: "divider" },
-    { kind: "header", text: "TOWN" },
-    {
-      id: "menu-mentor",
-      label: "師匠を訪ねる",
-      onPick: () => setScreen({ name: "mentor" }),
-    },
-    {
-      id: "menu-book",
-      label: "書店",
-      onPick: () => setScreen({ name: "book" }),
-    },
-    {
-      id: "menu-lore",
-      label: "見聞録",
-      onPick: () => setScreen({ name: "lore" }),
-    },
-    {
-      id: "menu-society",
-      label: "目標と認定",
-      onPick: () => setScreen({ name: "society" }),
-    },
-    {
-      id: "menu-records",
-      label: "街の記録",
-      onPick: () => setScreen({ name: "records" }),
-    },
-    { kind: "divider" },
-    {
-      id: "menu-sleep",
-      label: "宿で眠る",
-      sub: "一日を終える",
-      onPick: () => setScreen({ name: "sleep" }),
-    },
-    {
-      id: "menu-rest",
-      label: "家で休む",
-      sub: "無料",
-      onPick: () => act({ type: "rest" }, { atHome: true }),
-    },
-    { kind: "divider" },
-    {
-      id: "menu-status",
-      label: "能力を見る",
-      sub: "S",
-      onPick: () => setScreen({ name: "status" }),
-    },
-    {
-      id: "menu-news",
-      label: "今朝の新聞",
-      sub: "N",
-      onPick: () => setScreen({ name: "news", events: [] }),
-    },
-    {
-      id: "menu-settings",
-      label: "環境設定",
-      sub: "音と演出",
-      onPick: () => setScreen({ name: "settings" }),
-    },
-    {
-      id: "menu-retire",
-      label: "引退する",
-      onPick: () => setScreen({ name: "retire" }),
-    },
-    {
-      id: "menu-reset",
-      label: "記録を消す",
-      danger: true,
-      onPick: () => setScreen({ name: "reset" }),
-    },
-  ];
-
   return (
     <div data-testid="menu" className="scene">
-      {/* 左のコマンド窓（見本：left28 top132 w300）。項目は窓の内側に収めて縦にスクロールする */}
-      <WorldFrame style={{ ...pos({ left: 28, top: 132, width: 320 }), padding: "14px 6px" }}>
-        <div className="scroll" style={{ maxHeight: 492 }}>
-          <CommandMenu testId="menu-commands" entries={entries} />
+      {/* 見取り図の窓（P-01）：街の見取り図と場所の印。↑↓・マウスで選ぶ */}
+      <WorldFrame
+        style={{ ...pos({ left: 28, top: 104, width: 800, bottom: 210 }), padding: "12px 16px" }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 6 }}>
+          <div>
+            <Kicker text="MAP" />
+            <div
+              style={{
+                fontFamily: theme.font.mincho,
+                fontSize: 22,
+                fontWeight: 800,
+                color: W.hi,
+              }}
+            >
+              {tpl(t.text.mapTitle, { town: places.town })}
+            </div>
+          </div>
+          <div data-testid="map-pick" style={{ fontSize: 13, color: W.dim }}>
+            {focused !== undefined ? `${focused.name} ―― ${focused.desc}` : t.text.mapPick}
+          </div>
+        </div>
+        {/* 街の見取り図：壁の輪郭・道・区画の上に場所の印が並ぶ */}
+        <div style={{ position: "relative", height: "calc(100% - 62px)" }}>
+          <svg
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+            viewBox="0 0 800 380"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <rect x="0" y="0" width="800" height="380" fill="#0b0a14" />
+            {/* 外の野（見取り図の外側の余白の気配） */}
+            <rect x="0" y="0" width="800" height="380" fill="none" />
+            {/* 城壁：右下に門口の開いた街の輪郭 */}
+            <path
+              d="M40 30 H700 Q750 30 750 80 V250 Q750 300 700 300 H620 M560 300 H90 Q40 300 40 250 V80 Q40 30 90 30 Z"
+              fill="none"
+              stroke="#3a3450"
+              strokeWidth="3"
+            />
+            {/* 街路：中央の広場（市場）から放射に伸びる道 */}
+            <g stroke="#2a2440" strokeWidth="4" fill="none">
+              <path d="M448 152 C400 180 330 210 296 244" />
+              <path d="M448 152 C480 210 510 250 546 297" />
+              <path d="M448 152 C360 150 300 160 250 190" />
+              <path d="M448 152 C520 140 590 120 658 92" />
+              <path d="M448 152 C420 240 380 280 330 310" />
+              <path d="M448 152 C540 200 620 260 700 330" />
+              <path d="M448 152 C300 130 160 150 82 282" />
+              <path d="M448 152 C430 110 390 90 292 106" />
+            </g>
+            {/* 区画：家の塊の気配 */}
+            <g fill="#161226">
+              <rect x="180" y="70" width="60" height="40" />
+              <rect x="520" y="60" width="70" height="44" />
+              <rect x="120" y="180" width="56" height="44" />
+              <rect x="230" y="260" width="64" height="42" />
+              <rect x="480" y="230" width="56" height="40" />
+              <rect x="600" y="180" width="60" height="44" />
+              <rect x="660" y="110" width="52" height="40" />
+              <rect x="90" y="120" width="48" height="36" />
+            </g>
+            {/* 中央の広場 */}
+            <ellipse
+              cx="448"
+              cy="152"
+              rx="36"
+              ry="20"
+              fill="#1c1730"
+              stroke="#3a3450"
+              strokeWidth="2"
+            />
+            {/* 門口（右下）：壁の切れ目から外へ続く道 */}
+            <path d="M575 300 L640 340" stroke="#2a2440" strokeWidth="5" />
+            <path d="M640 340 L706 366" stroke="#3a3450" strokeWidth="3" />
+          </svg>
+          {marks.map((m, i) => (
+            <button
+              key={m.id}
+              type="button"
+              data-testid={`menu-place-${m.id}`}
+              className={`map-mark${i === focus ? " on" : ""}`}
+              style={{ left: `${m.pos?.[0] ?? 0}%`, top: `${m.pos?.[1] ?? 0}%` }}
+              onMouseEnter={() => setFocus(i)}
+              onClick={() => enter(m.id)}
+            >
+              {placePip(state, m) && <span className="pip" />}
+              <span className="diamond" />
+              <span className="tag">{m.name}</span>
+            </button>
+          ))}
         </div>
       </WorldFrame>
 
@@ -346,8 +348,8 @@ export function MenuScreen({
       </div>
       <HintBar
         items={[
-          ["↑↓", "選択"],
-          ["Enter", "決定"],
+          ["↑↓", "場所を選ぶ"],
+          ["Enter", "向かう"],
           ["S", "ステータス"],
           ["N", "新聞"],
         ]}

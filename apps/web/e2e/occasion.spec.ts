@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { newGame, serialize } from "@trace/core";
+import { placeAct, waitVeil } from "./helpers.js";
 
 /**
  * X-10 勝負所の行事（docs/03 §2）：人物から届いた打診 → 請け → 勝負所（交渉の皮）
@@ -104,9 +105,9 @@ test("勝負所の行事：打診 → 請け → 大取引に勝つ → 記録�
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
 
-  // 届いた打診がある日だけ、メニューに「勝負所の行事」が出る
-  await expect(page.getByTestId("menu-occasion")).toBeVisible();
-  await page.getByTestId("menu-occasion").click();
+  // 届いた打診がある日だけ、場所の行動に「勝負所の行事」が出る（P-01：行事はギルドに届く。
+  // 見取り図のギルドの印には届き物の印が付く）
+  await placeAct(page, "guild", "occasion");
   const scr = page.getByTestId("screen-occasion");
   await expect(scr).toBeVisible();
   // 打診は人物（行商人ノラ）の口から届く ―― クエストボードではなく会話
@@ -140,22 +141,24 @@ test("勝負所の行事：打診 → 請け → 大取引に勝つ → 記録�
     await n.first().click();
   }
 
-  // 記録に残る（街の記録の「勝負所」欄）
+  // 記録に残る（街の記録の「勝負所」欄。記録はギルドの掲示板 —— P-01）
   await expect(page.getByTestId("menu")).toBeVisible();
-  await page.getByTestId("menu-records").click();
+  await placeAct(page, "guild", "records");
   await expect(page.getByTestId("records-occasions")).toContainText("行商の大取引");
   await expect(page.getByTestId("records-occasions")).toContainText("勝ちを収めた");
 
   // 眠る → 翌朝の新聞に勝負所の記事が載る
   await expect(page.getByTestId("screen-records")).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByTestId("menu-rest").click();
-  // 起床の窓を閉じてメニューへ
+  // P-01：Esc で場所（ギルド）へ戻り、見取り図から自宅で休む
+  await placeAct(page, "home", "rest");
+  // 起床の窓を閉じてメニューへ（眠りの幕はキーを呑むので開ききるまで待つ）
   await expect(page.getByTestId("screen-wake")).toBeVisible();
+  await waitVeil(page);
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("menu")).toBeVisible();
-  // 新聞を開く：勝負所の結果が紙面に載る
-  await page.getByTestId("menu-news").click();
+  // 新聞を開く：勝負所の結果が紙面に載る（新聞は宿屋に届く）
+  await placeAct(page, "inn", "news");
   const news = page.getByTestId("screen-news");
   await expect(news).toBeVisible();
   await expect(news).toContainText("行商の大取引");
