@@ -1,0 +1,10 @@
+{
+  "id": "place.snow_hermit",
+  "kind": "place",
+  "title": "雪隠れの庵",
+  "text": "庵の戸口には薪が積まれ、窓の内側に薄く灯りが残る。誰かがここで、長い冬を越している。",
+  "refs": ["place.hill_chapel", "event.pilgrim_road"],
+  "reveals": ["fact.hermit_beyond_chapel"],
+  "reliability": "fact",
+  "unlock": { "flag": "found.snow_hermit" }
+}

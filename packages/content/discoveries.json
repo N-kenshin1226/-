@@ -62,6 +62,41 @@
         "and": [{ "weather": "rain" }, { "within": { "days": 1, "kind": "wait", "atLeast": 1 } }]
       },
       "setFlags": ["seen.rain_well"]
+    },
+    {
+      "id": "snow_hermit",
+      "name": "雪隠れの庵",
+      "foundText": "――雪の残る朝、街はずれに点々と続く足跡を辿ると、見覚えのない小さな庵を見つけた。",
+      "hint": "雪の積もった朝にだけ、街はずれから丘へ続く足跡が現れるという。日が高くなる前に辿った者だけが、その先の庵を知る",
+      "condition": {
+        "and": [{ "weather": "snow" }, { "time": { "timeOfDay": "morning" } }]
+      },
+      "setFlags": []
+    },
+    {
+      "id": "star_terrace",
+      "name": "星見の丘",
+      "foundText": "――雲ひとつない夜空の下、丘の頂で星が天に一列に並ぶのを見つけた。",
+      "hint": "雲ひとつない{moon}の夜、丘の上でだけ星が天に一列に並ぶという。その列を見た者は星の読み方を知るらしい",
+      "condition": {
+        "and": [{ "weather": "clear" }, { "time": { "timeOfDay": "night" } }]
+      },
+      "setFlags": ["seen.star_terrace"],
+      "seeded": { "moon": true }
+    },
+    {
+      "id": "evening_rainbow",
+      "name": "夕雨の虹",
+      "foundText": "――雨の緩む夕方、東橋の袂に低く鮮やかな虹が架かっているのを見つけた。",
+      "hint": "雨の日に働き続けた者だけが、夕暮れの橋で低い虹を見るという。一日の労りが空に架かる、と職人は言う",
+      "condition": {
+        "and": [
+          { "weather": "rain" },
+          { "time": { "timeOfDay": "evening" } },
+          { "within": { "days": 1, "kind": "work", "atLeast": 1 } }
+        ]
+      },
+      "setFlags": ["seen.evening_rainbow"]
     }
   ]
 }

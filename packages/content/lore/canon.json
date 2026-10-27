@@ -56,7 +56,8 @@
     { "id": "fact.berna_survived_fire", "text": "ベルナは大火を生き延びた" },
     { "id": "fact.fire_started_old_forge", "text": "火は旧鍛冶場から出た" },
     { "id": "fact.hammer_made_by_berna", "text": "錆びた槌はベルナの作った道具である" },
-    { "id": "fact.marta_took_in_orphans", "text": "マルタは大火の孤児を宿に引き取った" }
+    { "id": "fact.marta_took_in_orphans", "text": "マルタは大火の孤児を宿に引き取った" },
+    { "id": "fact.hermit_beyond_chapel", "text": "礼拝堂のさらに先に、隠者の庵が残っている" }
   ],
   "styleLint": {
     "maxTextLength": 120,

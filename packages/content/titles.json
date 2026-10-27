@@ -699,6 +699,20 @@
         "note": "奉仕の頂点（頂点ルート X-9、pinnacles.json lord の最終段）。領主の名が人を動かす"
       },
       "message": "――称号《領主》を獲得しました。街に奉仕し、街に迎えられた者の名です。"
+    },
+    {
+      "id": "title.evening_rainbow",
+      "name": "夕虹を見た者",
+      "rank": "B",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "flag": "seen.evening_rainbow"
+      },
+      "effect": {
+        "note": "雨の日の労りの果てに、東橋の虹を見た者の記録"
+      },
+      "message": "――称号《夕虹を見た者》を獲得しました。雨の果てに、低く架かった虹を知る者です。"
     }
   ]
 }

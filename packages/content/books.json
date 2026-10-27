@@ -56,6 +56,16 @@
       "condition": { "flag": "found.taboo_codex" }
     },
     {
+      "id": "book.star_lore",
+      "name": "星列の覚書",
+      "desc": "星の列が開く夜と暦の対応を記した写本。列を見た者にだけ、その順序が読める（観察の伸び 7日）",
+      "readText": "星は列をなして巡り、ほどけることなく天を渡る。列の開く夜を数えれば、巡りの読み方が見える。書き手は最後の頁に、小さく自分だけの列を記している。",
+      "price": 90,
+      "effect": { "gainVs": { "observation": 1.1 } },
+      "durationDays": 7,
+      "condition": { "flag": "seen.star_terrace" }
+    },
+    {
       "id": "book.lost_swordplay",
       "name": "剣鬼の手記",
       "desc": "誰の遺したものか分からない手記。頁を埋める剣筋の図解が、読む者の腕に滲む（剣術の伸び 7日・素質回復）",
