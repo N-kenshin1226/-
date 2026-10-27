@@ -1,0 +1,10 @@
+{
+  "id": "place.rain_well",
+  "kind": "place",
+  "title": "雨宿りの井戸",
+  "text": "井戸の縁には、旅人の刻んだ目印が連なっている。最古のものは、ずっと昔の足跡だ。",
+  "refs": ["place.east_bridge", "event.pilgrim_road"],
+  "reveals": ["fact.well_marks_left_by_pilgrims"],
+  "reliability": "fact",
+  "unlock": { "flag": "found.rain_well" }
+}

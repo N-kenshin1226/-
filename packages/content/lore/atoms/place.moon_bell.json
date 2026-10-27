@@ -1,0 +1,10 @@
+{
+  "id": "place.moon_bell",
+  "kind": "place",
+  "title": "月下の鐘",
+  "text": "苔むした小さな鐘が橋の袂に残っている。指で触れると、芯まで冷えた音がした。",
+  "refs": ["place.east_bridge", "event.pilgrim_road"],
+  "reveals": ["fact.bell_marked_pilgrim_road"],
+  "reliability": "fact",
+  "unlock": { "flag": "found.moon_bell" }
+}

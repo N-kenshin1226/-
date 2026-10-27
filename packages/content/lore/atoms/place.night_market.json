@@ -1,0 +1,10 @@
+{
+  "id": "place.night_market",
+  "kind": "place",
+  "title": "裏の夜市",
+  "text": "月の出た夜だけ、橋の袂に小さな灯りが並ぶ。昼の市とは別の顔ぶれが、静かに商っている。",
+  "refs": ["place.east_bridge", "event.great_fire"],
+  "reveals": ["fact.night_market_born_of_fire"],
+  "reliability": "fact",
+  "unlock": { "flag": "found.night_market" }
+}

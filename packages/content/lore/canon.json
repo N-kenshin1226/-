@@ -32,8 +32,16 @@
     }
   ],
   "places": [
-    { "id": "place.old_forge", "name": "旧鍛冶場", "summary": "大火で焼けたまま、誰も近づかない" },
-    { "id": "place.east_bridge", "name": "東橋", "summary": "大火の夜を生き延びた石橋" },
+    {
+      "id": "place.old_forge",
+      "name": "旧鍛冶場",
+      "summary": "大火で焼けたまま、誰も近づかない"
+    },
+    {
+      "id": "place.east_bridge",
+      "name": "東橋",
+      "summary": "大火の夜を生き延びた石橋"
+    },
     {
       "id": "place.hill_chapel",
       "name": "丘の礼拝堂",
@@ -41,23 +49,90 @@
     }
   ],
   "figures": [
-    { "id": "npc.berna", "name": "ベルナ", "role": "鍛冶職人。失踪した" },
-    { "id": "npc.marta", "name": "マルタ", "role": "宿屋の主" },
-    { "id": "npc.edel", "name": "エデル", "role": "礼拝堂の番人" },
-    { "id": "npc.garo", "name": "ガロ", "role": "猟師" },
-    { "id": "npc.nola", "name": "ノラ", "role": "行商人" },
-    { "id": "npc.fenn", "name": "フェン", "role": "採掘場のまとめ役" },
-    { "id": "npc.ile", "name": "イル", "role": "鍛冶場の見習い" },
-    { "id": "npc.sado", "name": "サド", "role": "街の門番" },
-    { "id": "npc.reve", "name": "レーヴ", "role": "織り手" },
-    { "id": "npc.cum", "name": "クム", "role": "炭焼き" }
+    {
+      "id": "npc.berna",
+      "name": "ベルナ",
+      "role": "鍛冶職人。失踪した"
+    },
+    {
+      "id": "npc.marta",
+      "name": "マルタ",
+      "role": "宿屋の主"
+    },
+    {
+      "id": "npc.edel",
+      "name": "エデル",
+      "role": "礼拝堂の番人"
+    },
+    {
+      "id": "npc.garo",
+      "name": "ガロ",
+      "role": "猟師"
+    },
+    {
+      "id": "npc.nola",
+      "name": "ノラ",
+      "role": "行商人"
+    },
+    {
+      "id": "npc.fenn",
+      "name": "フェン",
+      "role": "採掘場のまとめ役"
+    },
+    {
+      "id": "npc.ile",
+      "name": "イル",
+      "role": "鍛冶場の見習い"
+    },
+    {
+      "id": "npc.sado",
+      "name": "サド",
+      "role": "街の門番"
+    },
+    {
+      "id": "npc.reve",
+      "name": "レーヴ",
+      "role": "織り手"
+    },
+    {
+      "id": "npc.cum",
+      "name": "クム",
+      "role": "炭焼き"
+    }
   ],
   "facts": [
-    { "id": "fact.berna_survived_fire", "text": "ベルナは大火を生き延びた" },
-    { "id": "fact.fire_started_old_forge", "text": "火は旧鍛冶場から出た" },
-    { "id": "fact.hammer_made_by_berna", "text": "錆びた槌はベルナの作った道具である" },
-    { "id": "fact.marta_took_in_orphans", "text": "マルタは大火の孤児を宿に引き取った" },
-    { "id": "fact.hermit_beyond_chapel", "text": "礼拝堂のさらに先に、隠者の庵が残っている" }
+    {
+      "id": "fact.berna_survived_fire",
+      "text": "ベルナは大火を生き延びた"
+    },
+    {
+      "id": "fact.fire_started_old_forge",
+      "text": "火は旧鍛冶場から出た"
+    },
+    {
+      "id": "fact.hammer_made_by_berna",
+      "text": "錆びた槌はベルナの作った道具である"
+    },
+    {
+      "id": "fact.marta_took_in_orphans",
+      "text": "マルタは大火の孤児を宿に引き取った"
+    },
+    {
+      "id": "fact.hermit_beyond_chapel",
+      "text": "礼拝堂のさらに先に、隠者の庵が残っている"
+    },
+    {
+      "id": "fact.bell_marked_pilgrim_road",
+      "text": "月下の鐘は、巡礼路の標として掛けられたものだった"
+    },
+    {
+      "id": "fact.night_market_born_of_fire",
+      "text": "裏の夜市は、大火の後に露店を失った者たちの間に立った"
+    },
+    {
+      "id": "fact.well_marks_left_by_pilgrims",
+      "text": "雨宿りの井戸の目印は、巡礼が後の旅人に残した道標だった"
+    }
   ],
   "styleLint": {
     "maxTextLength": 120,
