@@ -11,6 +11,7 @@ import {
 } from "@trace/core";
 import {
   cfg,
+  condEnv,
   eventLines,
   mentorList,
   offerName,
@@ -273,7 +274,7 @@ export function MentorScreen({
 
   const entries: MenuEntry[] = [
     ...mentorList.flatMap((m): MenuEntry[] => {
-      const ok = canApprentice(state, m.id, cfg.mentors, cfg.time);
+      const ok = canApprentice(state, m.id, cfg.mentors, cfg.time, condEnv);
       // 歳月・危機で街に居なくなった師は「引退した」などの印で示す（X-12）
       const gone = mentorAbsent(state, m);
       const mark =

@@ -17,6 +17,7 @@ import {
   type GameState,
   type NotableWork,
   type StepConfig,
+  type CondEnv,
 } from "@trace/core";
 import {
   atoms,
@@ -47,6 +48,8 @@ export interface MenuCtx {
   /** null が返ったら中断（呼び出し側は即 return） */
   ask: (prompt: string) => Promise<string | null>;
   cfg: StepConfig;
+  /** 条件DSLの評価環境（X-13。{weather} など state に無い語彙の画面側判定） */
+  condEnv?: CondEnv;
   t: CliText;
   save: (state: GameState) => void;
   /** イベント → 表示行（称号・気配・打診など） */
@@ -206,9 +209,9 @@ export async function loreMenu(state: GameState, ctx: MenuCtx): Promise<GameStat
 /** 「9) 書店」：書物の購入と読書（T-26）。購入は行動を消費せず、読むには1行動使う。
  *  棚に並ぶのは条件を満たす書物だけ（X-5：失われた手記は転生フラグが立つと現れる） */
 export async function booksMenu(state: GameState, ctx: MenuCtx): Promise<GameState | null> {
-  const { out, outAll, ask, cfg, t, save, applyTitles } = ctx;
+  const { out, outAll, ask, cfg, condEnv, t, save, applyTitles } = ctx;
   const skillName = (id: string) => skills.skills.find((s) => s.id === id)?.name ?? id;
-  const shelf = shelfBooks(state, { books: books.books }, cfg.time);
+  const shelf = shelfBooks(state, { books: books.books }, cfg.time, condEnv);
   out(tpl(t.text.bookShopHeader, { money: state.player.money }));
   for (let i = 0; i < shelf.length; i++) {
     const b = shelf[i]!;
@@ -264,7 +267,7 @@ export async function booksMenu(state: GameState, ctx: MenuCtx): Promise<GameSta
 
 /** 「10) 師匠」：弟子入り・稽古・門を出る（T-27。弟子入りは行動を消費せず、稽古は1行動＋礼金） */
 export async function mentorMenu(state: GameState, ctx: MenuCtx): Promise<GameState | null> {
-  const { out, outAll, ask, cfg, t, save, applyTitles } = ctx;
+  const { out, outAll, ask, cfg, condEnv, t, save, applyTitles } = ctx;
   const skillName = (id: string) => skills.skills.find((s) => s.id === id)?.name ?? id;
 
   const current = state.mentor
@@ -342,7 +345,7 @@ export async function mentorMenu(state: GameState, ctx: MenuCtx): Promise<GameSt
   out(t.text.mentorHeaderNone);
   for (let i = 0; i < mentors.mentors.length; i++) {
     const m = mentors.mentors[i]!;
-    const ok = canApprentice(state, m.id, cfg.mentors, cfg.time);
+    const ok = canApprentice(state, m.id, cfg.mentors, cfg.time, condEnv);
     // 歳月・危機で街に居なくなった師は「引退した」などの印で示す（X-12。
     // 入門条件を満たしていても、街に居ない人には弟子入りできない）
     const gone = mentorAbsent(state, m);
@@ -368,7 +371,7 @@ export async function mentorMenu(state: GameState, ctx: MenuCtx): Promise<GameSt
   const idx = Number.parseInt(a.trim(), 10) - 1;
   if (!(idx >= 0 && idx < mentors.mentors.length)) return state;
   const m = mentors.mentors[idx]!;
-  if (!canApprentice(state, m.id, cfg.mentors, cfg.time)) {
+  if (!canApprentice(state, m.id, cfg.mentors, cfg.time, condEnv)) {
     out(t.text.mentorLocked);
     return state;
   }

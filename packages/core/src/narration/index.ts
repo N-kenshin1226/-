@@ -46,6 +46,12 @@ export interface NarrationTemplates {
        * （text には出来事の記事文が入る）
        */
       npcEvent: string[];
+      /**
+       * 天候（X-13）：今日の空の風景を滲ませる行。天候表のある世界では
+       * 見出しの後に毎朝1行載る。{weather}=空の表示名、{line}=その日の
+       * 風景の行（weather.json の種類ごとの語彙）
+       */
+      weather: string[];
     };
   };
   npcWord: {
@@ -111,6 +117,11 @@ export type NarrationRequest =
        * 旅立ち）。name は表示名、text は出来事の記事文 —— 見出しの後に必ず載る確報
        */
       npcEvents?: readonly { name: string; text: string }[];
+      /**
+       * 天候（X-13）：今日の空。name は表示名、line は風景の行。
+       * ある世界では見出しの後に必ず1行載る（街の風景として滲ませる）
+       */
+      weather?: { name: string; line: string };
     }
   /** NPCの一言。deed は直近の話題（例: 狩り・仕事）、standing は立場ID（口調が変わる） */
   | { scene: "npcWord"; name: string; deed?: string; standing?: string }
@@ -226,9 +237,20 @@ export class TemplateProvider implements NarrationProvider {
         const hintLines = (req.hints ?? []).map((h) =>
           tpl(this.pick(L.discoveryHint, rng), { text: h }),
         );
+        // 天候（X-13）：今日の空の風景を見出しの後に1行滲ませる
+        const weatherLines =
+          req.weather === undefined
+            ? []
+            : [
+                tpl(this.pick(L.weather, rng), {
+                  weather: req.weather.name,
+                  line: req.weather.line,
+                }),
+              ];
         return [
           t.newspaper.header,
           tpl(this.pick(pool, rng), vars),
+          ...weatherLines,
           ...occasionLines,
           ...npcEventLines,
           ...hintLines,

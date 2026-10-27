@@ -66,7 +66,12 @@
         "{occasion}の勝負は他者に譲った。それでも臨んだ名は記録に載る。"
       ],
       "discoveryHint": ["風の噂：{text}", "酒場の噂：{text}"],
-      "npcEvent": ["{text}", "続報 ―― {text}", "街の出来事として伝えられる ―― {text}"]
+      "npcEvent": ["{text}", "続報 ―― {text}", "街の出来事として伝えられる ―― {text}"],
+      "weather": [
+        "今朝の空は{weather}。{line}",
+        "天気は{weather}――{line}",
+        "{line}今日は{weather}の一日になりそうだ。"
+      ]
     }
   },
   "npcWord": {

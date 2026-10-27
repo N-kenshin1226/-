@@ -6,12 +6,24 @@ import {
   type TimeConfig,
   type TimeOfDay,
 } from "../time/index.js";
+import { weatherOf, type WeatherConfig } from "../weather/index.js";
 
 /**
  * 条件DSL（docs/03_world_systems.md §7、02 §9）。
  * 称号・派生スキル・認定・隠し要素の条件をコードではなくデータで書く。
- * 評価器は純関数 evaluate(cond, state, time) → boolean。
+ * 評価器は純関数 evaluate(cond, state, time, env?) → boolean。
  */
+
+/**
+ * 条件の評価環境（X-13）：state から導出する語彙の設定。
+ * {weather} のように「今日の天候」という state に無い語彙を評価するには、
+ * その判定に必要なコンテンツ設定をここから受け取る。
+ * env 省略時・該当の設定が無い世界では、その語彙の条件は成立しない（偽）。
+ */
+export interface CondEnv {
+  /** 天候表（weather.json 由来＋balance.weather。{weather} 条件の判定に使う） */
+  weather?: WeatherConfig;
+}
 
 /** 数値の比較（gte/lte/eq は複数指定で AND。全部省略は「存在する」で true） */
 export interface Compare {
@@ -51,7 +63,13 @@ export type Cond =
   | { or: Cond[] }
   | { not: Cond }
   /** 直近 days 日間（当日を含む）に kind（×target）の行動が atLeast 回以上 */
-  | { within: { days: number; kind: string; target?: string; atLeast: number } };
+  | { within: { days: number; kind: string; target?: string; atLeast: number } }
+  /**
+   * 今日の天候（X-13、docs/03 §5「時刻・天候・月齢…の組み合わせ」）。
+   * weather.json の kind id の集合一致（配列で複数指定可）。
+   * 天候表（env.weather）の無い世界では成立しない
+   */
+  | { weather: string | string[] };
 
 function compareNum(v: number, c: Compare): boolean {
   if (c.gte !== undefined && v < c.gte) return false;
@@ -60,10 +78,10 @@ function compareNum(v: number, c: Compare): boolean {
   return true;
 }
 
-export function evaluate(cond: Cond, state: GameState, time: TimeConfig): boolean {
-  if ("and" in cond) return cond.and.every((c) => evaluate(c, state, time));
-  if ("or" in cond) return cond.or.some((c) => evaluate(c, state, time));
-  if ("not" in cond) return !evaluate(cond.not, state, time);
+export function evaluate(cond: Cond, state: GameState, time: TimeConfig, env?: CondEnv): boolean {
+  if ("and" in cond) return cond.and.every((c) => evaluate(c, state, time, env));
+  if ("or" in cond) return cond.or.some((c) => evaluate(c, state, time, env));
+  if ("not" in cond) return !evaluate(cond.not, state, time, env);
   if ("within" in cond) {
     const w = cond.within;
     const cutoff = state.time.day - w.days + 1;
@@ -80,6 +98,14 @@ export function evaluate(cond: Cond, state: GameState, time: TimeConfig): boolea
   if ("money" in cond) return compareNum(state.player.money, cond.money);
   if ("work" in cond) {
     return matchesWork(state.ledger, cond.work);
+  }
+  if ("weather" in cond) {
+    // 今日の天候（X-13）：seed+day から導出するので state.rng は消費しない。
+    // 天候表の無い世界（env.weather 未設定）では天候条件は成立しない
+    if (env?.weather === undefined) return false;
+    const today = weatherOf(state.seed, state.time.day, env.weather, time);
+    const ids = Array.isArray(cond.weather) ? cond.weather : [cond.weather];
+    return ids.includes(today.kind.id);
   }
   if ("time" in cond) {
     const t = cond.time;

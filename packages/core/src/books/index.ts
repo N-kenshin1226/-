@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import type { Effect } from "../effects/index.js";
 import type { GameState } from "../state/types.js";
 import type { TimeConfig } from "../time/index.js";
@@ -53,9 +53,12 @@ export function shelfBooks<T extends BookDefLike>(
   state: GameState,
   cfg: { books: readonly T[] } | undefined,
   time: TimeConfig,
+  env?: CondEnv,
 ): T[] {
   if (cfg === undefined) return [];
-  return cfg.books.filter((b) => b.condition === undefined || evaluate(b.condition, state, time));
+  return cfg.books.filter(
+    (b) => b.condition === undefined || evaluate(b.condition, state, time, env),
+  );
 }
 
 /** 読了済みか */
@@ -100,12 +103,13 @@ export function buyBook(
   id: string,
   cfg: BooksConfig | undefined,
   time: TimeConfig,
+  env?: CondEnv,
 ): BuyBookResult {
   const def = cfg?.books.find((b) => b.id === id);
   if (def === undefined || state.player.money < def.price || state.books.owned.includes(id)) {
     return { state, ok: false };
   }
-  if (def.condition !== undefined && !evaluate(def.condition, state, time)) {
+  if (def.condition !== undefined && !evaluate(def.condition, state, time, env)) {
     return { state, ok: false };
   }
   return {

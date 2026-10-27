@@ -17,6 +17,7 @@ import {
   titles,
   voices,
   vows,
+  weather,
 } from "@trace/content";
 import { loadHiddenCrises } from "@trace/content/hidden";
 import { drawRivalCast, type CrisisConfig, type StepConfig } from "@trace/core";
@@ -140,6 +141,12 @@ export function stepConfig(): StepConfig {
     },
     /** 隠し要素（X-11、docs/03 §5。content/discoveries.json の発見表） */
     discoveries: discoveries.discoveries,
+    /**
+     * 天候（X-13、docs/03 §2・§5）：weather.json の種類表＋balance.weather の
+     * 注文係数。空は seed+day から導出する値 —— {weather} 条件の判定・
+     * 注文の日替わり係数・起床レポートと新聞の風景の行に使う
+     */
+    weather: { kinds: weather.kinds, orderPrice: balance.weather.orderPrice },
     /**
      * NPCの歳月（X-12、docs/07 §3）：npc_lifecycle.json の出来事表＋師匠の人物
      * 紐付け（mentors.json の npc）＋表示名の解決。ライバル（rival.<index>）の名は

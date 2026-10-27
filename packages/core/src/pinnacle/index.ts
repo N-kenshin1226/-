@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import { approaching, type NotifyRank } from "../notify/index.js";
 import type { GameState } from "../state/types.js";
 import type { TimeConfig } from "../time/index.js";
@@ -121,6 +121,7 @@ export function checkPinnacles(
   state: GameState,
   routes: readonly PinnacleRouteDef[],
   time: TimeConfig,
+  env?: CondEnv,
 ): PinnacleCheck {
   let next = state;
   const reached: PinnacleStageReached[] = [];
@@ -131,7 +132,7 @@ export function checkPinnacles(
     if (!isRouteVisible(route, next.flags)) continue;
     const stage = nextStage(next, route);
     if (stage === null) continue;
-    if (evaluate(stage.condition, next, time)) {
+    if (evaluate(stage.condition, next, time, env)) {
       next = { ...next, flags: { ...next.flags, [pinnacleFlag(route.id, stage.id)]: true } };
       reached.push({ route, stage });
       continue;

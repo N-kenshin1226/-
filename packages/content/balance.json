@@ -286,6 +286,14 @@
     "donationAmount": 50,
     "npcRumorDays": 14
   },
+  "weather": {
+    "orderPrice": {
+      "clear": { "eloquence": 1.1, "performance": 1.1 },
+      "cloud": {},
+      "rain": { "mining": 0.8, "fishing": 1.2, "performance": 1.1 },
+      "snow": { "mining": 0.8, "fishing": 0.8, "performance": 1.1 }
+    }
+  },
   "rust": {
     "graceDays": 14,
     "ratePerDay": 0.1,

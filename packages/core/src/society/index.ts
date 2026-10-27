@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import type { Effect } from "../effects/index.js";
 import type { GameState } from "../state/types.js";
 import type { TimeConfig } from "../time/index.js";
@@ -53,6 +53,7 @@ export function newOffers(
   state: GameState,
   defs: SocietyDefs,
   time: TimeConfig,
+  env?: CondEnv,
 ): { kind: "standing" | "profession"; id: string }[] {
   const offers: { kind: "standing" | "profession"; id: string }[] = [];
   const standing = defs.standings.find((s) => s.id === state.society.standing);
@@ -60,12 +61,12 @@ export function newOffers(
   for (const s of defs.standings) {
     if (s.order <= order || s.condition === undefined) continue;
     if (state.society.pendingOffers.includes(s.id)) continue;
-    if (evaluate(s.condition, state, time)) offers.push({ kind: "standing", id: s.id });
+    if (evaluate(s.condition, state, time, env)) offers.push({ kind: "standing", id: s.id });
   }
   if (state.society.profession === null) {
     for (const p of defs.professions) {
       if (state.society.pendingOffers.includes(p.id)) continue;
-      if (evaluate(p.condition, state, time)) offers.push({ kind: "profession", id: p.id });
+      if (evaluate(p.condition, state, time, env)) offers.push({ kind: "profession", id: p.id });
     }
   }
   return offers;
@@ -93,13 +94,14 @@ export function goalAchieved(
   state: GameState,
   defs: SocietyDefs,
   time: TimeConfig,
+  env?: CondEnv,
 ): LifeGoalDef | null {
   const id = state.society.goal;
   if (!id) return null;
   if (state.society.achievedGoals.includes(id)) return null;
   const goal = defs.lifeGoals.find((g) => g.id === id);
   if (!goal) return null;
-  return evaluate(goal.condition, state, time) ? goal : null;
+  return evaluate(goal.condition, state, time, env) ? goal : null;
 }
 
 /**

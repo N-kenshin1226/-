@@ -75,7 +75,9 @@ export type {
   RecordLifeOptions,
 } from "./chronicle/index.js";
 export { evaluate } from "./conditions/index.js";
-export type { Compare, Cond } from "./conditions/index.js";
+export type { Compare, Cond, CondEnv } from "./conditions/index.js";
+export { weatherOf, weatherPriceFactor, weatherToday } from "./weather/index.js";
+export type { Weather, WeatherConfig, WeatherKind } from "./weather/index.js";
 export { timingEngine, boardEngine, dealEngine } from "./minigame/index.js";
 export { smithingGame, simpleJudgmentQuality } from "./minigame/index.js";
 export type { SmithingConfig, SmithingResult } from "./minigame/index.js";

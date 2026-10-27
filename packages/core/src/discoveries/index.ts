@@ -1,4 +1,4 @@
-import { evaluate, type Cond } from "../conditions/index.js";
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import { createRng } from "../rng/index.js";
 import type { GameState } from "../state/types.js";
 import type { MoonPhase, TimeConfig } from "../time/index.js";
@@ -119,13 +119,14 @@ export function checkDiscoveries(
   state: GameState,
   defs: readonly DiscoveryDef[],
   time: TimeConfig,
+  env?: CondEnv,
 ): { state: GameState; found: DiscoveryDef[] } {
   let next = state;
   const found: DiscoveryDef[] = [];
   for (const def of defs) {
     if (next.flags[foundFlagKey(def.id)] === true) continue;
     const cond = resolveDiscoveryCondition(def, next.seed, time);
-    if (!evaluate(cond, next, time)) continue;
+    if (!evaluate(cond, next, time, env)) continue;
     const flags = { ...next.flags, [foundFlagKey(def.id)]: true };
     for (const f of def.setFlags) flags[f] = true;
     next = { ...next, flags };

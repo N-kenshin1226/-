@@ -52,6 +52,16 @@
         ]
       },
       "setFlags": []
+    },
+    {
+      "id": "rain_well",
+      "name": "雨宿りの井戸",
+      "foundText": "――雨を避けて佇んだ軒の下、古い井戸の縁に誰かの刻んだ目印を見つけた。",
+      "hint": "雨の日にだけ、軒下の古い井戸の縁に刻まれた目印が浮かぶという。足を止めた者にだけ見える",
+      "condition": {
+        "and": [{ "weather": "rain" }, { "within": { "days": 1, "kind": "wait", "atLeast": 1 } }]
+      },
+      "setFlags": ["seen.rain_well"]
     }
   ]
 }

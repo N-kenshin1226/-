@@ -17,6 +17,7 @@ import {
   bioLines,
   bookList,
   cfg,
+  condEnv,
   eventLines,
   innCost,
   innQuality,
@@ -275,7 +276,7 @@ export function SleepScreen({
 // 棚に並ぶのは条件を満たす書物だけ（X-5：失われた手記は転生フラグが立つと現れる）
 export function BookScreen({ state, act, back }: { state: GameState; act: Act; back: () => void }) {
   const canRead = canAct(state.time, cfg.time);
-  const shelf = shelfBooks(state, { books: bookList }, cfg.time);
+  const shelf = shelfBooks(state, { books: bookList }, cfg.time, condEnv);
   const entries: MenuEntry[] = shelf.flatMap((b): MenuEntry[] => {
     const owned = state.books.owned.includes(b.id);
     const read = state.books.read.some((r) => r.id === b.id);
