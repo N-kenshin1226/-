@@ -8,8 +8,7 @@ test("キーボードだけで1日遊べる（選択→鍛錬→宿→起床）"
   await expect(page.getByRole("heading", { name: "TRACE" })).toBeVisible();
   await page.waitForTimeout(250);
 
-  // タイトル：コマンド列は 傾向3 → 誓約5 → 出自3 の順。素浪人は9番目（↓×8）
-  for (let i = 0; i < 8; i++) await page.keyboard.press("ArrowDown");
+  // タイトル：コマンド列は 出自3 → 傾向3 → 誓約5 の順。先頭が流れてきた孤児（Enter のみ）
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("menu")).toBeVisible();
 

@@ -186,6 +186,10 @@ button {
 .cmd:disabled .cmd-sub {
   color: #5a5444;
 }
+.cmd-label {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .cmd-sub {
   margin-left: auto;
   font-size: 13px;

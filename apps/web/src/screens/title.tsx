@@ -1,6 +1,7 @@
 /**
- * タイトル画面（UI-01）：夜明け前の街の情景にロゴ、運命（傾向・誓約）と出自を
- * 一本のコマンド列で選ぶ。Enter で確定、誓約は Enter で重ね掛けする
+ * タイトル画面（UI-01）：夜明け前の街の情景にロゴ、出自と運命（傾向・誓約）を
+ * 一本のコマンド列で選ぶ。開始につながる「出自」を先頭に置く（運命は選ばなくても
+ * 既定値で始められる任意項目＝後段に回す）。Enter で確定、誓約は Enter で重ね掛けする
  */
 import {
   loadChronicle,
@@ -81,17 +82,18 @@ export function TitleScreen({
   // 年代記はセーブとは別領域に残る（T-38。新しい周の始まりでも見える）
   const lives = loadChronicle().lives.length;
   const entries: MenuEntry[] = [
-    ...tendencyEntries(fate, setFate),
-    { kind: "divider" },
-    ...vowEntries(fate, setFate),
-    { kind: "divider" },
     { kind: "header", text: "出自 ― あなたは何者だったか" },
     ...originList.map((o) => ({
       id: `origin-${o.id.replace("origin.", "")}`,
-      label: o.name,
+      label: <span className="cmd-label">{o.name}</span>,
       sub: o.desc,
       onPick: () => startNew(o.id),
     })),
+    { kind: "divider" },
+    { kind: "header", text: "―― 選ばなくても始められる ――" },
+    ...tendencyEntries(fate, setFate),
+    { kind: "divider" },
+    ...vowEntries(fate, setFate),
   ];
   return (
     <div data-testid="app" className="scene">
