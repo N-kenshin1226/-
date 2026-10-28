@@ -23,7 +23,11 @@ describe("enemies.json", () => {
     // 最弱の帯と最強の帯のあいだに段があることを見る
     const bands = [...enemiesByArea()].map(
       ([area, group]) =>
-        [area, Math.min(...group.map((e) => e.challenge)), Math.max(...group.map((e) => e.challenge))] as const,
+        [
+          area,
+          Math.min(...group.map((e) => e.challenge)),
+          Math.max(...group.map((e) => e.challenge)),
+        ] as const,
     );
     const weakestMax = Math.min(...bands.map(([, , max]) => max));
     const strongestMin = Math.max(...bands.map(([, min]) => min));
