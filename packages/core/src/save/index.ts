@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -186,6 +186,29 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
         version: 21,
         life: { ...life, rep: {} },
         world: { kind: "legacy", recipe: 0 },
+      };
+    },
+    /**
+     * 21 → 22: 地方の地図と旅（G-02、docs/10 §7）。life.map（地図の霧の
+     * 刻印）を追加する。旧セーブは「いる町を訪れた」状態で始まり、
+     * 隣町・その町の外の地域の名は刻まなくても導出される（mapKnownSet）。
+     * 旅の途中（journey）の新欄 from/way/road は省略可なので、進行中の
+     * 旅はそのまま動き続ける
+     */
+    21: (old) => {
+      const life = (old.life ?? {}) as Record<string, unknown>;
+      const town = typeof life.town === "string" ? life.town : "ardi";
+      const map = (life.map ?? {}) as Record<string, unknown>;
+      return {
+        ...old,
+        version: 22,
+        life: {
+          ...life,
+          map: {
+            visited: Array.isArray(map.visited) ? map.visited : [town],
+            heard: Array.isArray(map.heard) ? map.heard : [town],
+          },
+        },
       };
     },
   };

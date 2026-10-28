@@ -128,6 +128,11 @@ export function MenuScreen({
       playSfx("confirm");
       setScreen({ name: "news", events: [] });
     },
+    // 地方の地図（G-02）：町・道・霧の見取り図を開く
+    m: () => {
+      playSfx("confirm");
+      setScreen({ name: "map" });
+    },
   });
 
   const voice = townVoice(state);
@@ -371,6 +376,7 @@ export function MenuScreen({
         items={[
           ["↑↓", "場所を選ぶ"],
           ["Enter", "向かう"],
+          ["M", "地方の地図"],
           ["S", "ステータス"],
           ["N", "新聞"],
         ]}

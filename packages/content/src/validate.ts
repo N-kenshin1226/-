@@ -1136,6 +1136,7 @@ try {
         id?: string;
         effects?: {
           closeAreas?: string[];
+          closeRoads?: string[];
           price?: { kind?: string }[];
           enemy?: { id?: string; area?: string }[];
           npc?: { id?: string }[];
@@ -1152,6 +1153,18 @@ try {
   const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
   const enemyIds = new Set((enemiesRaw.enemies ?? []).map((e) => e.id));
   const areas = new Set((enemiesRaw.enemies ?? []).map((e) => e.area));
+  // 道の通行止め（G-02）：種別（highway/mountain/sea）か、life.json の
+  // 道の id（journeyIdOf —— 町idを昇順に . で繋いだもの）だけが書ける
+  // （生成世界の道 id は世界シード次第で内容側からは分からない）
+  const lifeRawForRoads = JSON.parse(readFileSync(join(root, "life.json"), "utf8")) as {
+    journeys?: { from?: string; to?: string }[];
+  };
+  const roadIds = new Set(["highway", "mountain", "sea"]);
+  for (const j of lifeRawForRoads.journeys ?? []) {
+    if (j.from !== undefined && j.to !== undefined) {
+      roadIds.add([j.from, j.to].sort().join("."));
+    }
+  }
   const npcIds = new Set([
     ...(canonRaw.figures ?? []).map((f) => f.id),
     ...(voicesRaw.npcs ?? []).map((n) => n.id),
@@ -1162,6 +1175,9 @@ try {
       const label = `crises ${c.id ?? "?"} 段階 ${s.id ?? "?"}`;
       for (const a of s.effects?.closeAreas ?? []) {
         if (!areas.has(a)) bad.push(`${label}: 閉鎖エリア ${a}`);
+      }
+      for (const r of s.effects?.closeRoads ?? []) {
+        if (!roadIds.has(r)) bad.push(`${label}: 通行止めの道 ${r}`);
       }
       for (const p of s.effects?.price ?? []) {
         if (p.kind !== undefined && !skillIds.has(p.kind)) {
@@ -1533,7 +1549,12 @@ try {
 try {
   const lifeRaw = JSON.parse(readFileSync(join(root, "life.json"), "utf8")) as {
     towns?: Record<string, { name?: string }>;
-    journeys?: { from?: string; to?: string; days?: number }[];
+    journeys?: {
+      from?: string;
+      to?: string;
+      days?: number;
+      enemies?: { id?: string }[];
+    }[];
     stroll?: Record<
       string,
       {
@@ -1685,6 +1706,21 @@ try {
     }
     for (const id of Object.keys(e.reward?.items ?? {})) {
       if (!itemIds.has(id)) bad.push(`${label}: 未定義の報酬品 ${id}`);
+    }
+  }
+  // 道中の敵（G-02、docs/10 §7）：道の遭遇に出る敵は実在するもの
+  const roadEnemyIds = new Set(
+    (
+      JSON.parse(readFileSync(join(root, "enemies.json"), "utf8")) as {
+        enemies?: { id?: string }[];
+      }
+    ).enemies?.map((e) => e.id) ?? [],
+  );
+  for (const j of lifeRaw.journeys ?? []) {
+    for (const e of j.enemies ?? []) {
+      if (e.id !== undefined && !roadEnemyIds.has(e.id)) {
+        bad.push(`life.json journeys ${j.from ?? "?"}↔${j.to ?? "?"}: 未定義の敵 ${e.id}`);
+      }
     }
   }
   // 場所の町属性・旅の行き先は実在の町。journey 行動の行き先には道がある

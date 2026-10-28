@@ -31,6 +31,29 @@ const cfg: WorldGenConfig = {
   mentor: { feeMin: 40, feeMax: 60, potentialRecover: 20, gainVs: 1, condition: 8 },
   rep: { max: 100, errand: 4, work: 2, donate: 3, pricePer: 0.002 },
   errandBond: 8,
+  // 道の振り分け・地図の座標（G-02、recipe 2〜）
+  roads: {
+    seaPortChance: 0.6,
+    mountainRing: 2,
+    mountainChance: 0.5,
+    dangerBase: 1,
+    dangerPerRing: 1.5,
+    dangerPerDay: 0.5,
+    dangerJitter: 0.5,
+    dangerMin: 1,
+    dangerMax: 8,
+    checkpointChance: 0.3,
+    checkpointFee: { min: 8, max: 20 },
+    closedSeasons: { mountain: [3], sea: [3] },
+    enemies: { min: 1, max: 3 },
+  },
+  map: {
+    center: [50, 50],
+    radiusPerRing: 24,
+    angleJitter: 0.5,
+    radiusJitter: 5,
+    margin: 8,
+  },
 };
 
 const file: WorldTypeFile = {

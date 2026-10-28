@@ -27,6 +27,7 @@ import {
   crisisFinaleOffers,
   crisisInvolvement,
   crisisPriceFactor,
+  crisisRoadClosed,
   crisisSeasonTurn,
   crisisTouchpointForCombat,
   crisisTouchpointForWork,
@@ -81,16 +82,31 @@ import {
   itemCount,
   itemPrice,
   journeyBetween,
+  journeyCost,
+  journeyDaysFor,
+  journeyIdOf,
+  journeyWayOk,
+  mapKnownSet,
+  markAllHeard,
+  markHeard,
+  markVisited,
   marketStock,
   mealToday,
+  placeName,
   prayedToday,
   repOf,
+  revealPick,
+  roadEncounter,
+  roadEncounterDayKey,
+  roadKindOf,
+  roadSeasonClosed,
   strollTableOf,
   townOf,
   townName,
   withItem,
   withRep,
   type ItemDef,
+  type JourneyWay,
   type LifeConfig,
 } from "./life/index.js";
 import { linkFlat, linkFlatCap, linkSum, type SkillLinks } from "./links/index.js";
@@ -579,9 +595,11 @@ export type Command =
   | { type: "enchant"; weapon: string }
   /**
    * 旅に出る（1行動）。to は行き先の町 id（life.json journeys の道がある
-   * 町に限る）。以後は野営の眠りで日が進み、日数ぶんの野営で着く
+   * 町に限る）。以後は野営の眠りで日が進み、日数ぶんの野営で着く。
+   * way（G-02）は通い方 —— foot/caravan/horse/ship（省略時は徒歩）。
+   * 隊商同行・騎乗・船は料金と引き換えに安全や速さが変わる
    */
-  | { type: "journey"; to: string };
+  | { type: "journey"; to: string; way?: JourneyWay };
 
 export interface StepResult {
   state: GameState;
@@ -830,6 +848,20 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 祈りの刻印（G-01。祠などの地点の出来事）：その日の眠りが少し深くなる
       next = { ...next, life: { ...next.life, prayedDay: next.time.day } };
     }
+    if (outcome.reveal === true && cfg.life !== undefined) {
+      // 噂話（G-02、docs/10 §7）：知らない町・地域の名が1つ聞き覚えに加わり、
+      // 地図の霧が晴れる（旅人・行商人の口から届く名。既知の場所は数えない）
+      const seq = next.counters["map.heard.n"] ?? 0;
+      const pick = revealPick(next.seed, next.time.day, seq, cfg.life, mapKnownSet(next, cfg.life));
+      if (pick !== undefined) {
+        next = {
+          ...next,
+          life: { ...next.life, map: markHeard(next.life.map, pick) },
+          counters: { ...next.counters, "map.heard.n": seq + 1 },
+        };
+        events.push({ type: "mapHeard", place: pick });
+      }
+    }
     if (outcome.atom !== undefined) {
       // 手がかり：アトムを読み終えたことにする（出来事の atom と同じ道。
       // 読み済みなら何も起きない）
@@ -868,6 +900,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       });
       // 長い道のり（K-01）：健脚・地理・旅慣れの技能に少し経験が入る（travel.gain）
       grantLinkGains("travel.gain");
+      // G-02：行った場所は地図の霧の外に出る（行ったことのある場所は濃い印になる）
+      if (command.to !== undefined && cfg.life !== undefined) {
+        next = { ...next, life: { ...next.life, map: markVisited(next.life.map, command.to) } };
+      }
       break;
     }
     case "sleep":
@@ -1046,7 +1082,16 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (camping && cfg.life !== undefined && next.life.journey !== null) {
         const j = { ...next.life.journey, daysLeft: next.life.journey.daysLeft - 1 };
         if (j.daysLeft <= 0) {
-          next = { ...next, life: { ...next.life, town: j.to, journey: null } };
+          next = {
+            ...next,
+            life: {
+              ...next.life,
+              town: j.to,
+              journey: null,
+              // G-02：着いた町は訪れた刻印が立ち、地図の霧が晴れる
+              map: markVisited(next.life.map, j.to),
+            },
+          };
           events.push({ type: "journeyArrived", town: j.to });
           const arrive =
             cfg.life.texts?.arrive?.replaceAll("{town}", townName(j.to, cfg.life)) ??
@@ -1054,6 +1099,39 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           report.surprises.push(arrive);
         } else {
           next = { ...next, life: { ...next.life, journey: j } };
+        }
+      }
+
+      // G-02 朝刊の噂（docs/10 §7「噂・新聞で霧が晴れる」）：町にいる眠りでは、
+      // 朝刊の記事が地方のどこかの名を聞き覚えに運ぶことがある（野営では新聞は届かない）。
+      // 聞き覚える場所は世界シード×日×通し番号で決定的に1つ選ばれる
+      if (!camping && cfg.life !== undefined) {
+        const newsChance = cfg.life.journey?.newsRevealChance ?? 0;
+        if (newsChance > 0) {
+          const rolled = createRng(`${next.seed}:newsreveal:${next.time.day}`).next() < newsChance;
+          if (rolled) {
+            const seq = next.counters["map.heard.n"] ?? 0;
+            const pick = revealPick(
+              next.seed,
+              next.time.day,
+              seq,
+              cfg.life,
+              mapKnownSet(next, cfg.life),
+            );
+            if (pick !== undefined) {
+              next = {
+                ...next,
+                life: { ...next.life, map: markHeard(next.life.map, pick) },
+                counters: { ...next.counters, "map.heard.n": seq + 1 },
+              };
+              events.push({ type: "mapHeard", place: pick });
+              const name = placeName(pick, cfg.life);
+              const line =
+                cfg.life.texts?.newsHeard?.replaceAll("{name}", name) ??
+                `――朝刊の噂：${name}の名を聞き覚えた`;
+              report.surprises.push(line);
+            }
+          }
         }
       }
 
@@ -2270,10 +2348,45 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // （旅の途中は常に "road" —— 街道の出来事しか起きない）。
       // G-01：場所・町の型に応じた型別の表があればそちらを引く
       if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
-      const scope = next.life.journey !== null ? "road" : (command.scope ?? "town");
+      const j = next.life.journey;
+      const scope = j !== null ? "road" : (command.scope ?? "town");
+      const seq = next.counters["action.stroll"] ?? 0;
+      // G-02 道中の遭遇：旅の途中の散策は、危険な道では敵の気配に遭うことが
+      // ある（1日1回まで。道の危険度×係数で決定的に引き、遭えば街道の
+      // 出来事にはならない —— 遭遇がその日の脅威になる）
+      if (j !== null) {
+        const road =
+          j.road !== undefined
+            ? cfg.life.journeys.find((r) => journeyIdOf(r) === j.road)
+            : undefined;
+        const enemy = roadEncounter(
+          next.seed,
+          next.time.day,
+          seq,
+          road,
+          (j.way as JourneyWay | undefined) ?? "foot",
+          (next.counters[roadEncounterDayKey()] ?? -1) === next.time.day,
+          cfg.life,
+        );
+        if (enemy !== undefined) {
+          next.time = advanceTime(next.time, cfg.time);
+          next = applyActionLoad(next, "stroll", cfg.body);
+          next = {
+            ...next,
+            counters: { ...next.counters, [roadEncounterDayKey()]: next.time.day },
+          };
+          events.push({
+            type: "actionPerformed",
+            kind: "stroll",
+            day: next.time.day,
+            variant: scope,
+          });
+          events.push({ type: "roadEncounter", enemy, road: j.road });
+          break;
+        }
+      }
       const table =
         scope === "road" ? "road" : strollTableOf(cfg.life, scope, command.place, townOf(next));
-      const seq = next.counters["action.stroll"] ?? 0;
       const outcome = drawStroll(next.seed, next.time.day, table, seq, cfg.life);
       if (outcome === undefined) break;
       next.time = advanceTime(next.time, cfg.time);
@@ -2387,6 +2500,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       };
       next = { ...next, life: withItem(next, command.id, n) };
       events.push({ type: "itemBought", id: command.id, n, amount: cost });
+      // G-02：地図の購入（reveal:"map" の品）—— 地方すべての町と地域の
+      // 名が聞き覚えに刻まれ、地図の霧が晴れる（訪れた印は立たない）
+      if (def.reveal === "map") {
+        next = { ...next, life: { ...next.life, map: markAllHeard(next.life.map, cfg.life) } };
+        events.push({ type: "mapRevealed" });
+      }
       break;
     }
     case "sellItem": {
@@ -2773,14 +2892,42 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       break;
     }
     case "journey": {
-      // 旅に出る：道のある隣町へ。以後は野営の眠りで日が進み、日数ぶんで着く
+      // 旅に出る：道のある隣町へ。以後は野営の眠りで日が進み、日数ぶんで着く。
+      // G-02（docs/10 §7）：通い方（徒歩・隊商同行・騎乗・船）で料金と
+      // 日数が変わり、季節で封じられる道・危機で閉ざされる道・関所の
+      // 通行料が絡む。出発の町と道は旅の刻印に残る（道中の出来事と
+      // 地図の行程表示が読む）
       if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
       if (next.life.journey !== null) break;
-      const road = journeyBetween(cfg.life, townOf(next), command.to);
+      const from = townOf(next);
+      const road = journeyBetween(cfg.life, from, command.to);
       if (road === undefined) break;
+      // 季節で封じられる道（山道の冬・海路の荒れなど。道ごとの定義）
+      if (roadSeasonClosed(road, describeTime(next.time, cfg.time).season)) break;
+      // 危機で閉ざされる道（段階の影響 closeRoads。道の id か種別で封じられる）
+      if (crisisRoadClosed(next, cfg.crisis, { id: journeyIdOf(road), kind: roadKindOf(road) }))
+        break;
+      // 通い方：海路には船だけ、陸路には船は出ない。料金は運賃＋関所の通行料
+      const way = command.way ?? "foot";
+      if (!journeyWayOk(road, way)) break;
+      const cost = journeyCost(road, way, cfg.life);
+      if (next.player.money < cost) break;
+      const days = journeyDaysFor(road, way, cfg.life);
       next = {
         ...next,
-        life: { ...next.life, journey: { to: command.to, daysLeft: road.days } },
+        player: { ...next.player, money: next.player.money - cost },
+        life: {
+          ...next.life,
+          journey: {
+            to: command.to,
+            daysLeft: days,
+            from,
+            way,
+            road: journeyIdOf(road),
+          },
+          // 行き先の町は旅立つ時点で名が知れる（道の行き先は霧ではない）
+          map: markHeard(next.life.map, command.to),
+        },
       };
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "journey", cfg.body);
@@ -2790,7 +2937,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         day: next.time.day,
         target: command.to,
       });
-      events.push({ type: "journeyStarted", to: command.to, days: road.days });
+      events.push({
+        type: "journeyStarted",
+        to: command.to,
+        days,
+        ...(way !== "foot" ? { way } : {}),
+      });
       break;
     }
   }

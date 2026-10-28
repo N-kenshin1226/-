@@ -88,6 +88,7 @@ import { EndingScreen } from "./screens/ending.js";
 import { NewsScreen, NoticeOverlay, WakeScreen } from "./screens/daily.js";
 import { SettingsScreen } from "./screens/settings.js";
 import { JourneyScreen, LifeScreen } from "./screens/life.js";
+import { MapScreen } from "./screens/map.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
 import { townTypeNameOf } from "./world.js";
 import { sceneryForScreen } from "./scenery.js";
@@ -188,6 +189,7 @@ const HUD_SCREENS = new Set<Screen["name"]>([
   "mentor",
   "life",
   "journey",
+  "map",
 ]);
 
 /** 会話窓（世界の記録）を出す画面。起床・新聞・通知など別の窓が主役の画面や、
@@ -204,6 +206,7 @@ const LOG_SCREENS = new Set<Screen["name"]>([
   "mentor",
   "life",
   "journey",
+  "map",
 ]);
 
 export function App() {
@@ -1000,7 +1003,10 @@ function ScreenView(props: {
       );
     case "journey":
       // 旅の途中（P-02）：町と町の間の街道。野営で日が進む
-      return <JourneyScreen state={state} act={act} back={toMenu} />;
+      return <JourneyScreen state={state} act={act} back={toMenu} setScreen={setScreen} />;
+    case "map":
+      // 地方の地図（G-02）：町・道・地域の見取り図と旅立ち
+      return <MapScreen state={state} act={act} setScreen={setScreen} back={toBack()} />;
     case "status":
       return <StatusScreen state={state} back={toBack()} />;
     case "settings":

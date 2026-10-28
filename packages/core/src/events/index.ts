@@ -301,12 +301,32 @@ export type ActionEvent =
   /** 掲示板の依頼を果たした（1行動。id は life.json errands の id） */
   | { type: "errandDone"; id: string }
   /**
-   * 旅に出た（1行動。to は行き先の町 id、days は道中に要する日数）。
+   * 旅に出た（1行動。to は行き先の町 id、days は道中に要する日数、
+   * way は通い方 —— foot/caravan/horse/ship。G-02。省略時は徒歩）。
    * 以後は野営の眠りで daysLeft が減り、0 の朝に着く
    */
-  | { type: "journeyStarted"; to: string; days: number }
+  | { type: "journeyStarted"; to: string; days: number; way?: string }
   /** 町に着いた（旅の最後の野営の朝。town は着いた町の id） */
   | { type: "journeyArrived"; town: string }
+  /**
+   * 道中で敵と遭遇した（G-02、docs/10 §7「移動中の出来事・遭遇」。
+   * 旅の途中の散策が、危険な道では敵の気配になる。enemy は enemies.json の
+   * id、road は道の id（journeyIdOf）。画面は遭遇を選んだらその敵との
+   * 戦いへ進む）
+   */
+  | { type: "roadEncounter"; enemy: string; road?: string }
+  /**
+   * 場所の名を聞き覚えた（G-02、docs/10 §7「噂・新聞で霧が晴れる」。
+   * 旅人の噂・朝刊・出来事の噂話で map.heard に刻まれた。place は町・
+   * 地域の id）
+   */
+  | { type: "mapHeard"; place: string }
+  /**
+   * 地方の地図を手に入れた（G-02、docs/10 §7「地図の購入で霧が晴れる」。
+   * map 品（items.json の reveal:"map"）を買ったとき。地方すべての町と
+   * 地域の名が聞き覚えに刻まれる）
+   */
+  | { type: "mapRevealed" }
   /**
    * 町の評判が上がった（G-01、docs/10 §4。掲示板・仕事・寄付でその町の
    * 分だけ積み上がる。amount は増分、total は増分後の評判）

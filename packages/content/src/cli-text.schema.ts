@@ -401,6 +401,39 @@ export const cliTextSchema = z
         travelReturn: z.string(),
         placeHere: z.string(),
         placeBack: z.string(),
+        /**
+         * 地方の地図（G-02、docs/10 §7）：題字・行き先の問い・凡例の語・
+         * 現在地の印・閉ざされた道（季節 {season}／危機）・荒れた地域の印・
+         * 地図を開く行動名・旅と地域の欄の見出し
+         */
+        regionTitle: z.string(),
+        regionPick: z.string(),
+        regionLegend: z.string(),
+        regionHere: z.string(),
+        regionClosedSeason: z.string(),
+        regionClosedCrisis: z.string(),
+        regionRavaged: z.string(),
+        regionMapOpen: z.string(),
+        regionJourneyHead: z.string(),
+        regionRegionHead: z.string(),
+        /**
+         * 旅の選択肢（G-02）：旅立ちの行動名（{town} は行き先の町名、
+         * {way} は通い方の名）・日数の行（{days}）・料金の行（{fee}）・
+         * 危険度の行（{danger}）・関所の行（{fee}）・通い方の名4種・
+         * 街道を行く題字（{days} は残りの野営数）・道中の遭遇の行（{name} は敵名）
+         */
+        journeyDepart: z.string(),
+        journeyDepartWay: z.string(),
+        journeyDays: z.string(),
+        journeyFee: z.string(),
+        journeyDanger: z.string(),
+        journeyCheckpoint: z.string(),
+        wayFoot: z.string(),
+        wayCaravan: z.string(),
+        wayHorse: z.string(),
+        wayShip: z.string(),
+        journeyCamp: z.string(),
+        roadEncounterLine: z.string(),
         /** 引退・転生（T-40）：確認・継承の選択（記憶の称号／遺物）・新しい生の告知 */
         retireConfirm: z.string(),
         resetConfirm: z.string(),
@@ -556,6 +589,16 @@ export const cliTextSchema = z
             bondMissed: z.string(),
             errandDone: z.string(),
             journeyStarted: z.string(),
+            /** 通い方のある旅の開始（G-02。{town}/{way}/{days} を差し込む） */
+            journeyStartedWay: z.string(),
+            /**
+             * 地図の霧晴れ（G-02、docs/10 §7）：噂・朝刊で名を聞き覚えた行
+             * （{name} は場所の名）・地方の地図を買った行
+             */
+            mapHeard: z.string(),
+            mapRevealed: z.string(),
+            /** 朝刊の噂で名が知れた起床ログの行（{name} は場所の名） */
+            newsHeard: z.string(),
             /** 町ごとの評判が積まれた（G-01。記録の行のみ） */
             repGained: z.string(),
           })

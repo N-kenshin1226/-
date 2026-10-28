@@ -698,6 +698,42 @@ export const balanceSchema = z
         gambleDifficulty: z.number().min(0).max(100),
         /** まかせ料理の出来の基準（実技ミニゲーム無しのときの出来の中央値） */
         cookQualityBase: z.number().min(0).max(100),
+        /**
+         * 旅の道中（G-02、docs/10 §7）：通い方の料金・速さ、道中の遭遇と
+         * 朝刊の噂の係数。徒歩は無料で常に選べる
+         */
+        journey: z
+          .object({
+            /** 道中の遭遇の基準率（道の危険度1点あたりの散策1回の遭遇率） */
+            encounterPerDanger: z.number().min(0).max(1),
+            /** 通い方：隊商への同行・騎乗・船（海路は船だけ、陸路に船は出ない） */
+            ways: z
+              .object({
+                /** 隊商への同行：安全だが料金が掛かる（遭遇率に encounterFactor を乗せる） */
+                caravan: z
+                  .object({
+                    feePerDay: z.number().nonnegative(),
+                    encounterFactor: z.number().min(0).max(1),
+                  })
+                  .strict(),
+                /** 騎乗：日数が daysFactor 倍に縮む。料金は縮んだ日数で計る */
+                horse: z
+                  .object({
+                    feePerDay: z.number().nonnegative(),
+                    daysFactor: z.number().min(0.1).max(1),
+                    encounterFactor: z.number().min(0),
+                  })
+                  .strict(),
+                /** 船（海路）：日数が daysFactor 倍に縮む定額料金 */
+                ship: z
+                  .object({ fee: z.number().nonnegative(), daysFactor: z.number().min(0.1).max(1) })
+                  .strict(),
+              })
+              .strict(),
+            /** 朝刊の噂で未知の町・地域が聞き覚えに加わる1日あたりの確率 */
+            newsRevealChance: z.number().min(0).max(1),
+          })
+          .strict(),
       })
       .strict(),
     /**
@@ -1110,6 +1146,56 @@ export const balanceSchema = z
           .strict(),
         /** 掲示依頼の仲の増分（bond:true → その町の宿屋の主） */
         errandBond: z.number().positive(),
+        /**
+         * 道の振り分け（G-02、docs/10 §7）：種別・危険度・関所・季節閉鎖・
+         * 道中の敵を組み立てる係数（core/world の WorldGenConfig.roads）
+         */
+        roads: z
+          .object({
+            /** 両端が港町のとき道が海路になる確率 */
+            seaPortChance: z.number().min(0).max(1),
+            /** この輪以遠をまたぐ道が山道になる輪と確率 */
+            mountainRing: z.number().int().min(1),
+            mountainChance: z.number().min(0).max(1),
+            /** 道の危険度：base ＋ 輪 × perRing ＋ (日数−1) × perDay ± jitter */
+            dangerBase: z.number().nonnegative(),
+            dangerPerRing: z.number().nonnegative(),
+            dangerPerDay: z.number().nonnegative(),
+            dangerJitter: z.number().nonnegative(),
+            dangerMin: z.number().min(1),
+            dangerMax: z.number().min(1),
+            /** 関所が出る確率（街道にだけ）と通行料の範囲 */
+            checkpointChance: z.number().min(0).max(1),
+            checkpointFee: z
+              .object({ min: z.number().int().nonnegative(), max: z.number().int().nonnegative() })
+              .strict()
+              .refine((f) => f.min <= f.max, { message: "checkpointFee.min <= max が必要" }),
+            /** 種別ごとの通行止めになる季節（季節のインデックスの列） */
+            closedSeasons: z.record(
+              z.string().min(1),
+              z.array(z.number().int().min(0).max(3)).min(1),
+            ),
+            /** 道中の敵の種類数の範囲（両端の町の地域の敵から選ぶ） */
+            enemies: z
+              .object({ min: z.number().int().min(0), max: z.number().int().min(0) })
+              .strict()
+              .refine((e) => e.min <= e.max, { message: "enemies.min <= max が必要" }),
+          })
+          .strict(),
+        /**
+         * 地方の地図の座標（G-02）：始まりの町が center、輪1つあたり
+         * radiusPerRing（%）だけ外へ広がる。角度は黄金角＋ゆらぎで散らす
+         */
+        map: z
+          .object({
+            center: z.tuple([z.number().min(0).max(100), z.number().min(0).max(100)]),
+            radiusPerRing: z.number().positive(),
+            angleJitter: z.number().nonnegative(),
+            radiusJitter: z.number().nonnegative(),
+            /** 端の町が地図の外に出ないようの余白（%） */
+            margin: z.number().min(0).max(20),
+          })
+          .strict(),
       })
       .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */

@@ -48,6 +48,12 @@ export interface CrisisNpcEffect {
 /** 段階ごとの世界への影響（その段階の間だけ効く。NPCの離散・死亡は元に戻らない） */
 export interface CrisisStageEffects {
   closeAreas?: readonly string[];
+  /**
+   * 通行止めになる道（G-02、docs/10 §7「危機の影響を地図に出す」）。
+   * 道の id（journeyIdOf —— 町id同士を . で繋いだもの）か道の種別
+   * （"highway"/"mountain"/"sea"）を書く。この段階の間はその道を旅できない
+   */
+  closeRoads?: readonly string[];
   price?: readonly CrisisPriceEffect[];
   enemy?: readonly CrisisEnemyEffect[];
   npc?: readonly CrisisNpcEffect[];
@@ -517,6 +523,7 @@ export function crisisTypeOf(state: GameState, cfg: CrisisConfig): CrisisTypeDef
 /** 現在の段階の影響（正規化済み。解決した危機の影響は解け、滅びた世界の影響は残る） */
 export interface ActiveCrisisEffects {
   closeAreas: string[];
+  closeRoads: string[];
   price: CrisisPriceEffect[];
   enemy: CrisisEnemyEffect[];
   npc: CrisisNpcEffect[];
@@ -526,6 +533,7 @@ export interface ActiveCrisisEffects {
 export function crisisEffects(state: GameState, cfg: CrisisConfig): ActiveCrisisEffects {
   const empty: ActiveCrisisEffects = {
     closeAreas: [],
+    closeRoads: [],
     price: [],
     enemy: [],
     npc: [],
@@ -538,6 +546,7 @@ export function crisisEffects(state: GameState, cfg: CrisisConfig): ActiveCrisis
   if (e === undefined) return empty;
   return {
     closeAreas: [...(e.closeAreas ?? [])],
+    closeRoads: [...(e.closeRoads ?? [])],
     price: [...(e.price ?? [])],
     enemy: [...(e.enemy ?? [])],
     npc: [...(e.npc ?? [])],
@@ -553,6 +562,22 @@ export function crisisAreaClosed(
 ): boolean {
   if (cfg === undefined) return false;
   return crisisEffects(state, cfg).closeAreas.includes(area);
+}
+
+/**
+ * 道が危機で通行止めになっているか（G-02、docs/10 §7「閉ざされる道」）。
+ * 道の id（journeyIdOf）か道の種別（"highway"/"mountain"/"sea"）の
+ * どちらかが closeRoads に載れば封じられる。段階が変われば解放される
+ */
+export function crisisRoadClosed(
+  state: GameState,
+  cfg: CrisisConfig | undefined,
+  road: { id: string; kind?: string },
+): boolean {
+  if (cfg === undefined) return false;
+  const closed = crisisEffects(state, cfg).closeRoads;
+  if (closed.includes(road.id)) return true;
+  return road.kind !== undefined && closed.includes(road.kind);
 }
 
 /** 危機由来の物価（仕事の報酬倍率。kind は系統別に絞る。全種別エントリも乗る） */

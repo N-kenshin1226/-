@@ -477,7 +477,29 @@
       "donate": 1,
       "pricePer": 0.001
     },
-    "errandBond": 8
+    "errandBond": 8,
+    "roads": {
+      "seaPortChance": 0.6,
+      "mountainRing": 2,
+      "mountainChance": 0.45,
+      "dangerBase": 1,
+      "dangerPerRing": 1.5,
+      "dangerPerDay": 0.5,
+      "dangerJitter": 0.6,
+      "dangerMin": 1,
+      "dangerMax": 8,
+      "checkpointChance": 0.3,
+      "checkpointFee": { "min": 8, "max": 22 },
+      "closedSeasons": { "mountain": [3], "sea": [3] },
+      "enemies": { "min": 1, "max": 3 }
+    },
+    "map": {
+      "center": [50, 52],
+      "radiusPerRing": 24,
+      "angleJitter": 0.55,
+      "radiusJitter": 5,
+      "margin": 8
+    }
   },
   "life": {
     "mealSleepFactor": 0.004,
@@ -491,7 +513,16 @@
     "prayDifficulty": 20,
     "gambleWinChance": 0.44,
     "gambleDifficulty": 25,
-    "cookQualityBase": 45
+    "cookQualityBase": 45,
+    "journey": {
+      "encounterPerDanger": 0.045,
+      "ways": {
+        "caravan": { "feePerDay": 12, "encounterFactor": 0.35 },
+        "horse": { "feePerDay": 25, "daysFactor": 0.6, "encounterFactor": 0.7 },
+        "ship": { "fee": 60, "daysFactor": 0.7 }
+      },
+      "newsRevealChance": 0.3
+    }
   },
   "weather": {
     "orderPrice": {

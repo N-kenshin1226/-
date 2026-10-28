@@ -2,17 +2,35 @@
   "version": 1,
   "towns": {
     "ardi": {
-      "name": "アルディ"
+      "name": "アルディ",
+      "pos": [30, 58]
     },
     "bergen": {
-      "name": "ベルン"
+      "name": "ベルン",
+      "pos": [74, 34]
     }
   },
   "journeys": [
     {
       "from": "ardi",
       "to": "bergen",
-      "days": 3
+      "days": 3,
+      "danger": 3,
+      "kind": "highway",
+      "enemies": [
+        {
+          "id": "stray_dog",
+          "weight": 3
+        },
+        {
+          "id": "wolf",
+          "weight": 2
+        },
+        {
+          "id": "bandit",
+          "weight": 1
+        }
+      ]
     }
   ],
   "stroll": {
@@ -89,6 +107,11 @@
         "weight": 2,
         "text": "――礼拝堂の裏で、板で塞がれた古い井戸を見つけた。",
         "atom": "rumor.fever_chapel"
+      },
+      {
+        "weight": 2,
+        "text": "――井戸端で行商人が噂を話している。土地の名を聞き覚えた。",
+        "reveal": true
       }
     ],
     "region": [
@@ -219,6 +242,11 @@
         "weight": 2,
         "text": "――荷車を止めた行商人が、道端で昔話を聞かせてくれた。",
         "atom": "rumor.fever_cart"
+      },
+      {
+        "weight": 2,
+        "text": "――行き交う旅人が、遠い土地の名を教えてくれた。",
+        "reveal": true
       }
     ]
   },
@@ -436,6 +464,10 @@
       },
       {
         "id": "mat.timber",
+        "towns": ["bergen"]
+      },
+      {
+        "id": "mat.map.region",
         "towns": ["bergen"]
       }
     ],

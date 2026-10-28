@@ -41,6 +41,11 @@ export const lifeOutcomeSchema = z
     flag: z.string().min(1).optional(),
     /** 祈りの刻印（祠などの地点の出来事。その日の眠りが少し深くなる） */
     pray: z.literal(true).optional(),
+    /**
+     * 噂話（G-02、docs/10 §7）：聞き覚えのある町・地域が1つ増える
+     * （旅人・行商人の口から届く名。地図の霧が晴れる）
+     */
+    reveal: z.literal(true).optional(),
   })
   .strict();
 
@@ -125,9 +130,25 @@ export const errandSchema = z
 export const lifeFileSchema = z
   .object({
     version: z.literal(1),
-    /** 町と町（町 id → 表示名。見取り図の題字に使う） */
-    towns: z.record(z.string().min(1), z.object({ name: z.string().min(1) }).strict()),
-    /** 町と町の間の道（from/to は町 id、双方向に使う。days = 道中に要する日数） */
+    /**
+     * 町と町（町 id → 表示名・地図の位置）。name は見取り図の題字に、
+     * pos は地方の地図での町の位置（% 座標。G-02）に使う
+     */
+    towns: z.record(
+      z.string().min(1),
+      z
+        .object({
+          name: z.string().min(1),
+          pos: z.tuple([z.number().min(0).max(100), z.number().min(0).max(100)]).optional(),
+        })
+        .strict(),
+    ),
+    /**
+     * 町と町の間の道（from/to は町 id、双方向に使う。days = 道中に要する日数）。
+     * G-02 の道の刻印：danger は道中の遭遇の濃さ、kind は街道/山道/海路
+     * （危機の closeRoads・船の通い方が読む）、checkpoint は関所の通行料、
+     * closedSeasons は季節の通行止め（季節インデックス）、enemies は道中の敵
+     */
     journeys: z
       .array(
         z
@@ -135,6 +156,14 @@ export const lifeFileSchema = z
             from: z.string().min(1),
             to: z.string().min(1),
             days: z.number().int().positive(),
+            danger: z.number().min(0).max(10).optional(),
+            kind: z.enum(["highway", "mountain", "sea"]).optional(),
+            checkpoint: z.object({ fee: z.number().int().nonnegative() }).strict().optional(),
+            closedSeasons: z.array(z.number().int().min(0).max(3)).min(1).optional(),
+            enemies: z
+              .array(z.object({ id: z.string().min(1), weight: z.number().positive() }).strict())
+              .min(1)
+              .optional(),
           })
           .strict(),
       )

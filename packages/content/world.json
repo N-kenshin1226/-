@@ -9,13 +9,9 @@
         "pos": [80, 82],
         "desc": "町の出入り口。道は外の世界へ続いている",
         "actions": [
-          {
-            "type": "work",
-            "kinds": ["riding", "footwork", "wind_magic", "lancer"]
-          },
-          {
-            "type": "social"
-          }
+          { "type": "work", "kinds": ["riding", "footwork", "wind_magic", "lancer"] },
+          { "type": "map" },
+          { "type": "social" }
         ]
       },
       {
@@ -649,7 +645,7 @@
         }
       ],
       "market": {
-        "stock": ["mat.spice"],
+        "stock": ["mat.spice", "mat.map.region"],
         "cheap": [],
         "dear": ["fish.river", "fish.lake", "meal.stew", "hide.quality", "scale.dragon"]
       },
@@ -873,6 +869,7 @@
         }
       ],
       "market": {
+        "stock": ["mat.map.region"],
         "cheap": ["mat.spice"],
         "dear": ["wood", "meal.stew", "grain", "stone.mana", "ectoplasm", "relic"]
       },

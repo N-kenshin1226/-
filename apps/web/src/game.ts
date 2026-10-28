@@ -96,6 +96,19 @@ import {
   withWorldMods,
   worldFactor,
   worldMods,
+  // 地方の地図と旅（G-02、docs/10 §7）
+  crisisRoadClosed,
+  journeyCost,
+  journeyDaysFor,
+  journeyIdOf,
+  journeyWaysOf,
+  mapKnownSet,
+  mapVisited,
+  mergeLifeContrib,
+  roadEncounter,
+  roadEncounterDayKey,
+  roadKindOf,
+  roadSeasonClosed,
   type AbyssRun,
   type ActionEvent,
   type BoardInput,
@@ -118,6 +131,7 @@ import {
   type LifeConfig,
   type MiniGameCtx,
   type NewGameConfig,
+  type JourneyWay,
   type Rng,
   type StepConfig,
   type TendencyId,
@@ -455,7 +469,8 @@ export const cfg: StepConfig = {
     social: life.social,
     errands: life.errands,
     ...balance.life,
-    texts: { arrive: cliText.text.life.arrive },
+    // 文面（到着・朝刊の噂）は cli.json から注入する（G-02）
+    texts: { arrive: cliText.text.life.arrive, newsHeard: cliText.text.life.newsHeard },
   },
   /** 品物の定義表（P-02、items.json の id → 定義。市場・料理・食事・贈り物に使う） */
   items: Object.fromEntries(items.items.map((i) => [i.id, i])),
@@ -558,21 +573,9 @@ export function lifeCfgFor(state: GameState): LifeConfig | undefined {
   if (cfg.life === undefined) return undefined;
   const gen = genLifeContrib(state);
   if (gen === null) return cfg.life;
-  return {
-    ...cfg.life,
-    towns: gen.towns,
-    journeys: gen.journeys,
-    // 型別の表を基本キー（"town"/"region"/"road" は共通の表のまま残す）に畳み込む
-    stroll: { ...cfg.life.stroll, ...gen.stroll },
-    // 採集表は場所 id で引く —— 固定マップの表を混ぜると同じ id の地域に
-    // 旧マップの表が当たるので、生成世界では生成の表だけを使う
-    gather: gen.gather,
-    market: { ...cfg.life.market, stock: gen.marketStock, townFactor: gen.townFactor },
-    errands: gen.errands,
-    places: gen.places,
-    spots: gen.spots,
-    rep: balance.world.rep,
-  };
+  // 生成の寄与分を畳み込む（G-01/G-02。町・道・掲示・採集は生成の表、
+  // 型別散策表は基本表の上に乗る。rep は生成地方でだけ働く）
+  return mergeLifeContrib(cfg.life, gen, balance.world.rep);
 }
 
 /**
@@ -662,6 +665,205 @@ export function journeyTargetNow(state: GameState): string | null {
   const road = life.journeys.find((j) => j.from === town || j.to === town);
   if (road === undefined) return null;
   return road.from === town ? road.to : road.from;
+}
+
+/* ── 地方の地図（G-02、docs/10 §7） ──
+ * 町・道・地域を地図画面に出すための解決層。霧の刻印（visited/heard）は
+ * state.life.map、繋がり・閉鎖は LifeConfig と危機から導出する */
+
+/** 通い方の表示名（徒歩・隊商・騎乗・船。省略は徒歩） */
+export function journeyWayName(way: string | undefined): string {
+  switch (way) {
+    case "caravan":
+      return t.text.wayCaravan;
+    case "horse":
+      return t.text.wayHorse;
+    case "ship":
+      return t.text.wayShip;
+    default:
+      return t.text.wayFoot;
+  }
+}
+
+/** 地図上の名の解決（町は町名、地域は場所名。霧の中は "？" が返るよう呼び出し側で伏せる） */
+export function mapPlaceName(state: GameState | undefined, id: string): string {
+  if (state === undefined) {
+    return life.towns[id]?.name ?? places.places.find((p) => p.id === id)?.name ?? id;
+  }
+  const lifeCfg = lifeCfgFor(state);
+  if (lifeCfg !== undefined && lifeCfg.towns[id] !== undefined) return townName(state, id);
+  return placeName(state, id);
+}
+
+/** 地図の町の印 */
+export interface MapTownMark {
+  id: string;
+  name: string;
+  /** 地図の位置（% 座標。pos の無い町は中央に置く） */
+  pos: readonly [number, number];
+  /** 今いる町か */
+  here: boolean;
+  /** 訪れたことがあるか（濃い印） */
+  visited: boolean;
+  /** 名が知れているか（霧の晴れた町か） */
+  known: boolean;
+}
+
+/** 地図の道 */
+export interface MapRoad {
+  /** 道の id（journeyIdOf） */
+  id: string;
+  a: string;
+  b: string;
+  /** 種別（highway/mountain/sea） */
+  kind: string;
+  /** 旅日数（徒歩） */
+  days: number;
+  danger: number;
+  checkpointFee?: number;
+  /** 閉ざされているか（season=季節の通行止め / crisis=危機で封じられた） */
+  closed: "season" | "crisis" | null;
+  /** 少なくとも一端が知れているか（霧の中の道は描かない） */
+  known: boolean;
+}
+
+/** 地図の地域（町の外の場所） */
+export interface MapRegion {
+  id: string;
+  name: string;
+  /** 属する町 */
+  town: string;
+  /** 地図の位置（% 座標。町の周りに散らした印） */
+  pos: readonly [number, number];
+  known: boolean;
+  visited: boolean;
+  /** 荒れた地域（危機で閉じられたエリア） */
+  ravaged: boolean;
+}
+
+/** 地方の地図の画面モデル */
+export interface RegionMapModel {
+  towns: MapTownMark[];
+  roads: MapRoad[];
+  regions: MapRegion[];
+}
+
+/**
+ * この state の地方の地図（G-02）。町・道・地域に霧の刻印と閉鎖の
+ * 状態を畳み込む —— 画面はこれだけを見る。life の無い設定では null
+ */
+export function regionMapOf(state: GameState): RegionMapModel | null {
+  const life = lifeCfgFor(state);
+  if (life === undefined) return null;
+  const known = mapKnownSet(state, life);
+  const here = townOf(state);
+  const season = describe(state.time, cfg.time).season;
+  const towns: MapTownMark[] = Object.entries(life.towns).map(([id, t]) => ({
+    id,
+    name: townName(state, id),
+    pos: t.pos ?? [50, 50],
+    here: id === here,
+    visited: mapVisited(state, id),
+    known: known.has(id),
+  }));
+  const roads: MapRoad[] = life.journeys.map((r) => {
+    const id = journeyIdOf(r);
+    const kind = roadKindOf(r);
+    return {
+      id,
+      a: r.from,
+      b: r.to,
+      kind,
+      days: r.days,
+      danger: r.danger ?? 0,
+      checkpointFee: r.checkpoint?.fee,
+      closed: roadSeasonClosed(r, season)
+        ? "season"
+        : crisisRoadClosed(state, cfg.crisis, { id, kind })
+          ? "crisis"
+          : null,
+      known: known.has(r.from) || known.has(r.to),
+    };
+  });
+  const townPosOf = (id: string): readonly [number, number] =>
+    towns.find((x) => x.id === id)?.pos ?? [50, 50];
+  // 地域の印は町の周りに散らす（同じ町の地域は順に角度を回す —— 重なりを避けるだけの見た目の配置）
+  const regionIdx = new Map<string, number>();
+  const regions: MapRegion[] = placesOf(state)
+    .filter((p) => p.kind === "region")
+    .map((p) => {
+      const town = p.town ?? "ardi";
+      const i = regionIdx.get(town) ?? 0;
+      regionIdx.set(town, i + 1);
+      const tp = townPosOf(town);
+      const ang = ((-90 + i * 137) * Math.PI) / 180;
+      const pos: readonly [number, number] = [
+        Math.min(96, Math.max(4, tp[0] + Math.cos(ang) * 10)),
+        Math.min(96, Math.max(4, tp[1] + Math.sin(ang) * 8)),
+      ];
+      return {
+        id: p.id,
+        name: placeName(state, p.id),
+        town,
+        pos,
+        known: known.has(p.id),
+        visited: mapVisited(state, p.id),
+        ravaged: crisisAreaClosed(state, cfg.crisis, p.id),
+      };
+    });
+  return { towns, roads, regions };
+}
+
+/** 現在の町から出る道（地図の旅欄。既知の行き先に絞る —— 霧の先には行けない） */
+export function mapRoadsFrom(state: GameState, model: RegionMapModel): MapRoad[] {
+  const here = townOf(state);
+  const known = new Set(model.towns.filter((t) => t.known).map((t) => t.id));
+  return model.roads.filter(
+    (r) => (r.a === here && known.has(r.b)) || (r.b === here && known.has(r.a)),
+  );
+}
+
+/** 道の向こう側の町 id（a/b のうち今いる町でない側） */
+export function mapRoadOther(road: MapRoad, town: string): string {
+  return road.a === town ? road.b : road.a;
+}
+
+/** 道で使える通い方と、それぞれの料金・実効日数・出せるか（G-02） */
+export function journeyWayOptions(
+  state: GameState,
+  roadId: string,
+): { way: JourneyWay; days: number; fee: number }[] {
+  const life = lifeCfgFor(state);
+  if (life === undefined) return [];
+  const road = life.journeys.find((r) => journeyIdOf(r) === roadId);
+  if (road === undefined) return [];
+  return journeyWaysOf(road).map((way) => ({
+    way,
+    days: journeyDaysFor(road, way, life),
+    fee: journeyCost(road, way, life),
+  }));
+}
+
+/**
+ * 旅の途中の散策が遭遇になるかの先読み（G-02）。step は内部で同じ抽選を
+ * 行うので、画面は同じ引数で呼んで「この散策が遭遇なら戦いの画面へ進む」
+ * 分岐に使う —— 抽選は決定的なので結果は一致する
+ */
+export function roadEncounterNow(state: GameState): string | undefined {
+  const j = state.life.journey;
+  const life = lifeCfgFor(state);
+  if (j === null || life === undefined) return undefined;
+  const road =
+    j.road !== undefined ? life.journeys.find((r) => journeyIdOf(r) === j.road) : undefined;
+  return roadEncounter(
+    state.seed,
+    state.time.day,
+    state.counters["action.stroll"] ?? 0,
+    road,
+    (j.way as JourneyWay | undefined) ?? "foot",
+    (state.counters[roadEncounterDayKey()] ?? -1) === state.time.day,
+    life,
+  );
 }
 
 /**
@@ -1402,10 +1604,30 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         return [tpl(t.text.life.errandDone, { name: def?.name ?? e.id })];
       }
       case "journeyStarted":
-        return [tpl(t.text.life.journeyStarted, { town: townName(state, e.to), days: e.days })];
+        // 通い方のある旅（G-02）：徒歩以外は通い方の名を添えた行になる
+        return [
+          e.way !== undefined
+            ? tpl(t.text.life.journeyStartedWay, {
+                town: townName(state, e.to),
+                way: journeyWayName(e.way),
+                days: e.days,
+              })
+            : tpl(t.text.life.journeyStarted, { town: townName(state, e.to), days: e.days }),
+        ];
       case "journeyArrived":
         // 到着の一行は起床の「驚き」の列に既に出る（sleep 側が texts.arrive を載せる）
         return [];
+      case "roadEncounter": {
+        // 道中の遭遇（G-02）：敵の気配の一行。戦いは画面側が combat へ進める
+        const name = enemies.enemies.find((x) => x.id === e.enemy)?.name ?? e.enemy;
+        return [tpl(t.text.roadEncounterLine, { name })];
+      }
+      case "mapHeard":
+        // 噂・朝刊で名を聞き覚えた（G-02。地図の霧が晴れる）
+        return [tpl(t.text.life.mapHeard, { name: mapPlaceName(state, e.place) })];
+      case "mapRevealed":
+        // 地方の地図を手に入れた（G-02。地方すべての名が聞き覚えに刻まれる）
+        return [t.text.life.mapRevealed];
       case "repGained":
         // 町ごとの評判（G-01）：顔が売れた一行は記録にだけ残す（通知ではない）
         return [tpl(t.text.life.repGained, { town: townName(state, e.town) })];

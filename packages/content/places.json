@@ -290,6 +290,9 @@
           "kinds": ["riding", "footwork", "wind_magic", "lancer"]
         },
         {
+          "type": "map"
+        },
+        {
           "type": "journey",
           "to": "bergen"
         },
@@ -531,6 +534,9 @@
         {
           "type": "journey",
           "to": "ardi"
+        },
+        {
+          "type": "map"
         },
         {
           "type": "stroll"

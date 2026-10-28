@@ -2,8 +2,24 @@ import { describe, expect, it } from "vitest";
 import { newGame } from "../state/newGame.js";
 import { step, type StepConfig } from "../step.js";
 import { deserialize, SAVE_VERSION, serialize } from "../save/index.js";
-import type { GameState } from "../state/types.js";
-import { bondOf, errandsToday, itemCount, itemPrice, mealToday, repOf, townOf } from "./index.js";
+import type { CrisisState, GameState } from "../state/types.js";
+import { emptyCrisisFields, type CrisisConfig } from "../crisis/index.js";
+import {
+  bondOf,
+  errandsToday,
+  itemCount,
+  itemPrice,
+  journeyCost,
+  journeyDaysFor,
+  journeyWaysOf,
+  mapKnown,
+  mapKnownSet,
+  mapVisited,
+  mealToday,
+  repOf,
+  roadEncounterDayKey,
+  townOf,
+} from "./index.js";
 import type { LifeConfig } from "./index.js";
 
 /**
@@ -242,6 +258,8 @@ describe("newGame の life 初期状態（v18）", () => {
       mealQuality: 0,
       prayedDay: -1,
       journey: null,
+      // G-02（v22〜）：いる町だけは訪れた刻印が立っている
+      map: { visited: ["ardi"], heard: ["ardi"] },
     });
   });
 });
@@ -484,11 +502,18 @@ describe("旅", () => {
   it("旅に出て野営で日数を経て着く", () => {
     let g = game("life-journey");
     const r = step(g, { type: "journey", to: "bergen" }, cfg);
-    expect(r.state.life.journey).toEqual({ to: "bergen", daysLeft: 2 });
+    // G-02：旅の刻印は出発町・道・通い方を持つ（省略は徒歩）
+    expect(r.state.life.journey).toEqual({
+      to: "bergen",
+      daysLeft: 2,
+      from: "ardi",
+      way: "foot",
+      road: "ardi.bergen",
+    });
     expect(r.events.some((e) => e.type === "journeyStarted")).toBe(true);
     // 野営1回目 → 残り1
     g = step(r.state, { type: "rest" }, cfg).state;
-    expect(g.life.journey).toEqual({ to: "bergen", daysLeft: 1 });
+    expect(g.life.journey?.daysLeft).toBe(1);
     expect(g.time.day).toBe(1);
     // 野営2回目 → ベルンに着く
     const r2 = step(g, { type: "rest" }, cfg);
@@ -576,14 +601,14 @@ describe("町ごとの評判（G-01、docs/10 §4）", () => {
   });
 });
 
-describe("セーブの移行（v17 → v21）", () => {
+describe("セーブの移行（v17 → v22）", () => {
   it("life 欄を基点の町・空荷・空の評判で補って移行される", () => {
     const g = game();
     const v17 = JSON.parse(serialize(g)) as Record<string, unknown>;
     v17["version"] = 17;
     delete v17["life"];
     const restored = deserialize(JSON.stringify(v17));
-    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）→v19（武技）→v20（ユニーク）→v21（地方）の4段移行
+    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）→v19（武技）→v20（ユニーク）→v21（地方）→v22（地図）の5段移行
     expect(restored.life).toEqual({
       town: "ardi",
       items: {},
@@ -593,6 +618,291 @@ describe("セーブの移行（v17 → v21）", () => {
       mealQuality: 0,
       prayedDay: -1,
       journey: null,
+      map: { visited: ["ardi"], heard: ["ardi"] },
     });
+  });
+
+  it("v21 のセーブは life.map（いる町の訪れた刻印）を補って移行される", () => {
+    const g = game();
+    const v21 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v21["version"] = 21;
+    const life = v21["life"] as Record<string, unknown>;
+    delete life["map"];
+    const restored = deserialize(JSON.stringify(v21));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.life.map).toEqual({ visited: ["ardi"], heard: ["ardi"] });
+  });
+});
+
+/* ── 地方の地図と旅（G-02、docs/10 §7） ──
+ * 4町の地方（街道・海路・山道）で、通い方・閉鎖・霧の刻印・道中の遭遇を
+ * 確かめる。すべてシード固定の決定論 */
+
+/** G-02 の地方：アルディ＝起点、ベルン＝街道の先、ミナト＝海路の先、オクチ＝山道の先 */
+const fogCfg: LifeConfig = {
+  ...lifeCfg,
+  towns: {
+    ardi: { name: "アルディ", pos: [20, 50] },
+    bergen: { name: "ベルン", pos: [60, 40] },
+    port: { name: "ミナト", pos: [90, 80] },
+    deep: { name: "オクチ", pos: [40, 10] },
+  },
+  journeys: [
+    { from: "ardi", to: "bergen", days: 2, kind: "highway", danger: 2, checkpoint: { fee: 5 } },
+    {
+      from: "bergen",
+      to: "port",
+      days: 4,
+      kind: "sea",
+      danger: 3,
+      enemies: [{ id: "foe.sea", weight: 1 }],
+    },
+    { from: "ardi", to: "deep", days: 4, kind: "mountain", closedSeasons: [3] },
+  ],
+  places: {
+    forest: { town: "ardi", name: "近郊の森" },
+    deep_woods: { town: "deep", name: "奥の森" },
+  },
+  journey: {
+    encounterPerDanger: 0.5,
+    ways: {
+      caravan: { feePerDay: 4, encounterFactor: 0.2 },
+      horse: { feePerDay: 8, daysFactor: 0.5, encounterFactor: 0.7 },
+      ship: { fee: 30, daysFactor: 0.5 },
+    },
+    newsRevealChance: 0,
+  },
+};
+const fogStepCfg: StepConfig = { ...cfg, life: fogCfg };
+
+/** 所持金を持たせた state（関所・運賃のある旅用） */
+const rich = (g: GameState, money = 100): GameState => ({
+  ...g,
+  player: { ...g.player, money },
+});
+/** ベルンに居る state（ベルン発の旅の検証用） */
+const atBergen = (g: GameState): GameState => ({
+  ...g,
+  life: {
+    ...g.life,
+    town: "bergen",
+    map: { visited: ["ardi", "bergen"], heard: ["ardi", "bergen"] },
+  },
+});
+
+describe("通い方と道の条件（G-02）", () => {
+  const road = fogCfg.journeys[0]!; // ardi↔bergen（街道・2日・関所5G）
+
+  it("通い方で料金と日数が変わる（関所は通い方によらず掛かる）", () => {
+    expect(journeyCost(road, "foot", fogCfg)).toBe(5); // 運賃なし・関所だけ
+    expect(journeyCost(road, "caravan", fogCfg)).toBe(5 + 2 * 4); // 日数×日額＋関所
+    expect(journeyCost(road, "horse", fogCfg)).toBe(5 + 1 * 8); // 縮んだ日数×日額＋関所
+    expect(journeyDaysFor(road, "foot", fogCfg)).toBe(2);
+    expect(journeyDaysFor(road, "horse", fogCfg)).toBe(1); // 2日 × 0.5
+    expect(journeyWaysOf(road)).toEqual(["foot", "caravan", "horse"]);
+    expect(journeyWaysOf(fogCfg.journeys[1]!)).toEqual(["foot", "ship"]); // 海路は船
+  });
+
+  it("隊商で旅立つと料金が引かれ、旅の刻印に出発町・道・通い方が残る", () => {
+    const r = step(rich(game()), { type: "journey", to: "bergen", way: "caravan" }, fogStepCfg);
+    expect(r.state.player.money).toBe(100 - (5 + 8));
+    expect(r.state.life.journey).toEqual({
+      to: "bergen",
+      daysLeft: 2,
+      from: "ardi",
+      way: "caravan",
+      road: "ardi.bergen",
+    });
+    expect(
+      r.events.some((e) => e.type === "journeyStarted" && e.way === "caravan" && e.days === 2),
+    ).toBe(true);
+    // 出発の時点で行き先の名は聞き覚える（霧が晴れる）が、訪れた刻印はまだ
+    expect(r.state.life.map.heard).toContain("bergen");
+    expect(mapVisited(r.state, "bergen")).toBe(false);
+  });
+
+  it("騎乗は日数が縮む（4日の海路は船で2日）", () => {
+    const r = step(
+      rich(atBergen(game())),
+      { type: "journey", to: "port", way: "ship" },
+      fogStepCfg,
+    );
+    expect(r.state.player.money).toBe(100 - 30);
+    expect(r.state.life.journey).toEqual({
+      to: "port",
+      daysLeft: 2,
+      from: "bergen",
+      way: "ship",
+      road: "bergen.port",
+    });
+  });
+
+  it("船は海路にだけ出る（陸路へは船で旅立てない）", () => {
+    const r = step(rich(game()), { type: "journey", to: "bergen", way: "ship" }, fogStepCfg);
+    expect(r.state.life.journey).toBeNull();
+    expect(r.state.time.action).toBe(0);
+  });
+
+  it("金が足りなければ旅立てない", () => {
+    const r = step(game(), { type: "journey", to: "bergen", way: "caravan" }, fogStepCfg);
+    expect(r.state.life.journey).toBeNull();
+  });
+
+  it("季節で封じられる道には旅立てない（山道の冬）", () => {
+    // daysPerSeason 28・seasonsPerYear 4：day 84〜111 は季節3（冬）
+    const winter: GameState = { ...game(), time: { day: 84, action: 0 } };
+    const r = step(winter, { type: "journey", to: "deep" }, fogStepCfg);
+    expect(r.state.life.journey).toBeNull();
+    // 春（day 0）は通れる
+    const r2 = step(game(), { type: "journey", to: "deep" }, fogStepCfg);
+    expect(r2.state.life.journey).not.toBeNull();
+  });
+
+  it("危機で閉ざされる道には旅立てない（種別・道idのどちらでも封じる）", () => {
+    const crisisWith = (closeRoads: string[]): StepConfig => ({
+      ...fogStepCfg,
+      crisis: {
+        types: [
+          {
+            id: "crisis.test_roads",
+            name: "道断ちの霧",
+            weight: 1,
+            factions: [],
+            stages: [{ id: "spread", name: "拡散", seasons: 2, effects: { closeRoads } }],
+            finales: [],
+          },
+        ],
+        strongFields: 1,
+        weakFieldFactor: 0.5,
+      } satisfies CrisisConfig,
+    });
+    const crisisState: CrisisState = {
+      typeId: "crisis.test_roads",
+      stageIndex: 0,
+      seasonsInStage: 0,
+      boundaries: 0,
+      factions: [],
+      hero: emptyCrisisFields(),
+      finales: [],
+      variables: {},
+      npcGone: [],
+      log: [],
+      outcome: "ongoing",
+    };
+    const g: GameState = { ...rich(game()), crisis: crisisState };
+    // 種別 "mountain" が封じられている → 山道の旅は出られないが街道は通れる
+    const closed = crisisWith(["mountain"]);
+    expect(step(g, { type: "journey", to: "deep" }, closed).state.life.journey).toBeNull();
+    expect(step(g, { type: "journey", to: "bergen" }, closed).state.life.journey).not.toBeNull();
+    // 道の id（journeyIdOf）で封じる → ardi↔bergen だけが閉ざされる
+    const closedId = crisisWith(["ardi.bergen"]);
+    expect(step(g, { type: "journey", to: "bergen" }, closedId).state.life.journey).toBeNull();
+    expect(step(g, { type: "journey", to: "deep" }, closedId).state.life.journey).not.toBeNull();
+  });
+});
+
+describe("地図の霧（G-02）", () => {
+  it("知っている場所は訪れた町・聞き覚え・隣町・訪れた町の地域から導かれる", () => {
+    const known = mapKnownSet(game(), fogCfg);
+    expect(known.has("ardi")).toBe(true); // いる町（訪れた刻印）
+    expect(known.has("bergen")).toBe(true); // アルディの隣町
+    expect(known.has("deep")).toBe(true); // アルディの隣町（山道）
+    expect(known.has("forest")).toBe(true); // アルディの地域
+    expect(known.has("port")).toBe(false); // ベルンの先 —— まだ知らない
+    expect(known.has("deep_woods")).toBe(false); // 遠い町の地域
+    expect(mapKnown(game(), fogCfg, "port")).toBe(false);
+  });
+
+  it("旅に出ると行き先が聞き覚えに、着くと訪れた刻印が立つ", () => {
+    let g = rich(game("map-journey"));
+    g = step(g, { type: "journey", to: "bergen" }, fogStepCfg).state;
+    expect(mapKnown(g, fogCfg, "bergen")).toBe(true);
+    expect(mapVisited(g, "bergen")).toBe(false);
+    g = step(g, { type: "rest" }, fogStepCfg).state; // 野営1
+    const r = step(g, { type: "rest" }, fogStepCfg); // 野営2 → 到着
+    expect(r.state.life.journey).toBeNull();
+    expect(townOf(r.state)).toBe("bergen");
+    expect(mapVisited(r.state, "bergen")).toBe(true);
+    expect(r.events.some((e) => e.type === "journeyArrived" && e.town === "bergen")).toBe(true);
+  });
+
+  it("噂話（reveal のある散策の出来事）で知らない場所の名が聞き覚える", () => {
+    const rumorCfg: StepConfig = {
+      ...fogStepCfg,
+      life: {
+        ...fogCfg,
+        stroll: {
+          ...fogCfg.stroll,
+          town: [{ weight: 1, text: "――旅人の噂を聞いた。", reveal: true }],
+        },
+      },
+    };
+    const r = step(game(), { type: "stroll" }, rumorCfg);
+    const heard = r.events.find((e) => e.type === "mapHeard");
+    expect(heard).toBeDefined();
+    // 既知の町から道で繋がる未知の町が優先 —— ここでは「ミナト」だけが候補
+    expect(heard?.type === "mapHeard" && heard.place).toBe("port");
+    expect(r.state.life.map.heard).toContain("port");
+    expect(mapVisited(r.state, "port")).toBe(false);
+  });
+
+  it("地方の地図を買うとすべての町と地域の名が聞き覚える（訪れた刻印は立たない）", () => {
+    const items = {
+      ...itemDefs,
+      "mat.map.region": {
+        id: "mat.map.region",
+        name: "地方の地図",
+        kind: "material" as const,
+        price: 10,
+        reveal: "map" as const,
+      },
+    };
+    const mapCfg: StepConfig = {
+      ...fogStepCfg,
+      items,
+      life: {
+        ...fogCfg,
+        market: { ...fogCfg.market, stock: [...fogCfg.market.stock, { id: "mat.map.region" }] },
+      },
+    };
+    const r = step(rich(game()), { type: "buyItem", id: "mat.map.region" }, mapCfg);
+    expect(r.events.some((e) => e.type === "mapRevealed")).toBe(true);
+    for (const id of ["ardi", "bergen", "port", "deep", "forest", "deep_woods"]) {
+      expect(r.state.life.map.heard).toContain(id);
+    }
+    expect(r.state.life.map.visited).toEqual(["ardi"]);
+  });
+});
+
+describe("道中の遭遇（G-02）", () => {
+  const toSea = (seed: string): GameState =>
+    step(rich(atBergen(game(seed))), { type: "journey", to: "port", way: "foot" }, fogStepCfg)
+      .state;
+
+  it("危険な道の散策は敵の気配に遭う（遭遇率が1を超える道では必ず遭う）", () => {
+    // 海路：danger 3 × encounterPerDanger 0.5 = 1.5 → 必ず遭遇
+    const r = step(toSea("enc-1"), { type: "stroll" }, fogStepCfg);
+    const enc = r.events.find((e) => e.type === "roadEncounter");
+    expect(enc?.type === "roadEncounter" && enc.enemy).toBe("foe.sea");
+    expect(r.state.counters[roadEncounterDayKey()]).toBe(r.state.time.day);
+    // 遭遇は街道の出来事にならない
+    expect(r.events.some((e) => e.type === "strollOutcome")).toBe(false);
+  });
+
+  it("遭遇は1日1回まで（2回目の散策は街道の出来事になる）", () => {
+    const g = step(toSea("enc-2"), { type: "stroll" }, fogStepCfg).state;
+    const r2 = step(g, { type: "stroll" }, fogStepCfg);
+    expect(r2.events.some((e) => e.type === "roadEncounter")).toBe(false);
+    expect(r2.events.some((e) => e.type === "strollOutcome")).toBe(true);
+  });
+
+  it("遭遇の抽選は決定的（同じ日・同じ回目には同じ敵）", () => {
+    const e1 = step(toSea("enc-3"), { type: "stroll" }, fogStepCfg).events.find(
+      (e) => e.type === "roadEncounter",
+    );
+    const e2 = step(toSea("enc-3"), { type: "stroll" }, fogStepCfg).events.find(
+      (e) => e.type === "roadEncounter",
+    );
+    expect(e1).toEqual(e2);
   });
 });

@@ -258,8 +258,34 @@ export interface LifeState {
   mealQuality: number;
   /** 祈った日（その日の眠りが少し深くなる） */
   prayedDay: number;
-  /** 旅の途中：行き先の町 id と残りの野営数。null なら町にいる */
-  journey: { to: string; daysLeft: number } | null;
+  /**
+   * 旅の途中：行き先の町 id と残りの野営数。null なら町にいる。
+   * G-02（v22〜）では出発町・通い方（JourneyWay）・道の id（journeyIdOf）も
+   * 持つ —— 道中の出来事・遭遇・地図の印がこれらを読む。旧欄だけの旅
+   * （v21 以前のセーブ）もそのまま動く（道の刻印は省かれるだけ）
+   */
+  journey: {
+    to: string;
+    daysLeft: number;
+    /** 出発した町（G-02。地図の行程表示・旧道の解決に使う） */
+    from?: string;
+    /** 通い方（foot/caravan/horse/ship。省略時は徒歩） */
+    way?: string;
+    /** 旅している道の id（journeyIdOf。道中の遭遇に使う） */
+    road?: string;
+  } | null;
+  /**
+   * 地方の地図の霧（G-02、docs/10 §7「行ったことのない場所は霧」。v22〜）。
+   * visited は実際に訪れた町・地域、heard は噂・新聞・地図で名を知った
+   * 場所 —— 地図に名が出る「知っている場所」はこれらと、訪れた町から
+   * 道で繋がる町・訪れた町の地域を畳み合わせたもの（mapKnownSet）
+   */
+  map: {
+    /** 訪れた町・地域の id */
+    visited: string[];
+    /** 聞き覚えた町・地域の id */
+    heard: string[];
+  };
 }
 
 /**

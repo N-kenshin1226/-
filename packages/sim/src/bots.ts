@@ -1,15 +1,25 @@
 import {
   activeEffects,
   computeGain,
+  crisisRoadClosed,
+  describe as describeTime,
   evaluate,
   gainModifier,
   isSkillUnlocked,
+  journeyCost,
+  journeyIdOf,
+  journeying,
+  mapVisited,
   nextStage,
   recentRepeats,
+  roadKindOf,
+  roadSeasonClosed,
+  townOf,
   windFor,
   type Command,
   type Cond,
   type GameState,
+  type LifeConfig,
   type PinnacleRouteDef,
   type Rng,
   type StatId,
@@ -179,6 +189,81 @@ export const simpleBot: Bot = {
 };
 
 export const metricBots: readonly Bot[] = [singleBot, diverseBot, randomBot, simpleBot];
+
+/* ── 地方の旅（G-02、docs/10 §7） ──
+ * 生き方ごとの方針に「旅欲」を混ぜる包み。旅の途中は街道を1度歩いてから
+ * 野営する（道中の出来事・遭遇が起きる）。町では、たまに未踏の隣町へ
+ * 旅立つか、まだ行っていないその町の地域へ出る。
+ * 閉ざされた道（季節・危機）と関所料金の払えない道は選ばない */
+export function withTravel(
+  base: Bot,
+  opts?: {
+    /** 空き行動のうち旅立ちを考える確率（既定 0.3） */
+    chance?: number;
+    /** この町の外の未踏地域へ出る確率（既定 0.15） */
+    regionChance?: number;
+    /** 地域の場所 id 一覧（世界の地域。町の外へ出る候補） */
+    regions?: readonly string[];
+  },
+): Bot {
+  const chance = opts?.chance ?? 0.3;
+  const regionChance = opts?.regionChance ?? 0.15;
+  const regions = opts?.regions ?? [];
+
+  /** この町から徒歩で通れる道（季節・危機の閉鎖と払えない関所を外す） */
+  const openRoads = (g: GameState, ctx: BotCtx, life: LifeConfig) => {
+    const town = townOf(g);
+    const season = describeTime(g.time, ctx.cfg.time).season;
+    return life.journeys.filter(
+      (j) =>
+        (j.from === town || j.to === town) &&
+        !roadSeasonClosed(j, season) &&
+        !crisisRoadClosed(g, ctx.cfg.crisis, { id: journeyIdOf(j), kind: roadKindOf(j) }) &&
+        journeyCost(j, "foot", life) <= g.player.money,
+    );
+  };
+
+  return {
+    id: `${base.id}+travel`,
+    act(g, ctx) {
+      const life = ctx.cfg.life;
+      if (life === undefined) return base.act(g, ctx);
+      // 旅の途中：街道を1度歩いてから野営（道中の出来事・遭遇が起きる）
+      if (journeying(g)) {
+        const strolled = g.actionLog.some((e) => e.day === g.time.day && e.kind === "stroll");
+        if (!strolled && g.time.action < ctx.cfg.time.actionsPerDay) {
+          return { type: "stroll" };
+        }
+        return { type: "rest" };
+      }
+      const town = townOf(g);
+      // この町の外の未踏地域へ出る（地域の訪れた刻印は地図の濃い印になる）
+      const unvisitedRegions = regions.filter(
+        (id) => life.places?.[id]?.town === town && !mapVisited(g, id),
+      );
+      if (
+        unvisitedRegions.length > 0 &&
+        g.time.action + Math.max(1, Math.round(ctx.cfg.travel?.outsideCost ?? 1)) <=
+          ctx.cfg.time.actionsPerDay &&
+        ctx.rng.chance(regionChance)
+      ) {
+        return { type: "travel", to: ctx.rng.pick(unvisitedRegions) };
+      }
+      // 旅立ち：未踏の隣町を優先に、たまに足を延ばす
+      if (ctx.rng.chance(chance)) {
+        const others = openRoads(g, ctx, life).map((j) => (j.from === town ? j.to : j.from));
+        const unvisited = others.filter((o) => !mapVisited(g, o));
+        const pool = unvisited.length > 0 ? unvisited : others;
+        if (pool.length > 0) return { type: "journey", to: ctx.rng.pick(pool) };
+      }
+      return base.act(g, ctx);
+    },
+    endDay(g, ctx) {
+      // 旅の途中は野営で日が進む（町の眠り方は持ち帰らない）
+      return journeying(g) ? { type: "rest" } : base.endDay(g, ctx);
+    },
+  };
+}
 
 /**
  * 称号到達用の seeker（指標の対象外）：未獲得の称号の条件から

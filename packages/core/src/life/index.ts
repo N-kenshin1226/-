@@ -19,6 +19,11 @@ export interface ItemDef {
   kind: "gather" | "material" | "meal";
   price: number;
   food?: number;
+  /**
+   * 買うと地方の地図の霧が晴れる（G-02、docs/10 §7「噂・新聞・地図の購入で
+   * 霧が晴れる」）。"map" は地方すべての町と地域の名を聞き覚えに書き込む
+   */
+  reveal?: "map";
 }
 
 /** 散策・道中の出来事1件：結末の文と小さな効果 */
@@ -35,6 +40,11 @@ export interface LifeOutcome {
   flag?: string;
   /** 祈りの刻印（G-01。祠などの地点の出来事。その日の眠りが少し深くなる） */
   pray?: true;
+  /**
+   * 噂話（G-02、docs/10 §7）：聞き覚えのある町・地域が1つ増える
+   * （旅人・行商人の口から届く名。map.heard に書き込まれ、地図の霧が晴れる）
+   */
+  reveal?: true;
 }
 
 /** 採集の品1件 */
@@ -79,21 +89,41 @@ export interface ErrandDef {
   };
 }
 
+/** 旅の通い方（G-02、docs/10 §7）：徒歩・隊商への同行・騎乗・船（港町） */
+export type JourneyWay = "foot" | "caravan" | "horse" | "ship";
+
 /** 町と町の間の道（双方向） */
 export interface JourneyDef {
   from: string;
   to: string;
   /** 道中に要する日数（野営の回数） */
   days: number;
+  /**
+   * 道の危険度（1〜10。G-02）。散策の道中遭遇（野営前に敵が出る
+   * 街道）の濃さ —— 遠い町ほど危険な道が続く。省略時は安全な道
+   */
+  danger?: number;
+  /**
+   * 道の種別（"highway"=街道 / "mountain"=山道 / "sea"=海路）。
+   * 危機の closeRoads は種別か道idで封じる（省略時は "highway" 扱い）
+   */
+  kind?: string;
+  /** 道の上の関所（通過に料金が掛かる。G-02） */
+  checkpoint?: { fee: number };
+  /** 通行止めになる季節（季節のインデックス。省略時は通年通行可。G-02） */
+  closedSeasons?: readonly number[];
+  /** 街道で遭遇する敵（enemies.json の id＋重み。空なら遭遇は起きない。G-02） */
+  enemies?: readonly { id: string; weight: number }[];
 }
 
 /** life.json＋balance.life をまとめた実行時設定 */
 export interface LifeConfig {
   /**
    * 町の表（id → 表示名）。G-01 の生成世界では type に町の型の id が入り、
-   * 型ごとの散策表（stroll["town.<型>"]）の選択に使う
+   * 型ごとの散策表（stroll["town.<型>"]）の選択に使う。
+   * pos（G-02）は地方の地図での町の位置（% 座標。地図画面が引く）
    */
-  towns: Record<string, { name: string; type?: string }>;
+  towns: Record<string, { name: string; type?: string; pos?: readonly [number, number] }>;
   journeys: readonly JourneyDef[];
   /**
    * 散策の出来事の表（"town" / "region" / "road" が基本キー。
@@ -103,10 +133,11 @@ export interface LifeConfig {
   /** 採集の表（場所 id → 表） */
   gather: Record<string, GatherTable>;
   /**
-   * 場所の帰属（G-01 生成世界。場所 id → 属する町 id と型 id）。
-   * 散策の型別表の選択と町の結線に使う。省略時（固定マップ）は解決しない
+   * 場所の帰属（場所 id → 属する町 id・型 id・表示名）。散策の型別表の
+   * 選択と町の結線に使う（G-01）。G-02 では name を地域・場所の表示名
+   * として地図・噂の文が引く。省略時（固定マップ）は解決しない
    */
-  places?: Record<string, { town?: string; type?: string }>;
+  places?: Record<string, { town?: string; type?: string; name?: string }>;
   /**
    * 地域の中の小さな地点の出来事表（G-01。地点 id → 表）。
    * spot 行動がここから1件引く
@@ -118,6 +149,26 @@ export interface LifeConfig {
    * 市場価格への効き（買いは安く・売りは高くなる）
    */
   rep?: { max: number; errand: number; work: number; donate: number; pricePer: number };
+  /**
+   * 旅の道中（G-02、docs/10 §7）：通い方の料金・速さ、道中の遭遇と
+   * 朝刊の噂の係数（balance.life.journey）。省略時は徒歩のみ・
+   * 道中の遭遇と噂の霧晴れは起きない
+   */
+  journey?: {
+    /** 道中の遭遇の基準率（道の危険度1点あたりの散策1回の遭遇率） */
+    encounterPerDanger: number;
+    /** 通い方：隊商への同行・騎乗・船（徒歩は無料で常に選べる） */
+    ways: {
+      /** 隊商への同行：安全だが料金が掛かる（遭遇率に encounterFactor を乗せる） */
+      caravan: { feePerDay: number; encounterFactor: number };
+      /** 騎乗：日数が daysFactor 倍に縮む。料金は縮んだ日数で計る */
+      horse: { feePerDay: number; daysFactor: number; encounterFactor: number };
+      /** 船（海路）：日数が daysFactor 倍に縮む定額料金。海路にだけ出せる */
+      ship: { fee: number; daysFactor: number };
+    };
+    /** 朝刊の噂で未知の町・地域が聞き覚えに加わる1日あたりの確率（町にいる眠りにだけ） */
+    newsRevealChance: number;
+  };
   recipes: readonly RecipeDef[];
   market: {
     stock: readonly { id: string; towns?: readonly string[] }[];
@@ -157,8 +208,11 @@ export interface LifeConfig {
   gambleDifficulty: number;
   /** まかせ料理の出来の基準 */
   cookQualityBase: number;
-  /** 表示文テンプレート（cli.json 由来。{town} は町の名に置き換わる） */
-  texts?: { arrive?: string };
+  /**
+   * 表示文テンプレート（cli.json 由来。{town} は町の名、{name} は場所の名に置き換わる）。
+   * arrive は旅の到着、newsHeard は朝刊の噂で名が知れた行
+   */
+  texts?: { arrive?: string; newsHeard?: string };
 }
 
 /* ── 状態の読み取り ── */
@@ -183,6 +237,206 @@ export function journeyBetween(cfg: LifeConfig, from: string, to: string): Journ
   return cfg.journeys.find(
     (j) => (j.from === from && j.to === to) || (j.from === to && j.to === from),
   );
+}
+
+/* ── 道と旅（G-02、docs/10 §7） ── */
+
+/**
+ * 道の安定した識別子（from/to を昇順に並べたもの。双方向の同一視）。
+ * 危機の closeRoads ・道中の遭遇の乱数列・地図画面のキーに使う
+ */
+export function journeyIdOf(road: Pick<JourneyDef, "from" | "to">): string {
+  return [road.from, road.to].sort((a, b) => a.localeCompare(b)).join(".");
+}
+
+/** 道の種別（省略時は街道 "highway" 扱い） */
+export function roadKindOf(road: JourneyDef): string {
+  return road.kind ?? "highway";
+}
+
+/** 道がこの季節に通行止めか（季節のインデックスで見る。G-02） */
+export function roadSeasonClosed(road: JourneyDef, season: number): boolean {
+  return road.closedSeasons !== undefined && road.closedSeasons.includes(season);
+}
+
+/** 通い方がその道で使えるか（海路は船だけ、陸路に船は出ない。G-02） */
+export function journeyWayOk(road: JourneyDef, way: JourneyWay): boolean {
+  if (way === "ship") return roadKindOf(road) === "sea";
+  return true;
+}
+
+/** 道で使える通い方の一覧（徒歩は常に。海路は船が加わる。G-02） */
+export function journeyWaysOf(road: JourneyDef): readonly JourneyWay[] {
+  return roadKindOf(road) === "sea" ? ["foot", "ship"] : ["foot", "caravan", "horse"];
+}
+
+/** 通い方ごとの実効日数（騎乗・船は速い。G-02） */
+export function journeyDaysFor(road: JourneyDef, way: JourneyWay, cfg: LifeConfig): number {
+  const ways = cfg.journey?.ways;
+  if (way === "horse" && ways !== undefined) {
+    return Math.max(1, Math.round(road.days * ways.horse.daysFactor));
+  }
+  if (way === "ship" && ways !== undefined) {
+    return Math.max(1, Math.round(road.days * ways.ship.daysFactor));
+  }
+  return road.days;
+}
+
+/**
+ * 旅立ちに掛かる料金（通い方の運賃＋関所の通行料。G-02）。
+ * 隊商・馬は日数あたり（馬は縮んだ日数ぶん）、船は定額、関所は通い方によらず一律
+ */
+export function journeyCost(road: JourneyDef, way: JourneyWay, cfg: LifeConfig): number {
+  const ways = cfg.journey?.ways;
+  const fare =
+    way === "caravan"
+      ? Math.round(road.days * (ways?.caravan.feePerDay ?? 0))
+      : way === "horse"
+        ? Math.round(journeyDaysFor(road, way, cfg) * (ways?.horse.feePerDay ?? 0))
+        : way === "ship"
+          ? Math.round(ways?.ship.fee ?? 0)
+          : 0;
+  return fare + (road.checkpoint?.fee ?? 0);
+}
+
+/** 道中の遭遇がその日に既に起きたかのカウンタキー（G-02。1日1回まで） */
+export function roadEncounterDayKey(): string {
+  return "road.enc.day";
+}
+
+/**
+ * 道中の遭遇の抽選（G-02、docs/10 §7「移動中の出来事・遭遇」）。
+ * 旅の途中の散策1回ごとに、道の危険度 × encounterPerDanger（通い方の係数を
+ * 乗せる）で遭遇を決定的に引く。1日に遭遇は1回まで（encounteredToday で抑える）。
+ * 返すのは敵の id（undefined なら遭遇なし —— 道の敵表が空なら遭遇は起きない）
+ */
+export function roadEncounter(
+  seed: string,
+  day: number,
+  seq: number,
+  road: JourneyDef | undefined,
+  way: JourneyWay,
+  encounteredToday: boolean,
+  cfg: LifeConfig,
+): string | undefined {
+  const j = cfg.journey;
+  if (j === undefined || road === undefined || encounteredToday) return undefined;
+  const pool = road.enemies;
+  if (pool === undefined || pool.length === 0) return undefined;
+  const factor =
+    way === "caravan"
+      ? j.ways.caravan.encounterFactor
+      : way === "horse"
+        ? j.ways.horse.encounterFactor
+        : 1;
+  const chance = Math.min(1, (road.danger ?? 0) * j.encounterPerDanger * factor);
+  if (chance <= 0) return undefined;
+  const rng = createRng(`${seed}:roadenc:${journeyIdOf(road)}:${day}:${seq}`);
+  if (rng.next() >= chance) return undefined;
+  return rng.weighted(pool.map((e) => ({ item: e.id, weight: e.weight })));
+}
+
+/* ── 地方の地図の霧（G-02、docs/10 §7「行ったことのない場所は霧がかかる」） ──
+ * state.life.map に持つ刻印：
+ *   visited … 実際に訪れた町・地域（地図に濃い印が出る）
+ *   heard   … 噂・新聞・地図で聞き覚えた町・地域（名が知れる＝霧が晴れる）
+ * これらは「知っている場所」の刻印で、隣町の名・訪れた町の地域の名は
+ * 刻まなくても知れる（mapKnownSet で導出する —— 常識として伝わる噂）
+ */
+
+/** 場所を訪れた刻印（visited と heard の両方に足す） */
+export function markVisited(
+  map: GameState["life"]["map"],
+  place: string,
+): GameState["life"]["map"] {
+  const heard = map.heard.includes(place) ? map.heard : [...map.heard, place];
+  const visited = map.visited.includes(place) ? map.visited : [...map.visited, place];
+  return { visited, heard };
+}
+
+/** 場所の名を聞き覚えた刻印（heard にだけ足す） */
+export function markHeard(map: GameState["life"]["map"], place: string): GameState["life"]["map"] {
+  return map.heard.includes(place) ? map : { ...map, heard: [...map.heard, place] };
+}
+
+/**
+ * 地方のすべての場所を聞き覚えた刻印（地図の購入。G-02）。
+ * 町と地域の名がすべて書き込まれる —— 訪れた印は立たない（知ることと
+ * 行くことは別。霧が晴れても印の濃さは変わらない）
+ */
+export function markAllHeard(
+  map: GameState["life"]["map"],
+  cfg: LifeConfig,
+): GameState["life"]["map"] {
+  const heard = new Set(map.heard);
+  for (const id of Object.keys(cfg.towns)) heard.add(id);
+  for (const id of Object.keys(cfg.places ?? {})) heard.add(id);
+  return { ...map, heard: [...heard] };
+}
+
+/**
+ * 知っている場所の集合（G-02）：
+ *   ・visited/heard に刻んだ場所
+ *   ・訪れた町から道で繋がる町（隣町の名は行き先候補として自然に知れる）
+ *   ・訪れた町に属する地域（その町の外の名は知っている）
+ */
+export function mapKnownSet(state: GameState, cfg: LifeConfig): Set<string> {
+  const known = new Set<string>([...state.life.map.visited, ...state.life.map.heard]);
+  for (const town of state.life.map.visited) {
+    if (cfg.towns[town] === undefined) continue;
+    for (const j of cfg.journeys) {
+      if (j.from === town) known.add(j.to);
+      if (j.to === town) known.add(j.from);
+    }
+    for (const [id, p] of Object.entries(cfg.places ?? {})) {
+      if (p.town === town) known.add(id);
+    }
+  }
+  return known;
+}
+
+/** 場所の名が知れているか（霧の晴れた場所か） */
+export function mapKnown(state: GameState, cfg: LifeConfig, place: string): boolean {
+  return mapKnownSet(state, cfg).has(place);
+}
+
+/** 実際に訪れたことのある場所か */
+export function mapVisited(state: GameState, place: string): boolean {
+  return state.life.map.visited.includes(place);
+}
+
+/** 場所の表示名（町は町名、場所は places の name。未登録は id そのまま） */
+export function placeName(place: string, cfg: LifeConfig): string {
+  return cfg.places?.[place]?.name ?? cfg.towns[place]?.name ?? place;
+}
+
+/**
+ * 噂・朝刊で聞き覚える次の場所（G-02）。知っている町から道で繋がる
+ * 未知の町を優先に（噂は外へ広がる）、なければ未知の町、それも尽きたら
+ * 未知の地域を、世界シード×日×通し番号で決定的に1つ選ぶ
+ */
+export function revealPick(
+  seed: string,
+  day: number,
+  seq: number,
+  cfg: LifeConfig,
+  known: ReadonlySet<string>,
+): string | undefined {
+  const townCandidates: string[] = [];
+  for (const j of cfg.journeys) {
+    if (known.has(j.from) && !known.has(j.to)) townCandidates.push(j.to);
+    if (known.has(j.to) && !known.has(j.from)) townCandidates.push(j.from);
+  }
+  const dedup = [...new Set(townCandidates)].sort();
+  if (dedup.length > 0) {
+    return createRng(`${seed}:mapreveal:${day}:${seq}`).pick(dedup);
+  }
+  // 町がすべて聞き覚えのあとは未知の地域を知る
+  const areaCandidates = Object.keys(cfg.places ?? {})
+    .filter((id) => !known.has(id))
+    .sort();
+  if (areaCandidates.length === 0) return undefined;
+  return createRng(`${seed}:mapreveal:${day}:${seq}:area`).pick(areaCandidates);
 }
 
 /** 仲の値（0〜bondMax） */
