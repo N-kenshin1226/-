@@ -29,7 +29,7 @@ const legacyState = (seed = "e2e", town = "ardi") =>
     life: { town },
   }) as GameState;
 
-const render = (spec: ScenerySpec, opts?: Parameters<typeof Scenery>[0]) =>
+const render = (spec: ScenerySpec, opts?: Omit<Parameters<typeof Scenery>[0], "spec">) =>
   renderToStaticMarkup(createElement(Scenery, { spec, ...opts }));
 
 /* ── 配置の決定性 ── */
