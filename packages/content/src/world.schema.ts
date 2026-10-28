@@ -210,6 +210,68 @@ export const spotKindSchema = z
   })
   .strict();
 
+/** 迷宮の罠の型（G-03、docs/10 §6。trapKinds） */
+export const trapKindSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9_]+$/),
+    /** 罠の表示名（見破ったときの名札に使う） */
+    name: z.string().min(1),
+    /** 見破りの難しさ（観察との差で回避率が動く） */
+    difficulty: z.number().nonnegative(),
+    /** 踏んだときの消耗（疲労） */
+    fatigue: z.number().nonnegative(),
+    /** 踏んだときの灯りロス（絡まり・水流など手間のかかる罠） */
+    light: z.number().int().nonnegative(),
+    /** 踏んだときの文（「――…。」の機械的口調） */
+    sprungText: z.string().min(1),
+    /** 見破ったときの文 */
+    avoidText: z.string().min(1),
+  })
+  .strict();
+
+/** 迷宮の型（G-03、docs/10 §6。洞窟・坑道・地下墓所・古代遺跡・魔物の巣・塔・沈んだ神殿） */
+export const dungeonTypeSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9_]+$/),
+    /** 型の表示名（洞窟・塔…） */
+    name: z.string().min(1),
+    /** 基本の危険度（1〜10。深い型ほど遠い町に置かれる。地域の型と同じ語彙） */
+    danger: z.number().int().min(1).max(10),
+    /** 迷宮名の候補（世界中で重複しない。尽きたら通し番号） */
+    names: z.array(z.string().min(1)).min(4),
+    /** 情景の説明（生成時に1つ…は使わず、型の情景として場所の desc に置く） */
+    desc: z.string().min(1),
+    /** 部屋の敵の表（enemies.json の id＋重み） */
+    enemies: z
+      .array(z.object({ id: z.string().min(1), weight: z.number().positive() }).strict())
+      .min(1),
+    /** 罠の部屋に仕掛ける罠の表（trapKinds の id＋重み） */
+    traps: z
+      .array(z.object({ id: z.string().min(1), weight: z.number().positive() }).strict())
+      .min(1),
+    /** 宝物の表（items.json の id＋個数の範囲＋重み） */
+    treasure: z
+      .array(
+        z
+          .object({
+            item: z.string().min(1),
+            weight: z.number().positive(),
+            n: z.tuple([z.number().int().positive(), z.number().int().positive()]),
+          })
+          .strict(),
+      )
+      .min(1),
+    /** 主（ボス）の候補（enemies.json の id＋重み。生成時に1つ選ばれ強化される） */
+    bosses: z
+      .array(z.object({ enemy: z.string().min(1), weight: z.number().positive() }).strict())
+      .min(1),
+    /** 主の称号の候補（「《洞窟の主》」のような冠。生成時に1つ選ばれる） */
+    bossTitles: z.array(z.string().min(1)).min(1),
+    /** ユニークモンスターの名の候補（世界に1体の主になるとき1つ選ばれる） */
+    uniqueNames: z.array(z.string().min(1)).min(1),
+  })
+  .strict();
+
 export const worldFileSchema = z
   .object({
     version: z.literal(1),
@@ -227,6 +289,10 @@ export const worldFileSchema = z
     areaTypes: z.array(areaTypeSchema).min(14),
     /** 地点の型 */
     spotKinds: z.array(spotKindSchema).min(1),
+    /** 迷宮の罠の型 */
+    trapKinds: z.array(trapKindSchema).min(1),
+    /** 迷宮の型（G-03 の7種。docs/10 §6） */
+    dungeonTypes: z.array(dungeonTypeSchema).min(7),
     /** 生成される住人の名の候補 */
     npcNames: z.array(z.string().min(1)).min(10),
     /** 生成される住人の口調（voices.json と同じ {name}/{deed} 語彙） */
@@ -257,6 +323,39 @@ export const worldFileSchema = z
       if (spotIds.has(s.id))
         ctx.addIssue({ code: "custom", message: `地点の型 id の重複: ${s.id}` });
       spotIds.add(s.id);
+    }
+    const trapIds = new Set<string>();
+    for (const t of file.trapKinds) {
+      if (trapIds.has(t.id)) ctx.addIssue({ code: "custom", message: `罠の型 id の重複: ${t.id}` });
+      trapIds.add(t.id);
+    }
+    const dgnIds = new Set<string>();
+    for (const d of file.dungeonTypes) {
+      if (dgnIds.has(d.id))
+        ctx.addIssue({ code: "custom", message: `迷宮の型 id の重複: ${d.id}` });
+      dgnIds.add(d.id);
+      // 罠の参照は trapKinds にある
+      for (const tr of d.traps) {
+        if (!trapIds.has(tr.id)) {
+          ctx.addIssue({ code: "custom", message: `${d.id}: 未知の罠の型 ${tr.id}` });
+        }
+      }
+      // 宝物の個数は [下限, 上限] の順
+      for (const tr of d.treasure) {
+        if (tr.n[0] > tr.n[1]) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${d.id}: 宝物 ${tr.item} の個数が逆順 [${tr.n[0]},${tr.n[1]}]`,
+          });
+        }
+      }
+    }
+    // 低い危険度の迷宮の型（danger<=2。始まりの町の輪でも出せる）が必ず1つはある
+    if (!file.dungeonTypes.some((d) => d.danger <= 2)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "始まりの町の輪で出せる迷宮の型（danger<=2）がない",
+      });
     }
     // 始まりの町の型が必ず1つはある（startWeight > 0 の型）
     if (!file.townTypes.some((t) => t.startWeight > 0)) {
@@ -325,4 +424,6 @@ export type TownErrandJson = z.infer<typeof townErrandSchema>;
 export type TownTypeJson = z.infer<typeof townTypeSchema>;
 export type AreaTypeJson = z.infer<typeof areaTypeSchema>;
 export type SpotKindJson = z.infer<typeof spotKindSchema>;
+export type TrapKindJson = z.infer<typeof trapKindSchema>;
+export type DungeonTypeJson = z.infer<typeof dungeonTypeSchema>;
 export type WorldFile = z.infer<typeof worldFileSchema>;

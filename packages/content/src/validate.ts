@@ -227,6 +227,12 @@ try {
       id?: string;
       outcomes?: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string }[];
     }[];
+    dungeonTypes?: {
+      id?: string;
+      enemies?: { id?: string }[];
+      bosses?: { enemy?: string }[];
+      treasure?: { item?: string }[];
+    }[];
   };
   const itemIds = new Set(
     ((read("items.json") as { items?: { id?: string }[] }).items ?? []).map((i) => i.id),
@@ -307,6 +313,19 @@ try {
   for (const s of worldRaw.spotKinds ?? []) {
     for (const o of s.outcomes ?? []) chkOutcome(o, `spotKinds.${s.id ?? "?"}`);
   }
+  /* 迷宮の型（G-03）：敵・主・宝物の参照は既存JSONに実在するものに限る。
+   * 罠の型参照（trapKinds）は world.schema の superRefine で検証済み */
+  for (const d of worldRaw.dungeonTypes ?? []) {
+    const where = `dungeonTypes.${d.id ?? "?"}`;
+    for (const e of d.enemies ?? []) {
+      if (e.id !== undefined && !enemyIds.has(e.id)) bad.push(`${where}: 未定義の敵 ${e.id}`);
+    }
+    for (const b of d.bosses ?? []) {
+      if (b.enemy !== undefined && !enemyIds.has(b.enemy))
+        bad.push(`${where}: 未定義の主 ${b.enemy}`);
+    }
+    for (const t of d.treasure ?? []) chkItem(t.item, `${where}.treasure`);
+  }
   if (bad.length > 0) {
     console.error(`✗ world.json の参照が未定義: ${bad.join(", ")}`);
     failed = true;
@@ -333,10 +352,12 @@ try {
     townBase?: { places?: { key?: string }[] };
     townTypes?: { id?: string; omitPlaces?: string[]; places?: { key?: string }[] }[];
     areaTypes?: { id?: string }[];
+    dungeonTypes?: { id?: string }[];
   };
   const sceneryRaw = read("scenery.json") as {
     town?: Record<string, { places?: Record<string, unknown> }>;
     region?: Record<string, unknown>;
+    dungeon?: Record<string, unknown>;
     legacy?: { towns?: Record<string, string>; regions?: Record<string, string> };
   };
   const placesRaw = read("places.json") as {
@@ -362,6 +383,11 @@ try {
   for (const a of worldRaw.areaTypes ?? []) {
     if (sceneryRaw.region?.[a.id ?? "?"] === undefined)
       bad.push(`地域の型 ${a.id ?? "?"} のレシピが無い`);
+  }
+  // 迷宮の型（G-03）も型ごとのレシピが要る（dungeon.<型id>）
+  for (const d of worldRaw.dungeonTypes ?? []) {
+    if (sceneryRaw.dungeon?.[d.id ?? "?"] === undefined)
+      bad.push(`迷宮の型 ${d.id ?? "?"} のレシピが無い`);
   }
   const placeIds = new Set((placesRaw.places ?? []).map((p) => p.id));
   const townIds = new Set<string>(["ardi"]);

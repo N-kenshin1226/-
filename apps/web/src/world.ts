@@ -55,7 +55,12 @@ export function genWorld(state: GameState): GeneratedWorld | null {
   const key = `${state.seed}:${state.world?.recipe ?? 0}:${state.world?.kind ?? "legacy"}`;
   const hit = worldCache.get(key);
   if (hit !== undefined) return hit;
-  const w = worldFor(state, worldFile, balance.world, enemyChallenge);
+  const w = worldFor(
+    state,
+    worldFile,
+    { ...balance.world, dungeons: balance.dungeons },
+    enemyChallenge,
+  );
   worldCache.set(key, w);
   return w;
 }

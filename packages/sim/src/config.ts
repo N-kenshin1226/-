@@ -270,6 +270,12 @@ export function stepConfig(): StepConfig {
     enemyDrops: Object.fromEntries(
       enemies.enemies.filter((e) => e.drops !== undefined).map((e) => [e.id, e.drops!]),
     ),
+    /**
+     * 有限迷宮（G-03、balance.dungeons の潜り側の係数）：1回の潜りの行動消費と
+     * 迷宮内野営の眠りの質。迷宮の場所 id 一覧（dungeonIds）は
+     * 生成世界のシムが自分で畳む（sim-dungeon）
+     */
+    dungeons: { diveCost: balance.dungeons.diveCost, campQuality: balance.dungeons.campQuality },
   };
 }
 

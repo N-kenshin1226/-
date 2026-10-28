@@ -64,6 +64,11 @@ export type Screen =
   | { name: "ending" }
   /** 深層ダンジョン（T-43）：層を下る連戦。進行は AbyssRun が持つ */
   | { name: "abyss" }
+  /**
+   * 有限迷宮（G-03、docs/10 §6）：部屋を抜く探索。place は迷宮の場所 id
+   * （生成世界の dg<連番>）。進行は画面の一時状態＋counters（dg.rooms 等）
+   */
+  | { name: "dungeon"; place: string }
   | { name: "lore"; atomId?: string }
   /** 武器屋（K-01）：武器の棚。購入と持ち替えは行動を消費しない */
   | { name: "arms" }

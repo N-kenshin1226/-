@@ -10,6 +10,7 @@ import {
   appraisalGame,
   attackFactorWithEnchant,
   biographyMaterial,
+  bossName,
   canAct,
   canFightUnique,
   createRng,
@@ -84,6 +85,13 @@ import {
   occasionOffers,
   occasionSpeaker,
   rollIndividual,
+  bossEnemy,
+  dgCampKey,
+  dgClearedKey,
+  dgProgress,
+  roomAt,
+  rollTrap,
+  scaleRoomEnemy,
   bondOf,
   errandsFor as coreErrandsFor,
   itemPrice,
@@ -177,6 +185,7 @@ import {
   vows,
   weapons,
   weather,
+  world as worldContent,
   type EnemyJson,
   type Order,
   type Origin,
@@ -478,6 +487,11 @@ export const cfg: StepConfig = {
   enemyDrops: Object.fromEntries(
     enemies.enemies.filter((e) => e.drops !== undefined).map((e) => [e.id, e.drops!]),
   ),
+  /**
+   * 有限迷宮（G-03、balance.dungeons の潜り側の係数）：1回の潜りの行動消費と
+   * 迷宮内野営の眠りの質。迷宮の場所 id 一覧は cfgFor で生成世界から畳む
+   */
+  dungeons: { diveCost: balance.dungeons.diveCost, campQuality: balance.dungeons.campQuality },
 };
 
 /**
@@ -591,6 +605,8 @@ export function cfgFor(state: GameState): StepConfig {
   return {
     ...cfg,
     ...(lifeCfg !== undefined ? { life: lifeCfg } : {}),
+    /** この世界に生成された迷宮の id（dg<連番>。存在しない id の潜りは記録しない） */
+    dungeonIds: gen.dungeons.map((d) => d.id),
     ...(cfg.mentors !== undefined ? { mentors: { ...cfg.mentors, mentors: mentorDefs } } : {}),
     ...(cfg.incidents !== undefined ? { incidents: { ...cfg.incidents, npcs } } : {}),
     ...(cfg.occasions !== undefined ? { occasions: { ...cfg.occasions, npcs } } : {}),
@@ -864,6 +880,111 @@ export function roadEncounterNow(state: GameState): string | undefined {
     (state.counters[roadEncounterDayKey()] ?? -1) === state.time.day,
     life,
   );
+}
+
+/* ── 有限迷宮（G-03、docs/10 §6） ──
+ * 迷宮の中身（階層・部屋・罠・宝・主）は生成世界から決定的に引き直し、
+ * 進行は counters/flags（dg.rooms/dg.cleared/dg.camp）を読むだけ。
+ * ルールは core/dungeon にあり、ここは表示名・選択の解決だけを行う */
+
+/** この世界の迷宮の一覧（生成世界のみ。固定マップは空） */
+export function dungeonsOf(state: GameState) {
+  return genWorld(state)?.dungeons ?? [];
+}
+
+/** 場所 id → 迷宮（生成世界の dg<連番>。無ければ undefined） */
+export function dungeonOf(state: GameState, id: string | undefined) {
+  if (id === undefined) return undefined;
+  return dungeonsOf(state).find((d) => d.id === id);
+}
+
+/** 迷宮の進行（抜いた室数・全室数・制覇。counters/flags から導出） */
+export function dungeonProgress(state: GameState, id: string) {
+  const d = dungeonOf(state, id);
+  if (d === undefined) return { cleared: 0, total: 0, done: false };
+  return dgProgress(state.counters, state.flags, d);
+}
+
+/** 制覇済みか（flags["dg.cleared.<id>"]） */
+export function dungeonDone(state: GameState, id: string): boolean {
+  return state.flags[dgClearedKey(id)] === true;
+}
+
+/**
+ * 迷宮内野営の明け（昨日この迷宮で野営した → 次の潜りは行動を要さない。
+ * step の dungeon コマンドと同じ判定。刻印なし＝-1 は day0 と誤爆するので存在確認）
+ */
+export function dungeonCampFree(state: GameState, id: string): boolean {
+  const day = state.counters[dgCampKey(id)];
+  return day !== undefined && day === state.time.day - 1;
+}
+
+/** 1回の潜りで使える灯り（balance.dungeons.lightPerDive） */
+export function dungeonLight(): number {
+  return balance.dungeons.lightPerDive;
+}
+
+/** 迷宮の型の定義（world.json dungeonTypes → id 引き。罠の定義もここから） */
+export const dungeonTypeDefs = Object.fromEntries(
+  (worldContent.dungeonTypes ?? []).map((d) => [d.id, d]),
+);
+export const trapKindDefs = Object.fromEntries(
+  (worldContent.trapKinds ?? []).map((tr) => [tr.id, tr]),
+);
+
+/** 迷宮内の部屋（通し番号 → 部屋・層・層内番号。主の間は isBossRoom） */
+export { floorRooms, isBossRoom, roomAt, totalRooms } from "@trace/core";
+export type { GenDungeon, GenRoom } from "@trace/core";
+
+/** 部屋の敵の強化版（enemies.json の定義を層に合わせて伸ばす） */
+export function dungeonRoomEnemy(state: GameState, id: string, index: number) {
+  const d = dungeonOf(state, id);
+  if (d === undefined) return undefined;
+  const at = roomAt(d, index);
+  if (at === null || at.room.kind !== "combat" || at.room.enemyId === undefined) return undefined;
+  const base = enemies.enemies.find((e) => e.id === at.room.enemyId);
+  if (base === undefined) return undefined;
+  return { enemy: scaleRoomEnemy(base, at.floorIndex, balance.dungeons), floor: at.floorIndex };
+}
+
+/** 主の敵の強化版（《称号》と合わせて出す。ユニークは生成名） */
+export function dungeonBossEnemy(state: GameState, id: string) {
+  const d = dungeonOf(state, id);
+  if (d === undefined) return undefined;
+  const base = enemies.enemies.find((e) => e.id === d.boss.enemyId);
+  if (base === undefined) return undefined;
+  return { enemy: bossEnemy(base, d, balance.dungeons), name: bossName(d, base.name) };
+}
+
+/** 罠の見破り（部屋ごとの決定的な抽選。観察の技能値で回避率が動く） */
+export function dungeonTrapRoll(state: GameState, id: string, index: number) {
+  const d = dungeonOf(state, id);
+  const at = d === undefined ? null : roomAt(d, index);
+  if (d === null || at === null || at.room.trapId === undefined) return undefined;
+  const trap = trapKindDefs[at.room.trapId];
+  if (trap === undefined) return undefined;
+  const obs = state.player.skills["observation"]?.value ?? 0;
+  return rollTrap(trap, `${state.seed}:${id}:${index}:d${state.time.day}`, obs, balance.dungeons);
+}
+
+/** 記録画面の迷宮の欄（生成世界のみ。制覇した迷宮は《制覇》を付ける） */
+export function dungeonRecordLines(state: GameState): string[] {
+  const ds = dungeonsOf(state);
+  if (ds.length === 0) return [];
+  const lines = [t.text.recordsDungeons];
+  for (const d of ds) {
+    const p = dgProgress(state.counters, state.flags, d);
+    lines.push(
+      tpl(t.text.recordsDungeonLine, {
+        name: d.name,
+        type: d.typeName,
+        cleared: p.cleared,
+        total: p.total,
+        mark: p.done ? t.text.recordsDungeonCleared : "",
+      }),
+    );
+  }
+  return lines;
 }
 
 /**
@@ -1337,6 +1458,39 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         if (e.newBest) lines.push(tpl(t.text.abyssBest, { best: e.best }));
         return lines;
       }
+      // 有限迷宮の潜り結果（G-03）：抜いた室数と制覇を1行ずつ出す
+      case "dungeonEnded": {
+        const d =
+          state === undefined ? undefined : genWorld(state)?.dungeons.find((x) => x.id === e.id);
+        const name = d?.name ?? e.id;
+        const lines = [
+          tpl(t.text.dungeonResult, {
+            name,
+            rooms: e.rooms,
+            cleared: e.cleared,
+            total: e.total,
+          }),
+        ];
+        if (e.done) lines.push(tpl(t.text.dungeonConquered, { name }));
+        else if (e.end === "camp") lines.push(t.text.dungeonCamp);
+        else if (e.end === "light") lines.push(t.text.dungeonLightOut);
+        else if (e.end === "retreat") lines.push(t.text.dungeonRetreat);
+        return lines;
+      }
+      // 迷宮の主の討伐（G-03）：制覇の潜りの報せ。ユニークは「世界に1体」と出す
+      case "bossDefeated": {
+        const d =
+          state === undefined
+            ? undefined
+            : genWorld(state)?.dungeons.find((x) => x.id === e.dungeon);
+        const base = enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId;
+        const name = d !== undefined ? bossName(d, base) : e.enemyId;
+        return [
+          e.unique
+            ? tpl(t.text.dungeonUniqueDown, { name })
+            : tpl(t.text.dungeonBossDown, { name }),
+        ];
+      }
       case "moneyPaid":
         return [tpl(t.text.moneyPaid, { amount: e.amount })];
       // 街への寄付（X-9 領主ルート）：納めた額を1行で返す
@@ -1655,8 +1809,12 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   if (!report) return [];
   const w = t.text.wake;
   const lines: string[] = [w.header];
-  // 旅の途中の眠りは野営（P-02。到着の朝は journey が空でも journeyArrived で判る）
-  const camping = state.life.journey !== null || events.some((e) => e.type === "journeyArrived");
+  // 旅の途中の眠りは野営（P-02。到着の朝は journey が空でも journeyArrived で判る）。
+  // 迷宮内野営（G-03）も野営の眠り —— slept.camp で判る（step が camp を立てる）
+  const camping =
+    state.life.journey !== null ||
+    events.some((e) => e.type === "journeyArrived") ||
+    events.some((e) => e.type === "slept" && e.camp === true);
   lines.push(
     tpl(w.qualityLine, {
       quality: qualityLabel(report.quality),
@@ -2378,6 +2536,8 @@ function deedLabel(state: GameState, kind: string, target?: string): string {
       return `${enemies.enemies.find((e) => e.id === target)?.name ?? "魔物"}との戦い`;
     case "abyss":
       return "深層への潜行";
+    case "dungeon":
+      return "迷宮の探索";
     case "occasion":
       // 勝負所の行事（X-10）：臨んだ行事の名を記録欄に出す
       return `《${occasionName(target ?? "")}》に臨んだ`;
@@ -2525,7 +2685,20 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
     }
     return [];
   });
-  rumors.unshift(...uniqueLines);
+  // 迷宮の主の討伐（G-03）：制覇・ユニークモンスターの討伐は続報の先頭に載る
+  const bossLines = events.flatMap((e) => {
+    if (e.type !== "bossDefeated") return [];
+    const d = dungeonOf(state, e.dungeon);
+    const base = enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId;
+    const name = d !== undefined ? bossName(d, base) : e.enemyId;
+    const at = d?.name ?? e.dungeon;
+    return [
+      e.unique
+        ? tpl(t.text.newsUniqueBoss, { name, name2: at })
+        : tpl(t.text.newsBossDefeated, { name: at }),
+    ];
+  });
+  rumors.unshift(...bossLines, ...uniqueLines);
   rumors.splice(3);
 
   // 昨日の記録：行動種別ごとにまとめる
@@ -2596,6 +2769,7 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
       e.type === "uniqueDefeated" ||
       e.type === "uniqueGained" ||
       e.type === "uniqueClaimed" ||
+      (e.type === "bossDefeated" && e.unique) ||
       (e.type === "pinnacleStageReached" && e.rank === "S"),
   );
   return {
@@ -2826,6 +3000,45 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         sound: "fanfare",
       });
     }
+    // 迷宮の制覇（G-03）：最後の潜りで主を討ったとき —— Aランクの窓
+    if (e.type === "dungeonEnded" && e.done) {
+      const d = state === undefined ? undefined : dungeonOf(state, e.id);
+      const name = d?.name ?? e.id;
+      out.push({
+        rank: "A",
+        kicker: "DUNGEON CLEARED",
+        title: `《${name}》を制覇`,
+        sub: tpl(t.text.dungeonConquered, { name }),
+        rewards: [{ label: "迷宮", name: `《${name}》` }],
+        sound: "fanfare",
+      });
+    }
+    // 迷宮の主の討伐（G-03）：通常の主はA、世界に1体のユニークはS ——
+    // 「世界初」の記録として一番大きな帯で届く
+    if (e.type === "bossDefeated") {
+      const d = state === undefined ? undefined : dungeonOf(state, e.dungeon);
+      const base = enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId;
+      const name = d !== undefined ? bossName(d, base) : e.enemyId;
+      if (e.unique) {
+        out.push({
+          rank: "S",
+          kicker: "UNIQUE MONSTER",
+          title: `《${name}》`,
+          sub: "世界で初めての記録です ―― この世界に1体の魔物を討ち取りました。",
+          rewards: [{ label: "ユニーク", name: `《${name}》` }],
+          sound: "world",
+        });
+      } else {
+        out.push({
+          rank: "A",
+          kicker: "BOSS DOWN",
+          title: `《${name}》`,
+          sub: tpl(t.text.dungeonBossDown, { name }),
+          rewards: [{ label: "主", name: `《${name}》` }],
+          sound: "fanfare",
+        });
+      }
+    }
     // 技の進化（K-03）：積み重ねの形が変わる節目 —— Aランクの窓。
     // 隠し分岐は「見知らぬ形」として同じ格で届く（進化形の名はここで初めて明かされる）
     if (e.type === "artEvolved") {
@@ -3018,10 +3231,12 @@ export function wakePack(
   atHome: boolean,
   state?: GameState,
 ): WakePack {
-  // 旅の途中の眠りは野営（P-02。到着の朝は journey が空でも journeyArrived で判る）
+  // 旅の途中の眠りは野営（P-02。到着の朝は journey が空でも journeyArrived で判る）。
+  // 迷宮内野営（G-03）も野営の眠り —— slept.camp で判る
   const camping =
     (state !== undefined && state.life.journey !== null) ||
-    events.some((e) => e.type === "journeyArrived");
+    events.some((e) => e.type === "journeyArrived") ||
+    events.some((e) => e.type === "slept" && e.camp === true);
   return {
     quality: qualityLabel(report.quality),
     inn: camping

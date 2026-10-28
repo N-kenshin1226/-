@@ -78,6 +78,7 @@ import {
 } from "./screens/town.js";
 import { MinigameScreen, WorkModeScreen, WorkScreen } from "./screens/work.js";
 import { AbyssScreen, CombatScreen, HuntScreen } from "./screens/hunt.js";
+import { DungeonScreen } from "./screens/dungeon.js";
 import { CrisisScreen } from "./screens/crisis.js";
 import { OccasionScreen } from "./screens/occasion.js";
 import { IncidentScreen } from "./screens/incident.js";
@@ -147,6 +148,10 @@ function sceneOf(state: GameState, s: Screen, lastPlace: string | null): SceneKi
       return "desk";
     case "abyss":
       return "abyss";
+    case "dungeon":
+      // 有限迷宮（G-03）：情景レシピは sceneryForScreen が型ごとに引く。
+      // SceneKind（霞・時間帯の下層）は深層と同じ地底の景に倒す
+      return "abyss";
     // 旅の途中（P-02）：町と町の間は街道の景色
     case "journey":
       return "highway";
@@ -202,6 +207,7 @@ const LOG_SCREENS = new Set<Screen["name"]>([
   "minigame",
   "hunt",
   "abyss",
+  "dungeon",
   "society",
   "mentor",
   "life",
@@ -941,6 +947,17 @@ function ScreenView(props: {
       return <HuntScreen state={state} place={screen.place} setScreen={setScreen} />;
     case "abyss":
       return <AbyssScreen state={state} act={act} push={push} back={toBack()} />;
+    case "dungeon":
+      // 有限迷宮（G-03、docs/10 §6）：部屋を抜く探索。戻る先はその迷宮の場所
+      return (
+        <DungeonScreen
+          state={state}
+          place={screen.place}
+          act={act}
+          push={push}
+          back={toBack(screen.place)}
+        />
+      );
     case "combat":
       return (
         <CombatScreen

@@ -788,6 +788,79 @@ export const balanceSchema = z
       })
       .strict(),
     /**
+     * docs/10_world_generation.md §6、G-03：有限迷宮（洞窟・坑道・地下墓所・
+     * 古代遺跡・魔物の巣・塔・沈んだ神殿）。core/dungeon の DungeonConfig と
+     * world.json の dungeonTypes 生成ルールに対応
+     */
+    dungeons: z
+      .object({
+        /** 世界あたりの迷宮の数（深層は別） */
+        count: z
+          .object({ min: z.number().int().positive(), max: z.number().int().positive() })
+          .strict(),
+        /** 同じ型が並ぶ上限（多様性の担保） */
+        typeMaxPerWorld: z.number().int().positive(),
+        /** 遠い町に深い型が寄る重み（配置抽選の輪ごとの係数） */
+        ringWeight: z.number().nonnegative(),
+        /** ユニークモンスターになる主の最低危険度 */
+        uniqueBossMinDanger: z.number().nonnegative(),
+        /** 階層数 = clamp(floorsBase + floorsPerDanger×型の危険度 ± floorJitter, floors.min, floors.max) */
+        floorsBase: z.number().nonnegative(),
+        floorsPerDanger: z.number().nonnegative(),
+        floorJitter: z.number().nonnegative(),
+        floors: z
+          .object({ min: z.number().int().positive(), max: z.number().int().positive() })
+          .strict(),
+        /** 層ごとの部屋数（主の間は別に最奥に1つ） */
+        rooms: z
+          .object({ min: z.number().int().positive(), max: z.number().int().positive() })
+          .strict(),
+        /** 部屋種の重み（combat/trap/treasure） */
+        roomWeights: z
+          .object({
+            combat: z.number().positive(),
+            trap: z.number().nonnegative(),
+            treasure: z.number().nonnegative(),
+          })
+          .strict(),
+        /** 宝物部屋の抽選回数・財貨（money）の基礎と危険度係数 */
+        treasureRolls: z.number().int().positive(),
+        treasureMoneyBase: z.number().nonnegative(),
+        treasureMoneyPerDanger: z.number().nonnegative(),
+        /** 主の間の宝物（個数の倍率と財貨の加算） */
+        bossTreasureFactor: z.number().positive(),
+        bossTreasureMoneyBonus: z.number().nonnegative(),
+        /** 部屋の敵の強化 = enemyBaseFactor + enemyFloorFactor×層（敏捷は加算） */
+        enemyBaseFactor: z.number().positive(),
+        enemyFloorFactor: z.number().nonnegative(),
+        enemyAgilityPerFloor: z.number().nonnegative(),
+        /** 主の強化（部屋の敵の強化に掛け合わせる） */
+        bossHpFactor: z.number().positive(),
+        bossPowerFactor: z.number().positive(),
+        bossChallengeFactor: z.number().positive(),
+        bossAgilityBonus: z.number().nonnegative(),
+        /** ユニークモンスターの追加強化（主の強化に掛け合わせる） */
+        uniqueHpFactor: z.number().positive(),
+        uniquePowerFactor: z.number().positive(),
+        uniqueChallengeFactor: z.number().positive(),
+        uniqueAgilityBonus: z.number().nonnegative(),
+        /**
+         * 潜行リソース（灯り）：1回の潜りで使えるプレイヤー行動数。
+         * 迷宮の部屋数はこれでは抜き切れない量に設定する（野営・撤退の意味が出る）
+         */
+        lightPerDive: z.number().int().positive(),
+        /** 罠・宝の部屋で消費する灯り（戦闘の部屋は戦闘行動が灯りを使う） */
+        roomLightCost: z.number().int().nonnegative(),
+        /** 1回の潜りに使う行動数（野営明けの潜りは 0 になる） */
+        diveCost: z.number().int().positive(),
+        /** 迷宮内野営の眠りの質（街道の野営 life.campQuality より悪い） */
+        campQuality: z.number().positive(),
+        /** 罠の見破り：trapAvoidBase + (観察−難しさ)×trapAvoidPerSkill を 0.05〜0.95 に畳む */
+        trapAvoidBase: z.number(),
+        trapAvoidPerSkill: z.number().nonnegative(),
+      })
+      .strict(),
+    /**
      * docs/05 M4、T-47：ライバル・ランキング（簡易版）。
      * core/src/rivals の RivalsConfig に対応。ランキングは派生値なので
      * GameState・セーブには触れない（ライバルの素性は世界シードから引く）

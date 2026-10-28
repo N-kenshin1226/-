@@ -183,6 +183,25 @@ export const thresholdsSchema = z
         notes: z.record(z.string(), z.string()).optional(),
       })
       .strict(),
+    /**
+     * 有限迷宮の受入CIゲート（G-03、docs/10 §6）。
+     * 必ず勝つボットで全迷宮を踏破し、型の制覇可能性・ユニークの1体性・
+     * 潜りの深さを採点する
+     */
+    dungeon: z
+      .object({
+        /** 回す世界シードの数（7種すべてが出る母数） */
+        seeds: z.number().int().positive(),
+        /** 1世界の迷宮の個数の許容帯（balance.dungeons.count と揃える） */
+        count: z
+          .object({ min: z.number().int().positive(), max: z.number().int().positive() })
+          .strict(),
+        /** 「1回で抜き切れない深さ」：1潜りで制覇できた迷宮の割合の上限 */
+        singleDiveMaxRate: z.number().min(0).max(1),
+        /** しきい値の根拠の注記（JSON にコメントを書けないため） */
+        notes: z.record(z.string(), z.string()).optional(),
+      })
+      .strict(),
   })
   .strict();
 
