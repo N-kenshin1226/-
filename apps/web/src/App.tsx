@@ -90,6 +90,8 @@ import { SettingsScreen } from "./screens/settings.js";
 import { JourneyScreen, LifeScreen } from "./screens/life.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
 import { townTypeNameOf } from "./world.js";
+import { sceneryForScreen } from "./scenery.js";
+import { Scenery } from "./ui/scenery.js";
 
 /** 幕の時間（P-01。「演出を短く」で短い側。theme.fx → --trv-* へ書き込む値） */
 function fxInMs(kind: TravelFxKind): number {
@@ -602,6 +604,9 @@ export function App() {
     setIncidentDeferred({ day: state.time.day, ids: new Set([...deferredIds, id]) });
 
   const scene = sceneOf(state, effScreen, lastPlaceRef.current);
+  // 情景の部品（G-05）：屋外の場所は型のレシピで組み立てた情景を描く。
+  // 屋内・読みもの用の固定背景は従来どおり SceneBackground に倒れる
+  const scenerySpec = sceneryForScreen(state, effScreen, lastPlaceRef.current);
   const notice = notices[0];
   // 危機の段階による景色の霞（W-04、docs/08 §3「景色の差分」）。
   // 段階の数字は出さず、世界の気配として背景に滲ませる
@@ -650,7 +655,17 @@ export function App() {
           weather={sky.weather}
         />
         {/* 背景 → 名札 → HUD → 画面の窓 → 会話窓 → 操作ガイド → 通知 の順に重ねる */}
-        <SceneBackground kind={scene} haze={haze} tod={sky.tod} weather={sky.weather} />
+        {scenerySpec !== null ? (
+          <Scenery
+            spec={scenerySpec}
+            kind={scene}
+            haze={haze}
+            tod={sky.tod}
+            weather={sky.weather}
+          />
+        ) : (
+          <SceneBackground kind={scene} haze={haze} tod={sky.tod} weather={sky.weather} />
+        )}
         {HUD_SCREENS.has(effScreen.name) && <TopChrome state={state} place={chromePlace} />}
         <div key={effScreen.name} className="screen-fade">
           <ScreenView

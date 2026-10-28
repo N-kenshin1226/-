@@ -36,6 +36,7 @@ import { spellsFileSchema } from "./spells.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 import { k03FileSchema } from "../k03/schema.js";
 import { worldFileSchema } from "./world.schema.js";
+import { sceneryFileSchema } from "./scenery.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -308,6 +309,71 @@ try {
   }
 } catch (e) {
   console.error(`✗ world.json の突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+check("scenery.json", sceneryFileSchema);
+
+/* 情景の部品の突き合わせ（G-05、docs/10 §8）：
+ * - world.json の全ての町の型・地域の型にレシピがある（型の背景が出る）
+ * - town.<型>.places の差分キーは、その型が実際に持つ場所の key（基の場所
+ *   − omit ＋ 型の追加場所）に限る
+ * - legacy.towns / legacy.regions の当て元は places.json の町・地域の id
+ */
+try {
+  const read = (name: string) =>
+    JSON.parse(readFileSync(join(root, name), "utf8")) as Record<string, unknown>;
+  const worldRaw = read("world.json") as {
+    townBase?: { places?: { key?: string }[] };
+    townTypes?: { id?: string; omitPlaces?: string[]; places?: { key?: string }[] }[];
+    areaTypes?: { id?: string }[];
+  };
+  const sceneryRaw = read("scenery.json") as {
+    town?: Record<string, { places?: Record<string, unknown> }>;
+    region?: Record<string, unknown>;
+    legacy?: { towns?: Record<string, string>; regions?: Record<string, string> };
+  };
+  const placesRaw = read("places.json") as {
+    places?: { id?: string; kind?: string; town?: string }[];
+  };
+  const bad: string[] = [];
+  const townTypes = worldRaw.townTypes ?? [];
+  const baseKeys = new Set((worldRaw.townBase?.places ?? []).map((p) => p.key));
+  for (const t of townTypes) {
+    const tid = t.id ?? "?";
+    const recipe = sceneryRaw.town?.[tid];
+    if (recipe === undefined) {
+      bad.push(`町の型 ${tid} のレシピが無い`);
+      continue;
+    }
+    const keys = new Set(baseKeys);
+    for (const k of t.omitPlaces ?? []) keys.delete(k);
+    for (const p of t.places ?? []) if (p.key !== undefined) keys.add(p.key);
+    for (const k of Object.keys(recipe.places ?? {})) {
+      if (!keys.has(k)) bad.push(`town.${tid}.places: 型の持たない場所 ${k}`);
+    }
+  }
+  for (const a of worldRaw.areaTypes ?? []) {
+    if (sceneryRaw.region?.[a.id ?? "?"] === undefined)
+      bad.push(`地域の型 ${a.id ?? "?"} のレシピが無い`);
+  }
+  const placeIds = new Set((placesRaw.places ?? []).map((p) => p.id));
+  const townIds = new Set<string>(["ardi"]);
+  for (const p of placesRaw.places ?? []) if (p.town !== undefined) townIds.add(p.town);
+  for (const t of Object.keys(sceneryRaw.legacy?.towns ?? {})) {
+    if (!townIds.has(t)) bad.push(`legacy.towns: places.json に無い町 ${t}`);
+  }
+  for (const r of Object.keys(sceneryRaw.legacy?.regions ?? {})) {
+    if (!placeIds.has(r)) bad.push(`legacy.regions: places.json に無い場所 ${r}`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ scenery.json の参照が不正: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ scenery.json の型・差分・legacy の当て方（scenery ↔ world/places）");
+  }
+} catch (e) {
+  console.error(`✗ scenery.json の突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

@@ -218,3 +218,22 @@ export type {
   TownTypeJson,
   WorldFile,
 } from "./world.schema.js";
+// 情景の部品（G-05、docs/10 §8。型ごとの配色と部品レシピの定義表）
+export { scenery } from "./scenery.js";
+export {
+  SCENERY_FILLS,
+  sceneryEntrySchema,
+  sceneryFileSchema,
+  sceneryPaletteSchema,
+  sceneryPartSchema,
+  sceneryRecipeSchema,
+} from "./scenery.schema.js";
+export type {
+  SceneryEntry,
+  SceneryFile,
+  SceneryPalette,
+  SceneryPart,
+  SceneryRecipe,
+  SceneryShape,
+  ScenerySubRecipe,
+} from "./scenery.schema.js";

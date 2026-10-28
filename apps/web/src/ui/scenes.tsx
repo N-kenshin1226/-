@@ -34,7 +34,8 @@ export type SceneKind =
  * 時間帯ごとの色票（P-01）。空・遠景〜近景の影・星と灯りの強さ・
  * 室内の壁と窓からの差し込みの色を1枚にまとめる
  */
-interface Pal {
+/** 時間帯の色票（P-01。情景の部品レンダラ（G-05）もここから色を引く） */
+export interface Pal {
   /** 空のグラデーション（上→地平） */
   sky: [string, string, string, string];
   /** 遠景・中景・近景の影色 */
@@ -86,7 +87,8 @@ const NIGHT: Pal = {
   shaft: "#8fa8d8",
 };
 
-const PALS: Record<TimeOfDay, Pal> = {
+/** 時間帯→色票（情景の部品レンダラ（G-05）もここから引く） */
+export const PALS: Record<TimeOfDay, Pal> = {
   morning: MORNING,
   noon: NOON,
   evening: EVENING,
@@ -94,14 +96,14 @@ const PALS: Record<TimeOfDay, Pal> = {
 };
 
 /** 天候の霞：空の上に掛かる薄い層（P-01。晴れは掛からない） */
-const VEIL: Record<string, { color: string; op: number }> = {
+export const VEIL: Record<string, { color: string; op: number }> = {
   cloud: { color: "#6b7480", op: 0.26 },
   rain: { color: "#3a4a5c", op: 0.3 },
   snow: { color: "#9fb2c4", op: 0.28 },
 };
 
-/** 星の固定配置（種を持たない飾り） */
-const STARS: readonly [number, number, number][] = [
+/** 星の固定配置（種を持たない飾り。情景の部品レンダラ（G-05）も同じ空を使う） */
+export const STARS: readonly [number, number, number][] = [
   [210, 70, 1.4],
   [420, 40, 1],
   [640, 95, 1.2],
@@ -116,8 +118,8 @@ const STARS: readonly [number, number, number][] = [
   [150, 240, 0.7],
 ];
 
-/** 天候の動き（P-01）：雨の筋・雪の点・雲の霞。背景SVGの中で動く層 */
-function WeatherLayer({ weather }: { weather: string }) {
+/** 天候の動き（P-01）：雨の筋・雪の点・雲の霞。背景SVGの中で動く層（G-05 の情景にも重ねる） */
+export function WeatherLayer({ weather }: { weather: string }) {
   if (weather === "rain") {
     // 斜めの雨筋：x32・y80 の格子に配置し (-16,+80) だけ流す（継ぎ目が出ない）
     const lines: ReactNode[] = [];

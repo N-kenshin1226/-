@@ -22,7 +22,7 @@
 | P-02 | [P-02_more_actions.md](P-02_more_actions.md) | P-01, F-05, K-01 | done | **最優先（刺激）**。行動の種類を増やす。life.json＋items.json（zod/相互参照）、core/life（散策・採集・相場・賭け・依頼・旅の決定論抽選）、11コマンド＋13イベント、食事→睡眠の質・祈り→安眠・野営、仲の値（不在は会えない）、市場は町×日次の相場、隣町ベルン（場所・注文・NPC・宿）、GameState v18＋移行、life 画面10種＋見取り図の町替え。全ゲート緑・e2e 64件全通過 |
 | G-01 | [G-01_region_gen.md](G-01_region_gen.md) | ― | done | **最優先（ステージ）**。地方の生成：world.json（町型9・地域型16、zod検証）＋core/world の generateWorld（町6〜9・地域15〜25・連結道グラフ・輪で危険度・町あたり地域≥1・開墾地/深層の穴は必置）＋町別評判（rep、依頼/仕事/寄付で上がり相場に効く）＋地点（spot行動）＋P-02行動の型別一般化＋敵13型追加。GameState v20（world={kind,recipe}＋life.rep、旧セーブは legacy 世界へ移行）。新規周は生成地方が既定・?world=legacy で固定マップ。e2e 69件全通過（worldgen.spec 2件追加）・全ゲート緑 |
 | G-04 | [G-04_bestiary.md](G-04_bestiary.md) | G-01 | todo | **最優先（ステージ）**。敵60〜80・生物群系の亜種・素材 |
-| G-05 | [G-05_scenery.md](G-05_scenery.md) | G-01 | todo | **最優先（ステージ）**。情景の部品で型ごとの背景 |
+| G-05 | [G-05_scenery.md](G-05_scenery.md) | G-01 | done | **最優先（ステージ）**。情景の部品で型ごとの背景。scenery.json（部品・配色・レシピ、zod検証＋world/legacy との相互参照チェック）に町9型・地域17型・深層3型の層レシピ（far/mid/front/light/atmos）、配置は世界シード×場所から rng で決定的に引く（n・x範囲・y揺れ・拡縮・反転・形違い）。ui/scenery.tsx（レンダラ）＋src/scenery.ts（画面→レシピの解決）。町の屋内は従来の部屋の情景へ、時間帯・天候・危機の霞は同じ層で重ねる。legacy は scenery.legacy の当て方で型レシピに写す（アルディ→宿場街・ベルン→港町）。?scn= 確認窓。GameState 不変・e2e 77件全通過・全ゲート緑 |
 | G-02 | [G-02_travel_map.md](G-02_travel_map.md) | G-01 | todo | **最優先（ステージ）**。地方の地図と旅 |
 | G-03 | [G-03_dungeons.md](G-03_dungeons.md) | G-01, G-04 | todo | **最優先（ステージ）**。ダンジョンの生成 |
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
