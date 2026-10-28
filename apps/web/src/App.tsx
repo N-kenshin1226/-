@@ -19,6 +19,7 @@ import {
   applySessionCap,
   bioLines,
   cfg,
+  cfgFor,
   crisisSceneHaze,
   eventLines,
   heirLife,
@@ -88,6 +89,7 @@ import { NewsScreen, NoticeOverlay, WakeScreen } from "./screens/daily.js";
 import { SettingsScreen } from "./screens/settings.js";
 import { JourneyScreen, LifeScreen } from "./screens/life.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
+import { townTypeNameOf } from "./world.js";
 
 /** 幕の時間（P-01。「演出を短く」で短い側。theme.fx → --trv-* へ書き込む値） */
 function fxInMs(kind: TravelFxKind): number {
@@ -122,10 +124,10 @@ function ResetScreen({ back, onReset }: { back: () => void; onReset: () => void 
 }
 
 /** 画面→情景（README §2：背景が一番下の層。P-01：場所に縛られた画面はその場所の情景） */
-function sceneOf(s: Screen, lastPlace: string | null): SceneKind {
+function sceneOf(state: GameState, s: Screen, lastPlace: string | null): SceneKind {
   /** 場所 id → 情景。未知の場所・場所なしは街の景色に倒す */
   const placeScene = (id: string | null | undefined): SceneKind | null => {
-    const sc = placeOf(id ?? "")?.scene;
+    const sc = placeOf(state, id ?? "")?.scene;
     return sc !== undefined ? (sc as SceneKind) : null;
   };
   switch (s.name) {
@@ -309,7 +311,9 @@ export function App() {
     // 移動の音（S-01）：街の中へ入る＝扉、それ以外の行き来＝足音。
     // 幕を掛けるか否かに関わらず、ユーザーの操作の中で鳴らす
     if (kind === "travel") {
-      const entering = next.name === "place" && placeOf(next.place)?.kind === "town";
+      const s = stateRef.current;
+      const entering =
+        next.name === "place" && s !== null && placeOf(s, next.place)?.kind === "town";
       playSfx(cur.name === "menu" && entering ? "door" : "steps");
     }
     // 演出オフ（短く・動きを減らす）では幕を掛けず直接切り替える
@@ -350,7 +354,8 @@ export function App() {
     (command, opts) => {
       const s = stateRef.current;
       if (!s) return;
-      const res = step(s, command, cfg);
+      // G-01：生成地方では営み・師匠・話し手の表がその世界のもの
+      const res = step(s, command, cfgFor(s));
       if (res.events.some((e) => e.type === "deathByAge")) {
         // 老衰死（T-40・D-31）：教会蘇生はしない。起床ログ＋伝記を表示し、
         // 生の継ぎ方を選ぶ画面へ（T-48。年代記への記録は転生を選んだ時点で行う）。
@@ -428,9 +433,10 @@ export function App() {
       if (!confirmed) {
         push(t.text.retireCancelled);
         // 思いとどまったら居た場所へ帰る（P-01。引退は自宅の行動）
+        const s = stateRef.current;
         const dest = lastPlaceRef.current;
         go(
-          dest !== null && placeOf(dest) !== undefined
+          dest !== null && s !== null && placeOf(s, dest) !== undefined
             ? { name: "place", place: dest }
             : { name: "menu" },
         );
@@ -438,7 +444,7 @@ export function App() {
       }
       const s = stateRef.current;
       if (!s) return;
-      const res = step(s, { type: "retire" }, cfg);
+      const res = step(s, { type: "retire" }, cfgFor(s));
       // 伝記を開き、生の継ぎ方（転生か次代か）を選ぶ画面へ（T-48）。
       // 年代記への記録は転生を選んだ時点で行う
       const bio = bioLines(res.state, "retire", true);
@@ -579,7 +585,7 @@ export function App() {
   // 日々の出来事（F-05）：メニューに居る間に届いた分があれば会話の窓が割り込む
   // （行動の合間 —— メニューは行動と行動の境目）。「あとにする」はその日は割り込まない
   const pendingIncidents =
-    cfg.incidents !== undefined ? incidentPendingChoice(state, cfg.incidents) : [];
+    cfg.incidents !== undefined ? incidentPendingChoice(state, cfgFor(state).incidents!) : [];
   const deferredIds =
     incidentDeferred.day === state.time.day ? incidentDeferred.ids : new Set<string>();
   // 旅の途中（P-02）：見取り図・場所にはいられない —— 街道の窓に差し替える。
@@ -595,7 +601,7 @@ export function App() {
   const deferIncident = (id: string) =>
     setIncidentDeferred({ day: state.time.day, ids: new Set([...deferredIds, id]) });
 
-  const scene = sceneOf(effScreen, lastPlaceRef.current);
+  const scene = sceneOf(state, effScreen, lastPlaceRef.current);
   const notice = notices[0];
   // 危機の段階による景色の霞（W-04、docs/08 §3「景色の差分」）。
   // 段階の数字は出さず、世界の気配として背景に滲ませる
@@ -608,6 +614,7 @@ export function App() {
     effScreen.name === "menu"
       ? undefined
       : (placeOf(
+          state,
           effScreen.name === "place"
             ? effScreen.place
             : (("place" in effScreen ? effScreen.place : undefined) ??
@@ -637,6 +644,7 @@ export function App() {
         <AudioDirector
           screen={effScreen.name}
           place={audioPlace}
+          placeKind={chromePlace?.kind}
           scene={scene}
           tod={sky.tod}
           weather={sky.weather}
@@ -738,10 +746,13 @@ function TopChrome({ state, place }: { state: GameState; place?: { name: string;
     <>
       <Plate style={pos({ left: 28, top: 22 })} testId="place-name">
         <span style={{ fontFamily: theme.font.mincho, fontSize: 16 }}>
-          {place?.name ?? townName(state.life.town)}
+          {place?.name ?? townName(state, state.life.town)}
           <span style={{ color: theme.colors.world.dim, fontSize: 13 }}>
             {" "}
-            ―― {place !== undefined && place.kind === "region" ? "街の外" : "宿場街"}
+            ――{" "}
+            {place !== undefined && place.kind === "region"
+              ? "街の外"
+              : townTypeNameOf(state, state.life.town) || "街"}
           </span>
         </span>
       </Plate>
@@ -853,7 +864,7 @@ function ScreenView(props: {
   /** 戻る先（P-01）：場所に縛られた画面はその場所へ、それ以外は開かれた時点の
       基盤画面（見取り図か場所）へ帰る */
   const toBack = (p?: string) => () => {
-    if (p !== undefined && placeOf(p) !== undefined) {
+    if (p !== undefined && placeOf(state, p) !== undefined) {
       setScreen({ name: "place", place: p });
       return;
     }
@@ -861,7 +872,7 @@ function ScreenView(props: {
   };
   switch (screen.name) {
     case "intro":
-      return <IntroScreen name={state.player.name} setScreen={setScreen} />;
+      return <IntroScreen state={state} name={state.player.name} setScreen={setScreen} />;
     case "place":
       return (
         <PlaceScreen state={state} place={screen.place} setScreen={setScreen} act={act} log={log} />

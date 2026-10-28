@@ -493,6 +493,7 @@ export {
   cookQuality,
   drawGamble,
   drawGather,
+  drawSpot,
   drawStroll,
   errandDoneDayKey,
   errandsFor,
@@ -504,9 +505,12 @@ export {
   marketStock,
   mealToday,
   prayedToday,
+  repOf,
+  strollTableOf,
   townName,
   townOf,
   withItem,
+  withRep,
 } from "./life/index.js";
 export type {
   ErrandDef,
@@ -518,3 +522,31 @@ export type {
   LifeOutcome,
   RecipeDef,
 } from "./life/index.js";
+export {
+  WORLD_RECIPE,
+  generateWorld,
+  placeTownOf,
+  placeTypeOf,
+  worldFor,
+  worldKindOf,
+} from "./world/index.js";
+export type {
+  GenArea,
+  GenLifeContrib,
+  GenMentor,
+  GenNpc,
+  GenPlace,
+  GenSpot,
+  GenTown,
+  GeneratedWorld,
+  WorldAreaType,
+  WorldGenConfig,
+  WorldNpcTemplate,
+  WorldPlaceAction,
+  WorldSpotKind,
+  WorldTownErrand,
+  WorldTownMarket,
+  WorldTownPlace,
+  WorldTownType,
+  WorldTypeFile,
+} from "./world/index.js";

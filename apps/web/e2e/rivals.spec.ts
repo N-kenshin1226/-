@@ -4,7 +4,7 @@ import { placeAct, skipIntro } from "./helpers.js";
 // T-47 ライバル・ランキング（簡易版）：街の記録に順位表が出る。
 // ライバルの名は世界シードから決まるので、同じシードなら同じ顔ぶれになる
 test("街の記録にライバル・ランキングが出る（自分の行に印が付く）", async ({ page }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
   // 街の記録はギルドの掲示板（P-01）
@@ -25,7 +25,7 @@ test("街の記録にライバル・ランキングが出る（自分の行に�
 
 test("同じシードでは同じ順位表が出る（決定論）", async ({ page }) => {
   const readRows = async () => {
-    await page.goto("/?seed=e2e-rivals");
+    await page.goto("/?world=legacy&seed=e2e-rivals");
     await page.getByTestId("origin-wanderer").click();
     await skipIntro(page);
     // 街の記録はギルドの掲示板（P-01）

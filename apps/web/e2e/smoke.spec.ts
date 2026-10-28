@@ -2,14 +2,14 @@ import { expect, test } from "@playwright/test";
 import { placeAct, skipIntro, toMap, travelTo, waitVeil } from "./helpers.js";
 
 test("トップ画面に TRACE と表示される", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByRole("heading", { name: "TRACE" })).toBeVisible();
   await page.waitForTimeout(400); // 画面遷移フェード(0.25s)の完了を待つ
   await page.screenshot({ path: "e2e/artifacts/trace-home.png", fullPage: true });
 });
 
 test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ page }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
@@ -78,7 +78,7 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
 });
 
 test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）", async ({ page }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
@@ -125,7 +125,7 @@ test("深層に潜んで1層進める（T-43。勝利→引き返し→記録）
 });
 
 test("師匠画面が開ける（T-27。初期状態では入門条件未達）", async ({ page }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
   // 師はそれぞれの住まいで教える（P-01）：剣の師ガロは近郊の森に居る

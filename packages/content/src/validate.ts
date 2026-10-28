@@ -35,6 +35,7 @@ import { artsFileSchema } from "./arts.schema.js";
 import { spellsFileSchema } from "./spells.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 import { k03FileSchema } from "../k03/schema.js";
+import { worldFileSchema } from "./world.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -186,6 +187,127 @@ try {
   }
 } catch (e) {
   console.error(`✗ K-03 サンプルの突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+check("world.json", worldFileSchema);
+
+/* 地方生成の突き合わせ（G-01）：world.json の型が参照する
+ * 品物（採集・市場・拾い物・依頼）・敵・技能・散策の旗印・見聞アトムは
+ * 既存のJSONに実在するものに限る。住人・場所の id は生成されるので対象外
+ */
+try {
+  const read = (name: string) =>
+    JSON.parse(readFileSync(join(root, name), "utf8")) as Record<string, unknown>;
+  const worldRaw = read("world.json") as {
+    townBase?: { market?: { stock?: string[]; cheap?: string[]; dear?: string[] } };
+    townTypes?: {
+      id?: string;
+      market?: { stock?: string[]; cheap?: string[]; dear?: string[] };
+      errands?: {
+        need?: Record<string, number>;
+        reward?: { items?: Record<string, number>; gain?: { skill?: string } };
+      }[];
+      places?: {
+        actions?: { kinds?: string[] }[];
+        gather?: { skill?: string; entries?: { item?: string }[] };
+      }[];
+      npcs?: { mentorSkills?: string[] }[];
+      stroll?: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string }[];
+    }[];
+    areaTypes?: {
+      id?: string;
+      enemies?: { id?: string }[];
+      work?: { kinds?: string[] };
+      gather?: { skill?: string; entries?: { item?: string }[] };
+      stroll?: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string }[];
+    }[];
+    spotKinds?: {
+      id?: string;
+      outcomes?: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string }[];
+    }[];
+  };
+  const itemIds = new Set(
+    ((read("items.json") as { items?: { id?: string }[] }).items ?? []).map((i) => i.id),
+  );
+  const enemyIds = new Set(
+    ((read("enemies.json") as { enemies?: { id?: string }[] }).enemies ?? []).map((e) => e.id),
+  );
+  const skillIds = new Set(
+    ((read("skills.json") as { skills?: { id?: string }[] }).skills ?? []).map((s) => s.id),
+  );
+  // 見聞アトムは lore/atoms/*.json の atom id
+  const atomIds = new Set<string>();
+  const atomsDir = join(root, "lore", "atoms");
+  for (const f of readdirSync(atomsDir)) {
+    if (!f.endsWith(".json")) continue;
+    const atom = JSON.parse(readFileSync(join(atomsDir, f), "utf8")) as { id?: string };
+    if (atom.id !== undefined) atomIds.add(atom.id);
+  }
+  const bad: string[] = [];
+  const chkItem = (id: string | undefined, where: string) => {
+    if (id !== undefined && !itemIds.has(id)) bad.push(`${where}: 未定義の品 ${id}`);
+  };
+  const chkSkill = (id: string | undefined, where: string) => {
+    if (id !== undefined && !skillIds.has(id)) bad.push(`${where}: 未定義の技能 ${id}`);
+  };
+  const chkOutcome = (
+    o: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string } | undefined,
+    where: string,
+  ) => {
+    if (o === undefined) return;
+    for (const id of Object.keys(o.items ?? {})) chkItem(id, where);
+    chkSkill(o.gain?.skill, where);
+    if (o.atom !== undefined && !atomIds.has(o.atom))
+      bad.push(`${where}: 未定義の見聞アトム ${o.atom}`);
+  };
+  const chkMarket = (
+    m: { stock?: string[]; cheap?: string[]; dear?: string[] } | undefined,
+    where: string,
+  ) => {
+    for (const id of [...(m?.stock ?? []), ...(m?.cheap ?? []), ...(m?.dear ?? [])])
+      chkItem(id, where);
+  };
+  chkMarket(worldRaw.townBase?.market, "townBase.market");
+  for (const t of worldRaw.townTypes ?? []) {
+    const where = `townTypes.${t.id ?? "?"}`;
+    chkMarket(t.market, `${where}.market`);
+    for (const e of t.errands ?? []) {
+      for (const id of Object.keys(e.need ?? {})) chkItem(id, `${where}.errands`);
+      for (const id of Object.keys(e.reward?.items ?? {})) chkItem(id, `${where}.errands`);
+      chkSkill(e.reward?.gain?.skill, `${where}.errands`);
+    }
+    for (const p of t.places ?? []) {
+      for (const a of p.actions ?? [])
+        for (const k of a.kinds ?? []) chkSkill(k, `${where}.places`);
+      chkSkill(p.gather?.skill, `${where}.places`);
+      for (const e of p.gather?.entries ?? []) chkItem(e.item, `${where}.places`);
+    }
+    for (const n of t.npcs ?? [])
+      for (const s of n.mentorSkills ?? []) chkSkill(s, `${where}.npcs`);
+    for (const o of t.stroll ?? []) chkOutcome(o, `${where}.stroll`);
+  }
+  for (const a of worldRaw.areaTypes ?? []) {
+    const where = `areaTypes.${a.id ?? "?"}`;
+    for (const e of a.enemies ?? []) {
+      if (!enemyIds.has(e.id)) bad.push(`${where}: 未定義の敵 ${e.id}`);
+    }
+    for (const k of a.work?.kinds ?? []) chkSkill(k, `${where}.work`);
+    chkSkill(a.gather?.skill, `${where}.gather`);
+    for (const e of a.gather?.entries ?? []) chkItem(e.item, `${where}.gather`);
+    for (const o of a.stroll ?? []) chkOutcome(o, `${where}.stroll`);
+  }
+  for (const s of worldRaw.spotKinds ?? []) {
+    for (const o of s.outcomes ?? []) chkOutcome(o, `spotKinds.${s.id ?? "?"}`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ world.json の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ world.json の参照（items/enemies/skills/atoms）");
+  }
+} catch (e) {
+  console.error(`✗ world.json の突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

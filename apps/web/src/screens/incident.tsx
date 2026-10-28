@@ -7,7 +7,14 @@
  */
 import { useEffect, useState } from "react";
 import { incidentOutcome, type GameState } from "@trace/core";
-import { cfg, incidentPendingChoice, incidentSpeaker, t, type IncidentOffer } from "../game.js";
+import {
+  cfg,
+  cfgFor,
+  incidentPendingChoice,
+  incidentSpeaker,
+  t,
+  type IncidentOffer,
+} from "../game.js";
 import {
   CommandMenu,
   DialogueBox,
@@ -23,10 +30,12 @@ import { theme } from "../theme.js";
 
 const W = theme.colors.world;
 
-/** 話し手の名札（街の住人は「役職 名」、話し手なしの出来事は「街」） */
+/** 話し手の名札（街の住人は「役職 名」、話し手なしの出来事は「街」）。
+    G-01：話し手の名簿はその世界のもの（生成地方は生成の住人が出る） */
 function speakerName(offer: IncidentOffer, state: GameState): string {
-  if (cfg.incidents === undefined) return "街";
-  const sp = incidentSpeaker(state, cfg.incidents, offer.def);
+  const incidents = cfgFor(state).incidents;
+  if (incidents === undefined) return "街";
+  const sp = incidentSpeaker(state, incidents, offer.def);
   if (sp === undefined) return "街";
   return sp.role !== undefined && sp.role !== "" ? `${sp.role} ${sp.name}` : sp.name;
 }
@@ -48,7 +57,8 @@ export function IncidentScreen({
   auto: boolean;
   onDefer: (id: string) => void;
 }) {
-  const pending = cfg.incidents !== undefined ? incidentPendingChoice(state, cfg.incidents) : [];
+  const pending =
+    cfg.incidents !== undefined ? incidentPendingChoice(state, cfgFor(state).incidents!) : [];
   // 自動割り込みでは「あとにする」とした出来事はその日は再び割り込まない。
   // メニューから開いた窓（auto=false）では先送り済みも含めて全部に応えられる
   const visible = auto ? pending.filter((o) => !deferred.has(o.def.id)) : pending;
@@ -70,7 +80,7 @@ export function IncidentScreen({
     const choice = o.def.choices.find((c) => c.id === choiceId);
     if (choice === undefined) return;
     const outcome = incidentOutcome(state, o.def, choice);
-    const sp = incidentSpeaker(state, cfg.incidents!, o.def);
+    const sp = incidentSpeaker(state, cfgFor(state).incidents!, o.def);
     const text = sp !== undefined ? outcome.text.replaceAll("{name}", sp.name) : outcome.text;
     act({ type: "incidentChoose", id: o.def.id, choice: choice.id });
     setResult(text);

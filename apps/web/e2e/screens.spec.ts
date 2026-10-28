@@ -8,7 +8,7 @@ import { placeAct, skipIntro, waitVeil } from "./helpers.js";
 
 /** 新規ゲームを開始してメニュー（見取り図）まで進める */
 async function startNewGame(page: Page) {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 }
@@ -89,6 +89,6 @@ test("記録を消す：いいえで残り、はいで消えてリロードし�
   expect(keys.chronicle).toBeNull();
 
   // リロードしても消したセーブは復活しない（タイトルのまま）
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await expect(page.getByRole("heading", { name: "TRACE" })).toBeVisible();
 });

@@ -454,7 +454,7 @@ describe("セーブ v17（K-01）", () => {
     delete p.build;
     v17.player = p;
     const restored = deserialize(JSON.stringify(v17));
-    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）・v19（武技）・v20（ユニーク）を経て最新版へ
+    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）・v19（武技）・v20（ユニーク）・v21（生成地方）を経て最新版へ
     expect(restored.player.ki).toBe(0);
     expect(restored.player.mana).toBe(0);
     expect(restored.player.arts).toEqual({});
@@ -469,7 +469,7 @@ describe("セーブ v17（K-01）", () => {
     expect(restored.uniques).toEqual({});
   });
 
-  it("SAVE_VERSION は 20（v17=武器、v18=P-02 日々の営み、v19=K-02 武技・資源・構成、v20=K-03 ユニーク）", () => {
-    expect(SAVE_VERSION).toBe(20);
+  it("SAVE_VERSION は 21（v17=武器、v18=P-02 日々の営み、v19=K-02 武技・資源・構成、v20=K-03 ユニーク、v21=G-01 生成地方）", () => {
+    expect(SAVE_VERSION).toBe(21);
   });
 });

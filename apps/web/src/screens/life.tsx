@@ -16,7 +16,7 @@ import {
   npcGoneReason,
   type GameState,
 } from "@trace/core";
-import { life, voices } from "@trace/content";
+import { life } from "@trace/content";
 import {
   allArtDefs,
   bondOfNow,
@@ -27,6 +27,7 @@ import {
   itemDefs,
   itemName,
   itemPriceNow,
+  lifeCfgFor,
   marketStockNow,
   npcName,
   placeOf,
@@ -35,6 +36,7 @@ import {
   townOf,
   weaponDefs,
 } from "../game.js";
+import { npcListOf } from "../world.js";
 import {
   CommandMenu,
   HintBar,
@@ -197,7 +199,7 @@ function MarketView({ state, act, back }: { state: GameState; act: Act; back: ()
     <LifeWindow
       kicker="MARKET"
       title="市場"
-      head={`――${townName(town)}の市場。今日の値段で商う。所持金 ${state.player.money}G`}
+      head={`――${townName(state, town)}の市場。今日の値段で商う。所持金 ${state.player.money}G`}
       testId="screen-market"
       entries={entries}
       onBack={back}
@@ -209,7 +211,7 @@ function MarketView({ state, act, back }: { state: GameState; act: Act; back: ()
 // レシピと材料が揃えば作れる（1行動）。出来は core のまかせ判定
 function CookView({ state, act, back }: { state: GameState; act: Act; back: () => void }) {
   const canActNow = canAct(state.time, cfg.time);
-  const entries: MenuEntry[] = (cfg.life?.recipes ?? []).map((r): MenuEntry => {
+  const entries: MenuEntry[] = (lifeCfgFor(state)?.recipes ?? []).map((r): MenuEntry => {
     const inputs = Object.entries(r.inputs)
       .map(([id, n]) => `${itemName(id)}${n}（持${itemCount(state, id)}）`)
       .join("・");
@@ -276,8 +278,9 @@ function SocialView({
   const [npc, setNpc] = useState<string | null>(null);
   const [gifting, setGifting] = useState(false);
   const canActNow = canAct(state.time, cfg.time);
-  const here = placeOf(place)?.npcs ?? [];
-  const residents = voices.npcs.filter((n) => here.includes(n.id));
+  const here = placeOf(state, place)?.npcs ?? [];
+  // その場所の住人（G-01：生成地方は生成の住人の名簿から引く）
+  const residents = npcListOf(state).filter((n) => here.includes(n.id));
   // 贈れる品：値段の付く持ち物（贈り物の効きは品の値段から決まる）
   const gifts = Object.entries(state.life.items)
     .filter(([id, n]) => n > 0 && (itemDefs[id]?.price ?? 0) > 0)
@@ -307,7 +310,7 @@ function SocialView({
         })
       : gifting
         ? [
-            { kind: "header" as const, text: `――${npcName(npc)}に何を贈る` },
+            { kind: "header" as const, text: `――${npcName(state, npc)}に何を贈る` },
             ...(gifts.length === 0
               ? [{ kind: "header" as const, text: "  ――贈れる品はない。" }]
               : gifts.map((id): MenuEntry => {
@@ -320,7 +323,7 @@ function SocialView({
                 })),
           ]
         : [
-            { kind: "header" as const, text: `――${npcName(npc)}と過ごす` },
+            { kind: "header" as const, text: `――${npcName(state, npc)}と過ごす` },
             {
               id: "way-talk",
               label: "話す",
@@ -366,7 +369,7 @@ function BoardView({ state, act, back }: { state: GameState; act: Act; back: () 
             .join("・");
           const reward = [
             e.reward.money !== undefined && e.reward.money > 0 ? `${e.reward.money}G` : "",
-            e.reward.bond !== undefined ? `${npcName(e.reward.bond.npc)}との仲` : "",
+            e.reward.bond !== undefined ? `${npcName(state, e.reward.bond.npc)}との仲` : "",
             e.reward.items !== undefined
               ? Object.entries(e.reward.items)
                   .map(([id, n]) => `${itemName(id)}${n}`)
@@ -380,7 +383,7 @@ function BoardView({ state, act, back }: { state: GameState; act: Act; back: () 
             id: `board-${e.id}`,
             label: e.name,
             sub: `${need} → ${reward}`,
-            disabled: !canActNow || !canErrand(state, e, cfg.life!),
+            disabled: !canActNow || !canErrand(state, e, lifeCfgFor(state)!),
             onPick: () => act({ type: "errand", id: e.id }),
           };
         });
@@ -606,7 +609,7 @@ export function JourneyScreen({
     );
   }
 
-  const dest = townName(j.to);
+  const dest = townName(state, j.to);
   const entries: MenuEntry[] = [
     {
       id: "journey-stroll",

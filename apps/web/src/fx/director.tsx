@@ -15,6 +15,8 @@ export function AudioDirector({
   screen,
   /** その画面が属する場所 id（場所に縛られない画面は最後に居た場所） */
   place,
+  /** 解決済みの場所の種別（G-01：生成地方の場所は places.json に載らない） */
+  placeKind,
   /** 背景と同じ情景キー（場所に縛られない画面の環境音の逃げ道） */
   scene,
   tod,
@@ -22,15 +24,16 @@ export function AudioDirector({
 }: {
   screen: string | undefined;
   place: string | undefined;
+  placeKind?: "town" | "region";
   scene: string;
   tod: TimeOfDay;
   weather: string;
 }) {
   const fx = useFxSettings();
   useEffect(() => {
-    syncMusic(resolveTrack(screen ?? "", place, tod));
+    syncMusic(resolveTrack(screen ?? "", place, tod, placeKind));
     syncAmbient(resolveAmbient(place, scene, tod, weather));
     // fx は購読用：系統のオン/オフ・音量が変わったら鳴り直す（値はエンジン側が読む）
-  }, [screen, place, scene, tod, weather, fx]);
+  }, [screen, place, placeKind, scene, tod, weather, fx]);
   return null;
 }

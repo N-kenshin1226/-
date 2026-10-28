@@ -71,7 +71,7 @@ test("剣術を極めた生は、次の世界の書店に《剣鬼の手記》�
     saveOf("e2e-lost", 80),
   ); // peak 80 > 閾値（balance.lostBooks.skillThreshold）
 
-  await page.goto("/?seed=e2e-lost");
+  await page.goto("/?world=legacy&seed=e2e-lost");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   await rebirth(page);
@@ -114,7 +114,7 @@ test("代表技能が閾値に届かない生は手記を遺さない", async ({
     saveOf("e2e-lost-low", 30),
   ); // peak 30 < 閾値
 
-  await page.goto("/?seed=e2e-lost-low");
+  await page.goto("/?world=legacy&seed=e2e-lost-low");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   await rebirth(page);

@@ -19,17 +19,15 @@ describe("enemies.json", () => {
   });
 
   it("弱いエリアと強いエリアで challenge の帯が分かれている", () => {
+    // G-01：地域型は16種の段階（最深部ほど強い）。全域で帯が分かれるのではなく
+    // 最弱の帯と最強の帯のあいだに段があることを見る
     const bands = [...enemiesByArea()].map(
-      ([area, group]) => [area, Math.max(...group.map((e) => e.challenge))] as const,
+      ([area, group]) =>
+        [area, Math.min(...group.map((e) => e.challenge)), Math.max(...group.map((e) => e.challenge))] as const,
     );
-    bands.sort((a, b) => a[1] - b[1]);
-    const weakestMax = bands[0]![1];
-    for (const [area, group] of enemiesByArea()) {
-      if (group.some((e) => e.challenge > weakestMax)) {
-        // 強いエリアは最弱エリアの上限より全部強い
-        expect(Math.min(...group.map((e) => e.challenge)), area).toBeGreaterThan(weakestMax);
-      }
-    }
+    const weakestMax = Math.min(...bands.map(([, , max]) => max));
+    const strongestMin = Math.max(...bands.map(([, min]) => min));
+    expect(strongestMin).toBeGreaterThan(weakestMax);
   });
 
   it("大技持ちがいる（予兆 pattern の move は moves に定義済み）", () => {
@@ -50,7 +48,25 @@ describe("enemies.json", () => {
 describe("enemiesByArea", () => {
   it("エリア出現順にグループ化し、敵はファイル順を保つ", () => {
     const grouped = enemiesByArea();
-    expect(grouped.map(([a]) => a)).toEqual(["forest", "highway", "abyss"]);
+    // エリアはファイルの出現順（固定マップ3種＋G-01 の地域型13種）
+    expect(grouped.map(([a]) => a)).toEqual([
+      "forest",
+      "highway",
+      "abyss",
+      "deep_forest",
+      "hills",
+      "mountain",
+      "lake",
+      "river",
+      "coast",
+      "marsh",
+      "wasteland",
+      "snowfield",
+      "volcano",
+      "battlefield",
+      "dead_village",
+      "ruins_field",
+    ]);
     for (const [, group] of grouped) {
       const areas = new Set(group.map((e) => e.area));
       expect(areas.size).toBe(1);

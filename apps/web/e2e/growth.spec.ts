@@ -49,7 +49,7 @@ test("起床画面：集中した夜の伸び・持ち越し・ランクアッ�
   await page.addInitScript((save) => {
     localStorage.setItem("trace.save.v1", save);
   }, saveF01("f01-wake"));
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   // 上宿・夕食ありで眠る（質を上げて定着を太くする）。宿を選んだ時点で眠るので夕食を先に確定させる。
@@ -70,7 +70,7 @@ test("起床画面：集中した夜の伸び・持ち越し・ランクアッ�
 
 test("出自の初期値：鍛冶屋の子は鍛冶が最初の朝から値を持つ（F-01）", async ({ page }) => {
   const seed = "f01-origin";
-  await page.goto(`/?seed=${seed}`);
+  await page.goto(`/?world=legacy&seed=${seed}`);
   await page.getByTestId("origin-smith_child").click();
   await skipIntro(page);
 

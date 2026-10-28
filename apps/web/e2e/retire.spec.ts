@@ -3,7 +3,7 @@ import { placeAct, skipIntro } from "./helpers.js";
 
 // T-40 引退と転生：引退 → 確認 → 伝記 → 継ぎ方の選択（T-48）→ 伝記＋継承 → 新しい生（06 §1「一生＝1周」）
 test("引退から転生まで通せる（年代記に1頁残る）", async ({ page }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
@@ -58,7 +58,7 @@ test("引退から転生まで通せる（年代記に1頁残る）", async ({ p
 
 // T-40：遺物を選んで継承する（作品を1本作ってから引退）
 test("遺物を選んで継承できる", async ({ page }) => {
-  await page.goto("/?seed=e2e-artifact");
+  await page.goto("/?world=legacy&seed=e2e-artifact");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
@@ -89,7 +89,7 @@ test("遺物を選んで継承できる", async ({ page }) => {
 
 // T-48：子・弟子への継承延長（同じ世界 seed・年代記には刻まない・弱い引継ぎ）
 test("引退から「この世界で次代を継ぐ」へ進める（年代記には刻まない）", async ({ page }) => {
-  await page.goto("/?seed=e2e-heir");
+  await page.goto("/?world=legacy&seed=e2e-heir");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 

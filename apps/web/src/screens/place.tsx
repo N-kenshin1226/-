@@ -4,10 +4,11 @@
  *   行動の中身は places.json の actions が持ち、ここでは画面へ写すだけ。
  *   街の外への移動（travel）は行動を消費し、街（門）へ戻るだけなら消費しない
  */
-import { canAct, npcGoneReason, type GameState } from "@trace/core";
-import { voices, type PlaceActionJson, type PlaceJson } from "@trace/content";
+import { canAct, npcGoneReason, type GameState, type WorldPlaceAction } from "@trace/core";
+import { voices } from "@trace/content";
 import {
   cfg,
+  cfgFor,
   crisisFinaleOffers,
   eventLines,
   incidentPendingChoice,
@@ -21,6 +22,7 @@ import {
   townName,
   travelOutCost,
 } from "../game.js";
+import { gatePlaceOf, isGenWorld, npcListOf, type PlaceLike } from "../world.js";
 import {
   CommandMenu,
   DialogueBox,
@@ -50,19 +52,26 @@ export function PlaceScreen({
   act: Act;
   log: readonly string[];
 }) {
-  const def = placeOf(place);
+  const def = placeOf(state, place);
   const canActNow = canAct(state.time, cfg.time);
   if (def === undefined) return null;
   const p = def;
   const voice = placeVoice(state, p);
-  // そこに居る人（居た人も退場の印つきで示す —— 人の不在で伝える。X-12）
-  const residents = voices.npcs.filter((n) => p.npcs.includes(n.id));
-  // 帰る先：街の場所からは見取り図へ、街の外からは門へ（行き来は行動を消費しない）
-  const back: Screen = p.kind === "region" ? { name: "place", place: "gate" } : { name: "menu" };
+  // そこに居る人（居た人も退場の印つきで示す —— 人の不在で伝える。X-12。
+  // 生成地方では生成の住人の名簿、固定マップは voices.json）
+  const genWorldNow = isGenWorld(state);
+  const residents = genWorldNow
+    ? npcListOf(state).filter((n) => p.npcs.includes(n.id))
+    : voices.npcs.filter((n) => p.npcs.includes(n.id));
+  // 帰る先：街の場所からは見取り図へ、街の外からはその町の門へ（行き来は行動を消費しない）
+  const back: Screen =
+    p.kind === "region"
+      ? { name: "place", place: gatePlaceOf(state, p) ?? "gate" }
+      : { name: "menu" };
 
   /** 外への移動（行動を消費する）または街への帰還（消費しない） */
   const travel = (to: string) => {
-    const dest = placeOf(to);
+    const dest = placeOf(state, to);
     if (dest === undefined) return;
     if (dest.kind === "region") {
       act(
@@ -186,10 +195,10 @@ export function PlaceScreen({
   );
 }
 
-/** 場所の行動 → コマンド列の項目（P-01。中身は places.json の actions） */
+/** 場所の行動 → コマンド列の項目（P-01。中身は places.json / 生成場所の actions） */
 function actionEntries(
-  a: PlaceActionJson,
-  place: PlaceJson,
+  a: WorldPlaceAction,
+  place: PlaceLike,
   state: GameState,
   canActNow: boolean,
   setScreen: (s: Screen) => void,
@@ -280,7 +289,7 @@ function actionEntries(
         { id: "place-records", label: "街の記録", onPick: () => setScreen({ name: "records" }) },
       ];
     case "mentor": {
-      const here = mentorsAt(place);
+      const here = mentorsAt(state, place);
       return [
         {
           id: "place-mentor",
@@ -323,8 +332,10 @@ function actionEntries(
         { id: "place-settings", label: "環境設定", onPick: () => setScreen({ name: "settings" }) },
       ];
     case "incident":
-      // 届いた出来事（F-05）：応えを待つものがある日だけ項目が出る
-      return cfg.incidents !== undefined && incidentPendingChoice(state, cfg.incidents).length > 0
+      // 届いた出来事（F-05）：応えを待つものがある日だけ項目が出る。
+      // 話し手の名簿はその世界のもの（G-01）
+      return cfg.incidents !== undefined &&
+        incidentPendingChoice(state, cfgFor(state).incidents!).length > 0
         ? [
             {
               id: "place-incident",
@@ -355,7 +366,7 @@ function actionEntries(
       // 勝負所の行事（X-10）：届いた打診がある日だけ出る
       return canActNow &&
         cfg.occasions !== undefined &&
-        occasionOffers(state, cfg.occasions).some((o) => !o.attempted)
+        occasionOffers(state, cfgFor(state).occasions!).some((o) => !o.attempted)
         ? [
             {
               id: "place-occasion",
@@ -381,14 +392,33 @@ function actionEntries(
       ];
     // ---- 日々の営み（P-02「行動の種類を増やす」） ----
     case "stroll":
-      // 散策：その場所の表から小さな出来事を1件引く（1行動）
+      // 散策：その場所の表から小さな出来事を1件引く（1行動）。
+      // place を渡すのは型別の表を引くため（G-01。固定マップでは無視される）
       return [
         {
           id: "place-stroll",
           label: "散策する",
           sub: "歩いてみる",
           disabled: !canActNow,
-          onPick: () => act({ type: "stroll", scope: place.kind === "region" ? "region" : "town" }),
+          onPick: () =>
+            act({
+              type: "stroll",
+              scope: place.kind === "region" ? "region" : "town",
+              place: place.id,
+            }),
+        },
+      ];
+    case "spot":
+      // 地点への立ち寄り（G-01）：地域の中の小さな場所の出来事を1件引く（1行動）
+      return [
+        {
+          id: `place-spot-${a.spot}`,
+          label: a.label ?? "立ち寄る",
+          sub: "この先の地点",
+          disabled: !canActNow || a.spot === undefined,
+          onPick: () => {
+            if (a.spot !== undefined) act({ type: "spot", spot: a.spot });
+          },
         },
       ];
     case "gather":
@@ -497,7 +527,7 @@ function actionEntries(
       ];
     case "journey": {
       // 旅（隣町）：数日の野営を経て着く。出発は1行動
-      const town = a.to !== undefined ? townName(a.to) : "";
+      const town = a.to !== undefined ? townName(state, a.to) : "";
       return [
         {
           id: `place-journey-${a.to}`,
@@ -513,21 +543,25 @@ function actionEntries(
       ];
     }
     case "travel": {
-      const dest = placeOf(a.to);
+      const dest = placeOf(state, a.to);
       // 街（門）へ戻るだけなら行動を消費しない —— 戻れなくなる日を作らない
       const out = dest !== undefined && dest.kind === "region";
       const cost = out ? travelOutCost() : 0;
       const afford = state.time.action + cost <= cfg.time.actionsPerDay;
+      const toGate = a.to === "gate" || (a.to ?? "").endsWith(".gate");
       return [
         {
           id: `place-go-${a.to}`,
-          label: a.to === "gate" ? t.text.travelReturn : `${dest?.name ?? a.to}へ`,
+          label: toGate ? t.text.travelReturn : `${dest?.name ?? a.to}へ`,
           ...(cost > 0 ? { sub: `行動 ${cost}` } : {}),
           disabled: !afford,
           onPick: () => travel(a.to!),
         },
       ];
     }
+    default:
+      // 未知の行動（将来の追加や別地図の行動）は出さない
+      return [];
   }
 }
 

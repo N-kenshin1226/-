@@ -4,7 +4,7 @@ import { placeAct, skipIntro, travelTo, waitVeil } from "./helpers.js";
 // K-01「技能の種類を増やす」：武器は種類ごとに技能・威力・間隔・補正が違い、
 // 鍛冶場の武器店で買い・持ち替え、戦闘の中でも1行動を消費して持ち替えられる
 test("武器店で短刀を買って構え、装備中の印と所持金が変わる（K-01）", async ({ page }) => {
-  await page.goto("/?seed=e2e-arms");
+  await page.goto("/?world=legacy&seed=e2e-arms");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
@@ -31,7 +31,7 @@ test("武器店で短刀を買って構え、装備中の印と所持金が変�
 });
 
 test("戦闘中に武器を持ち替えられる（1行動を消費・K-01）", async ({ page }) => {
-  await page.goto("/?seed=e2e-switch");
+  await page.goto("/?world=legacy&seed=e2e-switch");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 

@@ -80,12 +80,16 @@ export function succeedLife(
   const kind = heirKindOf(prev);
   const legacy = heirLegacyOf(prev, heirCfg);
   // 世界の危機は生ではなく世界のもの（W-01）：次代では進行をリセットせず継ぐ。
-  // ユニークスキルも同じ（K-03）：前代で取られた技は次代でも誰の手にも届かない
+  // ユニークスキルも同じ（K-03）：前代で取られた技は次代でも誰の手にも届かない。
+  // 地図も同じ世界のもの（G-01）：同じ seed から同じ地方が出るので出所と
+  // 基点の町だけを継ぐ（呼び出し側が cfg で上書きした場合はそれに従う）
   const next = newGame(prev.seed, name, {
     ...cfg,
     legacy,
     carryoverCrisis: prev.crisis,
     carryoverUniques: prev.uniques,
+    world: cfg.world ?? prev.world,
+    initialTown: cfg.initialTown ?? prev.life.town,
   });
   return {
     kind,

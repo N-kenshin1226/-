@@ -3,7 +3,7 @@ import { newGame } from "../state/newGame.js";
 import { step, type StepConfig } from "../step.js";
 import { deserialize, SAVE_VERSION, serialize } from "../save/index.js";
 import type { GameState } from "../state/types.js";
-import { bondOf, errandsToday, itemCount, itemPrice, mealToday, townOf } from "./index.js";
+import { bondOf, errandsToday, itemCount, itemPrice, mealToday, repOf, townOf } from "./index.js";
 import type { LifeConfig } from "./index.js";
 
 /**
@@ -237,6 +237,7 @@ describe("newGame の life 初期状態（v18）", () => {
       town: "ardi",
       items: {},
       bonds: {},
+      rep: {},
       mealDay: -1,
       mealQuality: 0,
       prayedDay: -1,
@@ -504,18 +505,90 @@ describe("旅", () => {
   });
 });
 
-describe("セーブの移行（v17 → v19）", () => {
-  it("life 欄を基点の町・空荷で補って移行される", () => {
+describe("町ごとの評判（G-01、docs/10 §4）", () => {
+  /** rep 係数つきの設定（実データは balance.world.rep） */
+  const repCfg: StepConfig = {
+    ...cfg,
+    donation: { amount: 10 },
+    life: {
+      ...lifeCfg,
+      rep: { max: 50, errand: 2, work: 1, donate: 1, pricePer: 0.001 },
+    },
+  };
+  /** 納品できる荷を持った状態 */
+  const stocked = (g: GameState): GameState => ({
+    ...g,
+    life: { ...g.life, items: { herb: 3, berry: 2 } },
+  });
+
+  it("掲示板の依頼をこなすとその町の評判が積む", () => {
+    const r = step(stocked(game()), { type: "errand", id: "err.herb" }, repCfg);
+    expect(r.state.life.rep["ardi"]).toBe(2);
+    expect(r.events.some((e) => e.type === "repGained" && e.town === "ardi")).toBe(true);
+  });
+
+  it("仕事は場所の属する町の評判に積む", () => {
+    const r = step(game(), { type: "work", kind: "smith", quality: 50 }, repCfg);
+    expect(r.state.life.rep["ardi"]).toBe(1);
+  });
+
+  it("寄付でもその町の評判が積む", () => {
+    const g: GameState = { ...game(), player: { ...game().player, money: 100 } };
+    const r = step(g, { type: "donate" }, repCfg);
+    expect(r.state.life.rep["ardi"]).toBe(1);
+  });
+
+  it("評判は rep.max で頭打ちになる", () => {
+    let g = game();
+    for (let i = 0; i < 40; i++) {
+      g = step(stocked(g), { type: "errand", id: "err.herb" }, repCfg).state;
+      // 依頼は1日の上限（errandPerDay）があるので眠って翌日へ
+      g = step(g, { type: "sleep", inn: "normal", dinner: false }, repCfg).state;
+    }
+    expect(repOf(g, "ardi", repCfg.life!)).toBe(50);
+    expect(g.life.rep["ardi"]).toBeLessThanOrEqual(50 + repCfg.life!.rep!.errand);
+  });
+
+  it("評判が積むと買い値が下がり・売り値が上がる", () => {
+    // 差が日替わりの揺らぎ・丸めをまたいで見えるよう、強めの係数で確かめる
+    const priceCfg = {
+      ...repCfg.life!,
+      rep: { ...repCfg.life!.rep!, pricePer: 0.01 },
+    };
+    const id = "meal.stew"; // 値段の高い品で確かめる（安い品は丸めで差が消える）
+    const item = itemDefs["meal.stew"];
+    const plain = itemPrice("s", 0, id, "ardi", "buy", priceCfg, item, 0);
+    const cheap = itemPrice("s", 0, id, "ardi", "buy", priceCfg, item, 50);
+    expect(cheap).toBeLessThan(plain);
+    const plainSell = itemPrice("s", 0, id, "ardi", "sell", priceCfg, item, 0);
+    const dearSell = itemPrice("s", 0, id, "ardi", "sell", priceCfg, item, 50);
+    expect(dearSell).toBeGreaterThan(plainSell);
+    // 係数なしの設定では評判は効かない（従来どおり）
+    const noRep = itemPrice("s", 0, "mat.salt", "ardi", "buy", lifeCfg, itemDefs["mat.salt"], 50);
+    const base = itemPrice("s", 0, "mat.salt", "ardi", "buy", lifeCfg, itemDefs["mat.salt"], 0);
+    expect(noRep).toBe(base);
+  });
+
+  it("評判は町ごとに独立（アルディの顔売りはベルンに効かない）", () => {
+    const g = step(stocked(game()), { type: "errand", id: "err.herb" }, repCfg).state;
+    expect(repOf(g, "ardi", repCfg.life!)).toBe(2);
+    expect(repOf(g, "bergen", repCfg.life!)).toBe(0);
+  });
+});
+
+describe("セーブの移行（v17 → v21）", () => {
+  it("life 欄を基点の町・空荷・空の評判で補って移行される", () => {
     const g = game();
     const v17 = JSON.parse(serialize(g)) as Record<string, unknown>;
     v17["version"] = 17;
     delete v17["life"];
     const restored = deserialize(JSON.stringify(v17));
-    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）→v19（武技）→v20（ユニーク）の3段移行
+    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）→v19（武技）→v20（ユニーク）→v21（地方）の4段移行
     expect(restored.life).toEqual({
       town: "ardi",
       items: {},
       bonds: {},
+      rep: {},
       mealDay: -1,
       mealQuality: 0,
       prayedDay: -1,

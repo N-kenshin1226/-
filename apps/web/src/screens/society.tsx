@@ -11,10 +11,10 @@ import {
 } from "@trace/core";
 import {
   cfg,
+  cfgFor,
   condEnv,
   eventLines,
   mentorAwayToday,
-  mentorList,
   mentorsAt,
   offerName,
   placeOf,
@@ -25,6 +25,7 @@ import {
   tpl,
 } from "../game.js";
 import { CommandMenu, HintBar, Kicker, WorldFrame, pos, type Act, type MenuEntry } from "../ui.js";
+import { mentorsOf } from "../world.js";
 import { theme } from "../theme.js";
 
 const W = theme.colors.world;
@@ -194,11 +195,13 @@ export function MentorScreen({
   back: () => void;
 }) {
   const skillName = (id: string) => skillList.find((s) => s.id === id)?.name ?? id;
-  // 場所に居る師だけを並べる（P-01：師はそれぞれの住まいで教える）
-  const placeDef = placeOf(place);
-  const here = placeDef !== undefined ? mentorsAt(placeDef) : mentorList;
+  // 場所に居る師だけを並べる（P-01：師はそれぞれの住まいで教える。
+  // G-01：生成地方は生成の師匠の名簿から引く）
+  const placeDef = placeOf(state, place);
+  const mentorsHere = mentorsOf(state);
+  const here = placeDef !== undefined ? mentorsAt(state, placeDef) : mentorsHere;
   // 現在の師匠：街に居なくなった師は教えられない（X-12。退場時に弟子入りは core で解消される）
-  const raw = state.mentor ? (mentorList.find((m) => m.id === state.mentor!.id) ?? null) : null;
+  const raw = state.mentor ? (mentorsHere.find((m) => m.id === state.mentor!.id) ?? null) : null;
   // この場所に居る師匠が今の師なら稽古の画面、違う場所の師に弟子入り中なら
   // その場所の師の一覧を出す（師は居る場所でしか教えない）
   const current =
@@ -296,7 +299,7 @@ export function MentorScreen({
 
   const entries: MenuEntry[] = [
     ...here.flatMap((m): MenuEntry[] => {
-      const ok = canApprentice(state, m.id, cfg.mentors, cfg.time, condEnv);
+      const ok = canApprentice(state, m.id, cfgFor(state).mentors, cfg.time, condEnv);
       // 歳月・危機で街に居なくなった師は「引退した」などの印で示す（X-12）
       const gone = mentorAbsent(state, m);
       // R-01：退場とは別に「今日はいない」日もある（人の揺らぎ）

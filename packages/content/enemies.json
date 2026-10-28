@@ -387,6 +387,1421 @@
         "poison": 0.5,
         "stun": 0.5
       }
+    },
+    {
+      "id": "green_ape",
+      "name": "緑猩猩",
+      "area": "deep_forest",
+      "hp": 55,
+      "intervalTicks": 12,
+      "challenge": 24,
+      "agility": 6,
+      "attack": {
+        "id": "slam",
+        "name": "振り下ろし",
+        "power": 6
+      },
+      "moves": {
+        "boulder": {
+          "id": "boulder",
+          "name": "大石投げ",
+          "power": 16
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "boulder",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "blunt": 0.8,
+        "pierce": 1.1
+      }
+    },
+    {
+      "id": "dire_wolf",
+      "name": "大狼",
+      "area": "deep_forest",
+      "hp": 60,
+      "intervalTicks": 9,
+      "challenge": 27,
+      "agility": 8,
+      "attack": {
+        "id": "rend",
+        "name": "裂き噛み",
+        "power": 7
+      },
+      "moves": {
+        "lunge": {
+          "id": "lunge",
+          "name": "喉笛への跳躍",
+          "power": 20
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "lunge",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.85,
+        "pierce": 1.1
+      }
+    },
+    {
+      "id": "shade_wisp",
+      "name": "影の燐",
+      "area": "deep_forest",
+      "hp": 38,
+      "intervalTicks": 16,
+      "challenge": 22,
+      "agility": 10,
+      "attack": {
+        "id": "touch",
+        "name": "冷たい接触",
+        "power": 5
+      },
+      "moves": {
+        "dark_bolt": {
+          "id": "dark_bolt",
+          "name": "闇の矢",
+          "power": 18,
+          "spell": "sp_shadow_bolt"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dark_bolt",
+          "ticks": 12
+        },
+        {
+          "type": "attack"
+        }
+      ],
+      "resist": {
+        "slash": 0.7,
+        "pierce": 0.7,
+        "blunt": 1.2,
+        "magic": 0.7
+      },
+      "statusResist": {
+        "poison": 0.3,
+        "stun": 0.3,
+        "bleed": 0.3
+      }
+    },
+    {
+      "id": "wild_goat",
+      "name": "野山羊",
+      "area": "hills",
+      "hp": 25,
+      "intervalTicks": 12,
+      "challenge": 10,
+      "agility": 7,
+      "attack": {
+        "id": "horn",
+        "name": "角突き",
+        "power": 3
+      },
+      "moves": {
+        "ram": {
+          "id": "ram",
+          "name": "突き飛ばし",
+          "power": 9
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "ram",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "pierce": 1.1
+      }
+    },
+    {
+      "id": "hawk",
+      "name": "大鷹",
+      "area": "hills",
+      "hp": 18,
+      "intervalTicks": 8,
+      "challenge": 12,
+      "agility": 12,
+      "attack": {
+        "id": "talon",
+        "name": "鉤爪",
+        "power": 3
+      },
+      "moves": {
+        "dive": {
+          "id": "dive",
+          "name": "急降下",
+          "power": 10
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dive",
+          "ticks": 6
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "blunt": 1.2
+      }
+    },
+    {
+      "id": "rock_lizard",
+      "name": "岩蜥蜴",
+      "area": "mountain",
+      "hp": 70,
+      "intervalTicks": 13,
+      "challenge": 28,
+      "agility": 4,
+      "attack": {
+        "id": "tail",
+        "name": "尾薙ぎ",
+        "power": 8
+      },
+      "moves": {
+        "roll": {
+          "id": "roll",
+          "name": "岩転がし",
+          "power": 22
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "roll",
+          "ticks": 10
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.6,
+        "pierce": 0.6,
+        "blunt": 1.2
+      },
+      "statusResist": {
+        "bleed": 0.3
+      }
+    },
+    {
+      "id": "mountain_troll",
+      "name": "山トロル",
+      "area": "mountain",
+      "hp": 140,
+      "intervalTicks": 15,
+      "challenge": 40,
+      "agility": 3,
+      "attack": {
+        "id": "club",
+        "name": "棍棒",
+        "power": 11
+      },
+      "moves": {
+        "smash": {
+          "id": "smash",
+          "name": "潰し振り",
+          "power": 34
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "smash",
+          "ticks": 12
+        }
+      ],
+      "resist": {
+        "blunt": 0.8,
+        "slash": 1.1
+      },
+      "statusResist": {
+        "stun": 0.4
+      }
+    },
+    {
+      "id": "griffin",
+      "name": "鷲獅子",
+      "area": "mountain",
+      "hp": 95,
+      "intervalTicks": 10,
+      "challenge": 38,
+      "agility": 11,
+      "attack": {
+        "id": "beak",
+        "name": "嘴と爪",
+        "power": 10
+      },
+      "moves": {
+        "swoop": {
+          "id": "swoop",
+          "name": "急襲",
+          "power": 28
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "swoop",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "pierce": 1.15
+      }
+    },
+    {
+      "id": "turtle",
+      "name": "大亀",
+      "area": "lake",
+      "hp": 50,
+      "intervalTicks": 16,
+      "challenge": 12,
+      "agility": 2,
+      "attack": {
+        "id": "snap",
+        "name": "噛みつき",
+        "power": 5
+      },
+      "moves": {
+        "shell_spin": {
+          "id": "shell_spin",
+          "name": "甲羅回し",
+          "power": 12
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "shell_spin",
+          "ticks": 10
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.5,
+        "pierce": 0.5,
+        "blunt": 1.0
+      }
+    },
+    {
+      "id": "pike",
+      "name": "大鮫鱒",
+      "area": "lake",
+      "hp": 30,
+      "intervalTicks": 9,
+      "challenge": 14,
+      "agility": 9,
+      "attack": {
+        "id": "fang",
+        "name": "牙の一突き",
+        "power": 5
+      },
+      "moves": {
+        "lunge": {
+          "id": "lunge",
+          "name": "跳び噛み",
+          "power": 14
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "lunge",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.9,
+        "blunt": 1.1
+      }
+    },
+    {
+      "id": "lake_serpent",
+      "name": "湖蛇",
+      "area": "lake",
+      "hp": 80,
+      "intervalTicks": 12,
+      "challenge": 20,
+      "agility": 7,
+      "attack": {
+        "id": "coil",
+        "name": "締め付け",
+        "power": 8
+      },
+      "moves": {
+        "water_shot": {
+          "id": "water_shot",
+          "name": "水弾",
+          "power": 16,
+          "spell": "sp_water_shot"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "water_shot",
+          "ticks": 12
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.8,
+        "blunt": 0.9
+      },
+      "statusResist": {
+        "frozen": 0.4
+      },
+      "parts": ["head", "body"]
+    },
+    {
+      "id": "big_frog",
+      "name": "大蛙",
+      "area": "river",
+      "hp": 20,
+      "intervalTicks": 10,
+      "challenge": 8,
+      "agility": 8,
+      "attack": {
+        "id": "tongue",
+        "name": "長い舌",
+        "power": 3
+      },
+      "moves": {
+        "gulp": {
+          "id": "gulp",
+          "name": "丸呑み",
+          "power": 8
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "gulp",
+          "ticks": 6
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "blunt": 1.2
+      }
+    },
+    {
+      "id": "river_bandit",
+      "name": "川の盗人",
+      "area": "river",
+      "hp": 60,
+      "intervalTicks": 10,
+      "challenge": 24,
+      "agility": 7,
+      "attack": {
+        "id": "knife",
+        "name": "短刀",
+        "power": 6
+      },
+      "moves": {
+        "net": {
+          "id": "net",
+          "name": "投げ網",
+          "power": 12
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "net",
+          "ticks": 8
+        }
+      ],
+      "resist": {
+        "slash": 1.1
+      },
+      "statusResist": {
+        "poison": 0.7
+      }
+    },
+    {
+      "id": "crab",
+      "name": "大蟹",
+      "area": "coast",
+      "hp": 45,
+      "intervalTicks": 13,
+      "challenge": 14,
+      "agility": 3,
+      "attack": {
+        "id": "claw",
+        "name": "鋏",
+        "power": 6
+      },
+      "moves": {
+        "crush": {
+          "id": "crush",
+          "name": "潰し鋏",
+          "power": 18
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "crush",
+          "ticks": 10
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.5,
+        "pierce": 0.6,
+        "blunt": 1.3
+      }
+    },
+    {
+      "id": "shore_shark",
+      "name": "磯鮫",
+      "area": "coast",
+      "hp": 75,
+      "intervalTicks": 9,
+      "challenge": 26,
+      "agility": 9,
+      "attack": {
+        "id": "bite",
+        "name": "咬み裂き",
+        "power": 9
+      },
+      "moves": {
+        "maul": {
+          "id": "maul",
+          "name": "噛み千切り",
+          "power": 24
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "maul",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.85
+      }
+    },
+    {
+      "id": "pirate",
+      "name": "海賊",
+      "area": "coast",
+      "hp": 85,
+      "intervalTicks": 10,
+      "challenge": 30,
+      "agility": 7,
+      "attack": {
+        "id": "cutlass",
+        "name": "湾刀",
+        "power": 9
+      },
+      "moves": {
+        "broadside": {
+          "id": "broadside",
+          "name": "掛かり斬り",
+          "power": 26
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "broadside",
+          "ticks": 8
+        }
+      ],
+      "resist": {
+        "slash": 1.1
+      },
+      "statusResist": {
+        "poison": 0.7
+      }
+    },
+    {
+      "id": "marsh_viper",
+      "name": "沼蝮",
+      "area": "marsh",
+      "hp": 35,
+      "intervalTicks": 9,
+      "challenge": 20,
+      "agility": 9,
+      "attack": {
+        "id": "fang",
+        "name": "毒牙",
+        "power": 6
+      },
+      "moves": {
+        "venom": {
+          "id": "venom",
+          "name": "毒の注入",
+          "power": 16
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "venom",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "statusResist": {
+        "poison": 0.2
+      }
+    },
+    {
+      "id": "bog_lurker",
+      "name": "沼の這い寄り",
+      "area": "marsh",
+      "hp": 90,
+      "intervalTicks": 14,
+      "challenge": 28,
+      "agility": 4,
+      "attack": {
+        "id": "pseudopod",
+        "name": "泥の腕",
+        "power": 8
+      },
+      "moves": {
+        "drag": {
+          "id": "drag",
+          "name": "泥への引き摺り",
+          "power": 22
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "drag",
+          "ticks": 10
+        }
+      ],
+      "resist": {
+        "slash": 0.7,
+        "blunt": 0.8,
+        "magic": 1.1
+      },
+      "statusResist": {
+        "poison": 0.3,
+        "bleed": 0.3
+      }
+    },
+    {
+      "id": "plague_rat",
+      "name": "疫病鼠",
+      "area": "marsh",
+      "hp": 22,
+      "intervalTicks": 8,
+      "challenge": 16,
+      "agility": 11,
+      "attack": {
+        "id": "gnaw",
+        "name": "囓りつき",
+        "power": 4
+      },
+      "moves": {
+        "festering_bite": {
+          "id": "festering_bite",
+          "name": "腐敗の噛み",
+          "power": 12
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "festering_bite",
+          "ticks": 6
+        }
+      ],
+      "beast": true,
+      "statusResist": {
+        "poison": 0.4
+      }
+    },
+    {
+      "id": "vulture",
+      "name": "大禿鷲",
+      "area": "wasteland",
+      "hp": 40,
+      "intervalTicks": 8,
+      "challenge": 22,
+      "agility": 12,
+      "attack": {
+        "id": "beak",
+        "name": "啄み",
+        "power": 6
+      },
+      "moves": {
+        "dive": {
+          "id": "dive",
+          "name": "急降下",
+          "power": 16
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dive",
+          "ticks": 6
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "blunt": 1.2
+      }
+    },
+    {
+      "id": "scorpion",
+      "name": "大蠍",
+      "area": "wasteland",
+      "hp": 60,
+      "intervalTicks": 11,
+      "challenge": 30,
+      "agility": 6,
+      "attack": {
+        "id": "sting",
+        "name": "毒針",
+        "power": 8
+      },
+      "moves": {
+        "skewer": {
+          "id": "skewer",
+          "name": "串刺し尾",
+          "power": 24
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "skewer",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.6,
+        "blunt": 0.8
+      },
+      "statusResist": {
+        "poison": 0.3
+      }
+    },
+    {
+      "id": "frost_hare",
+      "name": "霜兎",
+      "area": "snowfield",
+      "hp": 30,
+      "intervalTicks": 7,
+      "challenge": 18,
+      "agility": 14,
+      "attack": {
+        "id": "kick",
+        "name": "蹴り跳び",
+        "power": 4
+      },
+      "moves": {
+        "dart": {
+          "id": "dart",
+          "name": "疾走乱れ",
+          "power": 10
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dart",
+          "ticks": 6
+        }
+      ],
+      "beast": true,
+      "statusResist": {
+        "frozen": 0.2
+      }
+    },
+    {
+      "id": "snow_wolf",
+      "name": "雪狼",
+      "area": "snowfield",
+      "hp": 85,
+      "intervalTicks": 9,
+      "challenge": 34,
+      "agility": 9,
+      "attack": {
+        "id": "fang",
+        "name": "凍てつく牙",
+        "power": 9
+      },
+      "moves": {
+        "frenzy": {
+          "id": "frenzy",
+          "name": "連撃",
+          "power": 24
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "frenzy",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "slash": 0.85
+      },
+      "statusResist": {
+        "frozen": 0.2,
+        "burn": 1.3
+      }
+    },
+    {
+      "id": "yeti",
+      "name": "雪男",
+      "area": "snowfield",
+      "hp": 130,
+      "intervalTicks": 13,
+      "challenge": 42,
+      "agility": 5,
+      "attack": {
+        "id": "smash",
+        "name": "雪を巻く拳",
+        "power": 11
+      },
+      "moves": {
+        "avalanche": {
+          "id": "avalanche",
+          "name": "雪崩れ拳",
+          "power": 32
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "avalanche",
+          "ticks": 10
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "blunt": 0.7
+      },
+      "statusResist": {
+        "frozen": 0.1,
+        "burn": 1.3
+      }
+    },
+    {
+      "id": "ash_bat",
+      "name": "灰蝙蝠",
+      "area": "volcano",
+      "hp": 45,
+      "intervalTicks": 7,
+      "challenge": 30,
+      "agility": 13,
+      "attack": {
+        "id": "fang",
+        "name": "吸血の牙",
+        "power": 6
+      },
+      "moves": {
+        "screech": {
+          "id": "screech",
+          "name": "耳を裂く叫び",
+          "power": 14
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "screech",
+          "ticks": 6
+        }
+      ],
+      "beast": true,
+      "statusResist": {
+        "burn": 0.3
+      }
+    },
+    {
+      "id": "fire_lizard",
+      "name": "火蜥蜴",
+      "area": "volcano",
+      "hp": 90,
+      "intervalTicks": 11,
+      "challenge": 44,
+      "agility": 7,
+      "attack": {
+        "id": "bite",
+        "name": "灼熱の顎",
+        "power": 10
+      },
+      "moves": {
+        "flame": {
+          "id": "flame",
+          "name": "炎吐き",
+          "power": 26,
+          "spell": "sp_fireball"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "flame",
+          "ticks": 12
+        }
+      ],
+      "beast": true,
+      "statusResist": {
+        "burn": 0.1,
+        "frozen": 1.3
+      }
+    },
+    {
+      "id": "magma_golem",
+      "name": "熔岩巨像",
+      "area": "volcano",
+      "hp": 170,
+      "intervalTicks": 16,
+      "challenge": 55,
+      "agility": 2,
+      "attack": {
+        "id": "fist",
+        "name": "熔岩の拳",
+        "power": 13
+      },
+      "moves": {
+        "eruption": {
+          "id": "eruption",
+          "name": "噴出する熔岩",
+          "power": 40,
+          "spell": "sp_inferno"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "eruption",
+          "ticks": 14
+        }
+      ],
+      "resist": {
+        "slash": 0.5,
+        "pierce": 0.4,
+        "blunt": 0.8,
+        "magic": 0.8
+      },
+      "statusResist": {
+        "burn": 0,
+        "frozen": 0.8,
+        "bleed": 0
+      },
+      "parts": ["body", "arms"]
+    },
+    {
+      "id": "ghoul",
+      "name": "食屍鬼",
+      "area": "battlefield",
+      "hp": 70,
+      "intervalTicks": 11,
+      "challenge": 30,
+      "agility": 6,
+      "attack": {
+        "id": "claw",
+        "name": "裂く爪",
+        "power": 8
+      },
+      "moves": {
+        "feast": {
+          "id": "feast",
+          "name": "貪り喰い",
+          "power": 20
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "feast",
+          "ticks": 8
+        }
+      ],
+      "resist": {
+        "slash": 0.8,
+        "pierce": 1.1
+      },
+      "statusResist": {
+        "poison": 0.2,
+        "bleed": 0.2
+      }
+    },
+    {
+      "id": "war_ghost",
+      "name": "戦場の亡霊",
+      "area": "battlefield",
+      "hp": 75,
+      "intervalTicks": 14,
+      "challenge": 38,
+      "agility": 8,
+      "attack": {
+        "id": "touch",
+        "name": "怨嗟の触手",
+        "power": 9
+      },
+      "moves": {
+        "eclipse": {
+          "id": "eclipse",
+          "name": "蝕",
+          "power": 30,
+          "spell": "sp_eclipse"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "eclipse",
+          "ticks": 14
+        }
+      ],
+      "resist": {
+        "slash": 0.5,
+        "pierce": 0.5,
+        "blunt": 0.6,
+        "magic": 0.8
+      },
+      "statusResist": {
+        "stun": 0,
+        "bleed": 0,
+        "poison": 0
+      },
+      "parts": ["body"]
+    },
+    {
+      "id": "feral_pack",
+      "name": "人捨ての群れ",
+      "area": "dead_village",
+      "hp": 65,
+      "intervalTicks": 9,
+      "challenge": 26,
+      "agility": 8,
+      "attack": {
+        "id": "maul",
+        "name": "群れ噛み",
+        "power": 7
+      },
+      "moves": {
+        "swarm": {
+          "id": "swarm",
+          "name": "一斉にかかる",
+          "power": 20
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "swarm",
+          "ticks": 8
+        }
+      ],
+      "beast": true,
+      "resist": {
+        "blunt": 0.9
+      }
+    },
+    {
+      "id": "hanged_wraith",
+      "name": "縊られた亡霊",
+      "area": "dead_village",
+      "hp": 55,
+      "intervalTicks": 15,
+      "challenge": 32,
+      "agility": 6,
+      "attack": {
+        "id": "grasp",
+        "name": "縄の腕",
+        "power": 8
+      },
+      "moves": {
+        "wail": {
+          "id": "wail",
+          "name": "断末魔の哭き",
+          "power": 24
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "wail",
+          "ticks": 12
+        }
+      ],
+      "resist": {
+        "slash": 0.5,
+        "pierce": 0.5,
+        "blunt": 0.6,
+        "magic": 0.9
+      },
+      "statusResist": {
+        "stun": 0,
+        "bleed": 0,
+        "poison": 0
+      },
+      "parts": ["body", "arms"]
+    },
+    {
+      "id": "tomb_bat",
+      "name": "墓蝙蝠",
+      "area": "ruins_field",
+      "hp": 40,
+      "intervalTicks": 7,
+      "challenge": 24,
+      "agility": 13,
+      "attack": {
+        "id": "fang",
+        "name": "牙",
+        "power": 6
+      },
+      "moves": {
+        "screech": {
+          "id": "screech",
+          "name": "金切り声",
+          "power": 12
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "screech",
+          "ticks": 6
+        }
+      ],
+      "beast": true,
+      "statusResist": {
+        "poison": 0.4
+      }
+    },
+    {
+      "id": "ruin_stalker",
+      "name": "遺跡を歩くもの",
+      "area": "ruins_field",
+      "hp": 100,
+      "intervalTicks": 11,
+      "challenge": 40,
+      "agility": 7,
+      "attack": {
+        "id": "blade",
+        "name": "石の刃",
+        "power": 10
+      },
+      "moves": {
+        "ambush": {
+          "id": "ambush",
+          "name": "影からの一撃",
+          "power": 28
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "ambush",
+          "ticks": 8
+        }
+      ],
+      "resist": {
+        "slash": 0.8,
+        "pierce": 0.8
+      }
+    },
+    {
+      "id": "stone_guardian",
+      "name": "石の番人",
+      "area": "ruins_field",
+      "hp": 160,
+      "intervalTicks": 15,
+      "challenge": 48,
+      "agility": 2,
+      "attack": {
+        "id": "fist",
+        "name": "岩拳",
+        "power": 12
+      },
+      "moves": {
+        "slam": {
+          "id": "slam",
+          "name": "大地を砕く",
+          "power": 36
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "slam",
+          "ticks": 12
+        }
+      ],
+      "resist": {
+        "slash": 0.4,
+        "pierce": 0.3,
+        "blunt": 0.9,
+        "magic": 0.7
+      },
+      "statusResist": {
+        "bleed": 0,
+        "poison": 0,
+        "stun": 0.3
+      },
+      "parts": ["body", "arms"]
     }
   ]
 }

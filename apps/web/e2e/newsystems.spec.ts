@@ -81,7 +81,7 @@ const fade = (page: Page) => page.waitForTimeout(400);
 
 /** 新規ゲームを開始してメニューまで進める（screens.spec と同じ流れ） */
 async function startNewGame(page: Page, seed = SEED) {
-  await page.goto(`/?seed=${seed}`);
+  await page.goto(`/?world=legacy&seed=${seed}`);
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 }
@@ -153,7 +153,7 @@ test("発見：雨の日に足を止めると《雨宿りの井戸》を見つ�
     actionLog: [{ day: rainDay!, kind: "wait" }],
   });
   await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   // 何か行動する → step 末尾の発見判定で《雨宿りの井戸》が見つかる
@@ -196,7 +196,7 @@ test("歳月：NPCの出来事が起床レポート・街の噂・朝刊・街�
   const save = serialize({ ...g, time: { day: sadoDay - 1, action: 0 } });
   await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
   // セーブの危機は公開サンプル型で仕込んである —— 実行側も同じ型で解決する（?crisis=sample）
-  await page.goto("/?crisis=sample");
+  await page.goto("/?world=legacy&crisis=sample");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   const sadoText = sado.events[0]!.text.replaceAll("{name}", "サド");

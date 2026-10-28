@@ -39,6 +39,8 @@ export const lifeOutcomeSchema = z
     fatigue: z.number().optional(),
     /** 立つ旗印（縁・手がかりの刻印。条件DSLが読める） */
     flag: z.string().min(1).optional(),
+    /** 祈りの刻印（祠などの地点の出来事。その日の眠りが少し深くなる） */
+    pray: z.literal(true).optional(),
   })
   .strict();
 

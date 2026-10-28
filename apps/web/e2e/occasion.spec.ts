@@ -102,7 +102,7 @@ test("勝負所の行事：打診 → 請け → 大取引に勝つ → 記録�
   await page.addInitScript((save) => {
     localStorage.setItem("trace.save.v1", save);
   }, saveOf("e2e-occ"));
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   // 届いた打診がある日だけ、場所の行動に「勝負所の行事」が出る（P-01：行事はギルドに届く。

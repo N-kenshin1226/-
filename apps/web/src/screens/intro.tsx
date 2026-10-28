@@ -5,21 +5,32 @@
  * Esc/クリックで飛ばせる
  */
 import { useState } from "react";
+import type { GameState } from "@trace/core";
 import { voices } from "@trace/content";
-import { t, tpl } from "../game.js";
+import { t, tpl, townName } from "../game.js";
+import { isGenWorld, npcNameOf, townTitleOf, townTypeNameOf } from "../world.js";
 import { DialogueBox, HintBar, Plate, pos, useHotkeys, type Screen } from "../ui.js";
 import { theme } from "../theme.js";
 
 export function IntroScreen({
+  state,
   name,
   setScreen,
 }: {
+  state: GameState;
   /** プレイヤー名（{name} の差し込み元） */
   name: string;
   setScreen: (s: Screen) => void;
 }) {
-  const marta = voices.npcs.find((n) => n.id === "npc.marta");
-  const pages = [tpl(t.text.introWelcome, { name }), tpl(t.text.introGuide, { name })];
+  // 案内人は宿屋の主（G-01：生成地方は生成の住人、固定マップはマルタ）
+  const host = isGenWorld(state)
+    ? { role: "宿屋の主", name: npcNameOf(state, `npc.${state.life.town}.innkeeper`) }
+    : (voices.npcs.find((n) => n.id === "npc.marta") ?? {
+        role: "宿屋の主",
+        name: "マルタ",
+      });
+  const town = townTitleOf(state, state.life.town);
+  const pages = [tpl(t.text.introWelcome, { name, town }), tpl(t.text.introGuide, { name })];
   const [page, setPage] = useState(0);
 
   const next = () => {
@@ -35,11 +46,15 @@ export function IntroScreen({
       {/* 場所の名札（TopChrome と同じ形。「ここがどこか」の手がかり） */}
       <Plate style={pos({ left: 28, top: 22 })}>
         <span style={{ fontFamily: theme.font.mincho, fontSize: 16 }}>
-          アルディ<span style={{ color: theme.colors.world.dim, fontSize: 13 }}> ―― 宿場街</span>
+          {townName(state, state.life.town)}
+          <span style={{ color: theme.colors.world.dim, fontSize: 13 }}>
+            {" "}
+            ―― {townTypeNameOf(state, state.life.town) || "街"}
+          </span>
         </span>
       </Plate>
       <DialogueBox
-        speaker={`${marta?.role ?? "宿屋の主"} ${marta?.name ?? "マルタ"}`}
+        speaker={`${host.role} ${host.name}`}
         testId="intro-dialogue"
         style={pos({ left: 220, right: 220, bottom: 110, height: 180 })}
       >

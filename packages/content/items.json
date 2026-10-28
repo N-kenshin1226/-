@@ -157,6 +157,37 @@
       "kind": "material",
       "price": 10,
       "food": 14
+    },
+    {
+      "id": "fish.sea",
+      "name": "海魚",
+      "kind": "gather",
+      "price": 8,
+      "food": 11
+    },
+    {
+      "id": "herb.snow",
+      "name": "雪原の薬草",
+      "kind": "gather",
+      "price": 14
+    },
+    {
+      "id": "ore.gold",
+      "name": "金原石",
+      "kind": "gather",
+      "price": 60
+    },
+    {
+      "id": "shell",
+      "name": "貝殻",
+      "kind": "gather",
+      "price": 2
+    },
+    {
+      "id": "relic",
+      "name": "古びた遺物",
+      "kind": "gather",
+      "price": 45
     }
   ]
 }

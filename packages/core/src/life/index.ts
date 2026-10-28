@@ -33,6 +33,8 @@ export interface LifeOutcome {
   gain?: { skill: string; amount: number };
   fatigue?: number;
   flag?: string;
+  /** 祈りの刻印（G-01。祠などの地点の出来事。その日の眠りが少し深くなる） */
+  pray?: true;
 }
 
 /** 採集の品1件 */
@@ -87,13 +89,35 @@ export interface JourneyDef {
 
 /** life.json＋balance.life をまとめた実行時設定 */
 export interface LifeConfig {
-  /** 町の表（id → 表示名） */
-  towns: Record<string, { name: string }>;
+  /**
+   * 町の表（id → 表示名）。G-01 の生成世界では type に町の型の id が入り、
+   * 型ごとの散策表（stroll["town.<型>"]）の選択に使う
+   */
+  towns: Record<string, { name: string; type?: string }>;
   journeys: readonly JourneyDef[];
-  /** 散策の出来事の表（"town" / "region" / "road"） */
+  /**
+   * 散策の出来事の表（"town" / "region" / "road" が基本キー。
+   * G-01 では "town.<町の型>"・"region.<地域の型>" の型別表もここに乗る）
+   */
   stroll: Record<string, readonly LifeOutcome[]>;
   /** 採集の表（場所 id → 表） */
   gather: Record<string, GatherTable>;
+  /**
+   * 場所の帰属（G-01 生成世界。場所 id → 属する町 id と型 id）。
+   * 散策の型別表の選択と町の結線に使う。省略時（固定マップ）は解決しない
+   */
+  places?: Record<string, { town?: string; type?: string }>;
+  /**
+   * 地域の中の小さな地点の出来事表（G-01。地点 id → 表）。
+   * spot 行動がここから1件引く
+   */
+  spots?: Record<string, readonly LifeOutcome[]>;
+  /**
+   * 町ごとの評判（G-01、docs/10 §4）。省略時は評判を積まない。
+   * errand/work/donate はその行動1回で増える評判、pricePer は評判1点あたりの
+   * 市場価格への効き（買いは安く・売りは高くなる）
+   */
+  rep?: { max: number; errand: number; work: number; donate: number; pricePer: number };
   recipes: readonly RecipeDef[];
   market: {
     stock: readonly { id: string; towns?: readonly string[] }[];
@@ -166,6 +190,28 @@ export function bondOf(state: GameState, npc: string, cfg: LifeConfig): number {
   return Math.max(0, Math.min(cfg.bondMax, state.life.bonds[npc] ?? 0));
 }
 
+/** 町ごとの評判（G-01。0〜rep.max。rep 係数が無い世界では常に 0） */
+export function repOf(state: GameState, town: string, cfg: LifeConfig): number {
+  const rep = cfg.rep;
+  if (rep === undefined) return 0;
+  return Math.max(0, Math.min(rep.max, state.life.rep[town] ?? 0));
+}
+
+/**
+ * 町の評判を積んだ新しい life（G-01）。評判は行った町の顔売り ——
+ * 掲示板・仕事・寄付でその町の分だけ積み上がる（上限 rep.max）
+ */
+export function withRep(
+  state: GameState,
+  town: string,
+  amount: number,
+  cfg: LifeConfig,
+): GameState["life"] {
+  const rep = { ...state.life.rep };
+  rep[town] = repOf(state, town, cfg) + amount;
+  return { ...state.life, rep };
+}
+
 /** 仲が深まって挨拶が変わる水準に達したか */
 export function bondWarm(state: GameState, npc: string, cfg: LifeConfig): boolean {
   return bondOf(state, npc, cfg) >= cfg.bondRespectMin;
@@ -198,7 +244,7 @@ export function prayedToday(state: GameState): boolean {
 /* ── 抽選（すべて seed×日×用途×回目の独立した乱数列） ── */
 
 /**
- * 散策の出来事を1件引く。table は "town"/"region"/"road"。
+ * 散策の出来事を1件引く。table は "town"/"region"/"road"（＋G-01 の型別表）。
  * seq は同日・同表で何回目の抽選か（カウンタから渡す）
  */
 export function drawStroll(
@@ -211,6 +257,47 @@ export function drawStroll(
   const outcomes = cfg.stroll[table];
   if (outcomes === undefined || outcomes.length === 0) return undefined;
   const rng = createRng(`${seed}:stroll:${table}:${day}:${seq}`);
+  return rng.weighted(outcomes.map((o) => ({ item: o, weight: o.weight })));
+}
+
+/**
+ * 散策の表キーを選ぶ（G-01）。基本は scope（"town"/"region"/"road"）。
+ * 生成世界では場所・町の型に応じて "town.<町の型>"・"region.<地域の型>"
+ * の型別表があればそちらを使う。place は散策している場所の id（地域なら型解決に使う）
+ */
+export function strollTableOf(
+  cfg: LifeConfig,
+  scope: string,
+  place: string | undefined,
+  town: string,
+): string {
+  let typeId: string | undefined;
+  if (scope === "town") {
+    typeId = cfg.towns[town]?.type ?? (place !== undefined ? cfg.places?.[place]?.type : undefined);
+  } else if (scope === "region" && place !== undefined) {
+    typeId = cfg.places?.[place]?.type;
+  }
+  if (typeId !== undefined) {
+    const key = `${scope}.${typeId}`;
+    if (cfg.stroll[key] !== undefined && cfg.stroll[key]!.length > 0) return key;
+  }
+  return scope;
+}
+
+/**
+ * 地点（spot）の出来事を1件引く（G-01）。表は spots[地点id]。
+ * 引く乱数列は散策とは別系統（地点×日×回目）
+ */
+export function drawSpot(
+  seed: string,
+  day: number,
+  spot: string,
+  seq: number,
+  cfg: LifeConfig,
+): LifeOutcome | undefined {
+  const outcomes = cfg.spots?.[spot];
+  if (outcomes === undefined || outcomes.length === 0) return undefined;
+  const rng = createRng(`${seed}:spot:${spot}:${day}:${seq}`);
   return rng.weighted(outcomes.map((o) => ({ item: o, weight: o.weight })));
 }
 
@@ -247,7 +334,8 @@ export function drawGather(
 
 /**
  * 市場の値段（G、整数）。基準値 × 町係数 × 売り買い係数 × 日替わりの揺らぎ。
- * side: "buy" は店で買う値段、"sell" は店に売る値段
+ * side: "buy" は店で買う値段、"sell" は店に売る値段。
+ * rep（G-01、町の評判）は顔が売れている分だけ買いを安く・売りを高くする
  */
 export function itemPrice(
   seed: string,
@@ -257,10 +345,21 @@ export function itemPrice(
   side: "buy" | "sell",
   cfg: LifeConfig,
   item: ItemDef,
+  rep = 0,
 ): number {
   const townFactor = cfg.market.townFactor[town]?.[id] ?? cfg.market.townFactor[town]?.["*"] ?? 1;
+  const pricePer = cfg.rep?.pricePer ?? 0;
+  const repFactor =
+    rep > 0 && pricePer > 0
+      ? side === "buy"
+        ? Math.max(0.5, 1 - rep * pricePer)
+        : Math.min(1.5, 1 + rep * pricePer)
+      : 1;
   const base =
-    item.price * townFactor * (side === "buy" ? cfg.market.buyFactor : cfg.market.sellFactor);
+    item.price *
+    townFactor *
+    repFactor *
+    (side === "buy" ? cfg.market.buyFactor : cfg.market.sellFactor);
   const jitter =
     1 + (createRng(`${seed}:life-market:${day}:${id}`).next() * 2 - 1) * cfg.marketJitter;
   return Math.max(1, Math.round(base * jitter));
