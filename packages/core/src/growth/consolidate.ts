@@ -39,6 +39,20 @@ export interface SleepConfig {
    */
   nightlyCapTotal: number;
   /**
+   * 滞留ドレイン率（02 §3「滞留が深いほど間口が開く」）。持ち越された
+   * 未定着が積み上がっている夜は、定着上限に「その技能の滞留 ×
+   * この率 × 睡眠の質」の床が加わる（技能ごとの段階と合計上限の両方）。
+   * 普通の日は基礎上限どおりなので、大きな滞留だけが目に見えて減る。
+   * 省略時・0 以下は床なし（従来どおりの上限のみ）
+   */
+  backlogDrainRatio?: number;
+  /**
+   * 合計側のドレイン床の上限倍率（02 §3）。「滞留×率×質×集中シェア」の
+   * 床が大きくなりすぎて分散プレイだけが得をしないよう（§10 方針間の差）、
+   * 合計の床は 基礎合計上限×係数 × この倍率 で頭打ちにする（省略時 3）
+   */
+  backlogDrainMaxMult?: number;
+  /**
    * 合計上限にランク係数を掛ける集中度の下限（0〜1、既定 0.5）。
    * その晩に積んだ未定着のうち最大の技能のシェアがこれを超えた夜だけ、
    * その技能のランク係数が nightlyCapTotal にも掛かる
@@ -215,8 +229,12 @@ export function consolidateSleep(
   }
 
   // 第1段階：スキルごとの上限まで定着（上限はランク係数つき。低ランクほど大きい）。
+  // 滞留ドレイン（02 §3）：持ち越しが積み上がった技能には
+  // 「滞留 × backlogDrainRatio × 質」の床を置く。普通の日は床が基礎上限を
+  // 下回るので何も変わらず、深い滞留だけが速く減る
   // 集中度も同時に計る —— その晩の未定着のうち最大の技能のシェアが focusShare
   // （既定 0.5）を超えていれば、その技能のランク係数を合計上限にも掛ける
+  const drain = (cfg.backlogDrainRatio ?? 0) * quality * (opts?.capFactor ?? 1);
   const appliedMap = new Map<string, number>();
   let appliedSum = 0;
   let pendingSum = 0;
@@ -225,7 +243,7 @@ export function consolidateSleep(
   for (const [id, prev] of Object.entries(skills)) {
     if (prev.pending <= 0) continue;
     const f = rankCapFactor(prev.value, cfg);
-    const applied = Math.min(prev.pending, capBase * f);
+    const applied = Math.min(prev.pending, Math.max(capBase * f, prev.pending * drain));
     appliedMap.set(id, applied);
     appliedSum += applied;
     pendingSum += prev.pending;
@@ -234,10 +252,18 @@ export function consolidateSleep(
       topFactor = f;
     }
   }
-  // 第2段階：合計上限を超えたら比例配分で縮める
+  // 第2段階：合計上限を超えたら比例配分で縮める。合計にも滞留の床を置くが、
+  // 床は「最大技能のシェア」に比例する —— 1技能に深く積んだ滞留はよく流れ、
+  // 薄く散らした滞留はほとんど流れない（集中が優位の原則・02 §10 を守る）。
+  // さらに 基礎合計上限×係数×backlogDrainMaxMult（既定3）で頭打ちにする
   const focusShare = cfg.focusShare ?? 0.5;
-  const totalCapFactor = pendingSum > 0 && topPending / pendingSum >= focusShare ? topFactor : 1;
-  const totalCap = totalCapBase * totalCapFactor;
+  const topShare = pendingSum > 0 ? topPending / pendingSum : 0;
+  const totalCapFactor = topShare >= focusShare ? topFactor : 1;
+  const drainMaxMult = cfg.backlogDrainMaxMult ?? 3;
+  const totalCap = Math.max(
+    totalCapBase * totalCapFactor,
+    Math.min(pendingSum * drain * topShare, totalCapBase * totalCapFactor * drainMaxMult),
+  );
   const scale = appliedSum > totalCap && appliedSum > 0 ? totalCap / appliedSum : 1;
 
   const rankUps: SkillRankUp[] = [];

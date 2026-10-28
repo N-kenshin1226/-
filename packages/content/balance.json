@@ -49,6 +49,8 @@
     "nightlyCapPerSkill": 3.0,
     "nightlyCapTotal": 2.0,
     "focusShare": 0.5,
+    "backlogDrainRatio": 0.2,
+    "backlogDrainMaxMult": 2.0,
     "skillRanks": [
       {
         "at": 0,

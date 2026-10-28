@@ -371,3 +371,71 @@ describe("起床ログ", () => {
     expect(wake.report.quality).toBeCloseTo(0.85);
   });
 });
+
+describe("滞留ドレイン（02 §3「滞留が深いほど間口が開く」）", () => {
+  // 質 0.85（normal・夕食なし）× drain 0.25 = 実効 0.2125 /晩。
+  // maxMult はドレイン機構そのものを見るため大きく取る（頭打ちの検証は別テスト）
+  const drainSleep: SleepConfig = {
+    ...sleep,
+    nightlyCapPerSkill: 1,
+    nightlyCapTotal: 1,
+    backlogDrainRatio: 0.25,
+    backlogDrainMaxMult: 99,
+  };
+
+  it("滞留が深い技能は間口が開く：pending 30 は 0.85 ではなく 6.375 定着", () => {
+    const g = withPending({ swordplay: 30 });
+    const { state } = consolidateSleep(g, "normal", false, drainSleep);
+    const s = state.player.skills.swordplay!;
+    expect(s.value).toBeCloseTo(30 * 0.25 * 0.85, 5); // 6.375
+    expect(s.pending).toBeCloseTo(30 - 6.375, 5); // 残りは全量持ち越し
+  });
+
+  it("滞留が散っていると床はシェアぶんだけ小さい（集中が優位）", () => {
+    // 30 を3技能に散らすと topShare=1/3 → 床は 30×0.2125×1/3 = 2.125
+    const g = withPending({ swordplay: 10, smithing: 10, evasion: 10 });
+    const { state } = consolidateSleep(g, "normal", false, drainSleep);
+    const applied =
+      state.player.skills.swordplay!.value +
+      state.player.skills.smithing!.value +
+      state.player.skills.evasion!.value;
+    expect(applied).toBeCloseTo(30 * 0.25 * 0.85 * (1 / 3), 5); // 2.125（床なしなら 0.85）
+  });
+
+  it("普通の日は従来の上限どおり：pending 3 は間口が開かない", () => {
+    const g = withPending({ swordplay: 3 });
+    const { state } = consolidateSleep(g, "normal", false, drainSleep);
+    // 床 3×0.2125=0.6375 < 基礎上限 0.85 → 基礎上限で止まる（従来と同じ）
+    expect(state.player.skills.swordplay!.value).toBeCloseTo(0.85);
+    expect(state.player.skills.swordplay!.pending).toBeCloseTo(3 - 0.85);
+  });
+
+  it("backlogDrainRatio 未設定なら床は働かない（従来どおり）", () => {
+    const tight: SleepConfig = { ...sleep, nightlyCapPerSkill: 1, nightlyCapTotal: 1 };
+    const g = withPending({ swordplay: 30 });
+    const { state } = consolidateSleep(g, "normal", false, tight);
+    expect(state.player.skills.swordplay!.value).toBeCloseTo(0.85);
+  });
+
+  it("睡眠の質が高いほど滞留も早く減る", () => {
+    const g = withPending({ swordplay: 30 });
+    const { state: good } = consolidateSleep(g, "good", true, drainSleep); // q=1.2
+    const { state: cheap } = consolidateSleep(g, "cheap", false, drainSleep); // q=0.68
+    expect(good.player.skills.swordplay!.value).toBeGreaterThan(
+      cheap.player.skills.swordplay!.value,
+    );
+  });
+
+  it("合計の床は頭打ち：巨大な分散滞留も基礎合計×drainMaxMult を超えない（§10）", () => {
+    // pending 600 に散らすと生の床は 600×0.2125=127.5 だが、
+    // 合計は maxMult 3（既定）× 0.85 = 2.55 で頭打ち（分散だけが得をしない）
+    const boundSleep: SleepConfig = { ...drainSleep, backlogDrainMaxMult: undefined };
+    const g = withPending({ swordplay: 200, smithing: 200, evasion: 200 });
+    const { state } = consolidateSleep(g, "normal", false, boundSleep);
+    const applied =
+      state.player.skills.swordplay!.value +
+      state.player.skills.smithing!.value +
+      state.player.skills.evasion!.value;
+    expect(applied).toBeCloseTo(1 * 0.85 * 3, 5); // 2.55
+  });
+});

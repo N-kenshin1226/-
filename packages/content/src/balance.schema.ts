@@ -74,6 +74,16 @@ export const balanceSchema = z
          */
         focusShare: z.number().min(0).max(1),
         /**
+         * 滞留ドレイン率（02 §3「滞留が深いほど間口が開く」）。持ち越された
+         * 未定着 × この率 × 睡眠の質 が、その技能・合計の定着上限の床になる
+         */
+        backlogDrainRatio: z.number().min(0).max(1),
+        /**
+         * 合計側のドレイン床の上限倍率（02 §3）。分散した大量滞留だけが
+         * 得をしないよう、合計の床は 基礎合計上限×係数×この倍率 で頭打ち
+         */
+        backlogDrainMaxMult: z.number().positive(),
+        /**
          * スキルのランク帯（docs/02 §1 のランク表）と定着上限倍率（F-01）。
          * at は value の下限（昇順・先頭 0）、capFactor はその帯の定着上限倍率。
          * 上限を超えた未定着経験は全量翌日に持ち越される（消失しない）
