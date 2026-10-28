@@ -25,6 +25,7 @@
 | [docs/06_endgame.md](docs/06_endgame.md) | 寿命・転生・エンドコンテンツ |
 | [docs/08_world_crisis.md](docs/08_world_crisis.md) | 世界の危機と真エンド（シードごとの危機・鍵・平凡な主人公） |
 | [docs/09_skills_and_magic.md](docs/09_skills_and_magic.md) | 技・魔法（技能→技→進化・合成・ユニーク、相性、構成） |
+| [docs/10_world_generation.md](docs/10_world_generation.md) | 世界の広さ（シードごとの地方・町・地域・ダンジョン・旅） |
 | [docs/07_story.md](docs/07_story.md) | ストーリー（物・場所・NPCの小さな物語のネットワーク）とLLM生成パイプライン |
 | [docs/meeting_2026-10-25.md](docs/meeting_2026-10-25.md) | 設計会議の議事録（5視点×2ラウンド） |
 | [docs/research_notes.md](docs/research_notes.md) | 参考ゲームの調査メモ（出典付き） |

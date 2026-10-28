@@ -20,6 +20,11 @@
 | M-01 | [M-01_magic.md](M-01_magic.md) | K-02 | todo | **最優先（刺激）**。魔法（6属性・無属性・生活・治癒）・詠唱・付与 |
 | K-03 | [K-03_evolution.md](K-03_evolution.md) | M-01 | todo | **最優先（刺激）**。技の進化・合成・ユニークスキル |
 | P-02 | [P-02_more_actions.md](P-02_more_actions.md) | P-01, F-05, K-01 | done | **最優先（刺激）**。行動の種類を増やす。life.json＋items.json（zod/相互参照）、core/life（散策・採集・相場・賭け・依頼・旅の決定論抽選）、11コマンド＋13イベント、食事→睡眠の質・祈り→安眠・野営、仲の値（不在は会えない）、市場は町×日次の相場、隣町ベルン（場所・注文・NPC・宿）、GameState v18＋移行、life 画面10種＋見取り図の町替え。全ゲート緑・e2e 64件全通過 |
+| G-01 | [G-01_region_gen.md](G-01_region_gen.md) | ― | todo | **最優先（ステージ）**。地方の生成：町6〜9・地域15〜25をシードから |
+| G-04 | [G-04_bestiary.md](G-04_bestiary.md) | G-01 | todo | **最優先（ステージ）**。敵60〜80・生物群系の亜種・素材 |
+| G-05 | [G-05_scenery.md](G-05_scenery.md) | G-01 | todo | **最優先（ステージ）**。情景の部品で型ごとの背景 |
+| G-02 | [G-02_travel_map.md](G-02_travel_map.md) | G-01 | todo | **最優先（ステージ）**。地方の地図と旅 |
+| G-03 | [G-03_dungeons.md](G-03_dungeons.md) | G-01, G-04 | todo | **最優先（ステージ）**。ダンジョンの生成 |
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
 | W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | done | 危機の筋書きと世界の備え（docs/08_world_crisis.md） |
 | W-02 | [W-02_touchpoints.md](W-02_touchpoints.md) | W-01 | done | 接点（危機が日常に混ざる）と寄与 |
