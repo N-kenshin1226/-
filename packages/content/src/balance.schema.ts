@@ -385,6 +385,96 @@ export const balanceSchema = z
         styleShareMin: z.number().min(0).max(1),
       })
       .strict(),
+    /**
+     * 魔法（M-01、docs/09 §4〜5）。core/magic の MagicConfig に対応。
+     * 適性の分布・詠唱・中断・呪文威力・属性相性・生活魔法・付与の係数
+     */
+    magic: z
+      .object({
+        /* 適性（seed×主体×属性の対称三角分布：mean ± spread。主人公もNPCも同じ分布） */
+        aptitudeMean: z.number().min(0).max(1),
+        aptitudeSpread: z.number().min(0).max(0.5),
+        /** 適性 → 威力係数 = aptitudePowerBase + 適性 × aptitudePowerScale */
+        aptitudePowerBase: z.number().nonnegative(),
+        aptitudePowerScale: z.number().nonnegative(),
+        /* 呪文威力 = (powerBase + 技能 × perSkill + 精神 × perSpirit) × def.power × Lv係数 × 適性係数 */
+        powerBase: z.number().nonnegative(),
+        powerPerSkill: z.number().nonnegative(),
+        powerPerSpirit: z.number().nonnegative(),
+        /* 詠唱：実効 tick = max(castMin, (cast − 技能 × castPerSkill) × (1 − castSpeed)) */
+        castPerSkill: z.number().nonnegative(),
+        castMin: z.number().int().positive(),
+        /* 詠唱の中断：確率 = clamp(interruptMin..Max, interruptBase − 魔力操作 × interruptPerManaSkill) */
+        interruptBase: z.number().min(0).max(1),
+        interruptPerManaSkill: z.number().nonnegative(),
+        interruptMin: z.number().min(0).max(1),
+        interruptMax: z.number().min(0).max(1),
+        /** 戦闘中、経過 tick ごとに戻る魔力 */
+        manaRegenPerTick: z.number().nonnegative(),
+        /** 属性の相性（09 §5。布石の状態 × 打ち手の属性/性質で発火） */
+        interactions: z
+          .array(
+            z
+              .object({
+                id: z.string().min(1),
+                /** 敵に掛かっている必要のある状態 */
+                primer: z.enum([
+                  "bleed",
+                  "stun",
+                  "stagger",
+                  "slow",
+                  "poison",
+                  "wet",
+                  "oil",
+                  "frozen",
+                  "burn",
+                  "shock",
+                ]),
+                /** 打ち手の照合キー（呪文の属性 or 打撃の性質） */
+                strike: z.string().min(1),
+                damage: z.number().positive(),
+                status: z
+                  .enum([
+                    "bleed",
+                    "stun",
+                    "stagger",
+                    "slow",
+                    "poison",
+                    "wet",
+                    "oil",
+                    "frozen",
+                    "burn",
+                    "shock",
+                  ])
+                  .optional(),
+                statusTicks: z.number().int().positive().optional(),
+                statusPower: z.number().nonnegative().optional(),
+                extend: z.number().int().positive().optional(),
+                consume: z.boolean(),
+              })
+              .strict(),
+          )
+          .min(1),
+        /** 生活魔法が効く仕事の種目（hook → 対象の仕事 kind 一覧） */
+        lifeWorkKinds: z
+          .array(
+            z
+              .object({ hook: z.string().min(1), kinds: z.array(z.string().min(1)).min(1) })
+              .strict(),
+          )
+          .min(1),
+        /** 付与（エンチャント。鍛冶＋火魔法が要件） */
+        enchant: z
+          .object({
+            smithing: z.number().nonnegative(),
+            fireMagic: z.number().nonnegative(),
+            mana: z.number().nonnegative(),
+            maxLevel: z.number().int().positive(),
+            atkPerLevel: z.number().nonnegative(),
+          })
+          .strict(),
+      })
+      .strict(),
     /** docs/03 §2 ミニゲーム。各エンジン・皮の係数 */
     minigame: z
       .object({

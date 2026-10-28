@@ -100,7 +100,17 @@ export type Screen =
   | { name: "heir"; prev: GameState; cause: "retire" | "oldAge" };
 
 /** 日々の営みの窓の種類（P-02。Screen "life" の view） */
-export type LifeView = "market" | "cook" | "gamble" | "social" | "board" | "pray" | "eat" | "shelf";
+export type LifeView =
+  | "market"
+  | "cook"
+  | "gamble"
+  | "social"
+  | "board"
+  | "pray"
+  | "eat"
+  | "shelf"
+  /** 魔法（M-01）：生活魔法の使用と武器への付与 */
+  | "spells";
 
 /** step を1回実行する共通コールバック（App が持ち、各画面に props で渡す） */
 export type Act = (

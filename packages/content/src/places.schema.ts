@@ -66,6 +66,8 @@ export const PLACE_ACTION_TYPES = [
   "eat",
   "shelf",
   "journey",
+  /** 魔法（M-01）：生活魔法の使用と武器への付与（エンチャント）の窓 */
+  "magic",
 ] as const;
 
 export type PlaceActionType = (typeof PLACE_ACTION_TYPES)[number];

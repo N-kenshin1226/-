@@ -6,9 +6,19 @@
  *   コマンドを送るだけ —— 品揃え・材料・残り日数は content/state から引く
  */
 import { useState } from "react";
-import { canAct, npcAway, npcGoneReason, type GameState } from "@trace/core";
+import {
+  canAct,
+  canEnchant,
+  canLifeSpell,
+  enchantLevel,
+  lifeBuffOf,
+  npcAway,
+  npcGoneReason,
+  type GameState,
+} from "@trace/core";
 import { life, voices } from "@trace/content";
 import {
+  allArtDefs,
   bondOfNow,
   cfg,
   canErrand,
@@ -23,6 +33,7 @@ import {
   t,
   townName,
   townOf,
+  weaponDefs,
 } from "../game.js";
 import {
   CommandMenu,
@@ -142,6 +153,8 @@ export function LifeScreen({
       return <EatView state={state} act={act} back={back} />;
     case "shelf":
       return <ShelfView state={state} back={back} />;
+    case "spells":
+      return <SpellView state={state} act={act} back={back} />;
   }
 }
 
@@ -472,6 +485,84 @@ function ShelfView({ state, back }: { state: GameState; back: () => void }) {
       head="――家の棚に並ぶ品々。"
       testId="screen-shelf"
       entries={entries}
+      onBack={back}
+    />
+  );
+}
+
+/* ── 魔法（M-01） ──
+ * 覚えた生活魔法の使用と、武器への付与（エンチャント）。
+ * 生活魔法はカウンタに「掛け」を残し、対応する仕事・行動で消費される */
+function SpellView({ state, act, back }: { state: GameState; act: Act; back: () => void }) {
+  const magic = cfg.magic;
+  const hooks = t.text.lifeSpellLines;
+
+  // 覚えている生活魔法（kind life・life hook 付き）
+  const learned = Object.entries(state.player.arts)
+    .map(([id, a]) => ({ id, lv: a.lv, def: allArtDefs[id] }))
+    .filter((x) => x.lv >= 1 && x.def?.kind === "life" && x.def.spell?.life !== undefined);
+
+  const lifeEntries: MenuEntry[] =
+    learned.length === 0
+      ? [{ kind: "header" as const, text: "  ――覚えている生活魔法はない。" }]
+      : learned.map(({ id, lv, def }): MenuEntry => {
+          const hook = def!.spell!.life!.hook;
+          const chk = canLifeSpell(state, id, allArtDefs);
+          const buff = lifeBuffOf(state, hook);
+          const parts = [`魔力${def!.spell!.mana}`, `Lv${lv}`];
+          if (hooks[hook] !== undefined) parts.push(hooks[hook]);
+          if (buff > 0) parts.push(`（掛かっている +${Math.round(buff * 10) / 10}）`);
+          if (!chk.ok && chk.reason === "mana") parts.push("（魔力が足りない）");
+          return {
+            id: `life-spell-${id}`,
+            label: `《${def!.name}》`,
+            sub: parts.join("・"),
+            disabled: !chk.ok,
+            onPick: () => act({ type: "lifeSpell", id }),
+          };
+        });
+
+  // 武器への付与（所持している武器ごと。要件を満たさない場合は理由を sub に出す）
+  const ench = magic?.enchant;
+  const reasonText: Record<string, string> = {
+    weapon: "武器を持っていない",
+    smithing: `鍛冶が足りない（要${ench?.smithing ?? 0}）`,
+    fire: `火魔法が足りない（要${ench?.fireMagic ?? 0}）`,
+    mana: `魔力が足りない（要${ench?.mana ?? 0}）`,
+    maxed: "付与は極まった",
+  };
+  const enchantEntries: MenuEntry[] =
+    state.player.weapons.length === 0
+      ? [{ kind: "header" as const, text: "  ――付与する武器を持っていない。" }]
+      : state.player.weapons.map((w): MenuEntry => {
+          const level = enchantLevel(state, w);
+          const chk: { ok: boolean; reason?: string } =
+            magic !== undefined ? canEnchant(state, w, magic) : { ok: false };
+          return {
+            id: `enchant-${w}`,
+            label: `《${weaponDefs[w]?.name ?? w}》`,
+            sub: `付与 ${level}/${ench?.maxLevel ?? 0}段${chk.ok ? `（魔力${ench!.mana}）` : `（${reasonText[chk.reason ?? "weapon"]}）`}`,
+            disabled: !chk.ok,
+            onPick: () => act({ type: "enchant", weapon: w }),
+          };
+        });
+
+  return (
+    <LifeWindow
+      kicker="SPELLS"
+      title="魔法を整える"
+      head={`――学んだ生活魔法と武器への付与。残りの魔力 ${Math.round(state.player.mana * 10) / 10}`}
+      testId="screen-spells"
+      entries={[
+        { kind: "header", text: "生活魔法" },
+        ...lifeEntries,
+        { kind: "divider" },
+        {
+          kind: "header",
+          text: `付与（鍛冶${ench?.smithing ?? 0}・火魔法${ench?.fireMagic ?? 0}が要）`,
+        },
+        ...enchantEntries,
+      ]}
       onBack={back}
     />
   );

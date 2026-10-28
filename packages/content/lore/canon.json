@@ -125,6 +125,16 @@
       "id": "npc.cum",
       "name": "クム",
       "role": "炭焼き"
+    },
+    {
+      "id": "npc.rina",
+      "name": "リナ",
+      "role": "旅の魔術師"
+    },
+    {
+      "id": "npc.sevan",
+      "name": "セヴァン",
+      "role": "森の隠者"
     }
   ],
   "facts": [

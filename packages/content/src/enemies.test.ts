@@ -50,7 +50,7 @@ describe("enemies.json", () => {
 describe("enemiesByArea", () => {
   it("エリア出現順にグループ化し、敵はファイル順を保つ", () => {
     const grouped = enemiesByArea();
-    expect(grouped.map(([a]) => a)).toEqual(["forest", "highway"]);
+    expect(grouped.map(([a]) => a)).toEqual(["forest", "highway", "abyss"]);
     for (const [, group] of grouped) {
       const areas = new Set(group.map((e) => e.area));
       expect(areas.size).toBe(1);

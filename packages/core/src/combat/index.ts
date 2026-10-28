@@ -1,11 +1,21 @@
 import {
+  COMBAT_ART_KINDS,
   kiMaxOf,
+  manaMaxOf,
   type ArtDef,
   type ArtsConfig,
   type BodyPart,
   type DamageType,
+  type MagicElement,
   type StatusId,
 } from "../arts/index.js";
+import {
+  castTicksOf,
+  interactionOf,
+  interruptChanceOf,
+  spellPowerOf,
+  type MagicConfig,
+} from "../magic/index.js";
 import { ctxRng, type MiniGameCtx } from "../minigame/types.js";
 import { linkSum, type SkillLinks } from "../links/index.js";
 import type { Rng } from "../rng/index.js";
@@ -44,6 +54,12 @@ export interface EnemyMove {
   id: string;
   name: string;
   power: number;
+  /**
+   * 呪文として放つ大技（M-01）。spells.json の呪文 id を持つ技は
+   * 「敵の魔法」として扱い、観察中に発動を見届けると見取り稽古で
+   * その呪文の見知り（spell.seen.<id>）を得られる
+   */
+  spell?: string;
 }
 
 export interface EnemyPatternStep {
@@ -235,6 +251,12 @@ export interface CombatConfig {
    * 耐性/弱点・パッシブ構成が効く。省略時は従来の戦闘のまま
    */
   arts?: ArtsConfig;
+  /**
+   * 魔法（M-01、balance.magic）。arts と併用する：
+   * spell 節を持つ定義は呪文として、魔力消費・詠唱・中断・属性相性が効く。
+   * 省略時は spell 節のある技もただの武技として解決される（魔力を使わない）
+   */
+  magic?: MagicConfig;
 }
 
 /**
@@ -254,6 +276,8 @@ export interface Telegraph {
   name: string;
   /** 発動する tick */
   dueTick: number;
+  /** 呪文の詠唱（M-01。敵の魔法は spell id が載り、UI は「詠唱」として描く） */
+  spell?: string;
 }
 
 export interface CombatEvent {
@@ -290,23 +314,42 @@ export interface CombatEvent {
     /** 敵が気絶して行動を逃した */
     | "stunned"
     /** 受け流しでいなした（被弾は parryFactor に減る） */
-    | "parried";
+    | "parried"
+    /* ── M-01：魔法 ── */
+    /** 呪文の詠唱を始めた（詠唱中に攻撃されると中断されうる） */
+    | "playerCast"
+    /** 呪文が発動して当たった・回復した（art に呪文ID） */
+    | "playerSpell"
+    /** 呪文は発動したが外れた */
+    | "playerSpellMiss"
+    /** 詠唱が攻撃で中断された（魔力は戻らない） */
+    | "castBroken"
+    /** 属性の相性が発火した（濡れ＋雷・油＋火・凍結＋打撃・風＋火） */
+    | "reaction"
+    /** 観察中に敵の呪文の発動を見届けた（見取り稽古。spell に呪文ID） */
+    | "spellSeen";
   text: string;
   damage?: number;
-  /** 会心（playerAttack / playerArt / enemyHit） */
+  /** 回復量（playerSpell の治癒呪文） */
+  heal?: number;
+  /** 会心（playerAttack / playerArt / playerSpell / enemyHit） */
   crit?: boolean;
   /** 予兆の大技による被弾・回避（enemyHit / enemyMiss） */
   big?: boolean;
   /** 防御・鉄壁で受け止めた被弾（enemyHit） */
   guarded?: boolean;
-  /** 隙への反撃としての一撃（playerAttack / playerArt） */
+  /** 隙への反撃としての一撃（playerAttack / playerArt / playerSpell） */
   counter?: boolean;
-  /** 使った技のID（playerArt / playerArtMiss / playerArtFail） */
+  /** 使った技・呪文のID（playerArt / playerArtMiss / playerArtFail / playerCast / playerSpell / playerSpellMiss / castBroken） */
   art?: string;
-  /** 掛かった・消えた状態（statusApplied / statusTick） */
+  /** 掛かった・消えた状態（statusApplied / statusTick / reaction の布石消費） */
   status?: StatusId;
   /** 壊れた部位（partBroken） */
   part?: BodyPart;
+  /** 発火した相性の id（reaction） */
+  reaction?: string;
+  /** 敵が放った呪文（telegraph の spell / spellSeen の見取り先） */
+  spell?: string;
 }
 
 export interface CombatState {
@@ -365,6 +408,8 @@ export interface CombatState {
   playerSkills: Record<string, { value: number }>;
   /** 開始時の筋力（持ち替え時の攻撃力を引き直す参照） */
   playerStrength: number;
+  /** 開始時の精神（M-01：呪文威力の係数に使う） */
+  playerSpirit: number;
   /** 与ダメージの総合倍率（称号等の attackFactor × combat.attack リンク） */
   playerAttackFactor: number;
   /** 武器係数を掛ける前の行動 CT（ctBase − 敏捷×ctPerAgility） */
@@ -408,6 +453,19 @@ export interface CombatState {
   afterEvade: boolean;
   /** 直前の行動が武技ならそのID（chain.* タグ用） */
   lastArtId: string | null;
+  /* ── M-01：魔力・詠唱・適性・見取り ── */
+  /** 魔力（開始時点の残り。戦闘をまたいで一日は続く） */
+  playerMana: number;
+  playerManaMax: number;
+  /** tick あたりの魔力回復（経過時間に掛ける。パッシブ manaRegen を含む） */
+  manaRegenPerTick: number;
+  /** 属性ごとの適性（0〜1。呪文の威力係数に畳む） */
+  playerApt: Partial<Record<MagicElement, number>>;
+  /**
+   * 観察中に見届けた敵の呪文（見取り稽古。重複なし）。
+   * step が flags["spell.seen.<id>"] に畳む
+   */
+  seenSpells: string[];
   log: CombatEvent[];
 }
 
@@ -423,6 +481,11 @@ export interface CombatResult {
   kiLeft: number;
   /** この戦闘の使用記録（09 §7.1。step が artTags/skillTags に畳む） */
   uses: { id?: string; skill: string; tags: string[] }[];
+  /* ── M-01 ── */
+  /** 戦闘終了時点の魔力（GameState.player.mana へ書き戻す） */
+  manaLeft: number;
+  /** 観察中に見届けた敵の呪文（step が flags["spell.seen.<id>"] に畳む） */
+  seenSpells: string[];
 }
 
 const clamp = (lo: number, hi: number, v: number) => Math.min(hi, Math.max(lo, v));
@@ -439,6 +502,11 @@ export interface CombatPlayer {
   /* ── K-02 ── */
   /** 現在の気力（GameState.player.ki。省略時は上限から始まる） */
   ki?: number;
+  /* ── M-01 ── */
+  /** 現在の魔力（GameState.player.mana。省略時は上限から始まる） */
+  mana?: number;
+  /** 属性ごとの適性（0〜1。playerAptitudes で導出して渡す。省略時は全属性0.5） */
+  aptitude?: Partial<Record<MagicElement, number>>;
   /** 習得済み技のレベル表（GameState.player.arts の id→lv の薄い形） */
   arts?: Record<string, { lv: number }>;
   /**
@@ -541,7 +609,8 @@ export function artSlotsOf(player: CombatPlayer, cfg: CombatConfig): { def: ArtD
     if (id === null) continue;
     const def = table[id];
     const lv = player.arts?.[id]?.lv ?? 0;
-    if (def === undefined || def.kind === "passive" || lv < 1) continue;
+    // M-01：戦闘スロットの種別は attack/response/support/heal（生活魔法は入らない）
+    if (def === undefined || !COMBAT_ART_KINDS.includes(def.kind) || lv < 1) continue;
     out.push({ def, lv });
   }
   return out;
@@ -572,10 +641,12 @@ export function startCombat(
   attackFactor = 1,
 ): CombatState {
   const p = playerCombatStats(player, cfg, attackFactor);
-  // K-02：パッシブを畳んだ上で気力の上限を引く（pa_grit などが上限に効く）
+  // K-02：パッシブを畳んだ上で気力・魔力の上限を引く（pa_grit・pa_spring などが上限に効く）
   const passiveFx = passiveFxOf(player, cfg);
   const kiMax =
     cfg.arts !== undefined ? kiMaxOf(player.stats, cfg.arts, passiveFx["kiMax"] ?? 0) : 0;
+  const manaMax =
+    cfg.arts !== undefined ? manaMaxOf(player.stats, cfg.arts, passiveFx["manaMax"] ?? 0) : 0;
   return {
     tick: 0,
     turn: 0,
@@ -611,6 +682,7 @@ export function startCombat(
     ownedWeapons: p.ownedWeapons,
     playerSkills: player.skills,
     playerStrength: player.stats["strength"] ?? 0,
+    playerSpirit: player.stats["spirit"] ?? 0,
     playerAttackFactor: attackFactor * (1 + p.links.attack),
     playerBaseCt: cfg.ctBase - p.agility * cfg.ctPerAgility,
     weaponHitBonus: p.weapon.hitBonus,
@@ -634,6 +706,12 @@ export function startCombat(
     afterParry: false,
     afterEvade: false,
     lastArtId: null,
+    // M-01：魔力・適性・見取り（cfg.magic/arts が無い世界では 0 のまま動く）
+    playerMana: player.mana ?? manaMax,
+    playerManaMax: manaMax,
+    manaRegenPerTick: (cfg.magic?.manaRegenPerTick ?? 0) + (passiveFx["manaRegen"] ?? 0),
+    playerApt: player.aptitude ?? {},
+    seenSpells: [],
     log: [],
   };
 }
@@ -831,8 +909,9 @@ export function turn(
       push({ type: "partBroken", part, text: `――${enemy.name}の${PART_NAMES[part]}を壊した。` });
     }
   };
-  /** 状態の付与（敵の耐性・頭の破壊・パッシブ・技Lvを含む1回判定） */
-  const applyStatus = (def: ArtDef, lvStatus: number, hitIdx: number) => {
+  /** 状態の付与（敵の耐性・頭の破壊・パッシブ・技Lvを含む1回判定）。
+   *  atTick は付与される拍（詠唱が途中拍で解決される呪文はその拍を渡す） */
+  const applyStatus = (def: ArtDef, lvStatus: number, hitIdx: number, atTick = s.tick) => {
     const st = def.status;
     if (st === undefined || arts === undefined || s.enemyHp <= 0) return;
     const head = s.brokenParts.includes("head") ? arts.breakStatusFactor : 1;
@@ -841,12 +920,68 @@ export function turn(
     if (chance <= 0) return;
     const r = ctxRng(ctx, `st-${s.turn}-${hitIdx}`);
     if (r.next() >= Math.min(1, chance)) return;
-    s.enemyStatus[st.id] = { until: s.tick + st.ticks, power: st.power };
-    push({
-      type: "statusApplied",
-      status: st.id,
-      text: `――${enemy.name}は${STATUS_NAMES[st.id]}。`,
-    });
+    s.enemyStatus[st.id] = { until: atTick + st.ticks, power: st.power };
+    push(
+      {
+        type: "statusApplied",
+        status: st.id,
+        text: `――${enemy.name}は${STATUS_NAMES[st.id]}。`,
+      },
+      atTick,
+    );
+  };
+
+  /* ── M-01：属性の相性（09 §5） ──
+   * 敵に掛かった布石の状態と打ち手（呪文属性 or 打撃の性質）が噛み合うと
+   * 威力倍率＋追加の状態（感電・延焼）＋布石の消費/延長が起きる。
+   * 戻り値は発火した相性の威力倍率（未発火は 1）
+   */
+  const react = (strikeKey: string, hitTick: number): number => {
+    if (cfg.magic === undefined) return 1;
+    const it = interactionOf(s.enemyStatus, strikeKey, hitTick, cfg.magic);
+    if (it === undefined) return 1;
+    if (it.consume) s.enemyStatus[it.primer] = undefined;
+    if (it.extend !== undefined && s.enemyStatus[it.primer] !== undefined)
+      s.enemyStatus[it.primer] = {
+        ...s.enemyStatus[it.primer]!,
+        until: s.enemyStatus[it.primer]!.until + it.extend,
+      };
+    if (it.status !== undefined && s.enemyHp > 0) {
+      s.enemyStatus[it.status] = {
+        until: hitTick + (it.statusTicks ?? 10),
+        power: it.statusPower ?? 1,
+      };
+    }
+    push(
+      {
+        type: "reaction",
+        reaction: it.id,
+        text: `――${enemy.name}は${REACTION_NAMES[it.id] ?? "相性を突かれた"}。`,
+      },
+      hitTick,
+    );
+    return it.damage;
+  };
+
+  /* ── M-01：詠唱の途中（この行動枠の中で解決予定の呪文） ── */
+  let pendingSpell: { a: { def: ArtDef; lv: number }; due: number } | null = null;
+  /** 詠唱中の被弾で中断を転がす（M-01「攻撃されると中断されうる」） */
+  let interruptIdx = 0;
+  const tryInterrupt = (hitTick: number) => {
+    if (cfg.magic === undefined || pendingSpell === null) return;
+    if (pendingSpell.due <= hitTick) return; // もう飛び出している
+    const chance = interruptChanceOf(s.playerSkills["mana"]?.value ?? 0, cfg.magic);
+    const r = ctxRng(ctx, `int-${s.turn}-${interruptIdx++}`);
+    if (r.next() >= chance) return;
+    push(
+      {
+        type: "castBroken",
+        art: pendingSpell.a.def.id,
+        text: `――《${pendingSpell.a.def.name}》の詠唱が途切れた。`,
+      },
+      hitTick,
+    );
+    pendingSpell = null;
   };
   /**
    * 技の一撃（攻撃技・割り込みの共通部品）。
@@ -869,6 +1004,8 @@ export function turn(
     let resist = enemy.resist?.[dtype] ?? 1;
     if (a.def.pierceArmor === true && resist < 1) resist = 1;
     const lvPower = arts !== undefined ? 1 + (a.lv - 1) * arts.levelPowerFactor : 1;
+    // M-01：打撃の性質での相性（凍結＋打撃＝砕く など。布石が立っていれば威力が伸びる）
+    const reactionFactor = react(dtype, s.tick);
     const dmg = round1(
       s.playerAttack *
         (a.def.power ?? 1) *
@@ -878,6 +1015,7 @@ export function turn(
         (opening ? s.openingFactor : 1) *
         (staggered ? (arts?.staggerFactor ?? 1) : 1) *
         resist *
+        reactionFactor *
         (1 + (s.passiveFx[`dmg.${dtype}`] ?? 0)) *
         (enemy.beast === true ? 1 + s.links.beastAttack : 1) *
         (s.brokenParts.includes("body") ? (arts?.breakDamageFactor ?? 1) : 1) *
@@ -988,12 +1126,153 @@ export function turn(
     }
   };
 
+  /* ── M-01：呪文の解決 ──
+   * 呪文の一撃。武技と同じ命中・会心・揺らぎの手続きだが、威力は武器の
+   * 攻撃力ではなく呪文威力（技能・精神・適性・Lv の積）から引き、
+   * 耐性は「魔」を、相性は呪文の属性を見る
+   */
+  const spellStrike = (
+    a: { def: ArtDef; lv: number },
+    hitIdx: number,
+    atTick: number,
+  ): { dmg: number; crit: boolean; hit: boolean } => {
+    const sp = a.def.spell!;
+    const magic = cfg.magic!;
+    const r = ctxRng(ctx, `sp-${s.turn}-${hitIdx}`);
+    const opening = s.openingFactor > 0 && atTick <= s.openingUntil;
+    const chance = clamp(0, 1, hitChance(s, enemy, cfg) + (a.def.hitBonus ?? 0));
+    if (!opening && r.next() >= chance) return { dmg: 0, crit: false, hit: false };
+    const staggered = s.enemyStatus.stagger !== undefined && s.enemyStatus.stagger.until > atTick;
+    const heavyCrit = a.def.heavy === true && staggered;
+    const crit = opening || heavyCrit || r.next() < critChance(s, cfg);
+    const spread = cfg.varianceMin + r.next() * (cfg.varianceMax - cfg.varianceMin);
+    let resist = enemy.resist?.["magic"] ?? 1;
+    if (a.def.pierceArmor === true && resist < 1) resist = 1;
+    const skillValue = s.playerSkills[a.def.skill]?.value ?? 0;
+    const apt = s.playerApt[sp.element] ?? 0.5;
+    const lvFactor = arts?.levelPowerFactor ?? 0;
+    const power = spellPowerOf(a.def, a.lv, skillValue, s.playerSpirit, apt, lvFactor, magic);
+    // M-01：属性の相性（濡れ＋雷・油＋火・風＋火 など。布石が立っていれば威力が伸びる）
+    const reactionFactor = react(sp.element, atTick);
+    const dmg = round1(
+      power *
+        spread *
+        (crit ? cfg.critFactor : 1) *
+        (opening ? s.openingFactor : 1) *
+        (staggered ? (arts?.staggerFactor ?? 1) : 1) *
+        resist *
+        reactionFactor *
+        (1 + (s.passiveFx["dmg.magic"] ?? 0)) *
+        (s.brokenParts.includes("body") ? (arts?.breakDamageFactor ?? 1) : 1) *
+        (1 + (s.passiveFx["attack"] ?? 0)),
+    );
+    s.enemyHp -= dmg;
+    addPartDamage(a.def.part ?? "body", dmg);
+    if (heavyCrit) s.enemyStatus.stagger = undefined;
+    return { dmg, crit, hit: true };
+  };
+
+  /** 呪文の発動（詠唱が終わった拍に呼ぶ。回復・補助・攻撃の3通り） */
+  const resolveSpell = (a: { def: ArtDef; lv: number }, atTick: number) => {
+    const sp = a.def.spell!;
+    const lvStatus = arts !== undefined ? 1 + (a.lv - 1) * arts.levelStatusFactor : 1;
+    switch (a.def.kind) {
+      case "attack": {
+        const hits = a.def.hits ?? 1;
+        let total = 0;
+        let critAny = false;
+        let hitAny = false;
+        const opening = s.openingFactor > 0 && atTick <= s.openingUntil;
+        for (let i = 0; i < hits && s.enemyHp > 0; i++) {
+          const r = spellStrike(a, i, atTick);
+          if (!r.hit) continue;
+          hitAny = true;
+          total += r.dmg;
+          critAny ||= r.crit;
+        }
+        if (opening) {
+          s.openingUntil = 0;
+          s.openingFactor = 0;
+        }
+        if (!hitAny) {
+          push(
+            {
+              type: "playerSpellMiss",
+              art: a.def.id,
+              text: `《${a.def.name}》――${enemy.name}に躱された。`,
+            },
+            atTick,
+          );
+        } else {
+          push(
+            {
+              type: "playerSpell",
+              art: a.def.id,
+              damage: total,
+              ...(critAny ? { crit: true } : {}),
+              ...(opening ? { counter: true } : {}),
+              text: `《${a.def.name}》――${enemy.name}に ${total} の傷。`,
+            },
+            atTick,
+          );
+          // 吸収系：与えた傷の割合を自分が回復する（09 §4。命を吸う術）
+          if ((sp.drain ?? 0) > 0) {
+            const back = Math.max(1, Math.round(total * sp.drain!));
+            s.playerHp = Math.min(s.playerHpMax, s.playerHp + back);
+          }
+          applyStatus(a.def, lvStatus, 0, atTick);
+        }
+        break;
+      }
+      case "heal": {
+        const skillValue = s.playerSkills[a.def.skill]?.value ?? 0;
+        const apt = s.playerApt[sp.element] ?? 0.5;
+        const lvFactor = arts?.levelPowerFactor ?? 0;
+        const amount = Math.max(
+          1,
+          Math.round(
+            spellPowerOf(a.def, a.lv, skillValue, s.playerSpirit, apt, lvFactor, cfg.magic!) *
+              (sp.heal ?? 1),
+          ),
+        );
+        const before = s.playerHp;
+        s.playerHp = Math.min(s.playerHpMax, s.playerHp + amount);
+        push(
+          {
+            type: "playerSpell",
+            art: a.def.id,
+            heal: s.playerHp - before,
+            text: `《${a.def.name}》――傷が ${s.playerHp - before} 塞がる。`,
+          },
+          atTick,
+        );
+        break;
+      }
+      case "support": {
+        // 補助呪文（布石を掛ける）：ダメージを伴わず状態だけを掛ける
+        push({ type: "playerSpell", art: a.def.id, text: `《${a.def.name}》。` }, atTick);
+        applyStatus(a.def, lvStatus, 0, atTick);
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
   // 1. プレイヤー行動
   const artAction = typeof action === "object" && action.type === "art" ? action : null;
   const art = artAction !== null ? s.artSlots.find((x) => x.def.id === artAction.id) : undefined;
-  // 武技はスロット入り＋装備中の武器技能のものだけ使える（09 §6。持ち替えたら技も替わる）
-  const artUsable = art !== undefined && arts !== undefined && art.def.skill === weaponSkillNow;
-  const endTick = s.tick + s.playerCt * (artUsable ? art.def.ct : 1);
+  // 武技はスロット入り＋装備中の武器技能のものだけ使える（09 §6。持ち替えたら技も替わる）。
+  // M-01：呪文は武器の構えに関係なく唱えられる（剣を持ったまま放つ）
+  const isSpell = art !== undefined && art.def.spell !== undefined;
+  const artUsable =
+    art !== undefined && arts !== undefined && (isSpell || art.def.skill === weaponSkillNow);
+  // M-01：詠唱の長さ（技能とパッシブで短縮。詠唱が CT を超えると行動全体が詠唱に伸びる）
+  const spellCastTicks =
+    isSpell && cfg.magic !== undefined
+      ? castTicksOf(art.def, s.playerSkills[art.def.skill]?.value ?? 0, s.passiveFx, cfg.magic)
+      : 0;
+  const endTick = s.tick + Math.max(s.playerCt * (artUsable ? art.def.ct : 1), spellCastTicks);
 
   if (artAction !== null) {
     // 武技（K-02）：気力が足りない・構えの合わない技は行動だけが空費される
@@ -1003,6 +1282,49 @@ export function turn(
         art: artAction.id,
         text: "――その技はいまの構えでは使えない。",
       });
+    } else if (isSpell) {
+      // 呪文（M-01）：気力ではなく魔力を消費し、詠唱の終わる拍に発動する。
+      // 魔力が足りなければ行動だけが空費される。詠唱中の被弾は中断されうる
+      // （中断判定は被弾のたびに tryInterrupt が転がす）
+      const sp = art.def.spell!;
+      if (cfg.magic === undefined) {
+        push({
+          type: "playerArtFail",
+          art: art.def.id,
+          text: "――この世界では術式が組めない。",
+        });
+      } else if (s.playerMana < sp.mana) {
+        push({
+          type: "playerArtFail",
+          art: art.def.id,
+          text: `――魔力が足りず、《${art.def.name}》は唱えられない。`,
+        });
+      } else {
+        s.playerMana -= sp.mana;
+        use = {
+          id: art.def.id,
+          skill: art.def.skill,
+          tags: [...baseTags, "spell", `el.${sp.element}`, `tier.${sp.tier}`],
+        };
+        if (s.lastArtId !== null) use.tags.push(`chain.${s.lastArtId}`);
+        if (art.def.part !== undefined) use.tags.push(`aim.${art.def.part}`);
+        if (spellCastTicks <= 0) {
+          // 無詠唱（instantCast）—— 唱え始めと同じ拍に放つ
+          push({
+            type: "playerCast",
+            art: art.def.id,
+            text: `――《${art.def.name}》が瞬時に放たれた。`,
+          });
+          resolveSpell(art, s.tick);
+        } else {
+          push({
+            type: "playerCast",
+            art: art.def.id,
+            text: `――《${art.def.name}》の詠唱を始めた。`,
+          });
+          pendingSpell = { a: art, due: s.tick + spellCastTicks };
+        }
+      }
     } else if (s.playerKi < art.def.ki) {
       push({
         type: "playerArtFail",
@@ -1150,6 +1472,19 @@ export function turn(
   };
   const absorb = (tick: number, move: EnemyMove, big: boolean) => {
     const r = ctxRng(ctx, `evd-${s.turn}-${absorbIdx++}`);
+    // M-01：敵の呪文（spell を持つ大技）を見届けると見取り稽古でその呪文を見知る。
+    // 「観察」の目を通していなければ理は読めない（09 §4「観察して耐える」）
+    if (move.spell !== undefined && s.observed && !s.seenSpells.includes(move.spell)) {
+      s.seenSpells.push(move.spell);
+      push(
+        {
+          type: "spellSeen",
+          spell: move.spell,
+          text: `――《${move.name}》の理を垣間見た。`,
+        },
+        tick,
+      );
+    }
     // 腕が壊れた敵の大技は威力が落ちる（K-02。09 §5「腕を壊すと大技が出せない」の弱体化）
     const movePower =
       move.power * (big && s.brokenParts.includes("arms") ? (arts?.breakMoveFactor ?? 1) : 1);
@@ -1165,6 +1500,7 @@ export function turn(
       s.damageTaken += dmg;
       s.hitsTaken++;
       s.afterParry = true;
+      tryInterrupt(tick); // M-01：受け流した被弾でも集中は削れる
       push(
         {
           type: "parried",
@@ -1246,6 +1582,7 @@ export function turn(
     s.damageTaken += dmg;
     s.hitsTaken++;
     s.afterGuard = guarded;
+    tryInterrupt(tick); // M-01：詠唱中の被弾は術を途切らせうる
     push(
       {
         type: "enemyHit",
@@ -1267,17 +1604,24 @@ export function turn(
     if (big && guarded) openUp(tick, cfg.counterFactor + (s.passiveFx["counter"] ?? 0));
   };
 
-  // 継続状態（K-02）：この行動枠の間に出血・毒が削った分（表示は1行に畳む）
+  // 継続状態（K-02）：この行動枠の間に出血・毒・燃焼・感電が削った分（表示は1行に畳む）
   const tickDmg: Partial<Record<StatusId, number>> = {};
   let t = s.tick;
   while (t < endTick && s.enemyHp > 0) {
-    // 出血・毒は tick ごとに敵の体力を削る（敵は動けずとも蝕まれていく）
-    for (const id of ["bleed", "poison"] as const) {
+    // 出血・毒・燃焼・感電は tick ごとに敵の体力を削る（敵は動けずとも蝕まれていく）
+    for (const id of ["bleed", "poison", "burn", "shock"] as const) {
       const st = s.enemyStatus[id];
       if (st !== undefined && st.until > t) {
         s.enemyHp -= st.power;
         tickDmg[id] = (tickDmg[id] ?? 0) + st.power;
       }
+    }
+    if (s.enemyHp <= 0) break;
+    // M-01：詠唱の終わる拍に呪文が発動する（中断されていなければ）
+    if (pendingSpell !== null && pendingSpell.due <= t) {
+      const a = pendingSpell.a;
+      pendingSpell = null;
+      resolveSpell(a, t);
     }
     if (s.enemyHp <= 0) break;
     // 予兆の発動
@@ -1301,12 +1645,24 @@ export function turn(
         s.telegraph = {
           move: step.move,
           name: mv?.name ?? step.move,
+          // M-01：呪文の大技は「詠唱」として出す（spell id が載ると見取り稽古の対象）
+          ...(mv?.spell !== undefined ? { spell: mv.spell } : {}),
           // F-04：発動は必ず現在の間合い（この行動の時間枠）の「先」に置く。
           // 予兆が見えてから次の判断まで必ず1手挟まる = 応じる機会が必ずある
           // （この枠の中で完結してしまうと、玩家は見えたのに防げない事故になる）
           dueTick: Math.max(t + (step.ticks ?? enemy.intervalTicks), endTick + 1),
         };
-        push({ type: "telegraph", text: `${enemy.name}に予兆が見える。` }, t);
+        push(
+          {
+            type: "telegraph",
+            ...(mv?.spell !== undefined ? { spell: mv.spell } : {}),
+            text:
+              mv?.spell !== undefined
+                ? `${enemy.name}が詠唱を始めた。`
+                : `${enemy.name}に予兆が見える。`,
+          },
+          t,
+        );
       } else {
         absorb(t, enemy.attack, false);
       }
@@ -1318,6 +1674,13 @@ export function turn(
     }
     t++;
     if (s.playerHp <= 0) break;
+  }
+  // M-01：詠唱がちょうど行動枠の切れ目に終わる呪文（詠唱 > CT で枠が伸びた分）
+  // はループ（t < endTick）の内側に来ない。枠の終わりの拍に発動する
+  if (pendingSpell !== null && pendingSpell.due <= endTick && s.enemyHp > 0) {
+    const a = pendingSpell.a;
+    pendingSpell = null;
+    resolveSpell(a, endTick);
   }
   s.tick = endTick;
 
@@ -1345,6 +1708,11 @@ export function turn(
     s.playerKiMax,
     round1(s.playerKi + s.kiRegenPerTick * (s.tick - startTick)),
   );
+  // M-01：魔力も同じく時間で戻る（09 §2「時間・休息・瞑想・道具で戻る」の時間分）
+  s.playerMana = Math.min(
+    s.playerManaMax,
+    round1(s.playerMana + s.manaRegenPerTick * (s.tick - startTick)),
+  );
 
   if (s.playerHp <= 0) {
     s.done = true;
@@ -1364,13 +1732,19 @@ export function combatResult(s: CombatState): CombatResult {
     ticks: s.tick,
     kiLeft: s.playerKi,
     uses: s.uses,
+    manaLeft: s.playerMana,
+    seenSpells: s.seenSpells,
   };
 }
 
-/** いま使える武技（スロット入り＋装備中の武器技能のもの。UI・簡易判定用） */
+/**
+ * いま使える武技・呪文（M-01）。
+ * 武技はスロット入り＋装備中の武器技能のものだけ —— 持ち替えたら技も替わる。
+ * 呪文は武器の構えに関係なく唱えられる（剣を持ったまま放てる）
+ */
 export function usableArts(state: CombatState, cfg: CombatConfig): { def: ArtDef; lv: number }[] {
   const skill = weaponDefOf(cfg, state.playerWeapon).skill;
-  return state.artSlots.filter((a) => a.def.skill === skill);
+  return state.artSlots.filter((a) => a.def.spell !== undefined || a.def.skill === skill);
 }
 
 /* ── K-02 の表示名（戦闘ログの語彙。cli.json ではなく戦闘内の定型としてここに置く） ── */
@@ -1382,6 +1756,11 @@ const STATUS_NAMES: Record<StatusId, string> = {
   stagger: "体勢を崩した",
   slow: "足が鈍った",
   poison: "毒を受けた",
+  wet: "びしょ濡れになった",
+  oil: "油を被った",
+  frozen: "凍り付いた",
+  burn: "燃え上がった",
+  shock: "感電している",
 };
 
 /** 継続ダメージの畳み込み文（「――敵は◯◯（N）。」） */
@@ -1391,6 +1770,19 @@ const STATUS_TICK_NAMES: Record<StatusId, string> = {
   stagger: "体勢が崩れている",
   slow: "足が鈍っている",
   poison: "毒に蝕まれている",
+  wet: "びしょ濡れになっている",
+  oil: "油を被っている",
+  frozen: "凍り付いている",
+  burn: "燃え続けている",
+  shock: "感電で痺れている",
+};
+
+/** 相性の発火文（「――敵は◯◯。」） */
+const REACTION_NAMES: Record<string, string> = {
+  shock: "濡れた体に電撃が走った",
+  enflame: "油が燃え移って延焼した",
+  shatter: "凍った体が砕かれた",
+  fan: "炎が風に煽られて燃え広がった",
 };
 
 /** 部位の表示名（部位破壊の文） */

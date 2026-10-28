@@ -1,0 +1,12 @@
+{
+  "id": "rumor.grimoire_shadow",
+  "kind": "item",
+  "title": "封された魔導書の噂",
+  "text": "旧街道の外れの廃墟で、黒革の一冊が見つかったという。拾い主は売り払い、今は町の書店の奥に眠るそうだ。「唱えずとも術は放てる」――頁に残された一文が、好事家の間で囁かれている。",
+  "refs": ["place.old_forge"],
+  "reveals": [],
+  "reliability": "rumor",
+  "unlock": {
+    "flag": "found.grimoire_shadow"
+  }
+}

@@ -13,14 +13,25 @@ import type { GameState } from "../state/types.js";
  * 乱数は使わない（習得・レベルは決定的な閾値。戦闘内の抽選は combat が担う）
  */
 
-/** 打撃の性質（03 §4：斬・突・打。magic は M-01 用に予約） */
+/** 打撃の性質（03 §4：斬・突・打＋M-01 の魔法） */
 export type DamageType = "slash" | "pierce" | "blunt" | "magic";
 /** 狙う部位（03 §4「部位」） */
 export type BodyPart = "head" | "body" | "arms" | "legs";
-/** 状態異常（09 §3） */
-export type StatusId = "bleed" | "stun" | "stagger" | "slow" | "poison";
-/** 技の種類：攻撃技 / 予兆への対応技 / 補助（状態だけを掛ける） / パッシブ（常時） */
-export type ArtKind = "attack" | "response" | "support" | "passive";
+/**
+ * 状態異常（09 §3）。
+ * M-01：魔法の相性（09 §5「濡れ＋雷、油＋火、凍結＋打撃、風＋火」）の
+ * 布石・結果を同じ仕組みに乗せる —— wet/oil/frozen は相性の布石（前掛け）、
+ * burn/shock は相性・呪文の継続傷として働く
+ */
+export type StatusId =
+  "bleed" | "stun" | "stagger" | "slow" | "poison" | "wet" | "oil" | "frozen" | "burn" | "shock";
+/**
+ * 技の種類：攻撃技 / 予兆への対応技 / 補助（状態だけを掛ける） / 回復（M-01 の治癒呪文） /
+ * パッシブ（常時） / 生活魔法（M-01。戦闘では使えず、lifeSpell コマンドで使う）
+ */
+export type ArtKind = "attack" | "response" | "support" | "heal" | "passive" | "life";
+/** 戦闘スロットに入る種別（attack/response/support/heal。passive・life は別枠・別系統） */
+export const COMBAT_ART_KINDS: readonly ArtKind[] = ["attack", "response", "support", "heal"];
 /** 対応技の型：割り込み（予兆を潰す）/ 受け流し / 回避 / 受け止め */
 export type ResponseKind = "interrupt" | "parry" | "evade" | "guard";
 /** 射程（09 §3。近=武器の間合い、中・遠=弓・投擲系） */
@@ -38,6 +49,17 @@ export interface ArtLearn {
   tag?: string;
   /** tag のシェア下限（0〜1。省略時は ArtsConfig.styleShareMin） */
   share?: number;
+  /**
+   * 知識フラグ（M-01、09 §4「覚え方」）：魔導書を読む・師匠の秘伝・
+   * 敵の呪文を見取った（spell.seen.<id>）など、世界が立てた旗が
+   * 必要な技・呪文。at/tag と併記（全部満たすと覚える）
+   */
+  flag?: string;
+  /**
+   * 反復条件（M-01、09 §4「生活魔法を使い続けて派生させる」）：
+   * counters[key] が gte 以上なら覚えられる（例：生活魔法の使用回数）
+   */
+  counter?: { key: string; gte: number };
 }
 
 /** 武技の定義（arts.json の1件。パッシブは kind:"passive" でスロットが別枠） */
@@ -75,7 +97,88 @@ export interface ArtDef {
   range?: ArtRange;
   /** パッシブの効果（hook の集合は ArtsConfig 側で固定） */
   effect?: { hook: string; value: number };
+  /**
+   * 呪文の面（M-01、09 §4）。このフィールドがある定義は「呪文」：
+   * 気力ではなく魔力を消費し、詠唱（cast tick）の後に発動する。
+   * 武器技能に関係なく戦闘スロットから使える（剣を持ったまま唱えられる）。
+   * 生活魔法（kind:"life"）は戦闘では使えず lifeSpell コマンドで使う
+   */
+  spell?: SpellAspect;
   desc: string;
+}
+
+/** 魔法の属性（09 §4：火・水（氷）・風（雷）・土・光・闇・無属性・生活・治癒） */
+export type MagicElement =
+  "fire" | "water" | "wind" | "earth" | "light" | "dark" | "void" | "life" | "cure";
+export const MAGIC_ELEMENTS: readonly MagicElement[] = [
+  "fire",
+  "water",
+  "wind",
+  "earth",
+  "light",
+  "dark",
+  "void",
+  "life",
+  "cure",
+];
+/** 魔法技能 → 属性（適性・相性の照合に使う。skills.json の技能IDに対応） */
+export const SPELL_SKILL_ELEMENTS: Record<string, MagicElement> = {
+  fire_magic: "fire",
+  water_magic: "water",
+  wind_magic: "wind",
+  earth_magic: "earth",
+  light_magic: "light",
+  dark_magic: "dark",
+  void_magic: "void",
+  life_magic: "life",
+  cure: "cure",
+};
+/** 呪文の位（初級・中級・上級。覚える条件の目安と表示に使う） */
+export type SpellTier = "novice" | "adept" | "expert";
+/** 生活魔法の効果の系統（lifeSpell コマンドが各生活行動へ接続する窓） */
+export type LifeHook =
+  /** 次の料理の出来に加算（火加減） */
+  | "cookBonus"
+  /** 次の鍛冶系仕事の品質に加算（炉の温度管理） */
+  | "smithBonus"
+  /** 次の農耕系仕事の品質に加算（地力） */
+  | "farmBonus"
+  /** 次の調合系仕事の品質に加算（魔法薬の素） */
+  | "alchemyBonus"
+  /** 次の採集の引き回数に加算 */
+  | "gatherBonus"
+  /** 次の眠りの質に加算（野営の灯り） */
+  | "campBonus"
+  /** 即時に疲労を回復（癒しの手） */
+  | "heal"
+  /** 持ち物を乾燥・冷却して保存食に変える（transform） */
+  | "preserve";
+
+/** 呪文の面（spells.json の spell 節。M-01） */
+export interface SpellAspect {
+  /** 属性（適性・相性の照合に使う） */
+  element: MagicElement;
+  /** 位（初級・中級・上級） */
+  tier: SpellTier;
+  /** 消費する魔力（09 §2。戦闘・生活どちらの使用でも減る） */
+  mana: number;
+  /**
+   * 詠唱の基本 tick（09 §4「詠唱の時間がかかる」）。
+   * 実効の長さは castTicksOf が技能・パッシブで短縮する。
+   * その間に攻撃されると中断されうる
+   */
+  cast: number;
+  /** 回復量の係数（kind:"heal" のみ。heal × 呪文威力が体力に戻る） */
+  heal?: number;
+  /** 与えた傷のこの割合を自分が回復する（吸収系） */
+  drain?: number;
+  /** 生活魔法の効果（kind:"life" のみ。各 hook が生活行動へ接続する） */
+  life?: {
+    hook: LifeHook;
+    value: number;
+    /** preserve：持ち物 from を n 個まで to に変える（乾燥・冷却で保存食に） */
+    transform?: { from: string; to: string; n: number };
+  };
 }
 
 /** パッシブの効果のhook一覧（combat が読む結線の語彙） */
@@ -89,10 +192,14 @@ export const PASSIVE_HOOKS = [
   "dmg.slash",
   "dmg.pierce",
   "dmg.blunt",
+  "dmg.magic",
   "status",
   "kiRegen",
   "kiMax",
   "manaMax",
+  "manaRegen",
+  "castSpeed",
+  "instantCast",
 ] as const;
 export type PassiveHook = (typeof PASSIVE_HOOKS)[number];
 
@@ -263,7 +370,11 @@ export function normalizeBuild(
     ? [state.player.weapon, ...weapons.slice(1)]
     : weapons;
   return {
-    slots: pick(input.slots, cfg.slots, (id) => cfg.defs[id]?.kind !== "passive"),
+    // M-01：戦闘スロットは武技と魔法を自由に混ぜられる（09 §6）。
+    // 生活魔法（kind:"life"）は戦闘では使えないので枠に入らない
+    slots: pick(input.slots, cfg.slots, (id) =>
+      COMBAT_ART_KINDS.includes(cfg.defs[id]?.kind ?? "passive"),
+    ),
     passives: pick(input.passives, cfg.passiveSlots, (id) => cfg.defs[id]?.kind === "passive"),
     weapons: finalWeapons,
   };
@@ -285,7 +396,9 @@ export function defaultBuild(state: GameState, cfg: ArtsConfig): BuildState {
   };
   const sorted = artsSorted(state, cfg);
   build.slots = fill(
-    sorted.filter((a) => cfg.defs[a.id]?.kind !== "passive").map((a) => a.id),
+    sorted
+      .filter((a) => COMBAT_ART_KINDS.includes(cfg.defs[a.id]?.kind ?? "passive"))
+      .map((a) => a.id),
     cfg.slots,
   );
   build.passives = fill(
@@ -338,6 +451,13 @@ export function checkArtsLearn(
       const share = styleShare(state.player.skillTags, def.skill, def.learn.tag);
       if (share < (def.learn.share ?? cfg.styleShareMin)) continue;
     }
+    // M-01：知識フラグ（魔導書・秘伝・見取り）と反復条件（使い続け）を満たすこと
+    if (def.learn.flag !== undefined && state.flags[def.learn.flag] !== true) continue;
+    if (
+      def.learn.counter !== undefined &&
+      (state.counters[def.learn.counter.key] ?? 0) < def.learn.counter.gte
+    )
+      continue;
     arts[def.id] = { lv: 1, exp: 0, pending: 0 };
     learned.push(def.id);
   }

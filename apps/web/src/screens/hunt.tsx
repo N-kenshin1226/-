@@ -66,7 +66,13 @@ function displayedHp(cs: CombatState, playback: Playback): { you: number; foe: n
   let taken = 0;
   for (const e of playback.pending) {
     // K-02：武技の一撃と状態の継続ダメージも敵の体力を削る
-    if (e.type === "playerAttack" || e.type === "playerArt" || e.type === "statusTick")
+    // M-01：呪文の一撃（playerSpell）も同じ枠に数える
+    if (
+      e.type === "playerAttack" ||
+      e.type === "playerArt" ||
+      e.type === "playerSpell" ||
+      e.type === "statusTick"
+    )
       dealt += e.damage ?? 0;
     if (e.type === "enemyHit" || e.type === "parried") taken += e.damage ?? 0;
   }
@@ -160,8 +166,11 @@ function CombatArena({
         <CbtHpGauge value={hp.you} max={cs.playerHpMax} side="player" testId="combat-hp-you" />
         <CbtHpGauge value={hp.foe} max={cs.enemyHpMax} side="enemy" testId="combat-hp-foe" />
       </div>
-      {/* K-02：気力の帯と敵の状態・部位（武技のある世界だけ出す） */}
-      {(cs.playerKiMax > 0 || statuses.length > 0 || cs.brokenParts.length > 0) && (
+      {/* K-02：気力・M-01：魔力の帯と敵の状態・部位（武技・呪文のある世界だけ出す） */}
+      {(cs.playerKiMax > 0 ||
+        cs.playerManaMax > 0 ||
+        statuses.length > 0 ||
+        cs.brokenParts.length > 0) && (
         <div className="cbt-names" style={{ margin: "0 16px 4px", fontSize: 12 }}>
           <span data-testid="combat-ki" style={{ color: W.dim }}>
             {tpl(t.text.combatKiLine, {
@@ -169,6 +178,15 @@ function CombatArena({
               max: cs.playerKiMax,
             })}
           </span>
+          {/* M-01：魔力の帯（呪文のある世界だけ出す） */}
+          {cs.playerManaMax > 0 && (
+            <span data-testid="combat-mana" style={{ color: W.dim }}>
+              {tpl(t.text.combatManaLine, {
+                mana: Math.round(cs.playerMana * 10) / 10,
+                max: cs.playerManaMax,
+              })}
+            </span>
+          )}
           <span data-testid="combat-foe-state">
             {statuses.map(([id, st]) => (
               <span key={id} className="chip" data-status={id}>
@@ -267,13 +285,20 @@ function artEntries(
   return [
     ...cs.artSlots.map((a): MenuEntry => {
       const match = usable.has(a.def.id);
-      const afford = cs.playerKi >= a.def.ki;
+      // M-01：呪文は気力ではなく魔力を消費し、構え（武器技能）を問わない
+      const sp = a.def.spell;
+      const afford = sp !== undefined ? cs.playerMana >= sp.mana : cs.playerKi >= a.def.ki;
       const ok = match && afford;
-      const sub = !match
-        ? "構えが合わない"
-        : !afford
-          ? `気力が足りない（${a.def.ki}）`
-          : `気力 ${a.def.ki}・CT×${a.def.ct}`;
+      const sub =
+        sp !== undefined
+          ? !afford
+            ? `魔力が足りない（${sp.mana}）`
+            : `${t.display.elementNames[sp.element] ?? sp.element}・魔力 ${sp.mana}・詠唱 ${sp.cast}tick`
+          : !match
+            ? "構えが合わない"
+            : !afford
+              ? `気力が足りない（${a.def.ki}）`
+              : `気力 ${a.def.ki}・CT×${a.def.ct}`;
       return {
         id: `combat-art-${a.def.id}`,
         label: `《${a.def.name}》 Lv${a.lv}`,
@@ -521,6 +546,9 @@ export function CombatScreen({
       // 残った気力（戦闘をまたいで一日続く）を世界へ渡す
       uses: r.uses,
       kiLeft: r.kiLeft,
+      // 魔法（M-01）：残った魔力と、見取り稽古で見届けた敵の呪文
+      manaLeft: r.manaLeft,
+      seenSpells: r.seenSpells,
     });
     push(
       r.won
@@ -572,16 +600,29 @@ export function CombatScreen({
               label,
               onPick: () => doAction(a),
             })),
-            // 武技（K-02）：構成スロットに技が入っていると選べる。1行動を消費する
+            // 武技・呪文（K-02/M-01）：構成スロットに技が入っていると選べる。1行動を消費する
             ...(cs.artSlots.length > 0
               ? [
                   {
                     id: "combat-arts",
-                    label: t.text.combatArtsLabel,
-                    sub: tpl(t.text.combatKiLine, {
-                      ki: Math.round(cs.playerKi * 10) / 10,
-                      max: cs.playerKiMax,
-                    }),
+                    label:
+                      cs.artSlots.some((a) => a.def.spell !== undefined) &&
+                      cs.artSlots.some((a) => a.def.spell === undefined)
+                        ? `${t.text.combatArtsLabel}・${t.text.combatSpellsLabel}`
+                        : cs.artSlots.every((a) => a.def.spell !== undefined)
+                          ? t.text.combatSpellsLabel
+                          : t.text.combatArtsLabel,
+                    sub:
+                      tpl(t.text.combatKiLine, {
+                        ki: Math.round(cs.playerKi * 10) / 10,
+                        max: cs.playerKiMax,
+                      }) +
+                      (cs.playerManaMax > 0
+                        ? tpl(t.text.combatManaLine, {
+                            mana: Math.round(cs.playerMana * 10) / 10,
+                            max: cs.playerManaMax,
+                          })
+                        : ""),
                     onPick: () => setArtPick(true),
                   } satisfies Extract<MenuEntry, { id: string }>,
                 ]
@@ -675,6 +716,9 @@ export function AbyssScreen({
   // K-02：ランを通した使用記録と、層をまたいで持ち越す気力
   const [usesAcc, setUsesAcc] = useState<{ id?: string; skill: string; tags: string[] }[]>([]);
   const [kiLeft, setKiLeft] = useState<number | null>(null);
+  // M-01：層をまたいで持ち越す魔力と、ラン中に見届けた敵の呪文（見取り稽古）
+  const [manaLeft, setManaLeft] = useState<number | null>(null);
+  const [seenSpellsAcc, setSeenSpellsAcc] = useState<string[]>([]);
   // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
   /** 戦闘中の敵の世界補正済み定義（意図の表示用。解決側と同じものを使う） */
@@ -699,9 +743,20 @@ export function AbyssScreen({
     push(tpl(t.text.combatStart, { name: enemyDisplayName(state, e, key) }));
     setEnemy(e);
     setEncKey(key);
-    // K-02：気力は層をまたいで持ち越す（前の層で使った分は戻らない）
+    // K-02/M-01：気力・魔力は層をまたいで持ち越す（前の層で使った分は戻らない）
     setCs(
-      beginCombat(state, e, key, kiLeft === null ? undefined : { ...state.player, ki: kiLeft }),
+      beginCombat(
+        state,
+        e,
+        key,
+        kiLeft === null && manaLeft === null
+          ? undefined
+          : {
+              ...state.player,
+              ...(kiLeft !== null ? { ki: kiLeft } : {}),
+              ...(manaLeft !== null ? { mana: manaLeft } : {}),
+            },
+      ),
     );
     playback.queue([]);
   };
@@ -739,10 +794,13 @@ export function AbyssScreen({
       // 灯り切れで未決着のまま中断した層
       setLoss({ enemyId: enemy.id, difficulty });
     }
-    // K-02：この層の戦闘が閉じたら（決着・灯り切れどちらでも）使用記録と残りの気力を畳む
+    // K-02/M-01：この層の戦闘が閉じたら（決着・灯り切れどちらでも）
+    // 使用記録と残りの気力・魔力・見取りの呪文を畳む
     if (next.done || cur.done) {
       setUsesAcc((acc) => [...acc, ...next.uses]);
       setKiLeft(next.playerKi);
+      setManaLeft(next.playerMana);
+      setSeenSpellsAcc((acc) => [...acc, ...next.seenSpells.filter((x) => !acc.includes(x))]);
     }
     if (cur.done && cur.end !== null) push(endLine(cur.end));
     setRun(cur);
@@ -768,6 +826,9 @@ export function AbyssScreen({
         // K-02：ランを通した使用記録と残りの気力
         uses: usesAcc,
         ...(kiLeft !== null ? { kiLeft } : {}),
+        // M-01：残りの魔力と、ラン中に見届けた敵の呪文（見取り稽古）
+        ...(manaLeft !== null ? { manaLeft } : {}),
+        ...(seenSpellsAcc.length > 0 ? { seenSpells: seenSpellsAcc } : {}),
       },
       {
         format: (ev) => [
@@ -872,16 +933,23 @@ export function AbyssScreen({
                         label,
                         onPick: () => doAction(a),
                       })),
-                      // 武技（K-02。層の中でも技は使える —— 気力だけが限り）
+                      // 武技・呪文（K-02/M-01。層の中でも技は使える —— 気力・魔力だけが限り）
                       ...(cs.artSlots.length > 0
                         ? [
                             {
                               id: "combat-arts",
                               label: t.text.combatArtsLabel,
-                              sub: tpl(t.text.combatKiLine, {
-                                ki: Math.round(cs.playerKi * 10) / 10,
-                                max: cs.playerKiMax,
-                              }),
+                              sub:
+                                tpl(t.text.combatKiLine, {
+                                  ki: Math.round(cs.playerKi * 10) / 10,
+                                  max: cs.playerKiMax,
+                                }) +
+                                (cs.playerManaMax > 0
+                                  ? tpl(t.text.combatManaLine, {
+                                      mana: Math.round(cs.playerMana * 10) / 10,
+                                      max: cs.playerManaMax,
+                                    })
+                                  : ""),
                               onPick: () => setArtPick(true),
                             } satisfies Extract<MenuEntry, { id: string }>,
                           ]

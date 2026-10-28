@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   artExpToNext,
   canAct,
+  COMBAT_ART_KINDS,
   describe,
   isSkillUnlocked,
   lifespanProgress,
@@ -15,7 +16,7 @@ import {
 } from "@trace/core";
 import { SKILL_CATEGORIES, titles } from "@trace/content";
 import {
-  artDefs,
+  allArtDefs,
   bioLines,
   bookList,
   cfg,
@@ -442,9 +443,13 @@ export function BuildScreen({
 }) {
   const artsCfg = cfg.arts;
   const learned = state.player.arts;
-  // 習得済みの技を種別で分ける（スロットは種別ごとに別枠）
-  const combatArts = Object.keys(learned).filter((id) => artDefs[id]?.kind !== "passive");
-  const passiveArts = Object.keys(learned).filter((id) => artDefs[id]?.kind === "passive");
+  // 習得済みの技を種別で分ける（スロットは種別ごとに別枠。
+  // M-01：生活魔法（kind:"life"）は戦闘スロットに入らない —— 呪文の窓で使う）
+  const combatArts = Object.keys(learned).filter((id) => {
+    const k = allArtDefs[id]?.kind;
+    return k !== undefined && COMBAT_ART_KINDS.includes(k);
+  });
+  const passiveArts = Object.keys(learned).filter((id) => allArtDefs[id]?.kind === "passive");
   // 下書き：現在の構成を写して編集する（確定まで世界には出さない）
   const [slots, setSlots] = useState<(string | null)[]>([...state.player.build.slots]);
   const [passives, setPassives] = useState<(string | null)[]>([...state.player.build.passives]);
@@ -473,15 +478,18 @@ export function BuildScreen({
     };
 
   const skillName = (id: string) => skillList.find((s) => s.id === id)?.name ?? id;
-  /** 技の1行の補足（種別・技能・気力・Lv） */
+  /** 技の1行の補足（種別・技能・気力/魔力・Lv） */
   const artSub = (id: string) => {
-    const d = artDefs[id];
+    const d = allArtDefs[id];
     if (d === undefined) return "";
     const kind = t.display.artKindNames[d.kind] ?? d.kind;
     const lv = learned[id]?.lv ?? 0;
-    return d.kind === "passive"
-      ? `${kind}・${skillName(d.skill)}・Lv${lv}`
-      : `${kind}・${skillName(d.skill)}・気力 ${d.ki}・Lv${lv}`;
+    if (d.kind === "passive") return `${kind}・${skillName(d.skill)}・Lv${lv}`;
+    if (d.spell !== undefined) {
+      const el = t.display.elementNames[d.spell.element] ?? d.spell.element;
+      return `${kind}・${el}・${skillName(d.skill)}・魔力 ${d.spell.mana}・Lv${lv}`;
+    }
+    return `${kind}・${skillName(d.skill)}・気力 ${d.ki}・Lv${lv}`;
   };
 
   const slotMark = (list: (string | null)[], id: string) => {
@@ -498,7 +506,7 @@ export function BuildScreen({
       }),
     },
     ...combatArts.map((id): MenuEntry => {
-      const d = artDefs[id]!;
+      const d = allArtDefs[id]!;
       return {
         id: `build-art-${id}`,
         label: `[${slotMark(slots, id)}] 《${d.name}》`,
@@ -515,7 +523,7 @@ export function BuildScreen({
       }),
     },
     ...passiveArts.map((id): MenuEntry => {
-      const d = artDefs[id]!;
+      const d = allArtDefs[id]!;
       return {
         id: `build-pa-${id}`,
         label: `[${slotMark(passives, id)}] 《${d.name}》`,
@@ -1019,8 +1027,8 @@ function SkillDetail({ state, skillId }: { state: GameState; skillId: string }) 
  */
 function ArtsPanel({ state }: { state: GameState }) {
   const arts = state.player.arts;
-  const ids = Object.keys(arts).filter((id) => artDefs[id] !== undefined);
-  const order: readonly string[] = ["attack", "response", "support", "passive"];
+  const ids = Object.keys(arts).filter((id) => allArtDefs[id] !== undefined);
+  const order: readonly string[] = ["attack", "response", "support", "heal", "life", "passive"];
   const inSlot = (id: string) => state.player.build.slots.includes(id);
   const inPassive = (id: string) => state.player.build.passives.includes(id);
   const cfgArts = cfg.arts;
@@ -1036,7 +1044,7 @@ function ArtsPanel({ state }: { state: GameState }) {
         )}
         {order.map((kind) => {
           const rows = ids
-            .map((id) => ({ id, def: artDefs[id]! }))
+            .map((id) => ({ id, def: allArtDefs[id]! }))
             .filter((a) => a.def.kind === kind)
             .sort(
               (a, b) => a.def.skill.localeCompare(b.def.skill) || a.def.learn.at - b.def.learn.at,
@@ -1095,7 +1103,11 @@ function ArtsPanel({ state }: { state: GameState }) {
                     </span>
                     <span style={{ fontSize: 12, color: B.dim }}>
                       {skillName}
-                      {def.kind !== "passive" ? `・気力 ${def.ki}` : ""}
+                      {def.spell !== undefined
+                        ? `・${t.display.elementNames[def.spell.element] ?? def.spell.element}・魔力 ${def.spell.mana}`
+                        : def.kind !== "passive"
+                          ? `・気力 ${def.ki}`
+                          : ""}
                       {next !== null ? `・次Lv ${Math.round(a.exp)}/${next}` : "・極"}
                     </span>
                     <span style={{ fontSize: 12, color: B.dim, flex: 1, textAlign: "right" }}>

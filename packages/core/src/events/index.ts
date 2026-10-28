@@ -284,7 +284,18 @@ export type ActionEvent =
    */
   | { type: "journeyStarted"; to: string; days: number }
   /** 町に着いた（旅の最後の野営の朝。town は着いた町の id） */
-  | { type: "journeyArrived"; town: string };
+  | { type: "journeyArrived"; town: string }
+  // ---- 魔法（M-01、docs/09 §4〜5） ----
+  /**
+   * 生活魔法を唱えた（1行動＋魔力。id は spells.json の呪文 id、
+   * hook は掛かった窓 —— cookBonus/smithBonus/…/heal/preserve）
+   */
+  | { type: "magicCast"; id: string; hook: string }
+  /**
+   * 武器に付与を刻んだ（M-01「鍛冶＋火魔法」。1行動＋魔力。
+   * level は重ねた後の段数 —— counters["enchant.<weapon>"] と一致する）
+   */
+  | { type: "enchanted"; weapon: string; level: number };
 
 /** 派生状態を更新する購読者。純粋関数：新しい state を返す */
 export type Subscriber = (state: GameState, event: ActionEvent) => GameState;

@@ -126,7 +126,12 @@
       "stun": "気絶",
       "stagger": "崩し",
       "slow": "鈍足",
-      "poison": "毒"
+      "poison": "毒",
+      "wet": "濡れ",
+      "oil": "油",
+      "frozen": "凍結",
+      "burn": "燃焼",
+      "shock": "感電"
     },
     "partNames": {
       "head": "頭",
@@ -138,13 +143,31 @@
       "attack": "攻撃技",
       "response": "対応技",
       "support": "補助技",
-      "passive": "パッシブ"
+      "passive": "パッシブ",
+      "heal": "回復",
+      "life": "生活魔法"
     },
     "damageTypeNames": {
       "slash": "斬",
       "pierce": "突",
       "blunt": "打",
       "magic": "魔"
+    },
+    "elementNames": {
+      "fire": "火",
+      "water": "水",
+      "wind": "風",
+      "earth": "土",
+      "light": "光",
+      "dark": "闇",
+      "void": "無",
+      "life": "生活",
+      "cure": "治癒"
+    },
+    "spellTierNames": {
+      "novice": "初級",
+      "adept": "中級",
+      "expert": "上級"
     }
   },
   "text": {
@@ -498,6 +521,20 @@
       "bondMissed": "――{name}は今日はいないようだ",
       "errandDone": "――掲示板の依頼《{name}》を果たした",
       "journeyStarted": "――{town}への旅に出た。{days}日の道のり"
-    }
+    },
+    "combatManaLine": "（魔力 {mana}/{max}）",
+    "combatSpellsLabel": "呪文",
+    "magicCast": "――《{name}》。{line}",
+    "lifeSpellLines": {
+      "cookBonus": "竈の火が静かに従う",
+      "smithBonus": "炉の温度が整った",
+      "farmBonus": "土に力が行き渡った",
+      "alchemyBonus": "薬の混ざりが均一になった",
+      "gatherBonus": "採れる気配が指に集まる",
+      "campBonus": "今夜の眠りに灯りがともった",
+      "heal": "身体の疲れが洗い流された",
+      "preserve": "持ち物が保存食に変わった"
+    },
+    "enchanted": "――《{name}》に付与を刻んだ（{level}段）。"
   }
 }

@@ -59,6 +59,9 @@
           "min": 2,
           "max": 4
         }
+      },
+      "elementBias": {
+        "fire": 0.06
       }
     },
     {
@@ -104,6 +107,9 @@
           "min": 3,
           "max": 5
         }
+      },
+      "elementBias": {
+        "wind": 0.04
       }
     }
   ]

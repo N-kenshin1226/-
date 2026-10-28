@@ -21,6 +21,9 @@
           "type": "eat"
         },
         {
+          "type": "magic"
+        },
+        {
           "type": "shelf"
         },
         {
@@ -44,7 +47,7 @@
       "scene": "inn",
       "pos": [32, 64],
       "desc": "旅人の宿。朝刊は朝食の席に届き、一日の終わりはここで眠る",
-      "npcs": ["npc.marta"],
+      "npcs": ["npc.marta", "npc.rina"],
       "actions": [
         {
           "type": "sleep"
@@ -324,7 +327,7 @@
       "kind": "region",
       "scene": "forest",
       "desc": "街の裏手に広がる古い森。木々の隙間に魔物が潜む",
-      "npcs": ["npc.garo"],
+      "npcs": ["npc.garo", "npc.sevan"],
       "actions": [
         {
           "type": "hunt"

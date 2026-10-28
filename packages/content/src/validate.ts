@@ -32,6 +32,7 @@ import { lifeFileSchema } from "./life.schema.js";
 import { audioFileSchema } from "./audio.schema.js";
 import { weaponsFileSchema } from "./weapons.schema.js";
 import { artsFileSchema } from "./arts.schema.js";
+import { spellsFileSchema } from "./spells.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -87,6 +88,7 @@ check("life.json", lifeFileSchema);
 check("audio.json", audioFileSchema);
 check("weapons.json", weaponsFileSchema);
 check("arts.json", artsFileSchema);
+check("spells.json", spellsFileSchema);
 check("crises/sample.json", crisesFileSchema);
 
 // 武器の突き合わせ（K-01）：武器が使う技能は skills.json に存在し、
@@ -149,6 +151,118 @@ try {
   }
 } catch (e) {
   console.error(`✗ 武技の突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+/* 呪文の突き合わせ（M-01）：
+ * - 由来技能は skills.json に存在
+ * - learn.flag の供給元があること：
+ *   grimoire.* = books.json の flag、taught.* = mentors.json の flag、
+ *   spell.seen.<id> = その呪文を唱える敵が enemies.json に居る（見取り稽古）
+ * - learn.counter は core が書き込む spell.cast.* 系列に限る
+ * - 敵の moves.*.spell は spells.json の id
+ * - preserve 系の transform.from/to は items.json の id
+ */
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const spellsRaw = JSON.parse(readFileSync(join(root, "spells.json"), "utf8")) as {
+    spells?: {
+      id?: string;
+      skill?: string;
+      learn?: { flag?: string; counter?: { key?: string } };
+      spell?: { life?: { transform?: { from?: string; to?: string } } };
+    }[];
+  };
+  const enemiesRaw = JSON.parse(readFileSync(join(root, "enemies.json"), "utf8")) as {
+    enemies?: {
+      id?: string;
+      moves?: Record<string, { spell?: string }> | { spell?: string }[];
+    }[];
+  };
+  const booksRaw = JSON.parse(readFileSync(join(root, "books.json"), "utf8")) as {
+    books?: { flag?: string }[];
+  };
+  const mentorsRaw = JSON.parse(readFileSync(join(root, "mentors.json"), "utf8")) as {
+    mentors?: { flag?: string }[];
+  };
+  const itemsRaw = JSON.parse(readFileSync(join(root, "items.json"), "utf8")) as {
+    items?: { id?: string }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const spellIds = new Set((spellsRaw.spells ?? []).map((s) => s.id));
+  const itemIds = new Set((itemsRaw.items ?? []).map((i) => i.id));
+  const bookFlags = new Set((booksRaw.books ?? []).map((b) => b.flag).filter(Boolean));
+  const mentorFlags = new Set((mentorsRaw.mentors ?? []).map((m) => m.flag).filter(Boolean));
+  /* 敵が唱える呪文（見取り稽古で spell.seen.<id> が立つ元） */
+  const enemySpells = new Set<string>();
+  for (const e of enemiesRaw.enemies ?? []) {
+    const moves = e.moves;
+    const list = Array.isArray(moves) ? moves : Object.values(moves ?? {});
+    for (const m of list) if (m.spell !== undefined) enemySpells.add(m.spell);
+  }
+  const MAGIC_ELEMENTS = new Set([
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "light",
+    "dark",
+    "void",
+    "life",
+    "cure",
+  ]);
+  const bad: string[] = [];
+  for (const s of spellsRaw.spells ?? []) {
+    const sid = s.id ?? "?";
+    if (s.skill !== undefined && !skillIds.has(s.skill))
+      bad.push(`spells.json ${sid}: 未定義の技能 ${s.skill}`);
+    const flag = s.learn?.flag;
+    if (flag !== undefined) {
+      if (flag.startsWith("spell.seen.")) {
+        const need = flag.slice("spell.seen.".length);
+        if (!enemySpells.has(need))
+          bad.push(`spells.json ${sid}: ${flag} を立てる敵の呪文が enemies.json に無い`);
+      } else if (flag.startsWith("grimoire.")) {
+        if (!bookFlags.has(flag))
+          bad.push(`spells.json ${sid}: ${flag} を立てる書物が books.json に無い`);
+      } else if (flag.startsWith("taught.")) {
+        if (!mentorFlags.has(flag))
+          bad.push(`spells.json ${sid}: ${flag} を立てる師匠が mentors.json に無い`);
+      }
+    }
+    const key = s.learn?.counter?.key;
+    if (key !== undefined) {
+      const ok =
+        key === "spell.cast.life" ||
+        (key.startsWith("spell.cast.el.") &&
+          MAGIC_ELEMENTS.has(key.slice("spell.cast.el.".length))) ||
+        (key.startsWith("spell.cast.") && spellIds.has(key.slice("spell.cast.".length)));
+      if (!ok) bad.push(`spells.json ${sid}: learn.counter のキー ${key} は spell.cast.* ではない`);
+    }
+    const tr = s.spell?.life?.transform;
+    if (tr?.from !== undefined && !itemIds.has(tr.from))
+      bad.push(`spells.json ${sid}: transform.from の品 ${tr.from} が items.json に無い`);
+    if (tr?.to !== undefined && !itemIds.has(tr.to))
+      bad.push(`spells.json ${sid}: transform.to の品 ${tr.to} が items.json に無い`);
+  }
+  for (const e of enemiesRaw.enemies ?? []) {
+    const moves = e.moves;
+    const list = Array.isArray(moves) ? moves : Object.values(moves ?? {});
+    for (const m of list) {
+      if (m.spell !== undefined && !spellIds.has(m.spell))
+        bad.push(`enemies.json ${e.id ?? "?"}: 未定義の呪文 ${m.spell}`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ 魔法の参照が未定義: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ 魔法の参照（spells ↔ skills/enemies/books/mentors/items）");
+  }
+} catch (e) {
+  console.error(`✗ 魔法の突き合わせに失敗 (${String(e)})`);
   failed = true;
 }
 

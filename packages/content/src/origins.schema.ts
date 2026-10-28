@@ -24,6 +24,17 @@ export const originSchema = z
           .refine((r) => r.min <= r.max, { message: "initialSkills は min <= max で" }),
       )
       .optional(),
+    /**
+     * 属性適性への小さな偏り（M-01「適性は出自とシードで決まる」）。
+     * 鍛冶屋の子は火に少し親しむ、程度のもの —— 引きの分布そのものは
+     * 主人公もNPCも同じで、この偏りも ±0.1 までの僅かな足しに留める
+     */
+    elementBias: z
+      .partialRecord(
+        z.enum(["fire", "water", "wind", "earth", "light", "dark", "void", "life", "cure"]),
+        z.number().min(-0.1).max(0.1),
+      )
+      .optional(),
   })
   .strict();
 

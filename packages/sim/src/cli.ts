@@ -4,12 +4,14 @@
  *   sim:retention … 初体験・作業化のCIゲート（T-09）
  *   sim:crisis    … 世界の危機のバランスCIゲート（W-05、docs/08 §8）
  *   sim:arts      … 武技・資源・構成のバランスCIゲート（K-02、docs/09 §3・§5〜6）
+ *   sim:magic     … 魔法（呪文・適性・相性）のバランスCIゲート（M-01、docs/09 §4〜5）
  *   play:cli      … 人間用 CLI（T-11。未実装）
  */
 import { runGrowth } from "./sim-growth.js";
 import { runRetention } from "./sim-retention.js";
 import { runCrisis } from "./sim-crisis.js";
 import { runArts } from "./sim-arts.js";
+import { runMagic } from "./sim-magic.js";
 import { playCli } from "./cli/game.js";
 import { stdioIo } from "./cli/io.js";
 
@@ -27,6 +29,9 @@ switch (command) {
     break;
   case "sim:arts":
     process.exit(runArts());
+    break;
+  case "sim:magic":
+    process.exit(runMagic());
     break;
   case "play:cli": {
     const state = await playCli({ io: stdioIo() });

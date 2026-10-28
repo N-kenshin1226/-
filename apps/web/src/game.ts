@@ -7,6 +7,7 @@ import {
   activeBookEffects,
   activeEffects,
   appraisalGame,
+  attackFactorWithEnchant,
   biographyMaterial,
   canAct,
   canFightUnique,
@@ -31,6 +32,7 @@ import {
   newGame,
   nextWorldSeed,
   performanceGame,
+  playerAptitudes,
   reachedPinnacles,
   recordLife,
   rivalsOf,
@@ -103,6 +105,7 @@ import {
   type CombatState,
   type DealInput,
   type DealState,
+  type ArtDef,
   type EnemyDef,
   type EnemyTrait,
   type GameState,
@@ -148,6 +151,7 @@ import {
   sampleCrises,
   skills,
   society,
+  spellDefs,
   tailwinds,
   titles,
   voices,
@@ -184,8 +188,14 @@ export const weaponDefs: Record<string, WeaponJson> = Object.fromEntries(
   weapons.weapons.map((w) => [w.id, w]),
 );
 
-/** 武技の定義表（K-02、arts.json → id 引き。構成画面・戦闘・ステータスで共有） */
-export { artDefs };
+/**
+ * 武技・呪文の定義表（K-02 arts.json ＋ M-01 spells.json → id 引き。
+ * 構成画面・戦闘・ステータス・習得の知らせで共有。呪文は sp_ 始まり）。
+ * core の ArtDef として扱う —— 武技側には spell 面が無いので、
+ * 呪文かどうかは def.spell の有無で見る
+ */
+export const allArtDefs: Record<string, ArtDef> = { ...artDefs, ...spellDefs };
+export { artDefs, spellDefs };
 
 export const cfg: StepConfig = {
   time: balance.time,
@@ -224,7 +234,12 @@ export const cfg: StepConfig = {
      * 武技・資源（K-02）：技の定義表（arts.json）とバランス係数（balance.arts）。
      * 武技の消費・状態異常・部位破壊・パッシブが戦闘で効く
      */
-    arts: { defs: artDefs, ...balance.arts },
+    arts: { defs: allArtDefs, ...balance.arts },
+    /**
+     * 魔法（M-01、balance.magic）：呪文は魔力消費・詠唱・中断・属性相性が効き、
+     * 敵の呪文は見取り稽古で覚えられる
+     */
+    magic: balance.magic,
   },
   /** 技能リンク（K-01、balance.links）：step の各フック（仕事・移動・読書・危機…）が引く */
   links: balance.links,
@@ -236,7 +251,9 @@ export const cfg: StepConfig = {
    * 武技・資源・構成（K-02）：戦闘の使用記録・技の経験・習得判定・
    * 睡眠での気力/魔力回復・setBuild の組み替えが効く
    */
-  arts: { defs: artDefs, ...balance.arts },
+  arts: { defs: allArtDefs, ...balance.arts },
+  /** 魔法（M-01、balance.magic）：魔力の書き戻し・生活魔法・付与が step で効く */
+  magic: balance.magic,
   society: {
     standings: society.standings,
     professions: society.professions,
@@ -716,7 +733,7 @@ const gameInit = (
   initialWeapons: weapons.initial,
   initialWeapon: weapons.defaultWeapon,
   // 気力・魔力（K-02）：新しい旅立ちは上限いっぱいで始まる
-  arts: { defs: artDefs, ...balance.arts },
+  arts: { defs: allArtDefs, ...balance.arts },
 });
 
 /** 新規開始のシード。?seed= で固定できる（e2e・リプレイ用）。それ以外は一意に */
@@ -964,11 +981,22 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       }
       // 武技（K-02）：新しい技を閃いた（通知Bランク相当）・構成を整えた
       case "artLearned": {
-        const name = artDefs[e.id]?.name ?? e.id;
+        const name = allArtDefs[e.id]?.name ?? e.id;
         return [tpl(t.text.artLearned, { name })];
       }
       case "buildChanged":
         return [t.text.buildSaved];
+      // 生活魔法（M-01）：唱えた呪文と、掛かった先の一行
+      case "magicCast": {
+        const def = allArtDefs[e.id];
+        const line = t.text.lifeSpellLines[e.hook] ?? "";
+        return [tpl(t.text.magicCast, { name: def?.name ?? e.id, line })];
+      }
+      // 付与（M-01）：武器に刻んだ段を1行で返す
+      case "enchanted": {
+        const name = weaponDefs[e.weapon]?.name ?? e.weapon;
+        return [tpl(t.text.enchanted, { name, level: e.level })];
+      }
       case "bookRead": {
         const def = books.books.find((b) => b.id === e.id);
         const name = def?.name ?? e.id;
@@ -1223,7 +1251,7 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
   }
   // 武技の定着（K-02）：使って貯めた経験が眠りで Lv になって出る
   for (const a of report.arts ?? []) {
-    lines.push(tpl(w.artLevelUp, { name: artDefs[a.id]?.name ?? a.id, to: a.to }));
+    lines.push(tpl(w.artLevelUp, { name: allArtDefs[a.id]?.name ?? a.id, to: a.to }));
   }
   if (report.lines.length === 0) lines.push(w.noChange);
   if (report.restDay) lines.push(w.restDayLine);
@@ -1573,7 +1601,24 @@ export function beginCombat(
   );
   // 運命の傾向・誓約の世界補正（T-45/T-46。戦乱の世・強敵の誓で敵が強くなる）
   const def = worldEnemyDef(state, enemy, encounterKey);
-  return startCombat(def, cfg.combat, player ?? state.player, fx);
+  const p: CombatPlayer = player ?? state.player;
+  // M-01：魔力・属性適性（出自とシードの引き。同じ世界なら同じ適性）と、
+  // 装備中の武器に刻まれた付与の威力を畳む
+  const origin = origins.origins.find((o) => o.id === state.player.origin);
+  const withMagic: CombatPlayer = {
+    ...p,
+    mana: p.mana ?? state.player.mana,
+    aptitude:
+      p.aptitude ??
+      (cfg.magic === undefined ? {} : playerAptitudes(state, cfg.magic, origin?.elementBias)),
+  };
+  const withEnchant = attackFactorWithEnchant(
+    state,
+    p.weapon ?? state.player.weapon,
+    fx,
+    cfg.magic,
+  );
+  return startCombat(def, cfg.combat, withMagic, withEnchant);
 }
 
 /**

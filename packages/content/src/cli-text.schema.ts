@@ -64,6 +64,10 @@ export const cliTextSchema = z
         artKindNames: z.record(z.string(), z.string()),
         /** 打撃の性質（K-02。combat の DamageType → 技の説明に出す表示名） */
         damageTypeNames: z.record(z.string(), z.string()),
+        /** 魔法の属性（M-01。MagicElement → 呪文一覧・説明の表示名） */
+        elementNames: z.record(z.string(), z.string()),
+        /** 呪文の位（M-01。SpellTier → 呪文の説明に出す表示名） */
+        spellTierNames: z.record(z.string(), z.string()),
       })
       .strict(),
     text: z
@@ -171,6 +175,16 @@ export const cliTextSchema = z
         combatKiLine: z.string(),
         /** 戦闘画面の武技コマンドの見出し */
         combatArtsLabel: z.string(),
+        /** 戦闘画面の魔力の表示（{mana}/{max}。M-01） */
+        combatManaLine: z.string(),
+        /** 戦闘画面の呪文コマンドの見出し（M-01） */
+        combatSpellsLabel: z.string(),
+        /** 生活魔法を唱えた（M-01、通知Bランク相当。{name}=呪文名・{line}=効果の一行） */
+        magicCast: z.string(),
+        /** 生活魔法の効果ごとの一行（M-01。hook → 「竈の火が従う」系の文） */
+        lifeSpellLines: z.record(z.string(), z.string()),
+        /** 付与を刻んだ（M-01。{name}=武器名・{level}=段） */
+        enchanted: z.string(),
         /** 新しい技を閃いた知らせ（K-02、通知Bランク。{name} は技名） */
         artLearned: z.string(),
         /** 構成画面（K-02）：見出し・各枠の見出し・空き枠・確定の行 */

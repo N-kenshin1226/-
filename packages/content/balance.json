@@ -855,5 +855,70 @@
     "evadeArtBonus": 0.55,
     "guardArtFactor": 0.25,
     "styleShareMin": 0.15
+  },
+  "magic": {
+    "aptitudeMean": 0.5,
+    "aptitudeSpread": 0.4,
+    "aptitudePowerBase": 0.7,
+    "aptitudePowerScale": 0.6,
+    "powerBase": 6,
+    "powerPerSkill": 0.5,
+    "powerPerSpirit": 0.4,
+    "castPerSkill": 0.3,
+    "castMin": 4,
+    "interruptBase": 0.5,
+    "interruptPerManaSkill": 0.006,
+    "interruptMin": 0.05,
+    "interruptMax": 0.8,
+    "manaRegenPerTick": 0.05,
+    "interactions": [
+      {
+        "id": "shock",
+        "primer": "wet",
+        "strike": "wind",
+        "damage": 1.4,
+        "status": "shock",
+        "statusTicks": 8,
+        "statusPower": 1.5,
+        "consume": true
+      },
+      {
+        "id": "enflame",
+        "primer": "oil",
+        "strike": "fire",
+        "damage": 1.45,
+        "status": "burn",
+        "statusTicks": 10,
+        "statusPower": 2,
+        "consume": true
+      },
+      {
+        "id": "shatter",
+        "primer": "frozen",
+        "strike": "blunt",
+        "damage": 1.7,
+        "consume": true
+      },
+      {
+        "id": "fan",
+        "primer": "burn",
+        "strike": "wind",
+        "damage": 1.3,
+        "extend": 8,
+        "consume": false
+      }
+    ],
+    "lifeWorkKinds": [
+      { "hook": "smithBonus", "kinds": ["smithing"] },
+      { "hook": "farmBonus", "kinds": ["farming"] },
+      { "hook": "alchemyBonus", "kinds": ["alchemy", "brewing", "medicine"] }
+    ],
+    "enchant": {
+      "smithing": 30,
+      "fireMagic": 25,
+      "mana": 20,
+      "maxLevel": 3,
+      "atkPerLevel": 0.08
+    }
   }
 }

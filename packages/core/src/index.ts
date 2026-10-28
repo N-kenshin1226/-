@@ -162,10 +162,34 @@ export type {
   BodyPart,
   BuildState,
   DamageType,
+  LifeHook,
+  MagicElement,
   PassiveHook,
   ResponseKind,
+  SpellAspect,
+  SpellTier,
   StatusId,
 } from "./arts/index.js";
+export { COMBAT_ART_KINDS, MAGIC_ELEMENTS, SPELL_SKILL_ELEMENTS } from "./arts/index.js";
+// 魔法（M-01、docs/09 §4〜5）：属性適性・詠唱・中断・呪文威力・相性・生活魔法・付与
+export {
+  attackFactorWithEnchant,
+  canEnchant,
+  canLifeSpell,
+  castTicksOf,
+  consumeLifeBuff,
+  elementAptitude,
+  enchantFactor,
+  enchantLevel,
+  interactionOf,
+  interruptChanceOf,
+  lifeBuffKey,
+  lifeBuffOf,
+  npcAptitudes,
+  playerAptitudes,
+  spellPowerOf,
+} from "./magic/index.js";
+export type { ElementInteraction, MagicConfig } from "./magic/index.js";
 // 技能リンク（K-01、balance.links）：技能がどこに効くかの結線を読む薄い層
 export { linkFlat, linkFlatCap, linkSum } from "./links/index.js";
 export type { SkillLinkDef, SkillLinks } from "./links/index.js";

@@ -195,6 +195,198 @@
         "stun": 0.5,
         "poison": 0.5
       }
+    },
+    {
+      "id": "hedge_mage",
+      "name": "辻魔道士",
+      "area": "highway",
+      "hp": 82,
+      "intervalTicks": 26,
+      "challenge": 32,
+      "agility": 10,
+      "attack": {
+        "id": "staff",
+        "name": "杖打ち",
+        "power": 8
+      },
+      "moves": {
+        "dark_bolt": {
+          "id": "dark_bolt",
+          "name": "闇の矢",
+          "power": 22,
+          "spell": "sp_shadow_bolt"
+        },
+        "drain": {
+          "id": "drain",
+          "name": "生命吸収",
+          "power": 18,
+          "spell": "sp_life_drain"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dark_bolt",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "drain",
+          "ticks": 16
+        }
+      ],
+      "resist": {
+        "slash": 0.85,
+        "pierce": 0.9,
+        "blunt": 1.15,
+        "magic": 0.7
+      },
+      "statusResist": {
+        "poison": 0.5,
+        "slow": 0.5
+      }
+    },
+    {
+      "id": "frost_sprite",
+      "name": "氷精",
+      "area": "abyss",
+      "hp": 64,
+      "intervalTicks": 30,
+      "challenge": 24,
+      "agility": 14,
+      "attack": {
+        "id": "chill",
+        "name": "凍てつく触手",
+        "power": 7
+      },
+      "moves": {
+        "freeze": {
+          "id": "freeze",
+          "name": "凍結の息吹",
+          "power": 14,
+          "spell": "sp_freeze"
+        },
+        "ice_needle": {
+          "id": "ice_needle",
+          "name": "氷の針",
+          "power": 20,
+          "spell": "sp_ice_needle"
+        },
+        "blizzard": {
+          "id": "blizzard",
+          "name": "吹雪の舞",
+          "power": 30,
+          "spell": "sp_blizzard"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "freeze",
+          "ticks": 16
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "ice_needle",
+          "ticks": 12
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "blizzard",
+          "ticks": 24
+        }
+      ],
+      "resist": {
+        "slash": 0.8,
+        "pierce": 0.8,
+        "blunt": 1.2,
+        "magic": 1.1
+      },
+      "statusResist": {
+        "frozen": 0,
+        "burn": 1.5,
+        "wet": 0
+      }
+    },
+    {
+      "id": "cave_shaman",
+      "name": "穴の呪術師",
+      "area": "abyss",
+      "hp": 120,
+      "intervalTicks": 28,
+      "challenge": 46,
+      "agility": 12,
+      "attack": {
+        "id": "club",
+        "name": "呪杖の一撃",
+        "power": 10
+      },
+      "moves": {
+        "dark_bolt": {
+          "id": "dark_bolt",
+          "name": "闇の矢",
+          "power": 26,
+          "spell": "sp_shadow_bolt"
+        },
+        "eclipse": {
+          "id": "eclipse",
+          "name": "蝕",
+          "power": 40,
+          "spell": "sp_eclipse"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dark_bolt",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "eclipse",
+          "ticks": 18
+        }
+      ],
+      "resist": {
+        "slash": 0.9,
+        "pierce": 0.9,
+        "blunt": 1.05,
+        "magic": 0.6
+      },
+      "statusResist": {
+        "poison": 0.5,
+        "stun": 0.5
+      }
     }
   ]
 }

@@ -423,6 +423,50 @@
       },
       "durationDays": 5,
       "flag": "knows.weapon_eye"
+    },
+    {
+      "id": "book.grimoire_flame",
+      "name": "炎の魔導書",
+      "desc": "焦げた革装の一冊。開くと頁の端から熱が滲む（火の中級・上級呪文の理を得る）",
+      "readText": "「火とは、消えゆくものを繰り留める意である」――頁を閉じても掌の熱が残った。術式の輪郭が、指先に沿って並んだ。",
+      "price": 180,
+      "flag": "grimoire.flame",
+      "condition": {
+        "flag": "magic.sense"
+      }
+    },
+    {
+      "id": "book.grimoire_tide",
+      "name": "潮の魔導書",
+      "desc": "潮騒の染み込んだ写本。頁をめくると冷たい風が抜ける（水の上級呪文の理を得る）",
+      "readText": "「水とは、あらゆる形を許す剣である」――凍てつくような一文を読んだ瞬間、指先に露が玉を結んだ。",
+      "price": 160,
+      "flag": "grimoire.tide",
+      "condition": {
+        "flag": "magic.sense"
+      }
+    },
+    {
+      "id": "book.grimoire_life",
+      "name": "暮らしの魔導書",
+      "desc": "料理の染みや薬草の挟まった実用書。日々の小さな魔法が並ぶ（生活魔法の奥義を得る）",
+      "readText": "「魔法とは、暮らしをそっと助ける手である」――挟まった押し花が、乾燥の術の見本だった。",
+      "price": 90,
+      "flag": "grimoire.life",
+      "condition": {
+        "flag": "magic.sense"
+      }
+    },
+    {
+      "id": "book.grimoire_shadow",
+      "name": "陰の魔導書",
+      "desc": "黒革に金具で封された一冊。店主は「代々、売る相手を選ぶ」とだけ言う（無詠唱の奥義を得る）",
+      "readText": "頁の文字は黒い光を含んでいる。「言葉は呪いの器に過ぎない。要は想いである」――読み終えたとき、詠唱という概念が音を立てて崩れた。",
+      "price": 320,
+      "flag": "grimoire.shadow",
+      "condition": {
+        "flag": "found.grimoire_shadow"
+      }
     }
   ]
 }

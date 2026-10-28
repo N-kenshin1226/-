@@ -167,6 +167,22 @@ export const thresholdsSchema = z
         notes: z.record(z.string(), z.string()).optional(),
       })
       .strict(),
+    magic: z
+      .object({
+        /** 1構成・1敵あたりの試合数（シードを変えた決定的な再現） */
+        runs: z.number().int().positive(),
+        /** 「魔法・武技・混成ともに普通の敵に勝てる」：通常敵への勝率の下限 */
+        minWinRate: z.number().min(0).max(1),
+        /** 「魔法だけで戦える」：魔法系構成の最低勝率（どの属性系でも） */
+        minMageWinRate: z.number().min(0).max(1),
+        /** 「戦闘呪文が広く使われる」：攻撃・回復・補助呪文の使用カバレッジ下限 */
+        minSpellCoverage: z.number().min(0).max(1),
+        /** 「主人公は適性も平凡」：出自主体とNPC主体の適性平均の差の上限 */
+        aptMeanGap: z.number().positive(),
+        /** しきい値の根拠の注記（JSON にコメントを書けないため） */
+        notes: z.record(z.string(), z.string()).optional(),
+      })
+      .strict(),
   })
   .strict();
 

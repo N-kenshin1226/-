@@ -183,9 +183,13 @@ function makeArtPolicy(): Policy {
     }
     const atks = slotted.filter((a) => a.def.kind === "attack");
     if (atks.length === 0) return "attack";
-    // まだこの戦闘で撃っていない技を優先（技を試すプレイヤー）。尽きたらスロット順に巡回
+    // まだこの戦闘で撃っていない技を優先（技を試すプレイヤー）。尽きたらスロット順に巡回。
+    // 未使用の中では高気力の技から試す：奥義（大消費）は気力のあるうちに
+    // 撃たないと試合が終わって出番を逃す（消耗が激しい敵ほど後の番ほど撃てない）
     const used = new Set(s.uses.map((u) => u.id).filter((x): x is string => x !== undefined));
-    const fresh = atks.find((a) => !used.has(a.def.id) && a.def.ki <= s.playerKi);
+    const fresh = atks
+      .filter((a) => !used.has(a.def.id) && a.def.ki <= s.playerKi)
+      .sort((a, b) => b.def.ki - a.def.ki)[0];
     if (fresh !== undefined) return { type: "art", id: fresh.def.id };
     const start = s.turn % atks.length;
     for (let i = 0; i < atks.length; i++) {

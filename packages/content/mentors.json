@@ -160,6 +160,47 @@
       "flag": "taught.edel_rite",
       "desc": "礼拝堂の番人。灯火の前での祈りの組み立て方を教える。弟子の間、祈祷の伸びが上がる",
       "note": "祈祷の師。入門には祈祷15以上"
+    },
+    {
+      "id": "mentor.rina",
+      "name": "リナ",
+      "npc": "npc.rina",
+      "skill": "mana",
+      "condition": {
+        "flag": "magic.sense"
+      },
+      "fee": 30,
+      "potentialRecover": 4,
+      "effect": {
+        "gainVs": {
+          "mana": 1.3,
+          "void_magic": 1.2
+        }
+      },
+      "flag": "taught.rina_arcane",
+      "desc": "旅の魔術師。魔力の扱い方と無属性の術を教える。弟子の間、魔力操作の伸びが上がる",
+      "note": "魔法の師。入門には魔素の気配（魔道入門など）が要る"
+    },
+    {
+      "id": "mentor.sevan",
+      "name": "セヴァン",
+      "npc": "npc.sevan",
+      "skill": "wind_magic",
+      "condition": {
+        "skill": "mana",
+        "gte": 8
+      },
+      "fee": 35,
+      "potentialRecover": 4,
+      "effect": {
+        "gainVs": {
+          "wind_magic": 1.3,
+          "mana": 1.1
+        }
+      },
+      "flag": "taught.sevan_gale",
+      "desc": "森の隠者。疾風と雷の術を伝える。弟子の間、風魔法の伸びが上がる",
+      "note": "風の師。入門には魔力操作8以上"
     }
   ]
 }

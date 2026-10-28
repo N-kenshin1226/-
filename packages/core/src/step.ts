@@ -49,6 +49,15 @@ import {
   type IncidentsConfig,
 } from "./incidents/index.js";
 import { recordWork, type LedgerConfig } from "./ledger/index.js";
+import {
+  canEnchant,
+  canLifeSpell,
+  consumeLifeBuff,
+  enchantLevel,
+  lifeBuffKey,
+  lifeBuffOf,
+  type MagicConfig,
+} from "./magic/index.js";
 import { passiveFxOf, type CombatConfig, type WeaponDef } from "./combat/index.js";
 import {
   bondOf,
@@ -246,6 +255,13 @@ export interface StepConfig {
    * 未指定の世界では武技関連はすべて働かない
    */
   arts?: ArtsConfig;
+  /**
+   * 魔法（M-01、balance.magic ＋ spells.json の spell 節）。
+   * 指定すると：戦闘の魔力書き戻し・見取り稽古の見知り（spell.seen.*）、
+   * 生活魔法（lifeSpell コマンド）とその生活行動への効果、
+   * 付与（enchant コマンド）が効く。未指定の世界では魔法関連は働かない
+   */
+  magic?: MagicConfig;
 }
 
 export type Command =
@@ -313,6 +329,13 @@ export type Command =
       uses?: readonly { id?: string; skill: string; tags: string[] }[];
       /** 戦闘終了時点の気力（K-02、combatResult.kiLeft。player.ki へ書き戻す） */
       kiLeft?: number;
+      /** 戦闘終了時点の魔力（M-01、combatResult.manaLeft。player.mana へ書き戻す） */
+      manaLeft?: number;
+      /**
+       * 観察中に見届けた敵の呪文（M-01、combatResult.seenSpells）。
+       * それぞれ flags["spell.seen.<id>"] に畳まれる（見取り稽古で覚える道）
+       */
+      seenSpells?: readonly string[];
     }
   /**
    * 深層ダンジョンのランの結果を世界に反映する（06 §3B、T-43）。
@@ -336,6 +359,10 @@ export type Command =
       uses?: readonly { id?: string; skill: string; tags: string[] }[];
       /** ラン終了時点の気力（K-02） */
       kiLeft?: number;
+      /** ラン終了時点の魔力（M-01） */
+      manaLeft?: number;
+      /** ラン中に見届けた敵の呪文（M-01。flags["spell.seen.<id>"] に畳む） */
+      seenSpells?: readonly string[];
     }
   /** 打診を受けて立場・職業の認定を受ける（03 §1）。行動は消費しない */
   | { type: "acceptOffer"; id: string }
@@ -474,6 +501,18 @@ export type Command =
    * 納める品が揃い、日限・日の上限の内なら品を納めて報酬を得る
    */
   | { type: "errand"; id: string }
+  /**
+   * 生活魔法を唱える（M-01、09 §4。1行動を消費＋魔力）。
+   * 習得済みの kind:"life" の呪文だけ使える。効果は hook に応じて
+   * 次の料理・仕事・採集・眠り・持ち物・疲労に掛かる
+   */
+  | { type: "lifeSpell"; id: string }
+  /**
+   * 付与（エンチャント。M-01、09 §4「鍛冶＋火魔法」）。1行動を消費＋魔力。
+   * 鍛冶と火魔法の技能が必要で、武器1本に1段ずつ付与が刻まれる
+   * （counters["enchant.<weapon>"]。戦闘では attackFactor に畳まれる）
+   */
+  | { type: "enchant"; weapon: string }
   /**
    * 旅に出る（1行動）。to は行き先の町 id（life.json journeys の道がある
    * 町に限る）。以後は野営の眠りで日が進み、日数ぶんの野営で着く
@@ -698,6 +737,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (cfg.life !== undefined) {
         baseQuality += mealToday(next) * cfg.life.mealSleepFactor;
         if (prayedToday(next)) baseQuality += cfg.life.praySleepBonus;
+      }
+      // M-01：生活魔法「灯り」が掛かっていれば今夜の眠りの質に乗る（野営の灯）
+      if (cfg.magic !== undefined) {
+        const b = consumeLifeBuff(next.counters, "campBonus");
+        if (b.value > 0) {
+          next = { ...next, counters: b.counters };
+          baseQuality += b.value;
+        }
       }
       const condition =
         cfg.variance !== undefined
@@ -958,6 +1005,19 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         }
         quality = Math.max(0, Math.min(100, quality));
       }
+      // M-01：生活魔法の仕事への効果（鍛冶の温度・地力・調合の助け）。
+      // 仕事の kind に対応する hook の効果が掛かっていれば品質に乗って消費される
+      if (cfg.magic !== undefined) {
+        const hook = cfg.magic.lifeWorkKinds.find((h) => h.kinds.includes(command.kind))?.hook;
+        if (hook !== undefined) {
+          const b = consumeLifeBuff(next.counters, hook);
+          if (b.value > 0) {
+            next = { ...next, counters: b.counters };
+            quality = Math.max(0, Math.min(100, quality + b.value));
+            workFlags = [...new Set([...workFlags, "魔法仕上"])];
+          }
+        }
+      }
 
       const recorded = recordWork(
         next,
@@ -1140,6 +1200,26 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             player: { ...next.player, ki: Math.max(0, round1(command.kiLeft)) },
           };
         }
+        // M-01：魔力の持ち越し（combatResult.manaLeft → player.mana）
+        if (command.manaLeft !== undefined) {
+          next = {
+            ...next,
+            player: { ...next.player, mana: Math.max(0, round1(command.manaLeft)) },
+          };
+        }
+        // M-01：見取り稽古 —— 観察中に見届けた敵の呪文は見知りの旗になる
+        if (cfg.magic !== undefined && command.seenSpells !== undefined) {
+          const flags = { ...next.flags };
+          let seenNew = false;
+          for (const id of command.seenSpells) {
+            const key = `spell.seen.${id}`;
+            if (flags[key] !== true) {
+              flags[key] = true;
+              seenNew = true;
+            }
+          }
+          if (seenNew) next = { ...next, flags };
+        }
         const uses = command.uses ?? [];
         if (uses.length > 0) {
           const rec = recordArtUse(next.player.artTags, next.player.skillTags, uses);
@@ -1161,6 +1241,48 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
               skillTags: rec.skillTags,
             },
           };
+        }
+        // M-01：呪文の使用を世界に刻む（使用回数・属性別・生活魔法の合計）
+        // —— 生活魔法を使い続けると派生が覚える条件（learn.counter）が読む
+        if (cfg.magic !== undefined && uses.length > 0) {
+          const counters = { ...next.counters };
+          const spellSkills = new Set<string>();
+          for (const u of uses) {
+            if (u.id === undefined) continue;
+            const def = cfg.arts.defs[u.id];
+            const sp = def?.spell;
+            if (sp === undefined) continue;
+            counters[`spell.cast.${u.id}`] = (counters[`spell.cast.${u.id}`] ?? 0) + 1;
+            counters[`spell.cast.el.${sp.element}`] =
+              (counters[`spell.cast.el.${sp.element}`] ?? 0) + 1;
+            if (def!.kind === "life")
+              counters["spell.cast.life"] = (counters["spell.cast.life"] ?? 0) + 1;
+            spellSkills.add(def!.skill);
+          }
+          // 呪文の技能にも戦闘の経験が入る（武器技能と同じ式で、技量差で伸びる）
+          for (const skillId of spellSkills) {
+            const skill = ensureSkillRecord(skillId);
+            if (skill === undefined) continue;
+            const { amount } = computeGain(
+              {
+                kind: "combat",
+                skill: skill.value,
+                delta: command.difficulty - skill.value,
+                repeats,
+                potential: skill.potential,
+                fatigue: next.player.fatigue,
+                wind: windFor(next, "combat", skillId),
+                modifiers: worldFactor(fate, "combatGainFactor"),
+                failed: !command.won,
+              },
+              cfg.gain,
+            );
+            const applied = amount * gainFactor(skill.value);
+            skill.pending += applied;
+            skill.lastUsedDay = next.time.day;
+            events.push({ type: "gainApplied", skill: skillId, amount: applied });
+          }
+          next = { ...next, counters };
         }
         // 習得判定（09 §7.1）：使い方の傾き＋技能値で新しい技を閃く
         const learn = checkArtsLearn(next, cfg.arts);
@@ -1316,6 +1438,26 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             player: { ...next.player, ki: Math.max(0, round1(command.kiLeft)) },
           };
         }
+        // M-01：ラン中の魔力の持ち越し
+        if (command.manaLeft !== undefined) {
+          next = {
+            ...next,
+            player: { ...next.player, mana: Math.max(0, round1(command.manaLeft)) },
+          };
+        }
+        // M-01：ラン中の見取り稽古（combat と同じく見知りの旗に畳む）
+        if (cfg.magic !== undefined && command.seenSpells !== undefined) {
+          const flags = { ...next.flags };
+          let seenNew = false;
+          for (const id of command.seenSpells) {
+            const key = `spell.seen.${id}`;
+            if (flags[key] !== true) {
+              flags[key] = true;
+              seenNew = true;
+            }
+          }
+          if (seenNew) next = { ...next, flags };
+        }
         const uses = command.uses ?? [];
         if (uses.length > 0) {
           const rec = recordArtUse(next.player.artTags, next.player.skillTags, uses);
@@ -1339,6 +1481,21 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
             ...next,
             player: { ...next.player, arts, artTags: rec.artTags, skillTags: rec.skillTags },
           };
+        }
+        // M-01：ラン中の呪文使用も同じ刻印を刻む（combat と同じ。
+        // この case の counters は末尾で next に畳まれるので、その変数に積む）
+        if (cfg.magic !== undefined && uses.length > 0) {
+          for (const u of uses) {
+            if (u.id === undefined) continue;
+            const def = cfg.arts.defs[u.id];
+            const sp = def?.spell;
+            if (sp === undefined) continue;
+            counters[`spell.cast.${u.id}`] = (counters[`spell.cast.${u.id}`] ?? 0) + 1;
+            counters[`spell.cast.el.${sp.element}`] =
+              (counters[`spell.cast.el.${sp.element}`] ?? 0) + 1;
+            if (def!.kind === "life")
+              counters["spell.cast.life"] = (counters["spell.cast.life"] ?? 0) + 1;
+          }
         }
         const learn = checkArtsLearn(next, cfg.arts);
         next = learn.state;
@@ -1954,6 +2111,24 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         weather,
         cfg.life,
       );
+      // M-01：生活魔法「水脈探し・地力」が掛かっていれば採集の引きが増える
+      // （別の乱数列で足す —— 元の引きは変わらない。効果は消費される）
+      if (cfg.magic !== undefined) {
+        const b = consumeLifeBuff(next.counters, "gatherBonus");
+        if (b.value > 0) {
+          next = { ...next, counters: b.counters };
+          const extra = drawGather(
+            next.seed,
+            next.time.day,
+            command.place,
+            (next.counters["action.gather"] ?? 0) + 100000,
+            season,
+            weather,
+            cfg.life,
+          );
+          for (const g of extra.slice(0, Math.ceil(b.value))) got.push(g);
+        }
+      }
       grantLifeGain("gather", table.skill, table.difficulty);
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "gather", cfg.body);
@@ -2007,13 +2182,23 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const recipe = cfg.life.recipes.find((r) => r.id === command.recipe);
       if (recipe === undefined) break;
       if (!Object.entries(recipe.inputs).every(([id, n]) => itemCount(next, id) >= n)) break;
+      // M-01：生活魔法「火加減」が掛かっていればこの料理の出来に乗って消費される
+      let cookBonus = 0;
+      if (cfg.magic !== undefined) {
+        const b = consumeLifeBuff(next.counters, "cookBonus");
+        if (b.value > 0) {
+          next = { ...next, counters: b.counters };
+          cookBonus = b.value;
+        }
+      }
       const quality = Math.max(
         0,
         Math.min(
           100,
           Math.round(
-            command.quality ??
-              cookQuality(next.seed, next.time.day, next.counters["cook.total"] ?? 0, cfg.life),
+            (command.quality ??
+              cookQuality(next.seed, next.time.day, next.counters["cook.total"] ?? 0, cfg.life)) +
+              cookBonus,
           ),
         ),
       );
@@ -2170,6 +2355,159 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (def.reward.gain !== undefined && def.reward.gain.amount > 0) {
         grantPending(def.reward.gain.skill, def.reward.gain.amount);
       }
+      break;
+    }
+    case "lifeSpell": {
+      // 生活魔法（M-01、09 §4）：習得済みの kind:"life" の呪文を1行動＋魔力で唱える。
+      // 効果は hook に応じて次の料理・仕事・採集・眠り・持ち物・疲労へ掛かる
+      if (cfg.magic === undefined || cfg.arts === undefined || !canAct(next.time, cfg.time)) break;
+      const ok = canLifeSpell(next, command.id, cfg.arts.defs);
+      if (!ok.ok || ok.def === undefined) break;
+      const sp = ok.def.spell!;
+      const life = sp.life!;
+      next = {
+        ...next,
+        player: { ...next.player, mana: Math.max(0, round1(next.player.mana - sp.mana)) },
+      };
+      const counters = { ...next.counters };
+      // 使用の刻印：生活魔法を使い続けると派生が覚える条件（learn.counter）が読む
+      counters[`spell.cast.${ok.def.id}`] = (counters[`spell.cast.${ok.def.id}`] ?? 0) + 1;
+      counters["spell.cast.life"] = (counters["spell.cast.life"] ?? 0) + 1;
+      counters[`spell.cast.el.${sp.element}`] = (counters[`spell.cast.el.${sp.element}`] ?? 0) + 1;
+      switch (life.hook) {
+        case "heal": {
+          // 癒しの手：即時に疲労を回復する
+          next = {
+            ...next,
+            player: {
+              ...next.player,
+              fatigue: Math.max(0, next.player.fatigue - life.value),
+            },
+          };
+          break;
+        }
+        case "preserve": {
+          // 乾燥・冷却：持ち物を保存食に変える（乾いた薬草・干し果実）
+          const tr = life.transform;
+          if (tr !== undefined) {
+            const have = itemCount(next, tr.from);
+            const n = Math.min(tr.n, have);
+            if (n > 0) {
+              takeItem(tr.from, n);
+              giveItem(tr.to, n);
+              counters[`spell.preserve.${tr.to}`] = (counters[`spell.preserve.${tr.to}`] ?? 0) + n;
+            }
+          }
+          break;
+        }
+        default: {
+          // 次の行動に効く窓（料理・仕事・採集・眠り）— 効果量を畳み、行動側が消費する
+          counters[lifeBuffKey(life.hook)] = lifeBuffOf(next, life.hook) + life.value;
+          break;
+        }
+      }
+      next = { ...next, counters };
+      // 生活魔法の技能にも経験が入る（同じ式で、技量差で伸びる）
+      {
+        const skill = ensureSkillRecord(ok.def.skill);
+        if (skill !== undefined) {
+          const { amount } = computeGain(
+            {
+              kind: "work",
+              skill: skill.value,
+              delta: 5 - skill.value,
+              repeats: recentRepeats(
+                next.actionLog,
+                "lifeSpell",
+                ok.def.id,
+                cfg.gain.noveltyWindow,
+              ),
+              potential: skill.potential,
+              fatigue: next.player.fatigue,
+              wind: windFor(next, "work", ok.def.skill),
+              modifiers: 1,
+              failed: false,
+            },
+            cfg.gain,
+          );
+          const applied = amount * gainFactor(skill.value);
+          skill.pending += applied;
+          skill.lastUsedDay = next.time.day;
+          events.push({ type: "gainApplied", skill: ok.def.skill, amount: applied });
+        }
+      }
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "lifeSpell", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "lifeSpell",
+        day: next.time.day,
+        target: ok.def.id,
+      });
+      events.push({ type: "magicCast", id: ok.def.id, hook: life.hook });
+      // 覚え判定（生活魔法を使い続けると派生が覚える、09 §4）
+      if (cfg.arts !== undefined) {
+        const learn = checkArtsLearn(next, cfg.arts);
+        next = learn.state;
+        for (const id of learn.learned) events.push({ type: "artLearned", id });
+      }
+      break;
+    }
+    case "enchant": {
+      // 付与（M-01、09 §4「鍛冶＋火魔法」）：1行動＋魔力で武器に付与を刻む。
+      // 段は counters["enchant.<weapon>"] に積み、戦闘では attackFactor に畳まれる
+      if (cfg.magic === undefined || !canAct(next.time, cfg.time)) break;
+      const ench = canEnchant(next, command.weapon, cfg.magic);
+      if (!ench.ok) break;
+      const enchCfg = cfg.magic.enchant;
+      next = {
+        ...next,
+        player: { ...next.player, mana: Math.max(0, round1(next.player.mana - enchCfg.mana)) },
+      };
+      const counters = { ...next.counters };
+      counters[`enchant.${command.weapon}`] = enchantLevel(next, command.weapon) + 1;
+      next = { ...next, counters };
+      // 付与は鍛冶と火魔法の両方の腕を使う仕事（経験は両方に入る）
+      for (const skillId of ["smithing", "fire_magic"] as const) {
+        const skill = ensureSkillRecord(skillId);
+        if (skill === undefined) continue;
+        const { amount } = computeGain(
+          {
+            kind: "work",
+            skill: skill.value,
+            delta: enchCfg.smithing - skill.value,
+            repeats: recentRepeats(
+              next.actionLog,
+              "enchant",
+              command.weapon,
+              cfg.gain.noveltyWindow,
+            ),
+            potential: skill.potential,
+            fatigue: next.player.fatigue,
+            wind: windFor(next, "work", skillId),
+            modifiers: 1,
+            failed: false,
+          },
+          cfg.gain,
+        );
+        const applied = amount * gainFactor(skill.value);
+        skill.pending += applied;
+        skill.lastUsedDay = next.time.day;
+        events.push({ type: "gainApplied", skill: skillId, amount: applied });
+      }
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "enchant", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "enchant",
+        day: next.time.day,
+        target: command.weapon,
+      });
+      events.push({
+        type: "enchanted",
+        weapon: command.weapon,
+        level: enchantLevel(next, command.weapon),
+      });
       break;
     }
     case "journey": {

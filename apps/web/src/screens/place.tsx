@@ -422,6 +422,20 @@ function actionEntries(
           onPick: () => setScreen({ name: "life", view: "cook", place: place.id }),
         },
       ];
+    case "magic":
+      // 魔法（M-01）：生活魔法の使用と武器への付与。
+      // まだ何も覚えていない世界では窓を出さない（覚えてから意味がある）
+      return Object.keys(state.player.arts).some((id) => cfg.arts?.defs[id]?.spell !== undefined)
+        ? [
+            {
+              id: "place-magic",
+              label: "魔法を整える",
+              sub: "生活魔法と付与",
+              disabled: !canActNow,
+              onPick: () => setScreen({ name: "life", view: "spells", place: place.id }),
+            },
+          ]
+        : [];
     case "gamble":
       return [
         {

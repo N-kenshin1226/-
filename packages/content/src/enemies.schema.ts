@@ -18,7 +18,18 @@ export const enemySchema = z
     /** 予兆を伴う大技の表 */
     moves: z.record(
       z.string(),
-      z.object({ id: z.string(), name: z.string(), power: z.number().positive() }).strict(),
+      z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          power: z.number().positive(),
+          /**
+           * 呪文として放つ大技（M-01）。spells.json の id。観察中に発動を
+           * 見届けると見取り稽古でその呪文の見知り（spell.seen.<id>）を得られる
+           */
+          spell: z.string().min(1).optional(),
+        })
+        .strict(),
     ),
     /** 行動パターン（固定ループ） */
     pattern: z
@@ -47,13 +58,25 @@ export const enemySchema = z
       .partialRecord(z.enum(["slash", "pierce", "blunt", "magic"]), z.number().positive())
       .optional(),
     /**
-     * 状態異常への耐性（K-02）：付与率に掛ける倍率（0=効かない、1=通常）。
-     * 省略の状態は通常どおり効く
+     * 状態異常への耐性（K-02/M-01）：付与率に掛ける倍率。
+     * 0=効かない、1=通常、1より大＝弱く掛かりやすい（弱点。
+     * 例：氷の精は燃焼に弱い）。最終の付与率は戦闘側で1に丸める
      */
     statusResist: z
       .partialRecord(
-        z.enum(["bleed", "stun", "stagger", "slow", "poison"]),
-        z.number().min(0).max(1),
+        z.enum([
+          "bleed",
+          "stun",
+          "stagger",
+          "slow",
+          "poison",
+          "wet",
+          "oil",
+          "frozen",
+          "burn",
+          "shock",
+        ]),
+        z.number().min(0).max(2),
       )
       .optional(),
     /**
