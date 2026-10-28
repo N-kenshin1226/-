@@ -10,6 +10,9 @@ import {
   cfg,
   cfgFor,
   crisisFinaleOffers,
+  dungeonCampFree,
+  dungeonDone,
+  dungeonProgress,
   eventLines,
   incidentPendingChoice,
   LAKE_ORDER,
@@ -255,6 +258,27 @@ function actionEntries(
           onPick: () => setScreen({ name: "abyss" }),
         },
       ];
+    case "dungeon": {
+      // 有限迷宮（G-03）：潜ると部屋を抜く探索の画面へ。1回の潜りは
+      // diveCost 行動（step の dungeon コマンドと同じ判定）。野営明けは無償
+      const free = dungeonCampFree(state, place.id);
+      const cost = cfg.dungeons?.diveCost ?? 1;
+      const afford = free || state.time.action + cost <= cfg.time.actionsPerDay;
+      return [
+        {
+          id: "place-dungeon",
+          label: "迷宮に潜る",
+          sub: free
+            ? "野営明け ―― 行動を使わず潜れる"
+            : dungeonDone(state, place.id)
+              ? t.text.recordsDungeonCleared
+              : "灯りが尽きるまで",
+          disabled: !afford,
+          gold: !dungeonDone(state, place.id) && dungeonProgress(state, place.id).cleared > 0,
+          onPick: () => setScreen({ name: "dungeon", place: place.id }),
+        },
+      ];
+    }
     case "arms":
       // 武器屋（K-01）：武器の売り買いと持ち替え。立ち寄るだけなら行動は消費しない
       // 武技の構え（K-02）：ここで戦闘技・パッシブ・持ち替え武器を組み替える

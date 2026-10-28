@@ -80,7 +80,7 @@ function displayedHp(cs: CombatState, playback: Playback): { you: number; foe: n
 }
 
 /** 敵の意図・こちらの構えの帯（予兆は発動の前に必ず見える） */
-function IntentLine({ cs, def }: { cs: CombatState; def: ReturnType<typeof enemyDefOf> }) {
+export function IntentLine({ cs, def }: { cs: CombatState; def: ReturnType<typeof enemyDefOf> }) {
   const intent = combatIntent(cs, def, cfg.combat);
   return (
     <div className="cbt-intent" data-testid="combat-intent">
@@ -113,7 +113,7 @@ function IntentLine({ cs, def }: { cs: CombatState; def: ReturnType<typeof enemy
  * 戦闘の舞台（F-04）：敵の影・双方の体力・浮き文字・直近の一拍。
  * 狩りの CombatScreen と深層の AbyssScreen で共用する
  */
-function CombatArena({
+export function CombatArena({
   cs,
   enemy,
   def,
@@ -236,7 +236,7 @@ function CombatArena({
 /* ── K-01：武器の持ち替え ── */
 
 /** 武器の表示名（定義が無い id はそのまま出す） */
-const weaponName = (id: string) => weaponDefs[id]?.name ?? id;
+export const weaponName = (id: string) => weaponDefs[id]?.name ?? id;
 /** 武器が使う技能の表示名 */
 const weaponSkillName = (id: string) => {
   const w = weaponDefs[id];
@@ -247,7 +247,7 @@ const weaponSkillName = (id: string) => {
  * 持ち替えのコマンド列（K-01）：所持武器を並べ、選ぶと1行動を消費して
  * その武器に持ち替える（次の行動から武器技能・間隔・補正が変わる）
  */
-function switchEntries(
+export function switchEntries(
   cs: CombatState,
   doAction: (a: CombatAction) => void,
   cancel: () => void,
@@ -276,7 +276,7 @@ function switchEntries(
  * 使えるのは装備中の武器技能のもの＋気力が足りるものだけ
  * （使えない技は理由を出して選べない —— 行動の空費を防ぐ）
  */
-function artEntries(
+export function artEntries(
   cs: CombatState,
   doAction: (a: CombatAction) => void,
   cancel: () => void,

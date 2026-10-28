@@ -3,7 +3,7 @@ import { dismissFx, gotoPlace, skipIntro, toMap, travelTo, waitVeil } from "./he
 
 /**
  * 情景の部品（G-05、docs/10 §8）の e2e。
- * - ?scn= の確認用窓で全型（町9・地域17・深層3）が描ける
+ * - ?scn= の確認用窓で全型（町9・地域17・ダンジョン8=深層+有限迷宮7）が描ける
  * - 生成地方の場所・地域・深層が型の情景（data-scenery）で描かれる
  * - legacy（?world=legacy）も scenery.legacy の当て方で型のレシピに写り、
  *   屋内は従来の部屋の情景（data-scene のみ）に倒れる
@@ -49,10 +49,15 @@ const SCENERY_KEYS = [
   "region.road",
   "dungeon.abyss",
   "dungeon.cave",
+  "dungeon.mine",
   "dungeon.crypt",
+  "dungeon.nest",
+  "dungeon.ruins",
+  "dungeon.tower",
+  "dungeon.sunken",
 ];
 
-test("情景の全型が ?scn= で描ける（町9・地域17・深層3）", async ({ page }) => {
+test("情景の全型が ?scn= で描ける（町9・地域17・ダンジョン8）", async ({ page }) => {
   for (const key of SCENERY_KEYS) {
     await page.goto(`/?scn=${key}&tod=evening&weather=clear&seed=e2e`);
     await expect(scene(page)).toHaveAttribute("data-scenery", key);

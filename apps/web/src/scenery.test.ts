@@ -29,7 +29,7 @@ const legacyState = (seed = "e2e", town = "ardi") =>
     life: { town },
   }) as GameState;
 
-const render = (spec: ScenerySpec, opts?: Parameters<typeof Scenery>[0]) =>
+const render = (spec: ScenerySpec, opts?: Omit<Parameters<typeof Scenery>[0], "spec">) =>
   renderToStaticMarkup(createElement(Scenery, { spec, ...opts }));
 
 /* ── 配置の決定性 ── */
@@ -77,6 +77,12 @@ describe("型とレシピの対応", () => {
     expect(scenery.dungeon.abyss!.sky).toBe(false);
   });
 
+  it("有限迷宮の型すべてにレシピがある（G-03、7種）", () => {
+    for (const t of worldFile.dungeonTypes ?? []) {
+      expect(scenery.dungeon[t.id], `dungeon.${t.id}`).toBeDefined();
+    }
+  });
+
   it("legacy の町・地域の当て先がレシピに存在する", () => {
     for (const [town, type] of Object.entries(scenery.legacy.towns)) {
       expect(scenery.town[type], `legacy towns ${town}→${type}`).toBeDefined();
@@ -119,6 +125,24 @@ describe("画面から情景を引く（生成地方）", () => {
   it("深層の画面はダンジョンの型、旅は街道の情景", () => {
     expect(sceneryForScreen(state, { name: "abyss" }, null)?.id).toBe("dungeon.abyss");
     expect(sceneryForScreen(state, { name: "journey" }, null)?.id).toBe("region.road");
+  });
+
+  it("有限迷宮：場所と潜りの画面はその迷宮の型のレシピ（G-03）", () => {
+    for (const d of w.dungeons) {
+      // 迷宮の場所（life.places の型は "dg.<型>"）はダンジョンのレシピ
+      const at = sceneryForScreen(state, { name: "place", place: d.id }, null);
+      expect(at?.id, `place ${d.id}`).toBe(`dungeon.${d.type}`);
+      expect(at?.variant).toBe(`${state.seed}:scenery:${d.id}`);
+      // 潜りの画面も同じ型のレシピ
+      const dive = sceneryForScreen(state, { name: "dungeon", place: d.id }, null);
+      expect(dive?.id, `dive ${d.id}`).toBe(`dungeon.${d.type}`);
+    }
+    // 全7型が同じ系列のどこかの迷宮に見える（ダンジョンのレシピ網羅）
+    const seen = new Set(w.dungeons.map((d) => d.type));
+    for (const t of worldFile.dungeonTypes ?? []) {
+      if (!seen.has(t.id)) continue; // このシードに無い型はレシピ網羅テストが担う
+      expect(scenery.dungeon[t.id]).toBeDefined();
+    }
   });
 
   it("読みもの用の画面は情景を引かない（従来の固定背景へ）", () => {

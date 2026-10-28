@@ -24,7 +24,7 @@
 | G-04 | [G-04_bestiary.md](G-04_bestiary.md) | G-01 | done | **最優先（ステージ）**。敵と生物群系：基本種71（42→71。獣・人・不死・魔物・精霊・竜種の6系統、全種に耐性/弱点/予兆）＋亜種15（enemies.json の biomes×variants を <基>__<バイオーム> に展開）＝86種。系統は foe.<family> の使用タグに、獣は従来どおり beast 旗。撃破の戦利品（drops、世界シード×敵×撃破序数の決定的抽選で step の itemGot へ）＋素材15種＋料理「焼き獣肉」＋地域型の採集/依頼が料理・鍛冶・調合へ流れる。全86種が地域型の敵表か旧狩場に居る（配置テスト）。GameState 不変（戦利品は既存の品物増減） |
 | G-05 | [G-05_scenery.md](G-05_scenery.md) | G-01 | done | **最優先（ステージ）**。情景の部品で型ごとの背景。scenery.json（部品・配色・レシピ、zod検証＋world/legacy との相互参照チェック）に町9型・地域17型・深層3型の層レシピ（far/mid/front/light/atmos）、配置は世界シード×場所から rng で決定的に引く（n・x範囲・y揺れ・拡縮・反転・形違い）。ui/scenery.tsx（レンダラ）＋src/scenery.ts（画面→レシピの解決）。町の屋内は従来の部屋の情景へ、時間帯・天候・危機の霞は同じ層で重ねる。legacy は scenery.legacy の当て方で型レシピに写す（アルディ→宿場街・ベルン→港町）。?scn= 確認窓。GameState 不変・e2e 77件全通過・全ゲート緑 |
 | G-02 | [G-02_travel_map.md](G-02_travel_map.md) | G-01 | todo | **最優先（ステージ）**。地方の地図と旅 |
-| G-03 | [G-03_dungeons.md](G-03_dungeons.md) | G-01, G-04 | todo | **最優先（ステージ）**。ダンジョンの生成 |
+| G-03 | [G-03_dungeons.md](G-03_dungeons.md) | G-01, G-04 | done | **最優先（ステージ）**。有限迷宮の生成：world.json に dungeonTypes7種＋trapKinds（zod検証）＋balance.dungeons。core/dungeon の generateDungeons（rng.fork("dungeons") の独立系列、5〜9個・型2まで・輪で蓋・始まりの町に必置・3〜6層×2〜4室・罠/宝/主）＋step の dungeon コマンド（潜り=2行動、灯りで深さ制限、迷宮内野営で翌日無償、counters/flags に進行、GameState 不変）＋bossDefeated/dungeonEnded イベント。ユニークモンスターは世界に1体（生成も討伐記録も）。場所は門から出る袋小路、情景は dungeon.<型>7レシピ追加、探索画面 dungeon.tsx。sim:dungeon 受入ゲート（全7型制覇可・ユニーク1体・1潜り制覇≤50%）合格・WORLD_RECIPE v2 |
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
 | W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | done | 危機の筋書きと世界の備え（docs/08_world_crisis.md） |
 | W-02 | [W-02_touchpoints.md](W-02_touchpoints.md) | W-01 | done | 接点（危機が日常に混ざる）と寄与 |

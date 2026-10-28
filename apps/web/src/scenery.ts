@@ -68,6 +68,13 @@ function townPlaceSpec(state: GameState, p: PlaceLike): ScenerySpec | null {
 function regionSpec(state: GameState, id: string): ScenerySpec | null {
   const w = genWorld(state);
   const type = w !== null ? w.life.places[id]?.type : scenery.legacy.regions[id];
+  // 迷宮の場所（G-03）：life.places の型は "dg.<迷宮の型>" —— ダンジョンのレシピを引く
+  if (type !== undefined && type.startsWith("dg.")) {
+    const dgType = type.slice(3);
+    const base = scenery.dungeon[dgType];
+    if (base === undefined) return null;
+    return { id: `dungeon.${dgType}`, recipe: base, variant: `${state.seed}:scenery:${id}` };
+  }
   const base = type !== undefined ? scenery.region[type] : undefined;
   if (base === undefined) return null;
   return { id: `region.${type}`, recipe: base, variant: `${state.seed}:scenery:${id}` };
@@ -115,6 +122,17 @@ export function sceneryForScreen(
         recipe: scenery.dungeon.abyss!,
         variant: `${state.seed}:scenery:abyss`,
       };
+    // 有限迷宮の中（G-03）：その迷宮の型のレシピ（洞窟・坑道・地下墓所…）
+    case "dungeon": {
+      const dgType = genWorld(state)?.dungeons.find((d) => d.id === s.place)?.type;
+      const recipe = dgType !== undefined ? scenery.dungeon[dgType] : undefined;
+      if (recipe === undefined) return null;
+      return {
+        id: `dungeon.${dgType}`,
+        recipe,
+        variant: `${state.seed}:scenery:${s.place}`,
+      };
+    }
     // 旅の途中（P-02）：町と町の間は街道の情景
     case "journey":
       return {

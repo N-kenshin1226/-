@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @trace/web dev",
-    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run check:content && pnpm run lore:check && pnpm run sim:growth && pnpm run sim:retention && pnpm run sim:crisis && pnpm run sim:arts && pnpm run sim:magic && pnpm run build && pnpm run test:e2e",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run check:content && pnpm run lore:check && pnpm run sim:growth && pnpm run sim:retention && pnpm run sim:crisis && pnpm run sim:arts && pnpm run sim:magic && pnpm run sim:dungeon && pnpm run build && pnpm run test:e2e",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -24,7 +24,8 @@
     "lore:check": "pnpm --filter @trace/lore-check run check",
     "play:cli": "pnpm --filter @trace/sim run play:cli",
     "sim:arts": "pnpm --filter @trace/sim run sim:arts",
-    "sim:magic": "pnpm --filter @trace/sim run sim:magic"
+    "sim:magic": "pnpm --filter @trace/sim run sim:magic",
+    "sim:dungeon": "pnpm --filter @trace/sim run sim:dungeon"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

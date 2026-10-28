@@ -319,6 +319,34 @@ export {
   startRun,
 } from "./abyss/index.js";
 export type { AbyssConfig, AbyssEnd, AbyssKill, AbyssRun } from "./abyss/index.js";
+// 有限迷宮（G-03、docs/10 §6）：型から階層・部屋・罠・宝・主を生成。
+// 進行は counters/flags（dg.rooms/dg.cleared/dg.camp）に刻む —— GameState の形は変えない
+export {
+  bossEnemy,
+  bossName,
+  dgCampKey,
+  dgClearedKey,
+  dgProgress,
+  dgRoomsKey,
+  dgUniqueKey,
+  dgUniqueTotalKey,
+  floorRooms,
+  generateDungeons,
+  isBossRoom,
+  roomAt,
+  rollTrap,
+  scaleRoomEnemy,
+  totalRooms,
+} from "./dungeon/index.js";
+export type {
+  DungeonConfig,
+  GenBoss,
+  GenDungeon,
+  GenFloor,
+  GenRoom,
+  WorldDungeonType,
+  WorldTrapKind,
+} from "./dungeon/index.js";
 export { drawRivalCast, playerScore, rivalsOf } from "./rivals/index.js";
 export type {
   RivalCast,

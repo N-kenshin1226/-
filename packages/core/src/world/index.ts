@@ -1,6 +1,13 @@
 import type { Cond } from "../conditions/index.js";
 import type { MentorDefLike } from "../mentors/index.js";
 import type { ErrandDef, GatherTable, JourneyDef, LifeOutcome } from "../life/index.js";
+import {
+  generateDungeons,
+  type DungeonConfig,
+  type GenDungeon,
+  type WorldDungeonType,
+  type WorldTrapKind,
+} from "../dungeon/index.js";
 import { createRng, type Rng } from "../rng/index.js";
 import type { GameState } from "../state/types.js";
 
@@ -26,8 +33,12 @@ import type { GameState } from "../state/types.js";
  *   掲示依頼 id  … `err.<町id>.<key>`
  */
 
-/** 生成レシピの版（state.world.recipe に刻む。生成器の形が変わったら上げる） */
-export const WORLD_RECIPE = 1;
+/**
+ * 生成レシピの版（state.world.recipe に刻む。生成器の形が変わったら上げる）。
+ * v2：迷宮の生成（G-03）を追加。追加は専用の系列（rng.fork("dungeons")）で畳むので、
+ * v1 で生成された世界と町・地域・人の並びは同じ —— 迷宮の枠だけが増える
+ */
+export const WORLD_RECIPE = 2;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
@@ -76,6 +87,8 @@ export interface WorldGenConfig {
   rep: { max: number; errand: number; work: number; donate: number; pricePer: number };
   /** 掲示依頼の仲の増分（その町の宿屋の主） */
   errandBond: number;
+  /** 有限迷宮の生成ルール（balance.dungeons、G-03。省略時は迷宮を作らない） */
+  dungeons?: DungeonConfig;
 }
 
 /* ── world.json の型の最小形（core は定義の形だけを知る） ── */
@@ -183,6 +196,9 @@ export interface WorldTypeFile {
   townTypes: readonly WorldTownType[];
   areaTypes: readonly WorldAreaType[];
   spotKinds: readonly WorldSpotKind[];
+  /** 迷宮の罠の型・迷宮の型（G-03。省略時は迷宮を作らない） */
+  trapKinds?: readonly WorldTrapKind[];
+  dungeonTypes?: readonly WorldDungeonType[];
   npcNames: readonly string[];
   npcVoice: { greet: readonly string[]; respect: readonly string[] };
   mentorText: { desc: string; note: string };
@@ -294,6 +310,8 @@ export interface GeneratedWorld {
   npcs: readonly GenNpc[];
   /** 生成される師匠 */
   mentors: readonly GenMentor[];
+  /** 有限迷宮（G-03。洞窟・坑道・地下墓所・古代遺跡・魔物の巣・塔・沈んだ神殿。深層は別） */
+  dungeons: readonly GenDungeon[];
   /** LifeConfig への寄与分 */
   life: GenLifeContrib;
 }
@@ -522,6 +540,20 @@ export function generateWorld(
     };
   });
 
+  // ── 有限迷宮（G-03）：専用系列から独立に畳む。
+  // 町・地域・人の生成は触れないので、v1 の世界と並びは同じまま迷宮だけが増える ──
+  const dungeons: GenDungeon[] =
+    cfg.dungeons !== undefined && file.dungeonTypes !== undefined && file.dungeonTypes.length > 0
+      ? generateDungeons(
+          rng.fork("dungeons"),
+          file.dungeonTypes,
+          towns.map((t) => ({ id: t.id, ring: t.ring })),
+          cfg.dungeons,
+          cfg.safeDanger,
+          cfg.ringDangerStep,
+        )
+      : [];
+
   // ── 場所：町の見取り図＋地域 ──
   const places: GenPlace[] = [];
   const npcById = new Map<string, GenNpc>();
@@ -546,6 +578,7 @@ export function generateWorld(
     // 場所：基本 −omit ＋ 型固有。gate は道・地域への出口が乗る
     const tmpl = [...file.townBase.places.filter((p) => !omit.has(p.key)), ...(type.places ?? [])];
     const areaIds = areas.filter((a) => a.town === town.id).map((a) => a.id);
+    const dgIds = dungeons.filter((d) => d.town === town.id).map((d) => d.id);
     const neighbors = [...(adj.get(town.id) ?? [])].sort();
     for (const p of tmpl) {
       const id = `${town.id}.${p.key}`;
@@ -569,6 +602,8 @@ export function generateWorld(
       if (p.key === "gate") {
         for (const nb of neighbors) actions.push({ type: "journey", to: nb });
         for (const a of areaIds) actions.push({ type: "travel", to: a });
+        // 迷宮への道も門から出る（G-03。地域と同じく「街の外」の場所）
+        for (const d of dgIds) actions.push({ type: "travel", to: d });
       }
       places.push({
         id,
@@ -691,6 +726,21 @@ export function generateWorld(
     lifePlaces[area.id] = { town: area.town, type: type.id };
   }
 
+  // 迷宮の場所（門から出る先。「潜る」行動＋町の門への引き返しだけを持つ袋小路）
+  for (const d of dungeons) {
+    places.push({
+      id: d.id,
+      name: d.name,
+      kind: "region",
+      town: d.town,
+      scene: "abyss",
+      desc: d.desc,
+      npcs: [],
+      actions: [{ type: "dungeon" }, { type: "travel", to: `${d.town}.gate` }],
+    });
+    lifePlaces[d.id] = { town: d.town, type: `dg.${d.type}` };
+  }
+
   // 市場の品揃え：品 → 並ぶ町（market.stock の towns 付きエントリに畳む）
   const stockUnion = new Map<string, string[]>();
   for (const [town, set] of marketStockByTown) {
@@ -715,6 +765,7 @@ export function generateWorld(
     places,
     npcs: [...npcById.values()],
     mentors,
+    dungeons,
     life: {
       towns: lifeTowns,
       journeys: roads.map((r) => ({ ...r })),

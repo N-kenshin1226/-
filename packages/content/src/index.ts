@@ -200,22 +200,26 @@ export type {
 export { world } from "./world.js";
 export {
   areaTypeSchema,
+  dungeonTypeSchema,
   npcTemplateSchema,
   spotKindSchema,
   townErrandSchema,
   townMarketSchema,
   townPlaceSchema,
   townTypeSchema,
+  trapKindSchema,
   worldFileSchema,
 } from "./world.schema.js";
 export type {
   AreaTypeJson,
+  DungeonTypeJson,
   NpcTemplateJson,
   SpotKindJson,
   TownErrandJson,
   TownMarketJson,
   TownPlaceJson,
   TownTypeJson,
+  TrapKindJson,
   WorldFile,
 } from "./world.schema.js";
 // 情景の部品（G-05、docs/10 §8。型ごとの配色と部品レシピの定義表）

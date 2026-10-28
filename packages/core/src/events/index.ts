@@ -29,8 +29,11 @@ import type { WakeReport } from "../growth/consolidate.js";
 export type ActionEvent =
   /** 行動を消化した。kind はコマンド側の分類、target は行動の相手、variant は新規性の細粒度キー */
   | { type: "actionPerformed"; kind: string; day: number; target?: string; variant?: string }
-  /** 睡眠した。from/to は GameTime */
-  | { type: "slept"; from: GameTime; to: GameTime }
+  /**
+   * 睡眠した。from/to は GameTime。
+   * camp は野営の眠り（旅の野営・迷宮内野営。起床ログの場所名の出し分けに使う）
+   */
+  | { type: "slept"; from: GameTime; to: GameTime; camp?: boolean }
   /** 未定着経験を得た。amount は今回の増分 */
   | { type: "gainApplied"; skill: string; amount: number }
   /** 起床ログの構造化データ（睡眠時に発行） */
@@ -64,6 +67,25 @@ export type ActionEvent =
       best: number;
       newBest: boolean;
     }
+  /**
+   * 有限迷宮の潜りが終わった（G-03、docs/10 §6。通知Bランク相当、制覇はA）。
+   * id は迷宮の場所 id。rooms は今回抜いた室数、cleared/total は反映後の
+   * 累計と全室数、done は制覇（最後の潜り）か
+   */
+  | {
+      type: "dungeonEnded";
+      id: string;
+      end: "fled" | "light" | "retreat" | "camp" | "cleared" | "died";
+      rooms: number;
+      cleared: number;
+      total: number;
+      done: boolean;
+    }
+  /**
+   * 迷宮の主を討った（G-03。通知Aランク相当、ユニークはS —— 世界に1体・
+   * 世界初の記録）。enemyId は主の基になった敵種、unique はユニークモンスターか
+   */
+  | { type: "bossDefeated"; dungeon: string; enemyId: string; unique: boolean }
   /** 死亡して教会で蘇生した。未定着経験の半分を失う */
   | { type: "died" }
   /**

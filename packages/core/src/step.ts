@@ -314,6 +314,19 @@ export interface StepConfig {
    * ライバルが先取りしうる（記録は state.uniques。世界の記録に残る）
    */
   uniques?: UniquesConfig;
+  /**
+   * 有限迷宮（G-03、docs/10 §6。balance.dungeons のうち潜りに関わる係数）。
+   * 指定すると dungeon コマンドが効く：1回の潜りが diveCost 行動を消費し、
+   * campQuality は迷宮内野営（sleep の camp）の眠りの質になる。
+   * 未指定の世界では dungeon コマンドは何も起こさない
+   */
+  dungeons?: { diveCost: number; campQuality: number };
+  /**
+   * この世界に存在する迷宮の場所 id（G-03。生成世界の dungeons[].id）。
+   * 指定されたとき、dungeon コマンドは一覧にある id にだけ効く ——
+   * 存在しない・生成されない迷宮の潜りは記録しない
+   */
+  dungeonIds?: readonly string[];
 }
 
 export type Command =
@@ -325,8 +338,12 @@ export type Command =
    * to は行き先の場所 id（行動ログの目印。朝刊の記録欄に残る）
    */
   | { type: "travel"; to?: string }
-  /** 宿で寝る。inn/dinner は睡眠の質（2要因のみ） */
-  | { type: "sleep"; inn?: InnRank; dinner?: boolean }
+  /**
+   * 宿で寝る。inn/dinner は睡眠の質（2要因のみ）。
+   * camp は迷宮内野営（G-03）：旅の野営と同じく宿代は取られず、
+   * 眠りの質は dungeons.campQuality（街道の野営より悪い）になる
+   */
+  | { type: "sleep"; inn?: InnRank; dinner?: boolean; camp?: boolean }
   /** 休養：家で休んで眠る。行動0回なら休養日（素質回復・オーバーワーク解除） */
   | { type: "rest" }
   /** 訓練：安全だが挑戦係数に上限がある（02 §8）。difficulty は行動の難度 */
@@ -419,6 +436,49 @@ export type Command =
       /** ラン終了時点の魔力（M-01） */
       manaLeft?: number;
       /** ラン中に見届けた敵の呪文（M-01。flags["spell.seen.<id>"] に畳む） */
+      seenSpells?: readonly string[];
+    }
+  /**
+   * 有限迷宮の潜りの結果を世界に反映する（G-03、docs/10 §6）。
+   * 深層と同じく潜りの進行は画面側で行い、ここでは撃破・宝・罠・
+   * 進行（抜いた室数）・主の撃破を記録する。1回の潜りは
+   * cfg.dungeons.diveCost 行動を消費するが、迷宮内野営の翌日は
+   * 行動を要さない（dg.camp.<id> が昨日の日付なら無償）
+   */
+  | {
+      type: "dungeon";
+      /** 迷宮の場所 id（生成世界の dg<連番>） */
+      id: string;
+      /** 潜りの終わり方：逃走／灯り切れ／引き上げ／野営／制覇／死亡 */
+      end: "fled" | "light" | "retreat" | "camp" | "cleared" | "died";
+      /** 今回抜いた室数（この潜りの分。主の間を抜いた潜りは主の間も数える） */
+      rooms: number;
+      /** 迷宮の全室数（生成から来る整合キー。主の間を含む） */
+      total: number;
+      /** 撃破した敵（順）。difficulty は強化後の挑戦差 */
+      kills?: readonly { enemyId: string; difficulty: number }[];
+      /** 未決着の戦闘（逃走・死亡・灯り切れで中断したもの） */
+      loss?: { enemyId: string; difficulty: number };
+      /**
+       * 主の撃破（end==="cleared" のとき必須）。
+       * 討伐記録・ユニークの数え上げはここから刻む
+       */
+      boss?: { enemyId: string; difficulty: number; unique?: boolean };
+      /** 宝物部屋・主の間の品（id → 個数） */
+      items?: Record<string, number>;
+      /** 宝物部屋・主の間の財貨（G） */
+      money?: number;
+      /** 罠の消耗の合計（疲労に足す） */
+      trapFatigue?: number;
+      /**
+       * 潜り中に最後に使った武器のID（深層の weapon と同じ扱い。
+       * 省略時は装備中の武器）
+       */
+      weapon?: string;
+      /** 潜り中の使用記録（combat/abyss と同じ畳み込み） */
+      uses?: readonly { id?: string; skill: string; tags: string[] }[];
+      kiLeft?: number;
+      manaLeft?: number;
       seenSpells?: readonly string[];
     }
   /** 打診を受けて立場・職業の認定を受ける（03 §1）。行動は消費しない */
@@ -897,12 +957,17 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // R-01 体調の揺らぎ：目覚める日の「調子」を日×世界シードで抽選し、
       // 睡眠の質と疲労で良い/悪いの重みを傾ける。結果は今晩の定着の質に係数として効く
       // P-02：旅の途中の眠りは野営（campQuality）。食事と祈りはどの眠りにも効く
-      const camping = next.life.journey !== null;
-      let baseQuality = camping
-        ? (cfg.life?.campQuality ?? cfg.body.restQuality)
-        : isRest
-          ? cfg.body.restQuality
-          : sleepQuality(command.inn ?? "normal", command.dinner ?? false, cfg.sleep);
+      // G-03：迷宮内野営（command.camp）も野営 —— 宿代は取られず、
+      // 眠りの質は街道より悪い（dungeons.campQuality。未設定なら街道の質に倒す）
+      const dungeonCamp = command.type === "sleep" && command.camp === true;
+      const camping = next.life.journey !== null || dungeonCamp;
+      let baseQuality = dungeonCamp
+        ? (cfg.dungeons?.campQuality ?? cfg.life?.campQuality ?? cfg.body.restQuality)
+        : camping
+          ? (cfg.life?.campQuality ?? cfg.body.restQuality)
+          : isRest
+            ? cfg.body.restQuality
+            : sleepQuality(command.inn ?? "normal", command.dinner ?? false, cfg.sleep);
       if (cfg.life !== undefined) {
         baseQuality += mealToday(next) * cfg.life.mealSleepFactor;
         if (prayedToday(next)) baseQuality += cfg.life.praySleepBonus;
@@ -1091,7 +1156,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         crisisEvents.push(...turned.events);
       }
 
-      events.push({ type: "slept", from, to: next.time });
+      events.push({ type: "slept", from, to: next.time, ...(camping ? { camp: true } : {}) });
       events.push({ type: "wakeReport", report });
       // ランク帯を越えた定着（F-01）：起床レポートの直後に節目のイベントを出す。
       // 表示側はこれを起床ログの区切り・通知として描く（F-02 の演出材料）
@@ -1750,6 +1815,254 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         counters["death.count"] = (counters["death.count"] ?? 0) + 1;
         // 教会蘇生：未定着経験の半分を失う。深層で死んでも扱いは戦闘死と同じ（03 §4）
         // K-01：医術・治癒・施療が蘇生を手厚くする（death.keep リンク）
+        const skills = { ...next.player.skills };
+        const keep = deathKeepFactor();
+        for (const id of Object.keys(skills)) {
+          const s = skills[id]!;
+          skills[id] = { ...s, pending: s.pending * keep };
+        }
+        next = { ...next, player: { ...next.player, skills } };
+        events.push({ type: "died" });
+      }
+      next = { ...next, counters };
+      break;
+    }
+    case "dungeon": {
+      // 有限迷宮（G-03、docs/10 §6）：潜り1回＝diveCost 行動（迷宮内野営の
+      // 翌日は無償）。抜いた室数・制覇・野営日は counters/flags に刻み、
+      // 撃破・武技・呪文の畳み込みは深層と同じ仕組みで行う。
+      // GameState の形は変えないのでセーブバージョン据置
+      if (cfg.dungeons === undefined) break;
+      if (cfg.dungeonIds !== undefined && !cfg.dungeonIds.includes(command.id)) break;
+      const roomsKey = `dg.rooms.${command.id}`;
+      const clearedKey = `dg.cleared.${command.id}`;
+      const campKey = `dg.camp.${command.id}`;
+      const roomsPrev = next.counters[roomsKey] ?? 0;
+      // 野営明けの無償潜り：野営を刻んだ日の翌日の最初の潜りは行動を要さない
+      // （刻印が無い日は ?? -1 と day-1 がたまたま揃う日0で誤爆しないよう存在確認）
+      const campDay = next.counters[campKey];
+      const camped = campDay !== undefined && campDay === next.time.day - 1;
+      // 潜りは diveCost 行動（travel と同じく全額払えなければ潜れない。野営明けは無償）
+      if (!camped && next.time.action + cfg.dungeons.diveCost > cfg.time.actionsPerDay) break;
+      const counters = { ...next.counters };
+      const effects = [
+        ...activeEffects(
+          next,
+          cfg.titles,
+          cfg.society.professions,
+          cfg.mentors?.mentors,
+          cfg.legacy?.artifactGainFactor,
+        ),
+        ...activeBookEffects(next, cfg.books),
+      ];
+      // 部屋ごとの戦闘を順に反映する（深層と同じ畳み込み。行動ログの
+      // kind は "combat"・variant で迷宮を区別し、種の討伐数に積む）
+      const inRun = new Map<string, number>();
+      const applyFight = (fight: { enemyId: string; difficulty: number }, won: boolean) => {
+        const repeats =
+          recentRepeats(next.actionLog, "combat", fight.enemyId, cfg.gain.noveltyWindow) +
+          (inRun.get(fight.enemyId) ?? 0);
+        const usedWeaponSkill =
+          cfg.weapons?.[command.weapon ?? next.player.weapon]?.skill ?? "swordplay";
+        for (const skillId of new Set([usedWeaponSkill, "evasion"])) {
+          const skill = ensureSkillRecord(skillId);
+          if (!skill) continue;
+          const { amount } = computeGain(
+            {
+              kind: "combat",
+              skill: skill.value,
+              delta: fight.difficulty - skill.value,
+              repeats,
+              potential: skill.potential,
+              fatigue: next.player.fatigue,
+              wind: windFor(next, "combat", skillId),
+              modifiers:
+                gainModifier(effects, "combat", skillId, fight.enemyId) *
+                worldFactor(fate, "combatGainFactor"),
+              failed: !won,
+            },
+            cfg.gain,
+          );
+          const applied = amount * gainFactor(skill.value);
+          skill.pending += applied;
+          skill.lastUsedDay = next.time.day;
+          events.push({ type: "gainApplied", skill: skillId, amount: applied });
+        }
+        inRun.set(fight.enemyId, (inRun.get(fight.enemyId) ?? 0) + 1);
+        events.push({
+          type: "actionPerformed",
+          kind: "combat",
+          day: next.time.day,
+          target: fight.enemyId,
+          variant: "dungeon",
+        });
+        events.push({
+          type: "combatEnded",
+          enemyId: fight.enemyId,
+          won,
+          fled: !won && command.end === "fled",
+        });
+        if (won) {
+          const key = `kill.species.${fight.enemyId}`;
+          counters[key] = (counters[key] ?? 0) + 1;
+          // G-04：迷宮の撃破にも戦利品を引く（combat・深層と同じ抽選）
+          rollDrops(fight.enemyId, counters[key]!);
+        }
+      };
+      for (const k of command.kills ?? []) applyFight(k, true);
+      if (command.loss !== undefined) applyFight(command.loss, false);
+
+      // K-02：潜り中の武技まわりを畳む（深層と同じ処理。経験は最深の格で入る）
+      if (cfg.arts !== undefined) {
+        if (command.kiLeft !== undefined) {
+          next = {
+            ...next,
+            player: { ...next.player, ki: Math.max(0, round1(command.kiLeft)) },
+          };
+        }
+        if (command.manaLeft !== undefined) {
+          next = {
+            ...next,
+            player: { ...next.player, mana: Math.max(0, round1(command.manaLeft)) },
+          };
+        }
+        if (cfg.magic !== undefined && command.seenSpells !== undefined) {
+          const flags = { ...next.flags };
+          let seenNew = false;
+          for (const id of command.seenSpells) {
+            const key = `spell.seen.${id}`;
+            if (flags[key] !== true) {
+              flags[key] = true;
+              seenNew = true;
+            }
+          }
+          if (seenNew) next = { ...next, flags };
+        }
+        const uses = command.uses ?? [];
+        if (uses.length > 0) {
+          const rec = recordArtUse(next.player.artTags, next.player.skillTags, uses);
+          const top = Math.max(
+            0,
+            ...(command.kills ?? []).map((k) => k.difficulty),
+            command.loss?.difficulty ?? 0,
+            command.boss?.difficulty ?? 0,
+          );
+          const weaponSkillVal =
+            next.player.skills[
+              cfg.weapons?.[command.weapon ?? next.player.weapon]?.skill ?? "swordplay"
+            ]?.value ?? 0;
+          const gain = artExpGain(top, weaponSkillVal, cfg.arts);
+          const arts = { ...next.player.arts };
+          for (const u of uses) {
+            if (u.id === undefined) continue;
+            const a = arts[u.id];
+            if (a !== undefined) arts[u.id] = { ...a, pending: a.pending + gain };
+          }
+          next = {
+            ...next,
+            player: { ...next.player, arts, artTags: rec.artTags, skillTags: rec.skillTags },
+          };
+        }
+        if (cfg.magic !== undefined && uses.length > 0) {
+          for (const u of uses) {
+            if (u.id === undefined) continue;
+            const def = cfg.arts.defs[u.id];
+            const sp = def?.spell;
+            if (sp === undefined) continue;
+            counters[`spell.cast.${u.id}`] = (counters[`spell.cast.${u.id}`] ?? 0) + 1;
+            counters[`spell.cast.el.${sp.element}`] =
+              (counters[`spell.cast.el.${sp.element}`] ?? 0) + 1;
+            if (def!.kind === "life")
+              counters["spell.cast.life"] = (counters["spell.cast.life"] ?? 0) + 1;
+          }
+        }
+        const learn = checkArtsLearn(next, cfg.arts);
+        next = learn.state;
+        for (const id of learn.learned) events.push({ type: "artLearned", id });
+        const k = k03Checks();
+        for (const id of k.synthesized) events.push({ type: "artSynthesized", id });
+        for (const u of k.gained) events.push({ type: "uniqueGained", ...u });
+      }
+
+      // 潜り自体：時間を diveCost 行動分だけ進め、負荷を積む（野営明けは無償）
+      const diveCost = camped ? 0 : Math.max(1, cfg.dungeons.diveCost);
+      for (let i = 0; i < diveCost; i++) {
+        next.time = advanceTime(next.time, cfg.time);
+        next = applyActionLoad(next, "dungeon", cfg.body);
+      }
+      events.push({ type: "actionPerformed", kind: "dungeon", day: next.time.day });
+
+      // 進行：抜いた室数の累計（全室数で蓋）。制覇は主の撃破が揃った潜り
+      const total = Math.max(1, command.total);
+      const clearedRooms = Math.min(total, roomsPrev + Math.max(0, command.rooms));
+      counters[roomsKey] = clearedRooms;
+      counters["dg.dives"] = (counters["dg.dives"] ?? 0) + 1;
+      const done = command.end === "cleared" && command.boss !== undefined && clearedRooms >= total;
+      if (done) {
+        next = { ...next, flags: { ...next.flags, [clearedKey]: true } };
+      }
+
+      // 宝物部屋・主の間の中身：品物と財貨をそのまま受け取る（持ち物は life.items）
+      if (command.items !== undefined) {
+        const items = { ...next.life.items };
+        for (const [id, n] of Object.entries(command.items)) {
+          if (n > 0) items[id] = (items[id] ?? 0) + n;
+        }
+        next = { ...next, life: { ...next.life, items } };
+        for (const [id, n] of Object.entries(command.items)) {
+          if (n > 0) events.push({ type: "itemGot", id, n });
+        }
+      }
+      if (command.money !== undefined && command.money > 0) {
+        next = {
+          ...next,
+          player: { ...next.player, money: next.player.money + Math.round(command.money) },
+        };
+        events.push({ type: "moneyPaid", amount: Math.round(command.money) });
+      }
+      // 罠の消耗：疲労に足す（回避できなかった分だけ画面側が積む）
+      if (command.trapFatigue !== undefined && command.trapFatigue > 0) {
+        next = {
+          ...next,
+          player: { ...next.player, fatigue: next.player.fatigue + command.trapFatigue },
+        };
+      }
+
+      // 野営の刻印：この潜りで野営した日を刻み、翌日の潜りを無償にする。
+      // 野営でない潜りは前の野営の刻印を消す（野営明けの無償は1回だけ）
+      if (command.end === "camp") {
+        counters[campKey] = next.time.day;
+      } else if (counters[campKey] !== undefined) {
+        delete counters[campKey];
+      }
+
+      // 主の撃破：制覇の潜りだけ記録する（通常の主はA、世界に1体はSの報せ）
+      if (done && command.boss !== undefined) {
+        events.push({
+          type: "bossDefeated",
+          dungeon: command.id,
+          enemyId: command.boss.enemyId,
+          unique: command.boss.unique === true,
+        });
+        if (command.boss.unique === true) {
+          counters[`dg.unique.${command.id}`] = 1;
+          counters["dg.unique"] = (counters["dg.unique"] ?? 0) + 1;
+        }
+      }
+
+      events.push({
+        type: "dungeonEnded",
+        id: command.id,
+        end: command.end,
+        rooms: Math.max(0, command.rooms),
+        cleared: clearedRooms,
+        total,
+        done,
+      });
+
+      if (command.end === "died") {
+        counters["death.count"] = (counters["death.count"] ?? 0) + 1;
+        // 教会蘇生：深層・戦闘と同じく未定着経験の半分を失う
         const skills = { ...next.player.skills };
         const keep = deathKeepFactor();
         for (const id of Object.keys(skills)) {
