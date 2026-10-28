@@ -22,6 +22,13 @@ export const crisisStageEffectsSchema = z
     /** この段階の間、立ち入れないエリア（enemies.json の area。段階が変われば解放される） */
     closeAreas: z.array(z.string().min(1)).default([]),
     /**
+     * この段階の間、通行止めになる道（G-02、docs/10 §7「危機の影響を地図に
+     * 出す」）。道の id（journeyIdOf —— 町id同士を . で繋いだもの、"ardi.bergen" や
+     * 生成町の "t0.t3"）か道の種別（"highway"/"mountain"/"sea"）を書く。
+     * 段階が変われば解放される
+     */
+    closeRoads: z.array(z.string().min(1)).default([]),
+    /**
      * 物価：仕事の報酬への倍率（危機は脅威であると同時に機会。高騰も下落も書ける）。
      * kind 省略時は全種別に乗る。同一段階の複数エントリは掛け合わされる
      */

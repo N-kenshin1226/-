@@ -261,7 +261,7 @@ export function stepConfig(): StepConfig {
       social: life.social,
       errands: life.errands,
       ...balance.life,
-      texts: { arrive: cliText.text.life.arrive },
+      texts: { arrive: cliText.text.life.arrive, newsHeard: cliText.text.life.newsHeard },
     },
     /** 品物の定義表（P-02、items.json。市場・料理・贈り物に使う） */
     items: Object.fromEntries(items.items.map((i) => [i.id, i])),

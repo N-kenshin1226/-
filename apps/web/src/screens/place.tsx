@@ -525,6 +525,16 @@ function actionEntries(
           onPick: () => setScreen({ name: "life", view: "shelf", place: place.id }),
         },
       ];
+    case "map":
+      // 地方の地図（G-02）：町・道・地域の見取り図を開く（行動は消費しない）
+      return [
+        {
+          id: "place-map",
+          label: t.text.regionMapOpen,
+          sub: "町と道と地域",
+          onPick: () => setScreen({ name: "map" }),
+        },
+      ];
     case "journey": {
       // 旅（隣町）：数日の野営を経て着く。出発は1行動
       const town = a.to !== undefined ? townName(state, a.to) : "";

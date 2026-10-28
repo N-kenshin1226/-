@@ -1,7 +1,7 @@
-import { enemies, pinnacles, skills } from "@trace/content";
-import { pinnacleReached } from "@trace/core";
+import { balance, enemies, pinnacles, skills, world as worldFile } from "@trace/content";
+import { generateWorld, mergeLifeContrib, pinnacleReached, WORLD_RECIPE } from "@trace/core";
 import { describe, expect, it } from "vitest";
-import { makePinnacleBot } from "./bots.js";
+import { makePinnacleBot, metricBots, withTravel } from "./bots.js";
 import { simClock, stepConfig } from "./config.js";
 import { runBot } from "./runner.js";
 import { thresholds } from "./thresholds.js";
@@ -81,4 +81,56 @@ describe("頂点ルートの専用ボット（X-9 伏せられた頂点ルート
     expect(r.final.counters["society.offer.patrician"] ?? 0).toBeGreaterThanOrEqual(1);
     expect(r.final.society.standing).toBe("patrician");
   });
+});
+
+describe("地方の地図と旅（G-02）：生き方ごとのボットが一生のうちに地方を巡る", () => {
+  // 敵の挑戦差（危険度の蓋で敵を絞る生成の係数。web の world.ts と同じ注入）
+  const enemyChallenge = Object.fromEntries(enemies.enemies.map((e) => [e.id, e.challenge]));
+  for (const base of metricBots) {
+    it(
+      `${base.id}：地方の大半（町の6割以上・町と地域合わせて5割以上）を訪れる`,
+      { timeout: 60000 },
+      () => {
+        const cfg = stepConfig();
+        // 旅欲を混ぜた生き方ボット（地域の場所 id は世界生成の結果から渡す）
+        const bot = withTravel(base, { regions: [] });
+        // 生成世界は state.seed（runBot が組み立てる "<seed>:<bot.id>"）から引き直す
+        const world = generateWorld(
+          `g02-travel:${bot.id}`,
+          worldFile,
+          balance.world,
+          enemyChallenge,
+        );
+        const bot2 = withTravel(base, { regions: world.areas.map((a) => a.id) });
+        const r = runBot(
+          bot2,
+          224, // 2年（28日×4季節×2年）。一生のうちの序盤〜中盤に相当
+          "g02-travel",
+          { ...cfg, life: mergeLifeContrib(cfg.life!, world.life, balance.world.rep) },
+          simClock(),
+          skillIds,
+          {
+            world: { kind: "gen", recipe: WORLD_RECIPE },
+            initialTown: world.startTown,
+            initialMoney: 80,
+          },
+        );
+        // 旅は実際に行われている（出発カウンタと、旅の途中経過の刻印）
+        expect(r.final.counters["journey.count"] ?? 0).toBeGreaterThan(0);
+        expect(r.final.life.map.heard.length).toBeGreaterThan(1);
+        // 町の大半を訪れる（季節の通行止め・危機の閉鎖・関所で届かない町がありうる）
+        const visitedTowns = world.towns.filter((t) =>
+          r.final.life.map.visited.includes(t.id),
+        ).length;
+        expect(visitedTowns / world.towns.length).toBeGreaterThanOrEqual(0.6);
+        // 町の外の地域も訪れる（地方全体で見た訪問カバレッジ）
+        const visitedRegions = world.areas.filter((a) =>
+          r.final.life.map.visited.includes(a.id),
+        ).length;
+        const coverage =
+          (visitedTowns + visitedRegions) / (world.towns.length + world.areas.length);
+        expect(coverage).toBeGreaterThanOrEqual(0.5);
+      },
+    );
+  }
 });

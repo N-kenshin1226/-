@@ -27,6 +27,11 @@ export const itemSchema = z
     price: z.number().nonnegative(),
     /** 食べられる品の食事の質（0〜100。省略時は食べられない） */
     food: z.number().min(0).max(100).optional(),
+    /**
+     * 買うと地方の地図の霧が晴れる（G-02、docs/10 §7「地図の購入で霧が
+     * 晴れる」）。"map" は地方すべての町と地域の名を聞き覚えに書き込む
+     */
+    reveal: z.literal("map").optional(),
   })
   .strict();
 

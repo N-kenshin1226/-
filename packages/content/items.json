@@ -188,6 +188,13 @@
       "name": "古びた遺物",
       "kind": "gather",
       "price": 45
+    },
+    {
+      "id": "mat.map.region",
+      "name": "地方の地図",
+      "kind": "material",
+      "price": 160,
+      "reveal": "map"
     }
   ]
 }

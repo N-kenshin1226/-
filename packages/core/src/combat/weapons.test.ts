@@ -469,7 +469,7 @@ describe("セーブ v17（K-01）", () => {
     expect(restored.uniques).toEqual({});
   });
 
-  it("SAVE_VERSION は 21（v17=武器、v18=P-02 日々の営み、v19=K-02 武技・資源・構成、v20=K-03 ユニーク、v21=G-01 生成地方）", () => {
-    expect(SAVE_VERSION).toBe(21);
+  it("SAVE_VERSION は 22（v17=武器、v18=P-02 日々の営み、v19=K-02 武技・資源・構成、v20=K-03 ユニーク、v21=G-01 生成地方、v22=G-02 地方の地図と旅）", () => {
+    expect(SAVE_VERSION).toBe(22);
   });
 });

@@ -23,7 +23,7 @@
 | G-01 | [G-01_region_gen.md](G-01_region_gen.md) | ― | done | **最優先（ステージ）**。地方の生成：world.json（町型9・地域型16、zod検証）＋core/world の generateWorld（町6〜9・地域15〜25・連結道グラフ・輪で危険度・町あたり地域≥1・開墾地/深層の穴は必置）＋町別評判（rep、依頼/仕事/寄付で上がり相場に効く）＋地点（spot行動）＋P-02行動の型別一般化＋敵13型追加。GameState v20（world={kind,recipe}＋life.rep、旧セーブは legacy 世界へ移行）。新規周は生成地方が既定・?world=legacy で固定マップ。e2e 69件全通過（worldgen.spec 2件追加）・全ゲート緑 |
 | G-04 | [G-04_bestiary.md](G-04_bestiary.md) | G-01 | todo | **最優先（ステージ）**。敵60〜80・生物群系の亜種・素材 |
 | G-05 | [G-05_scenery.md](G-05_scenery.md) | G-01 | todo | **最優先（ステージ）**。情景の部品で型ごとの背景 |
-| G-02 | [G-02_travel_map.md](G-02_travel_map.md) | G-01 | todo | **最優先（ステージ）**。地方の地図と旅 |
+| G-02 | [G-02_travel_map.md](G-02_travel_map.md) | G-01 | done | **最優先（ステージ）**。地方の地図と旅：道に種別（街道/山道/海路）・危険度・関所・季節の通行止め・敵表＋life.journey（from/way/road/daysLeft）＋通い方（徒歩/隊商/騎乗/船で料金・日数・遭遇が変わる）＋道中の遭遇（危険度×係数の決定論抽選、1日1回）＋地図の霧（visited/heard＋隣町・属する地域の自動判明、噂/朝刊/地図購入で霧晴れ）＋季節・危機の道閉鎖＋地方の地図画面（SVG見取り図・Mキー・門の行動）。GameState v22（life.map＋journey拡張、旧セーブは移行で補完）。sim: 4生き方ボットが2年で町6割・町+地域5割を訪問。e2e 70件全通過（worldgen.spec に地図→旅1本追加）・全ゲート緑 |
 | G-03 | [G-03_dungeons.md](G-03_dungeons.md) | G-01, G-04 | todo | **最優先（ステージ）**。ダンジョンの生成 |
 | UI-01 | [UI-01_redesign.md](UI-01_redesign.md) | ― | done | **最優先**。デザイン見本（docs/design/）に合わせてUIを作り直す |
 | W-01 | [W-01_crisis_core.md](W-01_crisis_core.md) | ― | done | 危機の筋書きと世界の備え（docs/08_world_crisis.md） |

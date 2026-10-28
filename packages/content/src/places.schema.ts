@@ -70,6 +70,8 @@ export const PLACE_ACTION_TYPES = [
   "magic",
   /** 地域の中の小さな地点への立ち寄り（G-01。world.json の生成が付ける） */
   "spot",
+  /** 地方の地図を開く（G-02、docs/10 §7。門などから見る紙の地図） */
+  "map",
 ] as const;
 
 export type PlaceActionType = (typeof PLACE_ACTION_TYPES)[number];

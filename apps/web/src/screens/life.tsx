@@ -22,18 +22,22 @@ import {
   bondOfNow,
   cfg,
   canErrand,
+  enemyList,
   errandsNow,
   itemCount,
   itemDefs,
   itemName,
   itemPriceNow,
+  journeyWayName,
   lifeCfgFor,
   marketStockNow,
   npcName,
   placeOf,
+  roadEncounterNow,
   t,
   townName,
   townOf,
+  tpl,
   weaponDefs,
 } from "../game.js";
 import { npcListOf } from "../world.js";
@@ -46,6 +50,7 @@ import {
   type Act,
   type LifeView,
   type MenuEntry,
+  type Screen,
 } from "../ui.js";
 import { theme } from "../theme.js";
 
@@ -578,11 +583,14 @@ export function JourneyScreen({
   state,
   act,
   back,
+  setScreen,
 }: {
   state: GameState;
   act: Act;
   /** 旅でないときの戻り先（見取り図） */
   back: () => void;
+  /** 道中の遭遇で戦いの画面へ進む（G-02） */
+  setScreen: (s: Screen) => void;
 }) {
   const [sub, setSub] = useState<"eat" | "shelf" | null>(null);
   const j = state.life.journey;
@@ -616,7 +624,13 @@ export function JourneyScreen({
       label: "あたりを歩く",
       sub: "街道の散策",
       disabled: !canActNow,
-      onPick: () => act({ type: "stroll" }),
+      onPick: () => {
+        // 道中の遭遇（G-02）：core と同じ抽選を先読みし、遭えば戦いの場面へ。
+        // 散策そのものは act が実行する（敵の気配の一行は step の出来事が出す）
+        const enemy = enemyList.find((x) => x.id === roadEncounterNow(state));
+        act({ type: "stroll" });
+        if (enemy !== undefined) setScreen({ name: "combat", enemy });
+      },
     },
     { id: "journey-eat", label: "食べる", sub: "携えた食料", onPick: () => setSub("eat") },
     { id: "journey-shelf", label: "持ち物を見る", onPick: () => setSub("shelf") },
@@ -636,7 +650,7 @@ export function JourneyScreen({
       >
         <WinHead kicker="ROAD" title={`${dest}への道`} />
         <div style={{ margin: "0 16px 10px", fontSize: 13, color: W.dim }}>
-          ――街道を行く。野営はあと{j.daysLeft}日で着く。
+          {tpl(t.text.journeyCamp, { way: journeyWayName(j.way), days: j.daysLeft })}
         </div>
         <div className="scroll" style={{ maxHeight: "74%", overflowY: "auto" }}>
           <CommandMenu testId="screen-journey-commands" entries={entries} />

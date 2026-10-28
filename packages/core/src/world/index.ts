@@ -1,6 +1,6 @@
 import type { Cond } from "../conditions/index.js";
 import type { MentorDefLike } from "../mentors/index.js";
-import type { ErrandDef, GatherTable, JourneyDef, LifeOutcome } from "../life/index.js";
+import type { ErrandDef, GatherTable, JourneyDef, LifeConfig, LifeOutcome } from "../life/index.js";
 import { createRng, type Rng } from "../rng/index.js";
 import type { GameState } from "../state/types.js";
 
@@ -27,7 +27,7 @@ import type { GameState } from "../state/types.js";
  */
 
 /** 生成レシピの版（state.world.recipe に刻む。生成器の形が変わったら上げる） */
-export const WORLD_RECIPE = 1;
+export const WORLD_RECIPE = 2;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
@@ -76,6 +76,43 @@ export interface WorldGenConfig {
   rep: { max: number; errand: number; work: number; donate: number; pricePer: number };
   /** 掲示依頼の仲の増分（その町の宿屋の主） */
   errandBond: number;
+  /**
+   * 道の振り分け（G-02、docs/10 §7「道の日数・危険度・関所・季節で
+   * 閉ざされる道」）：種別・危険度・関所・季節閉鎖・道中の敵を組み立てる係数
+   */
+  roads: {
+    /** 両端が港町のとき道が海路になる確率 */
+    seaPortChance: number;
+    /** この輪以遠をまたぐ道が山道になる輪と確率 */
+    mountainRing: number;
+    mountainChance: number;
+    /** 道の危険度：base ＋ 輪 × perRing ＋ (日数−1) × perDay ± jitter */
+    dangerBase: number;
+    dangerPerRing: number;
+    dangerPerDay: number;
+    dangerJitter: number;
+    dangerMin: number;
+    dangerMax: number;
+    /** 関所が出る確率（街道にだけ）と通行料の範囲 */
+    checkpointChance: number;
+    checkpointFee: { min: number; max: number };
+    /** 種別ごとの通行止めになる季節（季節のインデックスの列。書かない種別は通年通行可） */
+    closedSeasons: Record<string, readonly number[]>;
+    /** 道中の敵の種類数の範囲（両端の町の地域の敵から、危険度の蓋で絞って選ぶ） */
+    enemies: { min: number; max: number };
+  };
+  /**
+   * 地方の地図の座標（G-02）：始まりの町が center、輪1つあたり
+   * radiusPerRing（%）だけ外へ広がる。角度は黄金角＋ゆらぎで散らす
+   */
+  map: {
+    center: readonly [number, number];
+    radiusPerRing: number;
+    angleJitter: number;
+    radiusJitter: number;
+    /** 端の町が地図の外に出ないようの余白（%） */
+    margin: number;
+  };
 }
 
 /* ── world.json の型の最小形（core は定義の形だけを知る） ── */
@@ -212,6 +249,8 @@ export interface GenTown {
   typeName: string;
   /** 始まりの町からの距離（町グラフの輪。危険度・地域数の基準） */
   ring: number;
+  /** 地方の地図での位置（% 座標。G-02、recipe 2〜） */
+  pos: readonly [number, number];
 }
 
 /** 地域の中の小さな地点 */
@@ -256,9 +295,9 @@ export interface GenMentor extends MentorDefLike {
 
 /** LifeConfig への寄与分（呼び出し側が life.json の表と畳み込む） */
 export interface GenLifeContrib {
-  /** 町の表（id → 名と型。LifeConfig.towns にそのまま使える） */
-  towns: Record<string, { name: string; type: string }>;
-  /** 町グラフの道（双方向） */
+  /** 町の表（id → 名・型・地図の位置。LifeConfig.towns にそのまま使える） */
+  towns: Record<string, { name: string; type: string; pos?: readonly [number, number] }>;
+  /** 町グラフの道（双方向。G-02：種別・危険度・関所・季節閉鎖・道中の敵つき） */
   journeys: JourneyDef[];
   /** 型別の散策表（"town.<型>" / "region.<型>"） */
   stroll: Record<string, LifeOutcome[]>;
@@ -270,8 +309,8 @@ export interface GenLifeContrib {
   townFactor: Record<string, Record<string, number>>;
   /** 町ごとの掲示依頼 */
   errands: ErrandDef[];
-  /** 場所の帰属（場所 id → 町・型。LifeConfig.places） */
-  places: Record<string, { town: string; type: string }>;
+  /** 場所の帰属（場所 id → 町・型・表示名。LifeConfig.places） */
+  places: Record<string, { town: string; type: string; name?: string }>;
   /** 地点の出来事表（LifeConfig.spots） */
   spots: Record<string, LifeOutcome[]>;
 }
@@ -286,8 +325,8 @@ export interface GeneratedWorld {
   startTown: string;
   towns: readonly GenTown[];
   areas: readonly GenArea[];
-  /** 町グラフの道（双方向。旅日数つき） */
-  roads: readonly { from: string; to: string; days: number }[];
+  /** 町グラフの道（双方向。G-02：旅日数＋種別・危険度・関所・季節閉鎖・道中の敵つき） */
+  roads: readonly JourneyDef[];
   /** 生成される場所すべて（町の場所＋地域） */
   places: readonly GenPlace[];
   /** 生成される住人 */
@@ -381,6 +420,7 @@ export function generateWorld(
     typeId: t.id,
     typeName: t.name,
     ring: 0, // グラフができてから上書き
+    pos: [0, 0], // 地図の位置（輪が決まってから上書き。G-02）
   }));
 
   // ── 道のグラフ：各町を既出の町のどれかに繋ぐ（必ず連結）＋追加の道 ──
@@ -416,6 +456,29 @@ export function generateWorld(
     }
   }
   for (const t of towns) t.ring = ringOf.get(t.id)!;
+
+  // ── 地図の位置（G-02、docs/10 §7）：始まりの町が地方の中心に置かれ、
+  // 遠い町ほど外へ広がる。角度は黄金角（137.5°）で散らし、輪1つあたり
+  // radiusPerRing だけ離れる —— 道の輪がそのまま地図の遠近になる ──
+  const rngMap = rng.fork("map");
+  const townById = new Map(towns.map((t) => [t.id, t]));
+  towns.forEach((t, i) => {
+    if (i === 0) {
+      t.pos = [cfg.map.center[0], cfg.map.center[1]];
+      return;
+    }
+    const angle = i * 2.399963229728653 + (rngMap.next() * 2 - 1) * cfg.map.angleJitter;
+    const r = Math.max(
+      0,
+      t.ring * cfg.map.radiusPerRing + (rngMap.next() * 2 - 1) * cfg.map.radiusJitter,
+    );
+    const clamp = (v: number) =>
+      Math.max(cfg.map.margin, Math.min(100 - cfg.map.margin, Math.round(v)));
+    t.pos = [
+      clamp(cfg.map.center[0] + Math.cos(angle) * r),
+      clamp(cfg.map.center[1] + Math.sin(angle) * r),
+    ];
+  });
 
   // ── 地域：数・型・配置・危険度 ──
   const nAreas = rngArea.int(cfg.areas.min, cfg.areas.max);
@@ -522,6 +585,71 @@ export function generateWorld(
     };
   });
 
+  // ── 道の振り分け（G-02、docs/10 §7）：種別・危険度・関所・季節閉鎖・
+  // 道中の敵は、輪と両端の町の型から決定的に組み立てる。
+  //   海路  … 両端が港町のときだけ出る（確率）。船が選べる代わりに冬は封じられる
+  //   山道  … 遠い輪をまたぐ道に出る（確率）。冬は封じられる
+  //   関所  … 街道にだけ立つ。通過に料金が掛かる
+  //   敵    … 両端の町の地域の敵の和から、道の危険度の蓋で絞って選ぶ
+  const cfgRoads = cfg.roads;
+  const enrichedRoads: JourneyDef[] = roads.map((r) => {
+    const rRng = rngMap.fork(`road.${[r.from, r.to].sort().join(".")}`);
+    const a = townById.get(r.from)!;
+    const b = townById.get(r.to)!;
+    const ringHi = Math.max(a.ring, b.ring);
+    const kind =
+      a.typeId === "port" && b.typeId === "port" && rRng.next() < cfgRoads.seaPortChance
+        ? "sea"
+        : ringHi >= cfgRoads.mountainRing && rRng.next() < cfgRoads.mountainChance
+          ? "mountain"
+          : "highway";
+    const dj = (rRng.next() * 2 - 1) * cfgRoads.dangerJitter;
+    const danger = Math.max(
+      cfgRoads.dangerMin,
+      Math.min(
+        cfgRoads.dangerMax,
+        Math.round(
+          cfgRoads.dangerBase +
+            ringHi * cfgRoads.dangerPerRing +
+            (r.days - 1) * cfgRoads.dangerPerDay +
+            dj,
+        ),
+      ),
+    );
+    const checkpoint =
+      kind === "highway" && rRng.next() < cfgRoads.checkpointChance
+        ? { fee: rRng.int(cfgRoads.checkpointFee.min, cfgRoads.checkpointFee.max) }
+        : undefined;
+    const closedSeasons = cfgRoads.closedSeasons[kind];
+    const lid = cfg.dangerChallengeBase + danger * cfg.dangerChallengePer;
+    const pool = new Map<string, number>();
+    for (const area of areas) {
+      if (area.town !== a.id && area.town !== b.id) continue;
+      for (const e of area.enemies) {
+        if (enemyChallenge !== undefined && (enemyChallenge[e.id] ?? 0) > lid) continue;
+        pool.set(e.id, Math.max(pool.get(e.id) ?? 0, e.weight));
+      }
+    }
+    const enemies: { id: string; weight: number }[] = [];
+    const nEnemy = Math.min(rRng.int(cfgRoads.enemies.min, cfgRoads.enemies.max), pool.size);
+    const rest = [...pool.entries()].map(([id, weight]) => ({ item: id, weight }));
+    while (enemies.length < nEnemy && rest.length > 0) {
+      // picked は敵の id —— 選んだ重みも採り出して道の敵表に残す
+      const picked = rRng.weighted(rest);
+      const entry = rest.find((e) => e.item === picked)!;
+      enemies.push({ id: picked, weight: entry.weight });
+      rest.splice(rest.indexOf(entry), 1);
+    }
+    return {
+      ...r,
+      kind,
+      danger,
+      ...(checkpoint !== undefined ? { checkpoint } : {}),
+      ...(closedSeasons !== undefined && closedSeasons.length > 0 ? { closedSeasons } : {}),
+      enemies,
+    };
+  });
+
   // ── 場所：町の見取り図＋地域 ──
   const places: GenPlace[] = [];
   const npcById = new Map<string, GenNpc>();
@@ -540,7 +668,7 @@ export function generateWorld(
   for (const town of towns) {
     const type = townTypeById.get(town.typeId)!;
     const omit = new Set(type.omit ?? []);
-    lifeTowns[town.id] = { name: town.name, type: type.id };
+    lifeTowns[town.id] = { name: town.name, type: type.id, pos: town.pos };
     if (type.stroll !== undefined) lifeStroll[`town.${type.id}`] = [...type.stroll];
 
     // 場所：基本 −omit ＋ 型固有。gate は道・地域への出口が乗る
@@ -581,7 +709,11 @@ export function generateWorld(
         npcs: [],
         actions,
       });
-      lifePlaces[id] = { town: town.id, type: type.id };
+      lifePlaces[id] = {
+        town: town.id,
+        type: type.id,
+        name: type.placeNames?.[p.key] ?? p.name,
+      };
       if (p.gather !== undefined) lifeGather[id] = p.gather;
     }
 
@@ -688,7 +820,7 @@ export function generateWorld(
       npcs: [],
       actions,
     });
-    lifePlaces[area.id] = { town: area.town, type: type.id };
+    lifePlaces[area.id] = { town: area.town, type: type.id, name: area.name };
   }
 
   // 市場の品揃え：品 → 並ぶ町（market.stock の towns 付きエントリに畳む）
@@ -711,13 +843,13 @@ export function generateWorld(
     startTown: towns[0]!.id,
     towns,
     areas,
-    roads,
+    roads: enrichedRoads,
     places,
     npcs: [...npcById.values()],
     mentors,
     life: {
       towns: lifeTowns,
-      journeys: roads.map((r) => ({ ...r })),
+      journeys: enrichedRoads.map((r) => ({ ...r })),
       stroll: lifeStroll,
       gather: lifeGather,
       marketStock,
@@ -784,6 +916,31 @@ export function worldKindOf(state: GameState): "legacy" | "gen" {
 }
 
 /**
+ * 生成の寄与分を基本の LifeConfig に畳み込む（G-01/G-02。web・sim 共通の
+ * 解決）。町・道・場所の帰属・掲示・採集は生成ので置き換え（町の型と
+ * 地域の型のある世界の表）、散策表は基本＋型別の和、市場は品揃えと
+ * 相場係数を生成ので上書きする
+ */
+export function mergeLifeContrib(
+  base: LifeConfig,
+  gen: GenLifeContrib,
+  rep?: LifeConfig["rep"],
+): LifeConfig {
+  return {
+    ...base,
+    towns: gen.towns,
+    journeys: gen.journeys,
+    stroll: { ...base.stroll, ...gen.stroll },
+    gather: gen.gather,
+    market: { ...base.market, stock: gen.marketStock, townFactor: gen.townFactor },
+    errands: gen.errands,
+    places: gen.places,
+    spots: gen.spots,
+    ...(rep !== undefined ? { rep } : {}),
+  };
+}
+
+/**
  * state の世界を引き直す。legacy の世界は固定マップ（生成しない）なので
  * null を返す —— 呼び出し側は固定コンテンツ（places.json 等）を使う。
  * gen の世界は seed と recipe で再生成する（同じ版なら必ず同じ地方）
@@ -795,7 +952,9 @@ export function worldFor(
   enemyChallenge?: Record<string, number>,
 ): GeneratedWorld | null {
   if (worldKindOf(state) !== "gen") return null;
-  // recipe の版差し替えはここに足す（今は v1 のみ。同じ版なら必ず同じ地方）
+  // recipe の版差し替えはここに足す。recipe 1 → 2 の加筆（町の位置・道の
+  // 振り分け）は乱数 fork が独立しているため、同じ seed からは町・地域・
+  // 道の結線が変わらない —— v1 のセーブは v2 の世界にそのまま乗る
   return generateWorld(state.seed, file, cfg, enemyChallenge);
 }
 

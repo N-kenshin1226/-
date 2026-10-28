@@ -5,6 +5,7 @@ import {
   step,
   type Command,
   type GameState,
+  type NewGameConfig,
   type StepConfig,
 } from "@trace/core";
 import type { Bot, BotCtx } from "./bots.js";
@@ -57,6 +58,8 @@ export function runBot(
   cfg: StepConfig,
   clock: SimClock,
   skillIds: readonly string[],
+  /** newGame への追加初期値（G-02：生成地方の世界・始まりの町・初期所持金など） */
+  init?: Partial<NewGameConfig>,
 ): RunResult {
   let g: GameState = newGame(`${seed}:${bot.id}`, bot.id, {
     skillIds,
@@ -64,6 +67,7 @@ export function runBot(
     initialStatValue: 10,
     // 世界の危機（W-01）：ボットの世界にもシード由来の危機を抽選する
     ...(cfg.crisis !== undefined ? { crisis: cfg.crisis } : {}),
+    ...init,
   });
   const rng = createRng(`bot:${seed}:${bot.id}`);
   // 出来事への応えは独立した乱数列で引く —— 出来事の有無が

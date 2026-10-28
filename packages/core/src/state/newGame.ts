@@ -229,6 +229,9 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       mealQuality: 0,
       prayedDay: -1,
       journey: null,
+      // 地方の地図の霧（G-02、v22〜）：いる町だけは訪れた刻印が立っている
+      // —— 名を知るのはそこと、道で繋がる隣町、町の外の地域から始まる
+      map: { visited: [cfg.initialTown ?? "ardi"], heard: [cfg.initialTown ?? "ardi"] },
     },
     // ユニークスキル（K-03、v20〜）：引き継ぎがあればそのまま（同じ世界の
     // 前代で取られた技は次代でも誰の手にも届かない）、なければ誰の手にも
