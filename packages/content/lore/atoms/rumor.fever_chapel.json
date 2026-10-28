@@ -1,0 +1,10 @@
+{
+  "id": "rumor.fever_chapel",
+  "kind": "place",
+  "title": "封じられた井戸",
+  "text": "礼拝堂の裏に、板で塞がれた古い井戸がある。番人の話では、熱が巡った年に封じられたまま、開けられたことはないという。",
+  "refs": ["event.pale_fever", "place.hill_chapel"],
+  "reveals": ["fact.fever_well_sealed"],
+  "reliability": "fact",
+  "unlock": { "flag": "heard.fever_well" }
+}

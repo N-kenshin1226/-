@@ -1,4 +1,4 @@
-import { balance, mentors, rivals, skills } from "@trace/content";
+import { balance, mentors, rivals, sampleCrises, skills } from "@trace/content";
 import {
   apprentice,
   canApprentice,
@@ -20,7 +20,13 @@ import { stepConfig } from "./config.js";
  * の道上で「師匠が引退する → 以後の弟子入りは不可能」が成立することを確かめる
  */
 
-const cfg = stepConfig();
+// 危機の型は公開サンプルに固定する（hidden の本番の型に依存しない。
+// このテストが見るのは歳月の退場→入門可否の規則で、危機の中身ではない）
+const baseCfg = stepConfig();
+const cfg = {
+  ...baseCfg,
+  crisis: baseCfg.crisis === undefined ? undefined : { ...baseCfg.crisis, types: sampleCrises },
+};
 const skillIds = skills.skills.map((s) => s.id);
 const SEED = "x12-sim";
 

@@ -145,6 +145,7 @@ import {
   pinnacles,
   places,
   rivals,
+  sampleCrises,
   skills,
   society,
   tailwinds,
@@ -163,6 +164,19 @@ import {
 import type { SoundId } from "./fx/sound.js";
 
 export const t = cliText;
+
+/**
+ * 世界の危機の型一覧（W-01）。本番は hidden/crises 同梱の本番の型（crisisTypes()）。
+ * e2e は ?crisis=sample で公開サンプルに固定できる —— 危機の振る舞いを検証する
+ * 仕掛けが hidden の中身（変わることがある）に左右されないようにするための口
+ */
+const crisisTypeList: ReturnType<typeof crisisTypes> = (() => {
+  const q =
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("crisis");
+  return q === "sample" ? crisisTypes(sampleCrises) : crisisTypes();
+})();
 
 /** 武器の定義表（K-01、weapons.json → id 引き。武器屋・戦闘・新規開始で共有） */
 export const weaponList = weapons.weapons;
@@ -255,11 +269,11 @@ export const cfg: StepConfig = {
   tendency: balance.tendency,
   vows: vows.vows,
   /**
-   * 世界の危機（W-01、docs/08）。ブラウザ経路は公開サンプルの型を使う
-   * （hidden/crises は node 側の @trace/content/hidden から読む設計）
+   * 世界の危機（W-01、docs/08）。ブラウザ経路は hidden/crises/types.json を
+   * 静的 import した本番の型を使う（e2e は ?crisis=sample で公開サンプルに固定）
    */
   crisis: {
-    types: crisisTypes(),
+    types: crisisTypeList,
     strongFields: balance.crisis.strongFields,
     weakFieldFactor: balance.crisis.weakFieldFactor,
     /** 接点（W-02）：日常へ混ざる量と寄与の係数 */

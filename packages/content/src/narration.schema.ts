@@ -173,3 +173,18 @@ export const narrationSchema = z
   .strict();
 
 export type NarrationText = z.infer<typeof narrationSchema>;
+
+/**
+ * hidden/narration.json — 隠しの危機の語り（07 §5・08 §3「結末の語りは隠し要素」）。
+ * 公開 narration.json の crisis 節のうち、変数の表示語・段階の語りref・終幕の語りref
+ * に限った部分集合。src/narration.ts が読み込み時に crisis 節へ深くマージする。
+ * ここにも危機の型の名前・中身は書かない（refキー・変数の表示名だけ）
+ */
+export const hiddenCrisisNarrationSchema = z
+  .object({
+    vars: z.record(z.string(), z.record(z.string(), z.string())).default({}),
+    stage: z.record(z.string(), z.array(z.string()).min(1)).default({}),
+    finale: z.record(z.string(), z.array(z.string()).min(1)).default({}),
+  })
+  .strict();
+export type HiddenCrisisNarration = z.infer<typeof hiddenCrisisNarrationSchema>;

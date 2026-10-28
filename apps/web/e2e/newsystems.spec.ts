@@ -195,7 +195,8 @@ test("歳月：NPCの出来事が起床レポート・街の噂・朝刊・街�
   const g = baseGame(SEED, CRISIS_CFG);
   const save = serialize({ ...g, time: { day: sadoDay - 1, action: 0 } });
   await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
-  await page.goto("/");
+  // セーブの危機は公開サンプル型で仕込んである —— 実行側も同じ型で解決する（?crisis=sample）
+  await page.goto("/?crisis=sample");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   const sadoText = sado.events[0]!.text.replaceAll("{name}", "サド");

@@ -1,0 +1,10 @@
+{
+  "id": "rumor.beast_claw",
+  "kind": "item",
+  "title": "岩の爪痕",
+  "text": "山道の途中の岩に、獣のものとは思えない大きな爪痕が残っている。猟師いわく、あれを付けたものはもうこの世の獣ではないという。",
+  "refs": ["event.sky_beast", "npc.garo"],
+  "reveals": ["fact.beast_claw_marks_differ"],
+  "reliability": "fact",
+  "unlock": { "flag": "heard.beast_claw" }
+}

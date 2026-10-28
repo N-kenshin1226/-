@@ -1,0 +1,10 @@
+{
+  "id": "rumor.horde_muster",
+  "kind": "event",
+  "title": "動員名簿の記録",
+  "text": "倉庫の底に、昔の動員名簿が眠っていたという。名の欄が潰れて読めないが、最後の頁には「賊の旗、広場にて焼却」とだけ記されていた。",
+  "refs": ["event.banner_war", "place.old_forge"],
+  "reveals": ["fact.horde_banner_burned"],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.horde_roll" }
+}

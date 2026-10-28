@@ -79,6 +79,16 @@
       {
         "weight": 5,
         "text": "――何事もない。ただ風が吹いていた。"
+      },
+      {
+        "weight": 2,
+        "text": "――宿屋の裏で、老婆が火に向かいながら昔話をしていた。",
+        "atom": "rumor.horde_granny"
+      },
+      {
+        "weight": 2,
+        "text": "――礼拝堂の裏で、板で塞がれた古い井戸を見つけた。",
+        "atom": "rumor.fever_chapel"
       }
     ],
     "region": [
@@ -137,6 +147,16 @@
       {
         "weight": 5,
         "text": "――静かな一日。遠くで鳥が鳴いていた。"
+      },
+      {
+        "weight": 2,
+        "text": "――山道の途中の岩に、見たことのない大きな爪痕があった。",
+        "atom": "rumor.beast_claw"
+      },
+      {
+        "weight": 2,
+        "text": "――崖の風穴で、風に乗る古い唄を耳にした。",
+        "atom": "rumor.beast_ballad"
       }
     ],
     "road": [
@@ -184,6 +204,16 @@
       {
         "weight": 5,
         "text": "――何事もなく日が暮れた。"
+      },
+      {
+        "weight": 2,
+        "text": "――街道沿いの古い倉庫に、黄ばんだ名簿が残っていた。",
+        "atom": "rumor.horde_muster"
+      },
+      {
+        "weight": 2,
+        "text": "――荷車を止めた行商人が、道端で昔話を聞かせてくれた。",
+        "atom": "rumor.fever_cart"
       }
     ]
   },

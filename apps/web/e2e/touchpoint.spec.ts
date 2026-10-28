@@ -39,8 +39,9 @@ const saveOf = (seed: string, stageIndex: number): string => {
 };
 
 test("接点の注文が仕事に混ざる（異変：印。こなすと世界の備えに寄与する）", async ({ page }) => {
-  // shot-0 の世界：初日（兆し）から鍛冶の接点《警備隊への武具納入》が注文に混ざる
-  await page.goto("/?seed=shot-0");
+  // shot-0 の世界（?crisis=sample で公開サンプルの型に固定）：初日（兆し）から
+  // 鍛冶の接点《警備隊への武具納入》が注文に混ざる
+  await page.goto("/?seed=shot-0&crisis=sample");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
   // 鍛冶の接点は鍛冶場の注文に混ざる（P-01）
@@ -64,7 +65,8 @@ test("接点の相手が狩りに混ざる（拡大段階。異変：印の敵�
     },
     saveOf("shot-26", 1),
   );
-  await page.goto("/");
+  // セーブの危機は公開サンプル型で仕込んである —— 実行側も同じ型で解決する（?crisis=sample）
+  await page.goto("/?crisis=sample");
   await expect(page.getByTestId("menu")).toBeVisible();
   // 狼のいる森へ出る（P-01：門 → 行動を消費して森へ）
   await placeAct(page, "gate", "go-forest");

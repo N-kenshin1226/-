@@ -1,0 +1,12 @@
+{
+  "id": "rumor.horde_granny",
+  "kind": "event",
+  "title": "焦げた旗の話",
+  "text": "宿屋の老婆が言うには、ずっと昔、旗を掲げた賊の群れがこのあたりを襲ったそうだ。街は門を閉ざして持ちこたえ、町人まで柵に立ったという。",
+  "refs": ["event.banner_war", "npc.marta"],
+  "reveals": ["fact.horde_repelled_by_levee"],
+  "reliability": "rumor",
+  "unlock": {
+    "flag": "heard.horde_tale"
+  }
+}

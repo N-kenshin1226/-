@@ -29,6 +29,33 @@
       "name": "巡礼路の開通",
       "summary": "三十年前、北の丘へ通じる道が拓かれ、街に外の物が流れ込むようになった",
       "reward": null
+    },
+    {
+      "id": "event.banner_war",
+      "name": "旗印の乱",
+      "summary": "数十年ほど前、旗を掲げた賊の群れが街道を断ち、村々を襲った。街は傭兵と町人の守りで持ちこたえたと伝わる",
+      "reward": {
+        "facts": ["fact.horde_repelled_by_levee", "fact.horde_banner_burned"],
+        "flag": "quest.horde_truth"
+      }
+    },
+    {
+      "id": "event.pale_fever",
+      "name": "青白い熱の年",
+      "summary": "ある年、熱病が街を巡り、井戸のひとつが封じられた。隣町まで届いたと記録にある",
+      "reward": {
+        "facts": ["fact.fever_well_sealed", "fact.fever_stopped_at_bergen"],
+        "flag": "quest.fever_truth"
+      }
+    },
+    {
+      "id": "event.sky_beast",
+      "name": "空を覆う影の年",
+      "summary": "語り部の年代記に、山の主が目覚めて獣が里へ逃げた年がある。翼の傷跡は今も岩に残るという",
+      "reward": {
+        "facts": ["fact.beast_driven_not_slain", "fact.beast_claw_marks_differ"],
+        "flag": "quest.beast_truth"
+      }
     }
   ],
   "places": [
@@ -132,6 +159,30 @@
     {
       "id": "fact.well_marks_left_by_pilgrims",
       "text": "雨宿りの井戸の目印は、巡礼が後の旅人に残した道標だった"
+    },
+    {
+      "id": "fact.horde_repelled_by_levee",
+      "text": "旗印の乱は、町人も加わった守りで退けられた"
+    },
+    {
+      "id": "fact.horde_banner_burned",
+      "text": "賊の旗は、乱のあと広場で焼かれた"
+    },
+    {
+      "id": "fact.fever_well_sealed",
+      "text": "青白い熱の年に、街の井戸のひとつが封じられた"
+    },
+    {
+      "id": "fact.fever_stopped_at_bergen",
+      "text": "青白い熱は隣町まで届き、そこで食い止められた"
+    },
+    {
+      "id": "fact.beast_driven_not_slain",
+      "text": "山の主は、討たれたのではなく追い払われたと伝わる"
+    },
+    {
+      "id": "fact.beast_claw_marks_differ",
+      "text": "空の主の爪痕は、獣のどの傷とも違う"
     }
   ],
   "styleLint": {

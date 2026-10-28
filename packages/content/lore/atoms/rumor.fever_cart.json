@@ -1,0 +1,10 @@
+{
+  "id": "rumor.fever_cart",
+  "kind": "npc",
+  "title": "行商人の昔話",
+  "text": "行商人のノラが言うには、昔の熱の年、行商の道は隣町の手前で塞がれたそうだ。隣町は火と薬湯で病を食い止めた、と荷担ぎの間では今も語られる。",
+  "refs": ["event.pale_fever", "npc.nola"],
+  "reveals": ["fact.fever_stopped_at_bergen"],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.fever_bergen" }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "rumor.beast_ballad",
+  "kind": "event",
+  "title": "空の主の唄",
+  "text": "語り部の古い唄に、山の主が目覚めた年の一節がある。「討たず、追う。王は山を離れ、翼は海の彼方へ」――歌い継がれるのは、追い払いの年のことらしい。",
+  "refs": ["event.sky_beast", "npc.reve"],
+  "reveals": ["fact.beast_driven_not_slain"],
+  "reliability": "rumor",
+  "unlock": { "flag": "heard.beast_song" }
+}

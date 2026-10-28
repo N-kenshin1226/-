@@ -31,7 +31,7 @@
 | W-03 | [W-03_involvement.md](W-03_involvement.md) | W-02 | done | 関与の段階と英雄への道 |
 | W-05 | [W-05_sim_crisis.md](W-05_sim_crisis.md) | W-03 | done | 危機のバランスCIゲート |
 | W-04 | [W-04_endings_ui.md](W-04_endings_ui.md) | W-03, UI-01 | done | 危機の見せ方と終幕の画面 |
-| C-01 | [C-01_crisis_content.md](C-01_crisis_content.md) | W-01 | needs_human | Opus 5.5 が担当。Devinは飛ばす |
+| C-01 | [C-01_crisis_content.md](C-01_crisis_content.md) | W-01 | done | 危機の型を3つ追加（hidden/crises。ブラウザ同梱・語りは hidden/narration 側。e2eは ?crisis=sample で公開サンプルに固定）。全ゲート緑 |
 | T-01 | [T-01_scaffold.md](T-01_scaffold.md) | ― | done | |
 | T-02 | [T-02_rng.md](T-02_rng.md) | T-01 | done | |
 | T-03 | [T-03_time.md](T-03_time.md) | T-01 | done | |

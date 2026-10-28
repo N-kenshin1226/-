@@ -1,0 +1,1220 @@
+{
+  "crises": [
+    {
+      "id": "crisis.blight",
+      "name": "街を巡る熱",
+      "weight": 1,
+      "heavy": false,
+      "factions": [
+        {
+          "id": "faction.physicians",
+          "name": "医者の会",
+          "speed": {
+            "min": 3,
+            "max": 4.5
+          },
+          "aptitude": {
+            "knowledge": 3,
+            "craft": 2
+          }
+        },
+        {
+          "id": "faction.shrine",
+          "name": "祠の番人たち",
+          "speed": {
+            "min": 2,
+            "max": 3
+          },
+          "aptitude": {
+            "bond": 3,
+            "knowledge": 1
+          }
+        },
+        {
+          "id": "faction.hawkers",
+          "name": "行商の寄合",
+          "speed": {
+            "min": 1.5,
+            "max": 2.5
+          },
+          "aptitude": {
+            "wealth": 3,
+            "craft": 1
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "omen",
+          "name": "変な咳",
+          "seasons": 1,
+          "effects": {
+            "price": [
+              {
+                "factor": 1.1
+              }
+            ],
+            "features": ["crisis.blight.notice"]
+          }
+        },
+        {
+          "id": "spread",
+          "name": "蔓延",
+          "seasons": 1,
+          "effects": {
+            "price": [
+              {
+                "factor": 1.25
+              }
+            ],
+            "enemy": [
+              {
+                "area": "forest",
+                "challengeBonus": 2
+              }
+            ],
+            "npc": [
+              {
+                "id": "npc.ilda",
+                "kind": "leave"
+              }
+            ]
+          }
+        },
+        {
+          "id": "deep",
+          "name": "寝込む街",
+          "seasons": 1,
+          "effects": {
+            "closeAreas": ["highway"],
+            "price": [
+              {
+                "factor": 1.4
+              }
+            ],
+            "enemy": [
+              {
+                "challengeBonus": 4
+              }
+            ],
+            "npc": [
+              {
+                "id": "npc.bern.vida",
+                "kind": "die"
+              }
+            ],
+            "features": ["crisis.blight.ward"]
+          }
+        }
+      ],
+      "finales": [
+        {
+          "id": "finale.remedies",
+          "name": "薬湯の行き渡り",
+          "atBoundary": 2,
+          "fields": ["craft", "knowledge"],
+          "required": 17,
+          "margin": 0.1
+        },
+        {
+          "id": "finale.contain",
+          "name": "熱の封じ込め",
+          "atBoundary": 4,
+          "fields": ["bond", "knowledge"],
+          "required": 40,
+          "margin": 0.1,
+          "jitter": 1
+        }
+      ],
+      "variables": [
+        {
+          "key": "vector",
+          "options": ["well", "beast", "cart"]
+        }
+      ],
+      "touchpoints": [
+        {
+          "id": "tp.blight.remedies",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "alchemy",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "alchemy",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "薬湯の調合",
+            "kind": "alchemy",
+            "targetQuality": 45,
+            "rewardMoney": 90
+          }
+        },
+        {
+          "id": "tp.blight.cots",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "smithing",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "smithing",
+                "gte": 8
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "施療所の什器作り",
+            "kind": "smithing",
+            "targetQuality": 40,
+            "rewardMoney": 80
+          }
+        },
+        {
+          "id": "tp.blight.gruel",
+          "kind": "supply",
+          "field": "wealth",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "fishing",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "gather",
+                  "atLeast": 1
+                }
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "病人食の炊き出し",
+            "kind": "fishing",
+            "targetQuality": 35,
+            "rewardMoney": 60
+          }
+        },
+        {
+          "id": "tp.blight.records",
+          "kind": "study",
+          "field": "knowledge",
+          "fromStage": 1,
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "read",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "medicine",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "症例の書き留め",
+            "kind": "appraisal",
+            "targetQuality": 40,
+            "rewardMoney": 75
+          }
+        },
+        {
+          "id": "tp.blight.care",
+          "kind": "order",
+          "field": "bond",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "social",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "care_worker",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "病人の看病",
+            "kind": "care_worker",
+            "targetQuality": 40,
+            "rewardMoney": 70
+          }
+        },
+        {
+          "id": "tp.blight.quarantine",
+          "kind": "arbitration",
+          "field": "bond",
+          "fromStage": 2,
+          "affinity": [
+            {
+              "cond": {
+                "skill": "eloquence",
+                "gte": 8
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "counter": "society.offer.citizen",
+                "gte": 1
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "隔離の呼びかけ",
+            "kind": "eloquence",
+            "targetQuality": 45,
+            "rewardMoney": 80
+          }
+        },
+        {
+          "id": "tp.blight.chant",
+          "kind": "order",
+          "field": "bond",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "performance",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "pray",
+                  "atLeast": 1
+                }
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "快復祈りの詠唱",
+            "kind": "performance",
+            "targetQuality": 40,
+            "rewardMoney": 65
+          }
+        },
+        {
+          "id": "tp.blight.dogs",
+          "kind": "defense",
+          "field": "might",
+          "fromStage": 1,
+          "ref": "stray_dog",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "combat",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "counter": "kill.species.stray_dog",
+                "gte": 1
+              },
+              "weight": 2
+            }
+          ]
+        },
+        {
+          "id": "tp.blight.source",
+          "kind": "escort",
+          "field": "might",
+          "fromStage": 2,
+          "ref": "boar",
+          "affinity": [
+            {
+              "cond": {
+                "counter": "action.combat",
+                "gte": 5
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "hunting",
+                "gte": 10
+              },
+              "weight": 2
+            }
+          ]
+        }
+      ],
+      "narration": {
+        "stage": {
+          "omen": "crisis.blight.omen",
+          "spread": "crisis.blight.spread",
+          "deep": "crisis.blight.deep"
+        },
+        "finale": {
+          "resolved": "crisis.blight.resolved",
+          "ruin": "crisis.blight.ruin"
+        }
+      }
+    },
+    {
+      "id": "crisis.horde",
+      "name": "旗を掲げた群れ",
+      "weight": 1,
+      "heavy": false,
+      "factions": [
+        {
+          "id": "faction.freeblades",
+          "name": "辺境の傭兵団",
+          "speed": {
+            "min": 3.5,
+            "max": 5
+          },
+          "aptitude": {
+            "might": 4,
+            "wealth": 1
+          }
+        },
+        {
+          "id": "faction.manor",
+          "name": "領主の館",
+          "speed": {
+            "min": 2.5,
+            "max": 3.5
+          },
+          "aptitude": {
+            "bond": 3,
+            "wealth": 2
+          }
+        },
+        {
+          "id": "faction.guild",
+          "name": "ギルド",
+          "speed": {
+            "min": 1.5,
+            "max": 2.5
+          },
+          "aptitude": {
+            "craft": 3,
+            "wealth": 2
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "omen",
+          "name": "気配",
+          "seasons": 1,
+          "effects": {
+            "enemy": [
+              {
+                "id": "bandit",
+                "challengeBonus": 2
+              },
+              {
+                "area": "highway",
+                "challengeBonus": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "spread",
+          "name": "襲撃",
+          "seasons": 1,
+          "effects": {
+            "closeAreas": ["highway"],
+            "price": [
+              {
+                "factor": 1.2
+              }
+            ],
+            "enemy": [
+              {
+                "id": "bandit",
+                "hpFactor": 1.15,
+                "challengeBonus": 4
+              },
+              {
+                "id": "deserter",
+                "powerFactor": 1.1
+              }
+            ]
+          }
+        },
+        {
+          "id": "deep",
+          "name": "篝火",
+          "seasons": 1,
+          "effects": {
+            "closeAreas": ["highway"],
+            "price": [
+              {
+                "factor": 1.35
+              }
+            ],
+            "enemy": [
+              {
+                "area": "highway",
+                "hpFactor": 1.2,
+                "challengeBonus": 6
+              }
+            ],
+            "npc": [
+              {
+                "id": "npc.fenn",
+                "kind": "leave"
+              }
+            ],
+            "features": ["crisis.horde.watch"]
+          }
+        }
+      ],
+      "finales": [
+        {
+          "id": "finale.repuls",
+          "name": "隘路の撃退",
+          "atBoundary": 2,
+          "fields": ["might"],
+          "required": 9,
+          "margin": 0.1,
+          "ref": "deserter"
+        },
+        {
+          "id": "finale.dismantle",
+          "name": "群れの解体",
+          "atBoundary": 4,
+          "fields": ["might", "bond"],
+          "required": 30,
+          "margin": 0.1,
+          "jitter": 1
+        }
+      ],
+      "variables": [
+        {
+          "key": "banner",
+          "options": ["redwolf", "ashen", "ironband"]
+        }
+      ],
+      "touchpoints": [
+        {
+          "id": "tp.horde.palisade",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "carpentry",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "carpentry",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "街はずれの防柵",
+            "kind": "carpentry",
+            "targetQuality": 45,
+            "rewardMoney": 90
+          }
+        },
+        {
+          "id": "tp.horde.arms",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "smithing",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "smithing",
+                "gte": 8
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "傭兵団への武具納入",
+            "kind": "smithing",
+            "targetQuality": 45,
+            "rewardMoney": 95
+          }
+        },
+        {
+          "id": "tp.horde.rations",
+          "kind": "supply",
+          "field": "wealth",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "fishing",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "gather",
+                  "atLeast": 1
+                }
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "籠城用の保存食",
+            "kind": "fishing",
+            "targetQuality": 35,
+            "rewardMoney": 60
+          }
+        },
+        {
+          "id": "tp.horde.intel",
+          "kind": "study",
+          "field": "knowledge",
+          "fromStage": 1,
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "read",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "journey",
+                  "atLeast": 1
+                }
+              },
+              "weight": 2
+            },
+            {
+              "cond": {
+                "skill": "appraisal",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "群れの動きの読み合わせ",
+            "kind": "appraisal",
+            "targetQuality": 40,
+            "rewardMoney": 75
+          }
+        },
+        {
+          "id": "tp.horde.muster",
+          "kind": "order",
+          "field": "bond",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "teaching",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "leadership",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "町人の動員訓練",
+            "kind": "teaching",
+            "targetQuality": 40,
+            "rewardMoney": 70
+          }
+        },
+        {
+          "id": "tp.horde.parley",
+          "kind": "arbitration",
+          "field": "bond",
+          "fromStage": 2,
+          "affinity": [
+            {
+              "cond": {
+                "skill": "eloquence",
+                "gte": 8
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "counter": "society.offer.citizen",
+                "gte": 1
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "投降の勧告",
+            "kind": "eloquence",
+            "targetQuality": 50,
+            "rewardMoney": 85
+          }
+        },
+        {
+          "id": "tp.horde.morale",
+          "kind": "order",
+          "field": "bond",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "performance",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "見張り詰所の演奏",
+            "kind": "performance",
+            "targetQuality": 40,
+            "rewardMoney": 65
+          }
+        },
+        {
+          "id": "tp.horde.scout",
+          "kind": "defense",
+          "field": "might",
+          "fromStage": 1,
+          "ref": "bandit",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "combat",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "counter": "kill.species.bandit",
+                "gte": 1
+              },
+              "weight": 2
+            }
+          ]
+        },
+        {
+          "id": "tp.horde.escort",
+          "kind": "escort",
+          "field": "might",
+          "fromStage": 2,
+          "ref": "deserter",
+          "affinity": [
+            {
+              "cond": {
+                "counter": "action.combat",
+                "gte": 5
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "swordplay",
+                "gte": 15
+              },
+              "weight": 2
+            }
+          ]
+        }
+      ],
+      "narration": {
+        "stage": {
+          "omen": "crisis.horde.omen",
+          "spread": "crisis.horde.spread",
+          "deep": "crisis.horde.deep"
+        },
+        "finale": {
+          "resolved": "crisis.horde.resolved",
+          "ruin": "crisis.horde.ruin"
+        }
+      }
+    },
+    {
+      "id": "crisis.wyrm",
+      "name": "山の主の目覚め",
+      "weight": 0.45,
+      "heavy": true,
+      "factions": [
+        {
+          "id": "faction.order",
+          "name": "討伐隊",
+          "speed": {
+            "min": 4,
+            "max": 6
+          },
+          "aptitude": {
+            "might": 5
+          }
+        },
+        {
+          "id": "faction.manor",
+          "name": "領主の館",
+          "speed": {
+            "min": 2.5,
+            "max": 4
+          },
+          "aptitude": {
+            "bond": 2,
+            "wealth": 2
+          }
+        },
+        {
+          "id": "faction.guild",
+          "name": "ギルド",
+          "speed": {
+            "min": 1.5,
+            "max": 2.5
+          },
+          "aptitude": {
+            "craft": 2,
+            "wealth": 2
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "omen",
+          "name": "山鳴り",
+          "seasons": 1,
+          "effects": {
+            "enemy": [
+              {
+                "area": "forest",
+                "challengeBonus": 3
+              },
+              {
+                "id": "boar",
+                "powerFactor": 1.1
+              }
+            ]
+          }
+        },
+        {
+          "id": "spread",
+          "name": "飛来",
+          "seasons": 1,
+          "effects": {
+            "price": [
+              {
+                "factor": 1.2
+              }
+            ],
+            "enemy": [
+              {
+                "challengeBonus": 6,
+                "powerFactor": 1.1
+              }
+            ],
+            "npc": [
+              {
+                "id": "npc.cum",
+                "kind": "leave"
+              }
+            ]
+          }
+        },
+        {
+          "id": "deep",
+          "name": "空の王",
+          "seasons": 1,
+          "effects": {
+            "closeAreas": ["forest"],
+            "price": [
+              {
+                "factor": 1.4
+              }
+            ],
+            "enemy": [
+              {
+                "hpFactor": 1.3,
+                "challengeBonus": 9
+              }
+            ],
+            "npc": [
+              {
+                "id": "npc.garo",
+                "kind": "die"
+              }
+            ],
+            "features": ["crisis.wyrm.rally"]
+          }
+        }
+      ],
+      "finales": [
+        {
+          "id": "finale.vanguard",
+          "name": "先駆けの討伐",
+          "atBoundary": 2,
+          "fields": ["might"],
+          "required": 24,
+          "margin": 0.1,
+          "jitter": 1,
+          "ref": "deserter"
+        },
+        {
+          "id": "finale.drive",
+          "name": "山の主の追い払い",
+          "atBoundary": 4,
+          "fields": ["might", "bond"],
+          "required": 52,
+          "margin": 0.1,
+          "jitter": 1
+        }
+      ],
+      "variables": [
+        {
+          "key": "roost",
+          "options": ["peak", "caldera", "spire"]
+        }
+      ],
+      "touchpoints": [
+        {
+          "id": "tp.wyrm.arms",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "smithing",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "smithing",
+                "gte": 8
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "対魔物の武具",
+            "kind": "smithing",
+            "targetQuality": 50,
+            "rewardMoney": 110
+          }
+        },
+        {
+          "id": "tp.wyrm.bulwark",
+          "kind": "order",
+          "field": "craft",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "carpentry",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "carpentry",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "防衛の櫓",
+            "kind": "carpentry",
+            "targetQuality": 45,
+            "rewardMoney": 95
+          }
+        },
+        {
+          "id": "tp.wyrm.stock",
+          "kind": "supply",
+          "field": "wealth",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "fishing",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "gather",
+                  "atLeast": 1
+                }
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "籠城食の買い置き",
+            "kind": "fishing",
+            "targetQuality": 40,
+            "rewardMoney": 70
+          }
+        },
+        {
+          "id": "tp.wyrm.lore",
+          "kind": "study",
+          "field": "knowledge",
+          "fromStage": 1,
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "read",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "storyteller",
+                "gte": 5
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "山の主の言い伝えの渉猟",
+            "kind": "appraisal",
+            "targetQuality": 45,
+            "rewardMoney": 85
+          }
+        },
+        {
+          "id": "tp.wyrm.rally",
+          "kind": "arbitration",
+          "field": "bond",
+          "fromStage": 2,
+          "affinity": [
+            {
+              "cond": {
+                "skill": "eloquence",
+                "gte": 8
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "counter": "society.offer.citizen",
+                "gte": 1
+              },
+              "weight": 2
+            }
+          ],
+          "offer": {
+            "name": "避難民の収容",
+            "kind": "eloquence",
+            "targetQuality": 50,
+            "rewardMoney": 90
+          }
+        },
+        {
+          "id": "tp.wyrm.morale",
+          "kind": "order",
+          "field": "bond",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "work",
+                  "target": "performance",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            }
+          ],
+          "offer": {
+            "name": "士気を保つ演説",
+            "kind": "performance",
+            "targetQuality": 45,
+            "rewardMoney": 75
+          }
+        },
+        {
+          "id": "tp.wyrm.strays",
+          "kind": "defense",
+          "field": "might",
+          "fromStage": 1,
+          "ref": "wolf",
+          "affinity": [
+            {
+              "cond": {
+                "within": {
+                  "days": 14,
+                  "kind": "combat",
+                  "atLeast": 1
+                }
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "counter": "kill.species.wolf",
+                "gte": 1
+              },
+              "weight": 2
+            }
+          ]
+        },
+        {
+          "id": "tp.wyrm.path",
+          "kind": "escort",
+          "field": "might",
+          "fromStage": 2,
+          "ref": "deserter",
+          "affinity": [
+            {
+              "cond": {
+                "counter": "action.combat",
+                "gte": 5
+              },
+              "weight": 4
+            },
+            {
+              "cond": {
+                "skill": "swordplay",
+                "gte": 15
+              },
+              "weight": 2
+            }
+          ]
+        }
+      ],
+      "narration": {
+        "stage": {
+          "omen": "crisis.wyrm.omen",
+          "spread": "crisis.wyrm.spread",
+          "deep": "crisis.wyrm.deep"
+        },
+        "finale": {
+          "resolved": "crisis.wyrm.resolved",
+          "ruin": "crisis.wyrm.ruin"
+        }
+      }
+    }
+  ]
+}

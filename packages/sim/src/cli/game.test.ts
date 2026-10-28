@@ -3,15 +3,29 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { appraisalGame, deserializeChronicle, newGame, serialize } from "@trace/core";
-import { balance, orders, origins, skills } from "@trace/content";
+import { balance, orders, origins, sampleCrises, skills } from "@trace/content";
 import { playCli } from "./game.js";
 import { scriptedIo } from "./io.js";
+import { stepConfig } from "../config.js";
 
 function tmpSave(): string {
   return join(mkdtempSync(join(tmpdir(), "trace-test-")), "save.json");
 }
 
 const SEED = "cli-test-seed";
+
+/**
+ * 危機の型を公開サンプルに固定した cfg（金額などの確定値を検査するテスト用。
+ * hidden の本番の型で世界の物価が変わると確定値が動くため、ここだけは
+ * プレイループの規則を検査する固定の世界にする）
+ */
+function sampleCrisisCfg() {
+  const cfg = stepConfig();
+  return {
+    ...cfg,
+    crisis: cfg.crisis === undefined ? undefined : { ...cfg.crisis, types: sampleCrises },
+  };
+}
 
 /** 訓練→訓練→寝る を1日として3日分の入力列 */
 function threeDays(sleepChoices: [string, string][]): string[] {
@@ -181,7 +195,13 @@ describe("T-20 街のプレイループ", () => {
     const { io, output } = scriptedIo(["1", "1", "", ...lines, "q"]); // 出自→傾向→誓約→1週間;
     // F-05：出来事の割り込みは入力を1つ消費するので、
     // 7日とも出来事の起きないシード（town-week-33）で固定する
-    const state = await playCli({ io, savePath, seed: "town-week-33", delay: async () => {} });
+    const state = await playCli({
+      io,
+      savePath,
+      seed: "town-week-33",
+      cfg: sampleCrisisCfg(),
+      delay: async () => {},
+    });
     const text = output.join("\n");
 
     expect(state!.time.day).toBe(7);
