@@ -8,9 +8,22 @@ import { z } from "zod";
  * balance.json の arts 節に置く
  */
 
+import { evolveSchema } from "./evolve.schema.js";
+
 const damageType = z.enum(["slash", "pierce", "blunt", "magic"]);
 const bodyPart = z.enum(["head", "body", "arms", "legs"]);
-const statusId = z.enum(["bleed", "stun", "stagger", "slow", "poison"]);
+const statusId = z.enum([
+  "bleed",
+  "stun",
+  "stagger",
+  "slow",
+  "poison",
+  "wet",
+  "oil",
+  "frozen",
+  "burn",
+  "shock",
+]);
 const artKind = z.enum(["attack", "response", "support", "passive"]);
 const responseKind = z.enum(["interrupt", "parry", "evade", "guard"]);
 const artRange = z.enum(["near", "mid", "far"]);
@@ -24,10 +37,14 @@ const passiveHook = z.enum([
   "dmg.slash",
   "dmg.pierce",
   "dmg.blunt",
+  "dmg.magic",
   "status",
   "kiRegen",
   "kiMax",
   "manaMax",
+  "castSpeed",
+  "instantCast",
+  "manaRegen",
 ]);
 
 export const artSchema = z
@@ -36,12 +53,21 @@ export const artSchema = z
     name: z.string().min(1),
     /** 由来技能（skills.json の id。武技は武器技能） */
     skill: z.string().min(1),
-    /** 習得条件（§7.1）：技能の熟練度と、任意で使い方の傾き */
+    /**
+     * 習得条件（§7.1）：技能の熟練度が主軸。at を省略した技は技能値では
+     * 覚えない —— 進化・合成・ユニーク（K-03、09 §7）のように特別な経路で
+     * だけ得られる技の印。at の無い learn に傾き・旗・反復の条件は付けられない
+     */
     learn: z
       .object({
-        at: z.number().nonnegative(),
+        at: z.number().nonnegative().optional(),
         tag: z.string().min(1).optional(),
         share: z.number().min(0).max(1).optional(),
+        flag: z.string().min(1).optional(),
+        counter: z
+          .object({ key: z.string().min(1), gte: z.number().positive() })
+          .strict()
+          .optional(),
       })
       .strict(),
     kind: artKind,
@@ -72,11 +98,25 @@ export const artSchema = z
     range: artRange.optional(),
     /** パッシブの効果（kind:"passive" のとき必須） */
     effect: z.object({ hook: passiveHook, value: z.number() }).strict().optional(),
+    /**
+     * 進化の分岐（K-03、09 §7.1）。Lv10 に達したとき、使用記録と最も合う
+     * 分岐へ進化する。進化形は分岐の mod からローダーが派生定義を作る
+     */
+    evolve: evolveSchema.optional(),
     desc: z.string().min(1),
   })
   .strict()
   .superRefine((a, ctx) => {
     const bad = (msg: string) => ctx.addIssue({ code: "custom", message: `${a.id}: ${msg}` });
+    // at の無い learn は特別な経路の印 —— 傾き・旗・反復は読まれないので付けられない
+    if (
+      a.learn.at === undefined &&
+      (a.learn.tag !== undefined ||
+        a.learn.share !== undefined ||
+        a.learn.flag !== undefined ||
+        a.learn.counter !== undefined)
+    )
+      bad("learn.at を持たない技に tag/share/flag/counter は付けられない");
     if (a.kind === "attack" && a.dtype === undefined) bad("attack には dtype が要る");
     if (a.kind === "response" && a.response === undefined) bad("response には response 種別が要る");
     if (a.kind === "support" && a.status === undefined) bad("support には状態（status）が要る");

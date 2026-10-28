@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame } from "../state/newGame.js";
 import { step, type StepConfig } from "../step.js";
-import { deserialize, serialize } from "../save/index.js";
+import { deserialize, SAVE_VERSION, serialize } from "../save/index.js";
 import type { GameState } from "../state/types.js";
 import { bondOf, errandsToday, itemCount, itemPrice, mealToday, townOf } from "./index.js";
 import type { LifeConfig } from "./index.js";
@@ -511,7 +511,7 @@ describe("セーブの移行（v17 → v19）", () => {
     v17["version"] = 17;
     delete v17["life"];
     const restored = deserialize(JSON.stringify(v17));
-    expect(restored.version).toBe(19); // v18（営み）→v19（武技）の2段移行
+    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）→v19（武技）→v20（ユニーク）の3段移行
     expect(restored.life).toEqual({
       town: "ardi",
       items: {},

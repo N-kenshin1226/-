@@ -187,6 +187,22 @@ export const cliTextSchema = z
         enchanted: z.string(),
         /** 新しい技を閃いた知らせ（K-02、通知Bランク。{name} は技名） */
         artLearned: z.string(),
+        /** 技が進化した知らせ（K-03、通知Aランク。{from}/{to} は技名・{reason} は理由の語り片） */
+        artEvolved: z.string(),
+        /** 隠し分岐への進化（K-03。同じく {from}/{to}/{reason}。見知らぬ形への変化） */
+        artEvolvedHidden: z.string(),
+        /** 合成で技が生まれた知らせ（K-03、通知Bランク。{name} は生まれた技名） */
+        artSynthesized: z.string(),
+        /** ユニークスキルを得た知らせ（K-03、通知Sランク。{name} は技名） */
+        uniqueGained: z.string(),
+        /** S予算超過のユニーク獲得（K-03。{name} は技名。記録は残る） */
+        uniqueSuppressed: z.string(),
+        /** ユニークがライバルの手に渡った知らせ（K-03、通知Aランク。{name} は技名・{rival} は名） */
+        uniqueClaimed: z.string(),
+        /** ステータスの技タブの傾き表示（K-03。{tilt} は傾きの軸名） */
+        statusTiltLabel: z.string(),
+        /** 傾きがまだ見えない技の説明（K-03） */
+        statusTiltNone: z.string(),
         /** 構成画面（K-02）：見出し・各枠の見出し・空き枠・確定の行 */
         buildHeader: z.string(),
         buildArtsHeader: z.string(),
@@ -273,6 +289,15 @@ export const cliTextSchema = z
         recordsCrisis: z.string(),
         recordsCrisisNone: z.string(),
         recordsCrisisLine: z.string(),
+        /** 街の記録のユニーク欄（K-03。{name}=技名・{day}=日目・{holder}=持ち主表現・{rival}=ライバル名） */
+        recordsUniques: z.string(),
+        recordsUniquesNone: z.string(),
+        recordsUniqueLine: z.string(),
+        recordsUniqueYou: z.string(),
+        recordsUniqueRival: z.string(),
+        /** 新聞のユニーク記事（K-03。{name}=技名・{rival}=ライバル名） */
+        newsUniqueGained: z.string(),
+        newsUniqueClaimed: z.string(),
         /** 出来事ログの種別ごとの文（キーは CrisisLogEntry.kind。{name} を差し込める） */
         crisisLog: z.record(z.string(), z.string()),
         /** 危機の接点の印（W-02、docs/08 §5。接点の注文・相手の名前の前に付ける） */
@@ -362,6 +387,8 @@ export const cliTextSchema = z
         chronicleWorks: z.string(),
         /** 頂点ルートの記録（T-41。{pinnacles} はルート名を繋いだもの） */
         chroniclePinnacle: z.string(),
+        /** ユニークスキルの記録（K-03。{uniques} は技名を繋いだもの） */
+        chronicleUniques: z.string(),
         chronicleRecorded: z.string(),
         /**
          * 場所と移動（P-01、docs/03 §2）：見取り図の題字（{town} は街の名）・

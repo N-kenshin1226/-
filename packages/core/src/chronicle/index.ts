@@ -8,7 +8,7 @@ import type { GameState } from "../state/types.js";
  */
 
 /** 年代記スキーマのバージョン（save/ の SAVE_VERSION とは別系統） */
-export const CHRONICLE_VERSION = 3;
+export const CHRONICLE_VERSION = 4;
 
 /** 人生の終わり方 */
 export type LifeCause = "death" | "retire" | "oldAge";
@@ -56,6 +56,12 @@ export interface ChronicleEntry {
   peakSkills?: readonly { id: string; value: number }[];
   /** 伝記本文（T-37 の語り層が差し込む。無ければ省略） */
   biography?: string;
+  /**
+   * その生が手にしたユニークスキル（K-03、09 §7。技ID の列）。
+   * 「その世界で一人だけ」の技を極めた実績は、生を越えて世界に語り継がれる
+   * —— 取った事実は新聞と年代記に載る（v4〜）
+   */
+  uniques?: string[];
   /** この人生を過ごした世界のシード */
   worldSeed: string;
 }
@@ -154,6 +160,15 @@ export function lifeEntryOf(
       ? { pinnacles: [...opts.pinnacles] }
       : {}),
     ...(peakSkills.length > 0 ? { peakSkills } : {}),
+    // その生が手にしたユニーク（K-03）：持ち主が player の記録だけを摘む
+    // （ライバルに取られたものは世界の記録には残るが、この生の頁には来ない）
+    ...(Object.keys(state.uniques).filter((id) => state.uniques[id]!.holder === "player").length > 0
+      ? {
+          uniques: Object.keys(state.uniques)
+            .filter((id) => state.uniques[id]!.holder === "player")
+            .sort(),
+        }
+      : {}),
     ...(opts?.biography !== undefined ? { biography: opts.biography } : {}),
     worldSeed: state.seed,
   };
@@ -201,6 +216,8 @@ export const chronicleMigrations: Record<
   1: (old) => ({ ...old, version: 2 }),
   /** 2 → 3: 代表技能 peakSkills（X-5）を追加。任意フィールドなので埋めるものはない */
   2: (old) => ({ ...old, version: 3 }),
+  /** 3 → 4: ユニークスキルの記録（K-03）を追加。任意フィールドなので埋めるものはない */
+  3: (old) => ({ ...old, version: 4 }),
 };
 
 export function serializeChronicle(chronicle: Chronicle): string {

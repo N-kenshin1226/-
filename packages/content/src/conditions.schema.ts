@@ -85,5 +85,10 @@ export const condSchema: z.ZodType<Cond> = z.lazy(() =>
           .strict(),
       })
       .strict(),
+    /**
+     * 習得済みの技（K-03、docs/09 §7）：player.arts にこのIDの技があるか。
+     * 技×技・技能×技の組み合わせを読む条件（合成レシピ・ユニークの要求）に使う
+     */
+    z.object({ art: z.string().min(1) }).strict(),
   ]),
 );

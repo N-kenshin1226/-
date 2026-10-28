@@ -413,7 +413,7 @@ describe("セーブ v17（K-01）", () => {
     delete p.weapon;
     v16.player = p;
     const restored = deserialize(JSON.stringify(v16));
-    expect(restored.version).toBe(SAVE_VERSION); // v17（武器）・v18（営み）・v19（武技）を経て最新版へ
+    expect(restored.version).toBe(SAVE_VERSION); // v17（武器）・v18（営み）・v19（武技）・v20（ユニーク）を経て最新版へ
     expect(restored.player.weapons).toEqual(["fist", "sword"]);
     expect(restored.player.weapon).toBe("sword");
   });
@@ -454,7 +454,7 @@ describe("セーブ v17（K-01）", () => {
     delete p.build;
     v17.player = p;
     const restored = deserialize(JSON.stringify(v17));
-    expect(restored.version).toBe(19);
+    expect(restored.version).toBe(SAVE_VERSION); // v18（営み）・v19（武技）・v20（ユニーク）を経て最新版へ
     expect(restored.player.ki).toBe(0);
     expect(restored.player.mana).toBe(0);
     expect(restored.player.arts).toEqual({});
@@ -465,9 +465,11 @@ describe("セーブ v17（K-01）", () => {
     expect(restored.player.build.passives).toEqual(Array(4).fill(null));
     expect(restored.player.build.weapons[0]).toBe("sword");
     expect(restored.player.build.weapons[1]).toBe("fist");
+    // K-03：ユニークの世界記録も補われる
+    expect(restored.uniques).toEqual({});
   });
 
-  it("SAVE_VERSION は 19（v17=武器、v18=P-02 日々の営み、v19=K-02 武技・資源・構成）", () => {
-    expect(SAVE_VERSION).toBe(19);
+  it("SAVE_VERSION は 20（v17=武器、v18=P-02 日々の営み、v19=K-02 武技・資源・構成、v20=K-03 ユニーク）", () => {
+    expect(SAVE_VERSION).toBe(20);
   });
 });

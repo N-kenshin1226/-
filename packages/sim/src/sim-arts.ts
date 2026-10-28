@@ -16,6 +16,7 @@ import {
   type EnemyDef,
   type MiniGameCtx,
 } from "@trace/core";
+import { k03Data } from "./config.js";
 import { thresholds } from "./thresholds.js";
 
 /**
@@ -34,7 +35,12 @@ const COMBAT: CombatConfig = {
   ...balance.combat,
   weapons: Object.fromEntries(weapons.weapons.map((w) => [w.id, w])),
   links: balance.links,
-  arts: { defs: artDefs, ...balance.arts },
+  /**
+   * 武技（K-02＋K-03）：定義表は解決済みの全技（進化形・合成産物・ユニーク含む）。
+   * 構成の方針とカバレッジ採点は公開の素の技（artDefs）だけを対象にする ——
+   * 派生・特別な技は習得経路のバランスではなく本編の出来事なので混ぜない
+   */
+  arts: { defs: k03Data().defs, ...balance.arts },
 };
 const ARTS = balance.arts;
 const WEAPON_DEFS = COMBAT.weapons ?? {};
@@ -97,7 +103,7 @@ function buildFor(weaponId: string): Build {
   if (w === undefined) throw new Error(`武器 ${weaponId} がない`);
   const actives = Object.values(artDefs)
     .filter((a) => a.skill === w.skill && a.kind !== "passive")
-    .sort((a, b) => a.learn.at - b.learn.at)
+    .sort((a, b) => (a.learn.at ?? Infinity) - (b.learn.at ?? Infinity))
     .map((a) => a.id);
   const slots: (string | null)[] = [
     ...actives.slice(0, ARTS.slots),
@@ -108,7 +114,7 @@ function buildFor(weaponId: string): Build {
     .filter((a) => a.kind === "passive")
     .sort((a, b) => {
       const own = (x: (typeof artDefs)[string]) => (x.skill === w.skill ? 0 : 1);
-      return own(a) - own(b) || a.learn.at - b.learn.at;
+      return own(a) - own(b) || (a.learn.at ?? Infinity) - (b.learn.at ?? Infinity);
     })
     .map((a) => a.id);
   const passives: (string | null)[] = [

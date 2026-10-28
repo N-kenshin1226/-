@@ -12,6 +12,15 @@ import { activeBookEffects, buyBook, readBook, type BooksConfig } from "./books/
 import { evaluate, type Cond, type CondEnv } from "./conditions/index.js";
 import { checkDiscoveries, type DiscoveryDef } from "./discoveries/index.js";
 import {
+  checkEvolution,
+  checkRivalClaims,
+  checkSynthesis,
+  checkUniques,
+  type EvolutionConfig,
+  type SynthesisRecipe,
+  type UniquesConfig,
+} from "./evolve/index.js";
+import {
   addHeroContribution,
   crisisFinaleAttempt,
   crisisFinaleLead,
@@ -262,6 +271,25 @@ export interface StepConfig {
    * 付与（enchant コマンド）が効く。未指定の世界では魔法関連は働かない
    */
   magic?: MagicConfig;
+  /**
+   * 技の進化（K-03、09 §7.1。balance.evolution ＋ hidden/k03 の隠し分岐表）。
+   * 指定すると：眠りの定着で Lv10 に達した技が、使い方の記録（artTags）と
+   * 最も合う分岐へ進化する。未指定の世界では技は Lv10 のまま止まる
+   */
+  evolution?: EvolutionConfig;
+  /**
+   * 技の合成（K-03、09 §7「2つの技能・技の組み合わせで新しい技」。
+   * hidden/k03 のレシピ表）。指定すると：習得判定と同じ場面で、条件を
+   * 満たす未獲得のレシピが生まれる（通知Bランク相当）
+   */
+  synthesis?: { recipes: readonly SynthesisRecipe[] };
+  /**
+   * ユニークスキル（K-03、09 §7「その世界で一人だけ持てる技」。
+   * hidden/k03 の定義＋ライバルの人数）。指定すると：厳しい条件を満たすと
+   * 主人公が取り（通知Sランク相当）、取られずに残った技は眠りのあいだに
+   * ライバルが先取りしうる（記録は state.uniques。世界の記録に残る）
+   */
+  uniques?: UniquesConfig;
 }
 
 export type Command =
@@ -552,6 +580,37 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // コンテンツ設定。天候表が無い世界では {weather} 条件は成立しない
   const condEnv: CondEnv = cfg.weather !== undefined ? { weather: cfg.weather } : {};
 
+  // K-03：響き合い（合成）とユニークスキルの判定。習得判定（checkArtsLearn）と
+  // 同じ場面で呼ぶ —— 技・技能・刻印が揃った瞬間に新しい技が生まれ、
+  // 厳しい条件を満たしたユニークはその世界で一人だけの手に渡る。
+  // ユニークの獲得はS通知（1日1回の予算。溢れた分は suppressed で記録だけ残る）。
+  // 返り値はイベントにする結果 —— 眠りでは起床ログの後にまとめて出すため
+  // 呼び出し側が出す順を決める
+  const k03Checks = (): {
+    synthesized: string[];
+    gained: { art: string; suppressed?: boolean }[];
+  } => {
+    const out: { synthesized: string[]; gained: { art: string; suppressed?: boolean }[] } = {
+      synthesized: [],
+      gained: [],
+    };
+    if (cfg.synthesis !== undefined) {
+      const syn = checkSynthesis(next, cfg.synthesis.recipes, cfg.time, condEnv);
+      next = syn.state;
+      out.synthesized.push(...syn.learned);
+    }
+    if (cfg.uniques !== undefined) {
+      const u = checkUniques(next, cfg.uniques, cfg.time, condEnv);
+      next = u.state;
+      for (const art of u.gained) {
+        const r = consumeS(next);
+        next = r.state;
+        out.gained.push({ art, ...(r.allowed ? {} : { suppressed: true }) });
+      }
+    }
+    return out;
+  };
+
   // R-01 経験の揺らぎ：定着前の経験1回ごとに seed×日×行動序数×回目の独立した
   // 乱数を引く。行動序数（action.total）で日をまたいでも同じ乱数を再引きせず、
   // 回目（seq）で1行動に複数スキルへ入る分（戦闘・深層）もそれぞれ別の抽選になる。
@@ -711,6 +770,11 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const from = next.time;
       // K-02：眠りで閃いた技（起床ログの後にイベントとして出すため先に集める）
       const learnedArts: string[] = [];
+      // K-03：眠りで形を変えた技・生まれた技・動いた世界（同じく後で出す）
+      const evolvedArts: { from: string; to: string; reason: string; hidden: boolean }[] = [];
+      const synthArts: string[] = [];
+      const uniqGained: { art: string; suppressed?: boolean }[] = [];
+      const uniqClaimed: { art: string; rival: string }[] = [];
       // 行動0回で眠る日は休養日（オーバーワーク解除・素質回復）
       const restDay = !next.actionLog.some((e) => e.day === next.time.day);
 
@@ -821,6 +885,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           report.artsLearned = learn.learned;
           learnedArts.push(...learn.learned);
         }
+        // K-03：定着の直後、Lv10 に達した技が使い方の記録（artTags）と
+        // 最も合う分岐へ形を変える。隠し分岐は極端な使い方にだけ通じる
+        if (cfg.evolution !== undefined) {
+          const evo = checkEvolution(next, cfg.arts, cfg.evolution);
+          next = evo.state;
+          evolvedArts.push(...evo.evolved);
+        }
       }
 
       // 翌日の追い風を抽選して保持し、起床ログに含める
@@ -848,6 +919,23 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
 
       next.time = sleepTime(next.time);
       next = resetDailyNotify(next); // 日付が変わると通知予算はリセット
+
+      // K-03：眠りのあいだに世界が動く（09 §7）。
+      // 定着で揃った条件の響き合い・ユニークの獲得判定を先に行い、それでも
+      // 誰の手にも渡っていないユニークへライバルの先取りを終わった日
+      // （from.day）の世界シード抽選で行う —— 先に満たした者が取る。
+      // 獲得のS通知は新しい日の予算を使う（朝刊に載る出来事として届く）
+      if (cfg.arts !== undefined) {
+        const k = k03Checks();
+        synthArts.push(...k.synthesized);
+        uniqGained.push(...k.gained);
+        if (cfg.uniques !== undefined) {
+          const rc = checkRivalClaims(next, cfg.uniques, from.day);
+          next = rc.state;
+          for (const c of rc.claimed)
+            uniqClaimed.push({ art: c.art, rival: `rival.${c.rivalIndex}` });
+        }
+      }
 
       // P-02 旅の途中：野営で残り日数を1つ減らし、0 の朝に着く
       if (camping && cfg.life !== undefined && next.life.journey !== null) {
@@ -912,6 +1000,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       }
       // 眠りで閃いた技（K-02）：起床ログの節目として出す
       for (const id of learnedArts) events.push({ type: "artLearned", id });
+      // K-03：形を変えた技 → 響き合いで生まれた技 → 世界に刻まれた
+      // ユニークの順で節目として出す（通知ランクはそれぞれ A・B・S/A）
+      for (const e of evolvedArts) events.push({ type: "artEvolved", ...e });
+      for (const id of synthArts) events.push({ type: "artSynthesized", id });
+      for (const u of uniqGained) events.push({ type: "uniqueGained", ...u });
+      for (const c of uniqClaimed) events.push({ type: "uniqueClaimed", ...c });
       events.push(...agingEvents);
       events.push(...crisisEvents);
       break;
@@ -1288,6 +1382,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         const learn = checkArtsLearn(next, cfg.arts);
         next = learn.state;
         for (const id of learn.learned) events.push({ type: "artLearned", id });
+        // K-03：揃った技・刻印の響き合いとユニークの獲得もこの瞬間に起きる
+        const k = k03Checks();
+        for (const id of k.synthesized) events.push({ type: "artSynthesized", id });
+        for (const u of k.gained) events.push({ type: "uniqueGained", ...u });
       }
 
       next.time = advanceTime(next.time, cfg.time);
@@ -1500,6 +1598,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         const learn = checkArtsLearn(next, cfg.arts);
         next = learn.state;
         for (const id of learn.learned) events.push({ type: "artLearned", id });
+        // K-03：揃った技・刻印の響き合いとユニークの獲得もこの瞬間に起きる
+        const k = k03Checks();
+        for (const id of k.synthesized) events.push({ type: "artSynthesized", id });
+        for (const u of k.gained) events.push({ type: "uniqueGained", ...u });
       }
 
       // 潜行自体：時間を1行動分だけ進め、負荷を積む
@@ -2450,6 +2552,10 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         const learn = checkArtsLearn(next, cfg.arts);
         next = learn.state;
         for (const id of learn.learned) events.push({ type: "artLearned", id });
+        // K-03：揃った技・刻印の響き合いとユニークの獲得もこの瞬間に起きる
+        const k = k03Checks();
+        for (const id of k.synthesized) events.push({ type: "artSynthesized", id });
+        for (const u of k.gained) events.push({ type: "uniqueGained", ...u });
       }
       break;
     }
@@ -2508,6 +2614,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         weapon: command.weapon,
         level: enchantLevel(next, command.weapon),
       });
+      // K-03：付与の刻印（enchant.<weapon>）も響き合いの材料になる
+      // （鍛冶＋火魔法の組み合わせは 09 §4・§7 の例そのもの）
+      if (cfg.arts !== undefined) {
+        const k = k03Checks();
+        for (const id of k.synthesized) events.push({ type: "artSynthesized", id });
+        for (const u of k.gained) events.push({ type: "uniqueGained", ...u });
+      }
       break;
     }
     case "journey": {
@@ -2711,6 +2824,23 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const event: ActionEvent = { type: "incidentOffered", id: def.id, kind: def.kind };
       for (const sub of subscribers) next = sub(next, event);
       next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
+  }
+
+  // K-03：響き合い・ユニークの最終判定 —— このstepで出来事・発見・称号・
+  // 歳月が立てた旗印も材料になるので、行動の処理の最後にもう一度だけ見る
+  // （購読者ループで反映済みの刻印まで条件DSLから読める位置）
+  {
+    const k = k03Checks();
+    for (const id of k.synthesized) {
+      const event: ActionEvent = { type: "artSynthesized", id };
+      for (const sub of subscribers) next = sub(next, event);
+      events.push(event);
+    }
+    for (const u of k.gained) {
+      const event: ActionEvent = { type: "uniqueGained", ...u };
+      for (const sub of subscribers) next = sub(next, event);
       events.push(event);
     }
   }

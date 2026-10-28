@@ -34,6 +34,7 @@ import { weaponsFileSchema } from "./weapons.schema.js";
 import { artsFileSchema } from "./arts.schema.js";
 import { spellsFileSchema } from "./spells.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
+import { k03FileSchema } from "../k03/schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -90,6 +91,103 @@ check("weapons.json", weaponsFileSchema);
 check("arts.json", artsFileSchema);
 check("spells.json", spellsFileSchema);
 check("crises/sample.json", crisesFileSchema);
+check("k03/sample.json", k03FileSchema);
+
+// K-03 の進化形の突き合わせ：派生 id（__e/__h で materialize する）が
+// 既存の技・呪文の id と衝突しないこと。また分岐の mod.name が必須であること
+// （learn.at のない派生定義が名を持たないと表示できない）
+try {
+  const artsRaw = JSON.parse(readFileSync(join(root, "arts.json"), "utf8")) as {
+    arts?: { id?: string; evolve?: { branches?: unknown[] } }[];
+  };
+  const spellsRaw = JSON.parse(readFileSync(join(root, "spells.json"), "utf8")) as {
+    spells?: { id?: string; evolve?: { branches?: unknown[] } }[];
+  };
+  const ids = new Set<string>();
+  for (const a of [...(artsRaw.arts ?? []), ...(spellsRaw.spells ?? [])]) {
+    if (a.id !== undefined) ids.add(a.id);
+  }
+  const bad: string[] = [];
+  for (const a of [...(artsRaw.arts ?? []), ...(spellsRaw.spells ?? [])]) {
+    const n = a.evolve?.branches?.length ?? 0;
+    for (let i = 0; i < n; i++) {
+      const derived = `${a.id}__e${i}`;
+      if (ids.has(derived)) bad.push(`${a.id}: 派生id ${derived} が既存の技と衝突`);
+    }
+  }
+  if (bad.length > 0) {
+    console.error(`✗ K-03 の派生idが衝突: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ K-03 の派生id（evolve branches ↔ arts/spells）");
+  }
+} catch (e) {
+  console.error(`✗ K-03 の派生id突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
+
+// K-03 公開サンプルの参照の突き合わせ：技・技能・元の技が実在すること。
+// 条件DSLの {art}・{skill} 参照と hiddenBranches.from・def.skill を見る
+// （hidden/k03 は内容を読まないので対象外。スキーマはローダーで検証済み）
+try {
+  const skillsRaw = JSON.parse(readFileSync(join(root, "skills.json"), "utf8")) as {
+    skills?: { id?: string }[];
+  };
+  const artsRaw = JSON.parse(readFileSync(join(root, "arts.json"), "utf8")) as {
+    arts?: { id?: string }[];
+  };
+  const spellsRaw = JSON.parse(readFileSync(join(root, "spells.json"), "utf8")) as {
+    spells?: { id?: string }[];
+  };
+  const k03Raw = JSON.parse(readFileSync(join(root, "k03/sample.json"), "utf8")) as {
+    uniques?: { def?: { id?: string; skill?: string }; condition?: unknown }[];
+    recipes?: { def?: { id?: string; skill?: string }; condition?: unknown }[];
+    hiddenBranches?: { from?: string }[];
+  };
+  const skillIds = new Set((skillsRaw.skills ?? []).map((s) => s.id));
+  const artIds = new Set([...(artsRaw.arts ?? []), ...(spellsRaw.spells ?? [])].map((a) => a.id));
+  const bad: string[] = [];
+  const walkCond = (cond: unknown, owner: string) => {
+    if (typeof cond !== "object" || cond === null) return;
+    for (const [k, v] of Object.entries(cond as Record<string, unknown>)) {
+      if (k === "art" && typeof v === "string" && !artIds.has(v))
+        bad.push(`${owner}: 未定義の技 ${v}`);
+      if (k === "skill" && typeof v === "string" && !skillIds.has(v))
+        bad.push(`${owner}: 未定義の技能 ${v}`);
+      if (typeof v === "object" && v !== null) walkCond(v, owner);
+      if (Array.isArray(v)) for (const x of v) walkCond(x, owner);
+    }
+  };
+  for (const u of k03Raw.uniques ?? []) {
+    const owner = `uniques ${u.def?.id ?? "?"}`;
+    if (u.def?.skill !== undefined && !skillIds.has(u.def.skill))
+      bad.push(`${owner}: 未定義の技能 ${u.def.skill}`);
+    if (u.def?.id !== undefined && artIds.has(u.def.id))
+      bad.push(`${owner}: id ${u.def.id} が既存の技と衝突`);
+    walkCond(u.condition, owner);
+  }
+  for (const r of k03Raw.recipes ?? []) {
+    const owner = `recipes ${r.def?.id ?? "?"}`;
+    if (r.def?.skill !== undefined && !skillIds.has(r.def.skill))
+      bad.push(`${owner}: 未定義の技能 ${r.def.skill}`);
+    if (r.def?.id !== undefined && artIds.has(r.def.id))
+      bad.push(`${owner}: id ${r.def.id} が既存の技と衝突`);
+    walkCond(r.condition, owner);
+  }
+  for (const b of k03Raw.hiddenBranches ?? []) {
+    if (b.from !== undefined && !artIds.has(b.from))
+      bad.push(`hiddenBranches: 未定義の元の技 ${b.from}`);
+  }
+  if (bad.length > 0) {
+    console.error(`✗ K-03 サンプルの参照が不正: ${bad.join(", ")}`);
+    failed = true;
+  } else {
+    console.log("✓ K-03 サンプルの参照（k03 ↔ skills/arts/spells）");
+  }
+} catch (e) {
+  console.error(`✗ K-03 サンプルの突き合わせに失敗 (${String(e)})`);
+  failed = true;
+}
 
 // 武器の突き合わせ（K-01）：武器が使う技能は skills.json に存在し、
 // 初期所持・初期装備は weapons.json に定義された id に限る
@@ -1429,7 +1527,8 @@ try {
 }
 
 // 隠し要素ディレクトリは中身を検証しない（ネタバレ防止。docs/07_story.md §5）
-// hidden/ が空でなければ警告だけ出す
+// hidden/ が空でなければ警告だけ出す。K-03 の隠し要素はスキーマ適合だけ確認し、
+// 中身（条件・技の名・件数の内訳）は出力しない
 try {
   const hidden = readdirSync(join(root, "hidden")).filter(
     (f) => f !== "README.md" && !f.startsWith("."),
@@ -1439,6 +1538,24 @@ try {
   }
 } catch {
   // hidden/ が無ければ無視
+}
+try {
+  const k03Dir = join(root, "hidden", "k03");
+  const names = readdirSync(k03Dir).filter((f) => f.endsWith(".json"));
+  let ok = true;
+  for (const name of names.sort()) {
+    const parsed = k03FileSchema.safeParse(
+      JSON.parse(readFileSync(join(k03Dir, name), "utf8")) as unknown,
+    );
+    if (!parsed.success) {
+      console.error(`✗ hidden/k03/${name}: K-03 のスキーマに合いません`);
+      ok = false;
+      failed = true;
+    }
+  }
+  if (ok && names.length > 0) console.log(`✓ hidden/k03/（${names.length} 件、スキーマ適合）`);
+} catch {
+  // hidden/k03 が無ければ無視
 }
 
 if (failed) {

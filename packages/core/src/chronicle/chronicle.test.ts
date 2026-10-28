@@ -216,8 +216,8 @@ describe("バージョン移行", () => {
     expect(migrated.lives).toEqual(lives); // pinnacles は任意フィールド。埋めない
   });
 
-  it("v2 の年代記は v3 へ移行される（代表技能 peakSkills の追加・X-5）", () => {
-    // v2 時代の頁には peakSkills が無い。任意フィールドなので埋めるものはない
+  it("v2 の年代記は最新版へ移行される（v3 代表技能・v4 ユニーク経由）", () => {
+    // v2 時代の頁には peakSkills/uniques が無い。任意フィールドなので埋めるものはない
     const lives = [
       {
         name: "古の剣士",
@@ -228,9 +228,10 @@ describe("バージョン移行", () => {
       },
     ];
     const migrated = deserializeChronicle(JSON.stringify({ version: 2, lives }));
-    expect(migrated.version).toBe(3);
-    expect(migrated.lives).toEqual(lives); // 頁はそのまま。peakSkills は旧頁には無い
+    expect(migrated.version).toBe(CHRONICLE_VERSION);
+    expect(migrated.lives).toEqual(lives); // 頁はそのまま。peakSkills/uniques は旧頁には無い
     expect(migrated.lives[0]!.peakSkills).toBeUndefined();
+    expect(migrated.lives[0]!.uniques).toBeUndefined();
   });
 
   it("version が無い・未来・配列でない lives はエラー", () => {

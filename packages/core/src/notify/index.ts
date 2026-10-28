@@ -48,6 +48,19 @@ export function rankOf(
     // 淡々と知らせる —— 発見と同じ格のB
     case "npcEvent":
       return "B";
+    // ---- 技の進化・合成・ユニーク（K-03、09 §7） ----
+    // 進化：積み重ねの形が変わる大きな節目 —— A
+    case "artEvolved":
+      return "A";
+    // 合成：新しい技の習得と同じ格 —— B（レシピは伏せたまま、生まれた事実だけ知らせる）
+    case "artSynthesized":
+      return "B";
+    // ユニークを得た：「その世界で一人だけ」の世界初の出来事 —— S
+    case "uniqueGained":
+      return "S";
+    // ライバルに先取られた：世界が動いた記録 —— A
+    case "uniqueClaimed":
+      return "A";
     default:
       return null; // slept / wakeReport / gainApplied / actionPerformed / skillRankUp（F-01。起床ログの行で済ませ、別の通知は出さない）
   }

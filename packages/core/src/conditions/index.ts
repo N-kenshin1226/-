@@ -75,7 +75,12 @@ export type Cond =
    * minStage は段階の下限（進行中でない世界では成立しない）。
    * 出来事・打診が「危機の気配」に応じて現れる条件に使う
    */
-  | { crisis: { active?: boolean; minStage?: number } };
+  | { crisis: { active?: boolean; minStage?: number } }
+  /**
+   * 習得済みの技（K-03、docs/09 §7）：player.arts にこのIDの技があるか。
+   * 「技と技の組み合わせ」を読む条件（合成レシピ・ユニークの要求）に使う
+   */
+  | { art: string };
 
 function compareNum(v: number, c: Compare): boolean {
   if (c.gte !== undefined && v < c.gte) return false;
@@ -122,6 +127,10 @@ export function evaluate(cond: Cond, state: GameState, time: TimeConfig, env?: C
     const today = weatherOf(state.seed, state.time.day, env.weather, time);
     const ids = Array.isArray(cond.weather) ? cond.weather : [cond.weather];
     return ids.includes(today.kind.id);
+  }
+  if ("art" in cond) {
+    // 習得済みの技（K-03）：進化・合成・ユニークの組み合わせ条件が読む語彙
+    return state.player.arts[cond.art] !== undefined;
   }
   if ("time" in cond) {
     const t = cond.time;

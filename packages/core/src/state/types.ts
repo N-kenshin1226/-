@@ -352,4 +352,12 @@ export interface GameState {
    * 寄付が読み書きする欄
    */
   life: LifeState;
+  /**
+   * ユニークスキルの世界の記録（K-03、09 §7。v20〜）：
+   * その世界で一人だけ持てる技（hidden）。技ID → 持ち主と獲得日。
+   * 持ち主は "player" か "rival.<index>"（ライバルの抽選順）。
+   * 一度取られた技は二度と手に入らない —— 取った事実は新聞と
+   * 世界の記録に載る（世界初の仕組み）
+   */
+  uniques: Record<string, { holder: string; day: number }>;
 }

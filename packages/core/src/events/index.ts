@@ -149,6 +149,28 @@ export type ActionEvent =
    * id は arts.json の id）
    */
   | { type: "artLearned"; id: string }
+  /**
+   * 技が進化した（K-03、09 §7.1。Lv10 に達した技が使い方の記録と最も合う
+   * 分岐へ化けた。通知Aランク相当 —— 積み重ねの形が変わる大きな節目）。
+   * hidden は隠し分岐（まれに現れる。新聞では「未知の形」として語る）
+   */
+  | { type: "artEvolved"; from: string; to: string; reason: string; hidden: boolean }
+  /**
+   * 技が生まれた（K-03、09 §7「合成」：技能・技の響き合い。通知Bランク相当
+   * —— 新しい技の習得と同じ格。レシピは伏せられ、ヒントだけが噂に載る）
+   */
+  | { type: "artSynthesized"; id: string }
+  /**
+   * ユニークスキルを得た（K-03、09 §7「その世界で一人だけ持てる技」。
+   * 通知Sランク相当 —— 「世界初」の出来事。suppressed はS予算超過）
+   */
+  | { type: "uniqueGained"; art: string; suppressed?: boolean }
+  /**
+   * ユニークスキルがライバルの手に渡った（K-03。眠りのあいだに世界が
+   * 動き、先に取られた。通知Aランク相当 —— 新聞と世界の記録に載る）。
+   * rival はライバルの抽選順（rival.<index>。表示名は表示側が解く）
+   */
+  | { type: "uniqueClaimed"; art: string; rival: string }
   /** 武技の構成を組み替えた（K-02、09 §6。行動は消費しない。setBuild の確認） */
   | { type: "buildChanged" }
   // ---- 世界の危機（docs/08、W-01） ----
@@ -682,6 +704,51 @@ export const counterSubscriber: Subscriber = (state, event) => {
         counters: {
           ...state.counters,
           "journey.count": (state.counters["journey.count"] ?? 0) + 1,
+        },
+      };
+    }
+    // ---- 技の進化・合成・ユニーク（K-03、09 §7）：累計を刻む ----
+    case "artEvolved": {
+      // 進化した回数と進化形ごとの回数（条件DSL・記録から「N回形を変えた」を読める。
+      // 隠し分岐は別刻み —— 「まれな形」そのものが次の響き合いの材料になりうる）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "art.evolved": (state.counters["art.evolved"] ?? 0) + 1,
+          ...(event.hidden
+            ? { "art.evolved.hidden": (state.counters["art.evolved.hidden"] ?? 0) + 1 }
+            : {}),
+        },
+      };
+    }
+    case "artSynthesized": {
+      // 響き合いで生まれた技の累計（「組み合わせの経験」を条件DSLから読める）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "art.synthesized": (state.counters["art.synthesized"] ?? 0) + 1,
+        },
+      };
+    }
+    case "uniqueGained": {
+      // 自分が得たユニークの累計（「世界で一人だけ」の実績の刻印）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "unique.gained": (state.counters["unique.gained"] ?? 0) + 1,
+        },
+      };
+    }
+    case "uniqueClaimed": {
+      // ライバルに先取られたユニークの累計（世界が動いた記録）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "unique.claimed": (state.counters["unique.claimed"] ?? 0) + 1,
         },
       };
     }

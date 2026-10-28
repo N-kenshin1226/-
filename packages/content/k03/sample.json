@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "uniques": [
+    {
+      "def": {
+        "id": "x_firstlight",
+        "name": "暁光の剣",
+        "skill": "swordplay",
+        "kind": "attack",
+        "power": 2.0,
+        "dtype": "slash",
+        "part": "body",
+        "pierceArmor": true,
+        "ki": 12,
+        "ct": 1.4,
+        "desc": "その世界に一つだけの剣技。夜明けの光のような一太刀。"
+      },
+      "condition": {
+        "and": [
+          { "skill": "swordplay", "gte": 55 },
+          { "counter": "art.evolved", "gte": 1 }
+        ]
+      },
+      "rival": { "dayMin": 50, "chance": 0.05 }
+    },
+    {
+      "def": {
+        "id": "x_stillwater",
+        "name": "静水の祈り",
+        "skill": "water_magic",
+        "kind": "heal",
+        "ki": 0,
+        "ct": 1.0,
+        "spell": { "element": "water", "tier": "expert", "mana": 12, "cast": 5, "heal": 2.2 },
+        "desc": "その世界に一つだけの癒し。静かな水面のように傷を閉じる。"
+      },
+      "condition": {
+        "and": [
+          { "skill": "water_magic", "gte": 50 },
+          { "counter": "spell.cast.el.water", "gte": 120 }
+        ]
+      },
+      "rival": { "dayMin": 65, "chance": 0.04 }
+    }
+  ],
+  "recipes": [
+    {
+      "def": {
+        "id": "x_flamebrand",
+        "name": "焔刃",
+        "skill": "swordplay",
+        "kind": "attack",
+        "power": 1.6,
+        "dtype": "slash",
+        "part": "body",
+        "status": { "id": "burn", "chance": 0.5, "ticks": 3, "power": 3 },
+        "ki": 8,
+        "ct": 1.2,
+        "desc": "剣と炎、二つの道を往く者だけの太刀。"
+      },
+      "condition": {
+        "and": [
+          { "skill": "swordplay", "gte": 15 },
+          { "skill": "fire_magic", "gte": 12 }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 剣と炎の理を同じ高さに揃えた者だけの太刀、《焔刃》があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_galestep_s",
+        "name": "風通しの足",
+        "skill": "evasion",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "effect": { "hook": "evade", "value": 0.1 },
+        "desc": "身のこなしと風の理が響き合った足さばき。"
+      },
+      "condition": {
+        "and": [
+          { "skill": "evasion", "gte": 15 },
+          { "skill": "wind_magic", "gte": 12 }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 躱す者と風を知る者、《風通しの足》の噂。"
+    },
+    {
+      "def": {
+        "id": "x_heartshot",
+        "name": "心眼の一射",
+        "skill": "archery",
+        "kind": "attack",
+        "power": 1.8,
+        "dtype": "pierce",
+        "part": "head",
+        "hitBonus": 0.08,
+        "ki": 8,
+        "ct": 1.3,
+        "range": "far",
+        "desc": "目と弓が一つになった射。"
+      },
+      "condition": {
+        "and": [
+          { "skill": "archery", "gte": 16 },
+          { "skill": "observation", "gte": 12 }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 狩人の目と射手の腕、《心眼の一射》。"
+    },
+    {
+      "def": {
+        "id": "x_mirroredge_s",
+        "name": "鏡の型",
+        "skill": "swordplay",
+        "kind": "response",
+        "response": "parry",
+        "ki": 6,
+        "ct": 0.6,
+        "desc": "受けと受けが響き合って生まれた型。"
+      },
+      "condition": { "and": [{ "art": "s_riposte" }, { "art": "p_counter" }] },
+      "hint": "噂に聞いた話 ―― 別々に覚えた受けの型同士が響き合うことがあるらしい。"
+    }
+  ],
+  "hiddenBranches": [
+    {
+      "from": "s_slash",
+      "tilt": "無慈悲",
+      "reason": "瀕死の敵を切り捨て続けた",
+      "weights": { "finisher": 1, "foe.weaker": 0.3 },
+      "mod": { "name": "断罪の薙ぎ払い", "power": 1.6, "ct": 1.1 }
+    },
+    {
+      "from": "sp_ember",
+      "tilt": "焦土",
+      "reason": "追い込まれてなお撃ち続けた",
+      "weights": { "self.lowhp": 1 },
+      "mod": { "name": "焦土の火の粉", "power": 1.4, "spell": { "mana": 4.0 } }
+    }
+  ]
+}

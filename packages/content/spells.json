@@ -5,426 +5,2286 @@
       "id": "sp_ember",
       "name": "火の粉",
       "skill": "fire_magic",
-      "learn": { "at": 3 },
+      "learn": {
+        "at": 3
+      },
       "kind": "attack",
       "power": 0.75,
-      "status": { "id": "burn", "chance": 0.4, "ticks": 6, "power": 1.2 },
+      "status": {
+        "id": "burn",
+        "chance": 0.4,
+        "ticks": 6,
+        "power": 1.2
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "fire", "tier": "novice", "mana": 3, "cast": 6 },
-      "desc": "掌に灯る小さな火を飛ばす。焦げ跡が残る程度の、最初の一歩"
+      "spell": {
+        "element": "fire",
+        "tier": "novice",
+        "mana": 3,
+        "cast": 6
+      },
+      "desc": "掌に灯る小さな火を飛ばす。焦げ跡が残る程度の、最初の一歩",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の火の粉",
+              "power": 0.98,
+              "spell": {
+                "mana": 3.9
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの火の粉",
+              "status": {
+                "id": "burn",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の火の粉",
+              "power": 0.86,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_fire_arrow",
       "name": "火矢",
       "skill": "fire_magic",
-      "learn": { "at": 6 },
+      "learn": {
+        "at": 6
+      },
       "kind": "attack",
       "power": 1,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "fire", "tier": "novice", "mana": 4, "cast": 10 },
-      "desc": "火を矢の形に絞って放つ。素直に飛ぶ、火魔法の基本"
+      "spell": {
+        "element": "fire",
+        "tier": "novice",
+        "mana": 4,
+        "cast": 10
+      },
+      "desc": "火を矢の形に絞って放つ。素直に飛ぶ、火魔法の基本",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の火矢",
+              "spell": {
+                "cast": 7.5
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の火矢",
+              "spell": {
+                "mana": 2.8
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の火矢",
+              "power": 1.2,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_fireball",
       "name": "火球",
       "skill": "fire_magic",
-      "learn": { "at": 15, "flag": "grimoire.flame" },
+      "learn": {
+        "at": 15,
+        "flag": "grimoire.flame"
+      },
       "kind": "attack",
       "power": 1.5,
-      "status": { "id": "burn", "chance": 0.5, "ticks": 8, "power": 1.8 },
+      "status": {
+        "id": "burn",
+        "chance": 0.5,
+        "ticks": 8,
+        "power": 1.8
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "fire", "tier": "adept", "mana": 9, "cast": 18 },
-      "desc": "練り上げた火の球を撃ち出す。着弾で燃え広がる"
+      "spell": {
+        "element": "fire",
+        "tier": "adept",
+        "mana": 9,
+        "cast": 18
+      },
+      "desc": "練り上げた火の球を撃ち出す。着弾で燃え広がる",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの火球",
+              "status": {
+                "id": "burn",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の火球",
+              "power": 1.73,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の火球",
+              "power": 1.95,
+              "spell": {
+                "mana": 11.7
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_burning_hand",
       "name": "炎の掌",
       "skill": "fire_magic",
-      "learn": { "at": 18, "flag": "grimoire.flame" },
+      "learn": {
+        "at": 18,
+        "flag": "grimoire.flame"
+      },
       "kind": "attack",
       "power": 1.3,
-      "status": { "id": "burn", "chance": 0.6, "ticks": 6, "power": 1.5 },
+      "status": {
+        "id": "burn",
+        "chance": 0.6,
+        "ticks": 6,
+        "power": 1.5
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "fire", "tier": "adept", "mana": 8, "cast": 12 },
-      "desc": "掌に纏わせた炎を押し付ける。間近ほど確かに燃える"
+      "spell": {
+        "element": "fire",
+        "tier": "adept",
+        "mana": 8,
+        "cast": 12
+      },
+      "desc": "掌に纏わせた炎を押し付ける。間近ほど確かに燃える",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の炎の掌",
+              "spell": {
+                "mana": 5.6
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の炎の掌",
+              "power": 1.56,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の炎の掌",
+              "spell": {
+                "cast": 9
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_flame_wall",
       "name": "炎壁",
       "skill": "fire_magic",
-      "learn": { "at": 28, "flag": "grimoire.flame" },
+      "learn": {
+        "at": 28,
+        "flag": "grimoire.flame"
+      },
       "kind": "attack",
       "power": 2.1,
-      "status": { "id": "burn", "chance": 0.7, "ticks": 10, "power": 2.4 },
+      "status": {
+        "id": "burn",
+        "chance": 0.7,
+        "ticks": 10,
+        "power": 2.4
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "fire", "tier": "expert", "mana": 16, "cast": 26 },
-      "desc": "立ち上がる炎の壁。避けた先まで焼く"
+      "spell": {
+        "element": "fire",
+        "tier": "expert",
+        "mana": 16,
+        "cast": 26
+      },
+      "desc": "立ち上がる炎の壁。避けた先まで焼く",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の炎壁",
+              "power": 2.42,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の炎壁",
+              "power": 2.73,
+              "spell": {
+                "mana": 20.8
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの炎壁",
+              "status": {
+                "id": "burn",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_inferno",
       "name": "獄炎",
       "skill": "fire_magic",
-      "learn": { "at": 38, "flag": "grimoire.flame" },
+      "learn": {
+        "at": 38,
+        "flag": "grimoire.flame"
+      },
       "kind": "attack",
       "power": 2.9,
-      "status": { "id": "burn", "chance": 0.8, "ticks": 12, "power": 3 },
+      "status": {
+        "id": "burn",
+        "chance": 0.8,
+        "ticks": 12,
+        "power": 3
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "fire", "tier": "expert", "mana": 24, "cast": 34 },
-      "desc": "視界ごと呑み込む業火。火魔法の極意"
+      "spell": {
+        "element": "fire",
+        "tier": "expert",
+        "mana": 24,
+        "cast": 34
+      },
+      "desc": "視界ごと呑み込む業火。火魔法の極意",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の獄炎",
+              "power": 3.48,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の獄炎",
+              "spell": {
+                "cast": 25.5
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の獄炎",
+              "spell": {
+                "mana": 16.8
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_splash",
       "name": "飛沫",
       "skill": "water_magic",
-      "learn": { "at": 3 },
+      "learn": {
+        "at": 3
+      },
       "kind": "support",
-      "status": { "id": "wet", "chance": 0.9, "ticks": 14, "power": 1 },
+      "status": {
+        "id": "wet",
+        "chance": 0.9,
+        "ticks": 14,
+        "power": 1
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "water", "tier": "novice", "mana": 3, "cast": 6 },
-      "desc": "水を浴びせる。濡れた相手は雷に弱い"
+      "spell": {
+        "element": "water",
+        "tier": "novice",
+        "mana": 3,
+        "cast": 6
+      },
+      "desc": "水を浴びせる。濡れた相手は雷に弱い",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "確実",
+            "reason": "格上へ掛け続けた",
+            "weights": {
+              "foe.stronger": 1
+            },
+            "mod": {
+              "name": "確実な飛沫",
+              "status": {
+                "id": "wet",
+                "chance": 1,
+                "ticks": 14,
+                "power": 1
+              }
+            }
+          },
+          {
+            "tilt": "先手",
+            "reason": "先手から仕掛け続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "先手の飛沫",
+              "spell": {
+                "cast": 4.2
+              }
+            }
+          },
+          {
+            "tilt": "長引き",
+            "reason": "長い戦いを支え続けた",
+            "weights": {
+              "foe.even": 1
+            },
+            "mod": {
+              "name": "長引きの飛沫",
+              "status": {
+                "id": "wet",
+                "chance": 0.9,
+                "ticks": 16,
+                "power": 1
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_water_shot",
       "name": "水弾",
       "skill": "water_magic",
-      "learn": { "at": 5 },
+      "learn": {
+        "at": 5
+      },
       "kind": "attack",
       "power": 0.85,
-      "status": { "id": "wet", "chance": 0.5, "ticks": 10, "power": 1 },
+      "status": {
+        "id": "wet",
+        "chance": 0.5,
+        "ticks": 10,
+        "power": 1
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "water", "tier": "novice", "mana": 4, "cast": 8 },
-      "desc": "水を塊にして叩き込む。打つほどに相手は濡れていく"
+      "spell": {
+        "element": "water",
+        "tier": "novice",
+        "mana": 4,
+        "cast": 8
+      },
+      "desc": "水を塊にして叩き込む。打つほどに相手は濡れていく",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の水弾",
+              "spell": {
+                "cast": 6
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の水弾",
+              "spell": {
+                "mana": 2.8
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の水弾",
+              "power": 1.02,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_ice_needle",
       "name": "氷の針",
       "skill": "water_magic",
-      "learn": { "at": 14, "flag": "spell.seen.sp_ice_needle" },
+      "learn": {
+        "at": 14,
+        "flag": "spell.seen.sp_ice_needle"
+      },
       "kind": "attack",
       "power": 1.4,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "water", "tier": "adept", "mana": 8, "cast": 13 },
-      "desc": "細く鋭い氷を撃つ。凍てつく森の精が教えてくれた"
+      "spell": {
+        "element": "water",
+        "tier": "adept",
+        "mana": 8,
+        "cast": 13
+      },
+      "desc": "細く鋭い氷を撃つ。凍てつく森の精が教えてくれた",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの氷の針",
+              "status": {
+                "id": "frozen",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の氷の針",
+              "power": 1.61,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の氷の針",
+              "power": 1.82,
+              "spell": {
+                "mana": 10.4
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_freeze",
       "name": "凍結",
       "skill": "water_magic",
-      "learn": { "at": 20, "flag": "spell.seen.sp_freeze" },
+      "learn": {
+        "at": 20,
+        "flag": "spell.seen.sp_freeze"
+      },
       "kind": "support",
-      "status": { "id": "frozen", "chance": 0.8, "ticks": 12, "power": 1 },
+      "status": {
+        "id": "frozen",
+        "chance": 0.8,
+        "ticks": 12,
+        "power": 1
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "water", "tier": "adept", "mana": 9, "cast": 14 },
-      "desc": "動きを氷に封じる。凍った相手は打撃に脆い"
+      "spell": {
+        "element": "water",
+        "tier": "adept",
+        "mana": 9,
+        "cast": 14
+      },
+      "desc": "動きを氷に封じる。凍った相手は打撃に脆い",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "確実",
+            "reason": "格上へ掛け続けた",
+            "weights": {
+              "foe.stronger": 1
+            },
+            "mod": {
+              "name": "確実な凍結",
+              "status": {
+                "id": "frozen",
+                "chance": 1,
+                "ticks": 12,
+                "power": 1
+              }
+            }
+          },
+          {
+            "tilt": "先手",
+            "reason": "先手から仕掛け続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "先手の凍結",
+              "spell": {
+                "cast": 9.8
+              }
+            }
+          },
+          {
+            "tilt": "長引き",
+            "reason": "長い戦いを支え続けた",
+            "weights": {
+              "foe.even": 1
+            },
+            "mod": {
+              "name": "長引きの凍結",
+              "status": {
+                "id": "frozen",
+                "chance": 0.8,
+                "ticks": 14,
+                "power": 1
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_blizzard",
       "name": "吹雪",
       "skill": "water_magic",
-      "learn": { "at": 32, "flag": "spell.seen.sp_blizzard" },
+      "learn": {
+        "at": 32,
+        "flag": "spell.seen.sp_blizzard"
+      },
       "kind": "attack",
       "power": 2.3,
-      "status": { "id": "frozen", "chance": 0.6, "ticks": 10, "power": 1 },
+      "status": {
+        "id": "frozen",
+        "chance": 0.6,
+        "ticks": 10,
+        "power": 1
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "water", "tier": "expert", "mana": 18, "cast": 28 },
-      "desc": "視界を塞ぐ氷雪の嵐。骨まで凍える"
+      "spell": {
+        "element": "water",
+        "tier": "expert",
+        "mana": 18,
+        "cast": 28
+      },
+      "desc": "視界を塞ぐ氷雪の嵐。骨まで凍える",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の吹雪",
+              "power": 2.64,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の吹雪",
+              "power": 2.99,
+              "spell": {
+                "mana": 23.4
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの吹雪",
+              "status": {
+                "id": "frozen",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_torrent",
       "name": "氷槍",
       "skill": "water_magic",
-      "learn": { "at": 36, "flag": "grimoire.tide" },
+      "learn": {
+        "at": 36,
+        "flag": "grimoire.tide"
+      },
       "kind": "attack",
       "power": 2.6,
-      "status": { "id": "frozen", "chance": 0.7, "ticks": 12, "power": 1 },
+      "status": {
+        "id": "frozen",
+        "chance": 0.7,
+        "ticks": 12,
+        "power": 1
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "water", "tier": "expert", "mana": 22, "cast": 30 },
-      "desc": "大きな氷の槍を貫通させる。魔導書に記された水の極意"
+      "spell": {
+        "element": "water",
+        "tier": "expert",
+        "mana": 22,
+        "cast": 30
+      },
+      "desc": "大きな氷の槍を貫通させる。魔導書に記された水の極意",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の氷槍",
+              "power": 3.12,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の氷槍",
+              "spell": {
+                "cast": 22.5
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の氷槍",
+              "spell": {
+                "mana": 15.4
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_gust",
       "name": "疾風",
       "skill": "wind_magic",
-      "learn": { "at": 4 },
+      "learn": {
+        "at": 4
+      },
       "kind": "attack",
       "power": 0.8,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "wind", "tier": "novice", "mana": 4, "cast": 7 },
-      "desc": "切っ先ほど鋭い風をぶつける。燃え盛る炎を助長もする"
+      "spell": {
+        "element": "wind",
+        "tier": "novice",
+        "mana": 4,
+        "cast": 7
+      },
+      "desc": "切っ先ほど鋭い風をぶつける。燃え盛る炎を助長もする",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の疾風",
+              "power": 1.04,
+              "spell": {
+                "mana": 5.2
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの疾風",
+              "status": {
+                "id": "shock",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の疾風",
+              "power": 0.92,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_spark",
       "name": "電撃",
       "skill": "wind_magic",
-      "learn": { "at": 7 },
+      "learn": {
+        "at": 7
+      },
       "kind": "attack",
       "power": 0.95,
-      "status": { "id": "shock", "chance": 0.35, "ticks": 6, "power": 1.2 },
+      "status": {
+        "id": "shock",
+        "chance": 0.35,
+        "ticks": 6,
+        "power": 1.2
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "wind", "tier": "novice", "mana": 5, "cast": 9 },
-      "desc": "指先から迸る放電。濡れているほどよく通る"
+      "spell": {
+        "element": "wind",
+        "tier": "novice",
+        "mana": 5,
+        "cast": 9
+      },
+      "desc": "指先から迸る放電。濡れているほどよく通る",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の電撃",
+              "spell": {
+                "cast": 6.8
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の電撃",
+              "spell": {
+                "mana": 3.5
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の電撃",
+              "power": 1.14,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_air_cutter",
       "name": "風刃",
       "skill": "wind_magic",
-      "learn": { "at": 14, "flag": "taught.sevan_gale" },
+      "learn": {
+        "at": 14,
+        "flag": "taught.sevan_gale"
+      },
       "kind": "attack",
       "power": 1.45,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "wind", "tier": "adept", "mana": 9, "cast": 14 },
-      "desc": "見えない刃となって切り裂く風。隠者直伝の形"
+      "spell": {
+        "element": "wind",
+        "tier": "adept",
+        "mana": 9,
+        "cast": 14
+      },
+      "desc": "見えない刃となって切り裂く風。隠者直伝の形",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの風刃",
+              "status": {
+                "id": "shock",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の風刃",
+              "power": 1.67,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の風刃",
+              "power": 1.89,
+              "spell": {
+                "mana": 11.7
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_lightning",
       "name": "落雷",
       "skill": "wind_magic",
-      "learn": { "at": 21, "flag": "taught.sevan_gale" },
+      "learn": {
+        "at": 21,
+        "flag": "taught.sevan_gale"
+      },
       "kind": "attack",
       "power": 1.8,
-      "status": { "id": "shock", "chance": 0.5, "ticks": 8, "power": 1.8 },
+      "status": {
+        "id": "shock",
+        "chance": 0.5,
+        "ticks": 8,
+        "power": 1.8
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "wind", "tier": "adept", "mana": 12, "cast": 20 },
-      "desc": "空から真っ直ぐ落とす雷。濡れた相手を串刺しにする"
+      "spell": {
+        "element": "wind",
+        "tier": "adept",
+        "mana": 12,
+        "cast": 20
+      },
+      "desc": "空から真っ直ぐ落とす雷。濡れた相手を串刺しにする",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の落雷",
+              "spell": {
+                "mana": 8.4
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の落雷",
+              "power": 2.16,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の落雷",
+              "spell": {
+                "cast": 15
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_storm",
       "name": "嵐",
       "skill": "wind_magic",
-      "learn": { "at": 33, "flag": "taught.sevan_gale" },
+      "learn": {
+        "at": 33,
+        "flag": "taught.sevan_gale"
+      },
       "kind": "attack",
       "power": 1.25,
       "hits": 2,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "wind", "tier": "expert", "mana": 20, "cast": 30 },
-      "desc": "吹き荒れる二連の暴風。火を煽り、雷を散らす"
+      "spell": {
+        "element": "wind",
+        "tier": "expert",
+        "mana": 20,
+        "cast": 30
+      },
+      "desc": "吹き荒れる二連の暴風。火を煽り、雷を散らす",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の嵐",
+              "power": 1.44,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の嵐",
+              "power": 1.63,
+              "spell": {
+                "mana": 26
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの嵐",
+              "status": {
+                "id": "shock",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_stone_shot",
       "name": "石弾",
       "skill": "earth_magic",
-      "learn": { "at": 4 },
+      "learn": {
+        "at": 4
+      },
       "kind": "attack",
       "power": 0.9,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "earth", "tier": "novice", "mana": 4, "cast": 9 },
-      "desc": "地面の石を拾い上げて撃つ。重い一発"
+      "spell": {
+        "element": "earth",
+        "tier": "novice",
+        "mana": 4,
+        "cast": 9
+      },
+      "desc": "地面の石を拾い上げて撃つ。重い一発",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の石弾",
+              "power": 1.08,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の石弾",
+              "spell": {
+                "cast": 6.8
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の石弾",
+              "spell": {
+                "mana": 2.8
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_mud",
       "name": "泥縛り",
       "skill": "earth_magic",
-      "learn": { "at": 8 },
+      "learn": {
+        "at": 8
+      },
       "kind": "support",
-      "status": { "id": "slow", "chance": 0.8, "ticks": 12, "power": 1.4 },
+      "status": {
+        "id": "slow",
+        "chance": 0.8,
+        "ticks": 12,
+        "power": 1.4
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "earth", "tier": "novice", "mana": 5, "cast": 10 },
-      "desc": "足元を泥に変えて動きを奪う"
+      "spell": {
+        "element": "earth",
+        "tier": "novice",
+        "mana": 5,
+        "cast": 10
+      },
+      "desc": "足元を泥に変えて動きを奪う",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "確実",
+            "reason": "格上へ掛け続けた",
+            "weights": {
+              "foe.stronger": 1
+            },
+            "mod": {
+              "name": "確実な泥縛り",
+              "status": {
+                "id": "slow",
+                "chance": 1,
+                "ticks": 12,
+                "power": 1.4
+              }
+            }
+          },
+          {
+            "tilt": "先手",
+            "reason": "先手から仕掛け続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "先手の泥縛り",
+              "spell": {
+                "cast": 7
+              }
+            }
+          },
+          {
+            "tilt": "長引き",
+            "reason": "長い戦いを支え続けた",
+            "weights": {
+              "foe.even": 1
+            },
+            "mod": {
+              "name": "長引きの泥縛り",
+              "status": {
+                "id": "slow",
+                "chance": 0.8,
+                "ticks": 14,
+                "power": 1.4
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_rock_fall",
       "name": "岩落とし",
       "skill": "earth_magic",
-      "learn": { "at": 15 },
+      "learn": {
+        "at": 15
+      },
       "kind": "attack",
       "power": 1.5,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "earth", "tier": "adept", "mana": 9, "cast": 15 },
-      "desc": "頭上に岩を落とす。凍った相手は砕けやすい"
+      "spell": {
+        "element": "earth",
+        "tier": "adept",
+        "mana": 9,
+        "cast": 15
+      },
+      "desc": "頭上に岩を落とす。凍った相手は砕けやすい",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の岩落とし",
+              "spell": {
+                "cast": 11.3
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の岩落とし",
+              "spell": {
+                "mana": 6.3
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の岩落とし",
+              "power": 1.8,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_stalagmite",
       "name": "石筍",
       "skill": "earth_magic",
-      "learn": { "at": 22 },
+      "learn": {
+        "at": 22
+      },
       "kind": "attack",
       "power": 1.7,
-      "status": { "id": "stagger", "chance": 0.45, "ticks": 8, "power": 1 },
+      "status": {
+        "id": "stagger",
+        "chance": 0.45,
+        "ticks": 8,
+        "power": 1
+      },
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "earth", "tier": "adept", "mana": 11, "cast": 18 },
-      "desc": "足元から石の槍が突き上がる。体勢を大きく崩す"
+      "spell": {
+        "element": "earth",
+        "tier": "adept",
+        "mana": 11,
+        "cast": 18
+      },
+      "desc": "足元から石の槍が突き上がる。体勢を大きく崩す",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの石筍",
+              "status": {
+                "id": "slow",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の石筍",
+              "power": 1.95,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の石筍",
+              "power": 2.21,
+              "spell": {
+                "mana": 14.3
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_quake",
       "name": "地震",
       "skill": "earth_magic",
-      "learn": { "at": 34 },
+      "learn": {
+        "at": 34
+      },
       "kind": "attack",
       "power": 2.6,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "earth", "tier": "expert", "mana": 22, "cast": 30 },
-      "desc": "大地ごと揺るがして叩き潰す。土魔法の極意"
+      "spell": {
+        "element": "earth",
+        "tier": "expert",
+        "mana": 22,
+        "cast": 30
+      },
+      "desc": "大地ごと揺るがして叩き潰す。土魔法の極意",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の地震",
+              "spell": {
+                "mana": 15.4
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の地震",
+              "power": 3.12,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の地震",
+              "spell": {
+                "cast": 22.5
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_lumen",
       "name": "光の矢",
       "skill": "light_magic",
-      "learn": { "at": 6 },
+      "learn": {
+        "at": 6
+      },
       "kind": "attack",
       "power": 0.95,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "light", "tier": "novice", "mana": 5, "cast": 9 },
-      "desc": "祈りのこもった光の筋。淀みを祓うように刺さる"
+      "spell": {
+        "element": "light",
+        "tier": "novice",
+        "mana": 5,
+        "cast": 9
+      },
+      "desc": "祈りのこもった光の筋。淀みを祓うように刺さる",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の光の矢",
+              "power": 1.09,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の光の矢",
+              "power": 1.23,
+              "spell": {
+                "mana": 6.5
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの光の矢",
+              "status": {
+                "id": "bleed",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_radiance",
       "name": "聖光",
       "skill": "light_magic",
-      "learn": { "at": 20, "flag": "taught.edel_rite" },
+      "learn": {
+        "at": 20,
+        "flag": "taught.edel_rite"
+      },
       "kind": "attack",
       "power": 1.9,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "light", "tier": "adept", "mana": 13, "cast": 20 },
-      "desc": "降り注ぐ聖なる光。修道院に伝わる秘蹟のひとつ"
+      "spell": {
+        "element": "light",
+        "tier": "adept",
+        "mana": 13,
+        "cast": 20
+      },
+      "desc": "降り注ぐ聖なる光。修道院に伝わる秘蹟のひとつ",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の聖光",
+              "power": 2.28,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の聖光",
+              "spell": {
+                "cast": 15
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の聖光",
+              "spell": {
+                "mana": 9.1
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_judgement",
       "name": "天光",
       "skill": "light_magic",
-      "learn": { "at": 35, "flag": "taught.edel_rite" },
+      "learn": {
+        "at": 35,
+        "flag": "taught.edel_rite"
+      },
       "kind": "attack",
       "power": 2.7,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "light", "tier": "expert", "mana": 24, "cast": 32 },
-      "desc": "天からの裁きの柱。光魔法の極意"
+      "spell": {
+        "element": "light",
+        "tier": "expert",
+        "mana": 24,
+        "cast": 32
+      },
+      "desc": "天からの裁きの柱。光魔法の極意",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の天光",
+              "power": 3.51,
+              "spell": {
+                "mana": 31.2
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの天光",
+              "status": {
+                "id": "bleed",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の天光",
+              "power": 3.11,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_shadow_bolt",
       "name": "闇の矢",
       "skill": "dark_magic",
-      "learn": { "at": 8, "flag": "spell.seen.sp_shadow_bolt" },
+      "learn": {
+        "at": 8,
+        "flag": "spell.seen.sp_shadow_bolt"
+      },
       "kind": "attack",
       "power": 1,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "dark", "tier": "novice", "mana": 5, "cast": 10 },
-      "desc": "闇を絞った矢。見取り稽古でしか覚えられない"
+      "spell": {
+        "element": "dark",
+        "tier": "novice",
+        "mana": 5,
+        "cast": 10
+      },
+      "desc": "闇を絞った矢。見取り稽古でしか覚えられない",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の闇の矢",
+              "spell": {
+                "cast": 7.5
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の闇の矢",
+              "spell": {
+                "mana": 3.5
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の闇の矢",
+              "power": 1.2,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_life_drain",
       "name": "生命吸収",
       "skill": "dark_magic",
-      "learn": { "at": 18, "flag": "spell.seen.sp_life_drain" },
+      "learn": {
+        "at": 18,
+        "flag": "spell.seen.sp_life_drain"
+      },
       "kind": "attack",
       "power": 1.2,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "dark", "tier": "adept", "mana": 10, "cast": 16, "drain": 0.4 },
-      "desc": "傷つけた分だけ自分が癒える。禁じ手に近い術"
+      "spell": {
+        "element": "dark",
+        "tier": "adept",
+        "mana": 10,
+        "cast": 16,
+        "drain": 0.4
+      },
+      "desc": "傷つけた分だけ自分が癒える。禁じ手に近い術",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの生命吸収",
+              "status": {
+                "id": "poison",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の生命吸収",
+              "power": 1.38,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の生命吸収",
+              "power": 1.56,
+              "spell": {
+                "mana": 13
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_eclipse",
       "name": "蝕",
       "skill": "dark_magic",
-      "learn": { "at": 32, "flag": "spell.seen.sp_eclipse" },
+      "learn": {
+        "at": 32,
+        "flag": "spell.seen.sp_eclipse"
+      },
       "kind": "attack",
       "power": 2.4,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "dark", "tier": "expert", "mana": 20, "cast": 28 },
-      "desc": "光を食らう闇の塊。穴の奥で見た、あの術"
+      "spell": {
+        "element": "dark",
+        "tier": "expert",
+        "mana": 20,
+        "cast": 28
+      },
+      "desc": "光を食らう闇の塊。穴の奥で見た、あの術",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の蝕",
+              "spell": {
+                "mana": 14
+              }
+            }
+          },
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の蝕",
+              "power": 2.88,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の蝕",
+              "spell": {
+                "cast": 21
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_mana_bullet",
       "name": "魔力弾",
       "skill": "void_magic",
-      "learn": { "at": 5 },
+      "learn": {
+        "at": 5
+      },
       "kind": "attack",
       "power": 0.85,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "void", "tier": "novice", "mana": 4, "cast": 7 },
-      "desc": "魔力をそのまま弾にする。属性を持たない純粋な一発"
+      "spell": {
+        "element": "void",
+        "tier": "novice",
+        "mana": 4,
+        "cast": 7
+      },
+      "desc": "魔力をそのまま弾にする。属性を持たない純粋な一発",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の魔力弾",
+              "power": 0.98,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の魔力弾",
+              "power": 1.11,
+              "spell": {
+                "mana": 5.2
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの魔力弾",
+              "status": {
+                "id": "stagger",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_triple_bullet",
       "name": "三連魔弾",
       "skill": "void_magic",
-      "learn": { "at": 15, "flag": "taught.rina_arcane" },
+      "learn": {
+        "at": 15,
+        "flag": "taught.rina_arcane"
+      },
       "kind": "attack",
       "power": 0.7,
       "hits": 3,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "void", "tier": "adept", "mana": 10, "cast": 16 },
-      "desc": "三発に分かれて飛ぶ魔弾。リナのお気に入り"
+      "spell": {
+        "element": "void",
+        "tier": "adept",
+        "mana": 10,
+        "cast": 16
+      },
+      "desc": "三発に分かれて飛ぶ魔弾。リナのお気に入り",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "追撃",
+            "reason": "とどめを撃ち続けた",
+            "weights": {
+              "finisher": 1
+            },
+            "mod": {
+              "name": "追撃の三連魔弾",
+              "power": 0.84,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の三連魔弾",
+              "spell": {
+                "cast": 12
+              }
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下を払い続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の三連魔弾",
+              "spell": {
+                "mana": 7
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_void_lance",
       "name": "虚無の槍",
       "skill": "void_magic",
-      "learn": { "at": 30, "flag": "taught.rina_arcane" },
+      "learn": {
+        "at": 30,
+        "flag": "taught.rina_arcane"
+      },
       "kind": "attack",
       "power": 2.5,
       "pierceArmor": true,
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "void", "tier": "expert", "mana": 22, "cast": 26 },
-      "desc": "装甲ごと貫く無属性の槍。防がせない"
+      "spell": {
+        "element": "void",
+        "tier": "expert",
+        "mana": 22,
+        "cast": 26
+      },
+      "desc": "装甲ごと貫く無属性の槍。防がせない",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ撃ち続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の虚無の槍",
+              "power": 3.25,
+              "spell": {
+                "mana": 28.6
+              }
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を焼き続けた",
+            "weights": {
+              "after.stagger": 1
+            },
+            "mod": {
+              "name": "崩しの虚無の槍",
+              "status": {
+                "id": "stagger",
+                "chance": 0.5,
+                "ticks": 3,
+                "power": 2
+              }
+            }
+          },
+          {
+            "tilt": "集中",
+            "reason": "予兆を読んで撃ち続けた",
+            "weights": {
+              "vs.telegraph": 1
+            },
+            "mod": {
+              "name": "集中の虚無の槍",
+              "power": 2.88,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_heal",
       "name": "癒し",
       "skill": "cure",
-      "learn": { "at": 5 },
+      "learn": {
+        "at": 5
+      },
       "kind": "heal",
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "cure", "tier": "novice", "mana": 5, "cast": 10, "heal": 1 },
-      "desc": "傷口に手を当てて、治りを早める"
+      "spell": {
+        "element": "cure",
+        "tier": "novice",
+        "mana": 5,
+        "cast": 10,
+        "heal": 1
+      },
+      "desc": "傷口に手を当てて、治りを早める",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "温存",
+            "reason": "余裕のある戦いで唱え続けた",
+            "weights": {
+              "foe.weaker": 1,
+              "foe.even": 0.4
+            },
+            "mod": {
+              "name": "温存の癒し",
+              "spell": {
+                "mana": 3.5
+              }
+            }
+          },
+          {
+            "tilt": "迅速",
+            "reason": "急いで唱え続けた",
+            "weights": {
+              "first.strike": 1,
+              "vs.telegraph": 0.5
+            },
+            "mod": {
+              "name": "迅速な癒し",
+              "spell": {
+                "cast": 7.5
+              }
+            }
+          },
+          {
+            "tilt": "瀕死",
+            "reason": "窮地で唱え続けた",
+            "weights": {
+              "self.lowhp": 1
+            },
+            "mod": {
+              "name": "瀕死の癒し",
+              "spell": {
+                "heal": 1.4
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_cure_wounds",
       "name": "治癒",
       "skill": "cure",
-      "learn": { "at": 15 },
+      "learn": {
+        "at": 15
+      },
       "kind": "heal",
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "cure", "tier": "adept", "mana": 12, "cast": 16, "heal": 1.8 },
-      "desc": "深い傷も塞ぐ本格的な治癒術"
+      "spell": {
+        "element": "cure",
+        "tier": "adept",
+        "mana": 12,
+        "cast": 16,
+        "heal": 1.8
+      },
+      "desc": "深い傷も塞ぐ本格的な治癒術",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "迅速",
+            "reason": "急いで唱え続けた",
+            "weights": {
+              "first.strike": 1,
+              "vs.telegraph": 0.5
+            },
+            "mod": {
+              "name": "迅速な治癒",
+              "spell": {
+                "cast": 12
+              }
+            }
+          },
+          {
+            "tilt": "瀕死",
+            "reason": "窮地で唱え続けた",
+            "weights": {
+              "self.lowhp": 1
+            },
+            "mod": {
+              "name": "瀕死の治癒",
+              "spell": {
+                "heal": 2.52
+              }
+            }
+          },
+          {
+            "tilt": "温存",
+            "reason": "余裕のある戦いで唱え続けた",
+            "weights": {
+              "foe.weaker": 1,
+              "foe.even": 0.4
+            },
+            "mod": {
+              "name": "温存の治癒",
+              "spell": {
+                "mana": 8.4
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_full_heal",
       "name": "全快",
       "skill": "cure",
-      "learn": { "at": 30 },
+      "learn": {
+        "at": 30
+      },
       "kind": "heal",
       "ki": 0,
       "ct": 1,
-      "spell": { "element": "cure", "tier": "expert", "mana": 24, "cast": 24, "heal": 3 },
-      "desc": "全身の傷を一気に洗い流す。治癒の極意"
+      "spell": {
+        "element": "cure",
+        "tier": "expert",
+        "mana": 24,
+        "cast": 24,
+        "heal": 3
+      },
+      "desc": "全身の傷を一気に洗い流す。治癒の極意",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "瀕死",
+            "reason": "窮地で唱え続けた",
+            "weights": {
+              "self.lowhp": 1
+            },
+            "mod": {
+              "name": "瀕死の全快",
+              "spell": {
+                "heal": 4.2
+              }
+            }
+          },
+          {
+            "tilt": "温存",
+            "reason": "余裕のある戦いで唱え続けた",
+            "weights": {
+              "foe.weaker": 1,
+              "foe.even": 0.4
+            },
+            "mod": {
+              "name": "温存の全快",
+              "spell": {
+                "mana": 16.8
+              }
+            }
+          },
+          {
+            "tilt": "迅速",
+            "reason": "急いで唱え続けた",
+            "weights": {
+              "first.strike": 1,
+              "vs.telegraph": 0.5
+            },
+            "mod": {
+              "name": "迅速な全快",
+              "spell": {
+                "cast": 18
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "sp_light",
       "name": "灯り",
       "skill": "life_magic",
-      "learn": { "at": 3 },
+      "learn": {
+        "at": 3
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -433,7 +2293,10 @@
         "tier": "novice",
         "mana": 4,
         "cast": 4,
-        "life": { "hook": "campBonus", "value": 8 }
+        "life": {
+          "hook": "campBonus",
+          "value": 8
+        }
       },
       "desc": "掌に灯る小さな光。野営の夜が少し柔らかくなる"
     },
@@ -441,7 +2304,9 @@
       "id": "sp_ignite",
       "name": "点火",
       "skill": "life_magic",
-      "learn": { "at": 5 },
+      "learn": {
+        "at": 5
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -450,7 +2315,10 @@
         "tier": "novice",
         "mana": 5,
         "cast": 4,
-        "life": { "hook": "smithBonus", "value": 10 }
+        "life": {
+          "hook": "smithBonus",
+          "value": 10
+        }
       },
       "desc": "炉に火を灯し、温度を整える。鍛冶屋が欲しがる術"
     },
@@ -458,7 +2326,9 @@
       "id": "sp_heat",
       "name": "火加減",
       "skill": "life_magic",
-      "learn": { "at": 7 },
+      "learn": {
+        "at": 7
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -467,7 +2337,10 @@
         "tier": "novice",
         "mana": 4,
         "cast": 4,
-        "life": { "hook": "cookBonus", "value": 12 }
+        "life": {
+          "hook": "cookBonus",
+          "value": 12
+        }
       },
       "desc": "鍋の火を思い通りに操る。焦がさず、生煮えにしない"
     },
@@ -475,7 +2348,13 @@
       "id": "sp_dry",
       "name": "乾燥",
       "skill": "life_magic",
-      "learn": { "at": 10, "counter": { "key": "spell.cast.life", "gte": 5 } },
+      "learn": {
+        "at": 10,
+        "counter": {
+          "key": "spell.cast.life",
+          "gte": 5
+        }
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -487,7 +2366,11 @@
         "life": {
           "hook": "preserve",
           "value": 1,
-          "transform": { "from": "herb", "to": "herb.dried", "n": 3 }
+          "transform": {
+            "from": "herb",
+            "to": "herb.dried",
+            "n": 3
+          }
         }
       },
       "desc": "薬草の水分を抜いて長持ちさせる。使い続けて覚えた術"
@@ -496,7 +2379,13 @@
       "id": "sp_cool",
       "name": "冷却",
       "skill": "life_magic",
-      "learn": { "at": 12, "counter": { "key": "spell.cast.life", "gte": 8 } },
+      "learn": {
+        "at": 12,
+        "counter": {
+          "key": "spell.cast.life",
+          "gte": 8
+        }
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -508,7 +2397,11 @@
         "life": {
           "hook": "preserve",
           "value": 1,
-          "transform": { "from": "berry", "to": "berry.dried", "n": 3 }
+          "transform": {
+            "from": "berry",
+            "to": "berry.dried",
+            "n": 3
+          }
         }
       },
       "desc": "果実を冷やして乾かす。保存食になる"
@@ -517,7 +2410,13 @@
       "id": "sp_dowse",
       "name": "水脈探し",
       "skill": "life_magic",
-      "learn": { "at": 14, "counter": { "key": "spell.cast.life", "gte": 10 } },
+      "learn": {
+        "at": 14,
+        "counter": {
+          "key": "spell.cast.life",
+          "gte": 10
+        }
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -526,7 +2425,10 @@
         "tier": "adept",
         "mana": 8,
         "cast": 4,
-        "life": { "hook": "gatherBonus", "value": 2 }
+        "life": {
+          "hook": "gatherBonus",
+          "value": 2
+        }
       },
       "desc": "地の気配を探って、採れる場所を嗅ぎ分ける"
     },
@@ -534,7 +2436,13 @@
       "id": "sp_field",
       "name": "地力",
       "skill": "life_magic",
-      "learn": { "at": 16, "counter": { "key": "spell.cast.life", "gte": 14 } },
+      "learn": {
+        "at": 16,
+        "counter": {
+          "key": "spell.cast.life",
+          "gte": 14
+        }
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -543,7 +2451,10 @@
         "tier": "adept",
         "mana": 10,
         "cast": 4,
-        "life": { "hook": "farmBonus", "value": 15 }
+        "life": {
+          "hook": "farmBonus",
+          "value": 15
+        }
       },
       "desc": "土に養分を行き渡らせる。畑が息を吹き返す"
     },
@@ -551,7 +2462,13 @@
       "id": "sp_soothe",
       "name": "癒しの手",
       "skill": "life_magic",
-      "learn": { "at": 18, "counter": { "key": "spell.cast.life", "gte": 18 } },
+      "learn": {
+        "at": 18,
+        "counter": {
+          "key": "spell.cast.life",
+          "gte": 18
+        }
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -560,7 +2477,10 @@
         "tier": "adept",
         "mana": 8,
         "cast": 4,
-        "life": { "hook": "heal", "value": 12 }
+        "life": {
+          "hook": "heal",
+          "value": 12
+        }
       },
       "desc": "身体の疲れをそっと洗う。明日への仕込み"
     },
@@ -568,7 +2488,13 @@
       "id": "sp_mist",
       "name": "霧の調合",
       "skill": "life_magic",
-      "learn": { "at": 22, "counter": { "key": "spell.cast.life", "gte": 24 } },
+      "learn": {
+        "at": 22,
+        "counter": {
+          "key": "spell.cast.life",
+          "gte": 24
+        }
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -577,7 +2503,10 @@
         "tier": "expert",
         "mana": 12,
         "cast": 4,
-        "life": { "hook": "alchemyBonus", "value": 15 }
+        "life": {
+          "hook": "alchemyBonus",
+          "value": 15
+        }
       },
       "desc": "霧の中で薬を均一に混ぜる。調合の仕上がりが違う"
     },
@@ -585,7 +2514,10 @@
       "id": "sp_preserve",
       "name": "保存",
       "skill": "life_magic",
-      "learn": { "at": 26, "flag": "grimoire.life" },
+      "learn": {
+        "at": 26,
+        "flag": "grimoire.life"
+      },
       "kind": "life",
       "ki": 0,
       "ct": 1,
@@ -597,7 +2529,11 @@
         "life": {
           "hook": "preserve",
           "value": 1,
-          "transform": { "from": "mushroom", "to": "mushroom.dried", "n": 3 }
+          "transform": {
+            "from": "mushroom",
+            "to": "mushroom.dried",
+            "n": 3
+          }
         }
       },
       "desc": "茸をまるごと保存食にする。暮らしの魔導書の秘技"
@@ -606,22 +2542,33 @@
       "id": "sp_swift",
       "name": "速詠",
       "skill": "mana",
-      "learn": { "at": 25 },
+      "learn": {
+        "at": 25
+      },
       "kind": "passive",
       "ki": 0,
       "ct": 1,
-      "effect": { "hook": "castSpeed", "value": 0.3 },
+      "effect": {
+        "hook": "castSpeed",
+        "value": 0.3
+      },
       "desc": "詠唱を三割速める呼吸の型。魔力操作の熟練がものを言う"
     },
     {
       "id": "sp_instant",
       "name": "無詠唱",
       "skill": "mana",
-      "learn": { "at": 45, "flag": "grimoire.shadow" },
+      "learn": {
+        "at": 45,
+        "flag": "grimoire.shadow"
+      },
       "kind": "passive",
       "ki": 0,
       "ct": 1,
-      "effect": { "hook": "instantCast", "value": 1 },
+      "effect": {
+        "hook": "instantCast",
+        "value": 1
+      },
       "desc": "詠唱を必要としない。陰の魔導書の奥義"
     }
   ]

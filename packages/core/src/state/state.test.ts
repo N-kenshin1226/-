@@ -418,6 +418,32 @@ describe("save", () => {
     expect(restored.vows).toEqual([]);
   });
 
+  it("version 19 のセーブ（uniques 無し）は uniques を補って version 20 へ移行される（K-03）", () => {
+    const g = newGame("seed-16", "移行9", newGameCfg);
+    const v19 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v19["version"] = 19;
+    delete v19["uniques"];
+    const restored = deserialize(JSON.stringify(v19));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.uniques).toEqual({});
+  });
+
+  it("version 19 のセーブに uniques があっても保持される（K-03）", () => {
+    const g = newGame("seed-17", "移行10", newGameCfg);
+    const v19 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v19["version"] = 19;
+    v19["uniques"] = { x_first: { holder: "rival.3", day: 12 } };
+    const restored = deserialize(JSON.stringify(v19));
+    expect(restored.version).toBe(SAVE_VERSION);
+    // v20 の移行は「無い場合に空で補う」だけ —— 既に刻まれた記録は消さない
+    expect(restored.uniques).toEqual({ x_first: { holder: "rival.3", day: 12 } });
+  });
+
+  it("新規の旅立ちは uniques が空の世界から始まる（K-03）", () => {
+    const g = newGame("seed-18", "新規", newGameCfg);
+    expect(g.uniques).toEqual({});
+  });
+
   it("未知のバージョンは拒否する", () => {
     expect(() => deserialize(JSON.stringify({ version: 99 }))).toThrow();
   });

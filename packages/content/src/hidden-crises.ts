@@ -40,3 +40,7 @@ export function loadHiddenCrises(dir?: string): CrisisTypeJson[] {
   }
   return out;
 }
+
+// K-03：合成レシピ・ユニーク・隠し分岐（同じ隠し要素の口 ——
+// node 側から "./hidden" でだけ import する。中身は読まない）
+export { loadHiddenK03 } from "./hidden-k03.js";

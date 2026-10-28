@@ -386,6 +386,20 @@ export const balanceSchema = z
       })
       .strict(),
     /**
+     * 技の進化（K-03、docs/09 §7.1）。core/evolve の EvolutionConfig に対応。
+     * 隠し分岐の表は hidden/k03 から注入する（ここには係数だけ置く）
+     */
+    evolution: z
+      .object({
+        /**
+         * 隠し分岐が出る主シェアの下限（0〜1）：分岐の重みが掛かっている
+         * 使用タグのうち最も偏ったもののシェアがこれ以上で、かつ公開分岐の
+         * 最良スコアを上回ったときだけ隠し分岐に進化する
+         */
+        hiddenShareMin: z.number().min(0).max(1),
+      })
+      .strict(),
+    /**
      * 魔法（M-01、docs/09 §4〜5）。core/magic の MagicConfig に対応。
      * 適性の分布・詠唱・中断・呪文威力・属性相性・生活魔法・付与の係数
      */

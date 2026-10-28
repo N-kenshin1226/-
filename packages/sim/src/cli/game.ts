@@ -71,6 +71,7 @@ import {
   occasionOffers,
   occasionSpeaker,
   reachedPinnacles,
+  synthesisHintOf,
   TENDENCY_IDS,
   TemplateProvider,
   weatherOf,
@@ -374,6 +375,43 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       if (e.type === "goalAchieved") {
         const name = society.lifeGoals.find((g) => g.id === e.id)?.name ?? e.id;
         return [tpl(t.text.goalAchieved, { name })];
+      }
+      // 武技（K-02）：新しい技を閃いた。名は解決済みの全技表から
+      // （K-03 の進化形・合成産物・ユニークも同じ表にある）
+      if (e.type === "artLearned") {
+        const name = cfg.arts?.defs[e.id]?.name ?? e.id;
+        return [tpl(t.text.artLearned, { name })];
+      }
+      // 技の進化・合成・ユニーク（K-03、09 §7）：進化形の名はここで初めて
+      // 明かされる。隠し分岐は「見知らぬ形」の行で出す
+      if (e.type === "artEvolved") {
+        const from = cfg.arts?.defs[e.from]?.name ?? e.from;
+        const to = cfg.arts?.defs[e.to]?.name ?? e.to;
+        return [
+          tpl(e.hidden ? t.text.artEvolvedHidden : t.text.artEvolved, {
+            from,
+            to,
+            reason: e.reason,
+          }),
+        ];
+      }
+      if (e.type === "artSynthesized") {
+        const name = cfg.arts?.defs[e.id]?.name ?? e.id;
+        return [tpl(t.text.artSynthesized, { name })];
+      }
+      if (e.type === "uniqueGained") {
+        const name = cfg.arts?.defs[e.art]?.name ?? e.art;
+        return [
+          e.suppressed
+            ? tpl(t.text.uniqueSuppressed, { name })
+            : tpl(t.text.uniqueGained, { name }),
+        ];
+      }
+      if (e.type === "uniqueClaimed") {
+        const name = cfg.arts?.defs[e.art]?.name ?? e.art;
+        const rival =
+          cfg.crisis !== undefined ? crisisRivalName(state!, cfg.crisis, e.rival) : e.rival;
+        return [tpl(t.text.uniqueClaimed, { name, rival })];
       }
       // 街への寄付（X-9 領主ルート）：納めた額を1行で返す
       if (e.type === "donated") {
@@ -695,6 +733,12 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
     // 隠し要素のヒント（X-11）：未発見の発見は噂として新聞に必ず混ぜる。
     // 発見済み（found.<id>）のヒントはここでは渡さず二度と出ない
     const hint = discoveryHintLine(state!);
+    // 合成の噂（K-03）：未獲得のレシピのヒントも噂に混ぜる（条件は明かさない）
+    const synthHint =
+      cfg.synthesis !== undefined
+        ? (synthesisHintOf(state!.seed, state!.time.day, cfg.synthesis.recipes, state!.player.arts)
+            ?.hint ?? null)
+        : null;
     // NPCの歳月（X-12）：今日起きた街の人物の出来事は必ず記事になる
     const npcEvents = npcLifeToday(state!, cfg.npcLife).map((e) => ({
       name: e.name,
@@ -717,7 +761,9 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         ...(weatherReq !== undefined ? { weather: weatherReq } : {}),
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
         ...(npcEvents.length > 0 ? { npcEvents } : {}),
-        ...(hint !== null ? { hints: [hint] } : {}),
+        ...(hint !== null || synthHint !== null
+          ? { hints: [hint, synthHint].filter((h): h is string => h !== null) }
+          : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title
@@ -745,7 +791,25 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
             createRng(`${seed}:news-crisis:${day}`),
           )
         : null;
-    return crisisLine === null ? lines : [...lines, crisisLine];
+    // ユニークの記事（K-03）：その世界で一人だけの技が動いた出来事は
+    // 世界の記事として新聞の末尾に載る（号外級の材料）
+    const uniqueLines = events.flatMap((e) => {
+      if (e.type === "uniqueGained" && !e.suppressed) {
+        return [tpl(t.text.newsUniqueGained, { name: cfg.arts?.defs[e.art]?.name ?? e.art })];
+      }
+      if (e.type === "uniqueClaimed") {
+        const rival =
+          cfg.crisis !== undefined ? crisisRivalName(state!, cfg.crisis, e.rival) : e.rival;
+        return [
+          tpl(t.text.newsUniqueClaimed, {
+            name: cfg.arts?.defs[e.art]?.name ?? e.art,
+            rival,
+          }),
+        ];
+      }
+      return [];
+    });
+    return [...lines, ...uniqueLines, ...(crisisLine === null ? [] : [crisisLine])];
   };
 
   const delay = opts.delay ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));

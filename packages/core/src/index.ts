@@ -162,6 +162,8 @@ export type {
   BodyPart,
   BuildState,
   DamageType,
+  EvolveBranch,
+  EvolveMod,
   LifeHook,
   MagicElement,
   PassiveHook,
@@ -171,6 +173,18 @@ export type {
   StatusId,
 } from "./arts/index.js";
 export { COMBAT_ART_KINDS, MAGIC_ELEMENTS, SPELL_SKILL_ELEMENTS } from "./arts/index.js";
+// 技の進化・合成・ユニークスキル（K-03、docs/09 §7「なろう系」）
+export {
+  branchScore,
+  checkEvolution,
+  checkRivalClaims,
+  checkSynthesis,
+  checkUniques,
+  evolveTilts,
+  pickEvolution,
+  synthesisHintOf,
+} from "./evolve/index.js";
+export type { EvolutionConfig, SynthesisRecipe, UniqueDef, UniquesConfig } from "./evolve/index.js";
 // 魔法（M-01、docs/09 §4〜5）：属性適性・詠唱・中断・呪文威力・相性・生活魔法・付与
 export {
   attackFactorWithEnchant,

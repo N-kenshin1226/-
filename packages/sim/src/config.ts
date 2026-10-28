@@ -1,5 +1,4 @@
 import {
-  artDefs,
   atoms,
   balance,
   books,
@@ -9,6 +8,7 @@ import {
   discoveries,
   incidents,
   items,
+  k03Resolve,
   life,
   mentors,
   npcLifecycle,
@@ -24,7 +24,7 @@ import {
   weapons,
   weather,
 } from "@trace/content";
-import { loadHiddenCrises } from "@trace/content/hidden";
+import { loadHiddenCrises, loadHiddenK03 } from "@trace/content/hidden";
 import { drawRivalCast, type CrisisConfig, type StepConfig } from "@trace/core";
 
 /**
@@ -64,8 +64,22 @@ export function crisisConfig(): CrisisConfig {
   };
 }
 
+/**
+ * K-03 の解決済みデータ（docs/09 §7）：進化形・隠し分岐・合成産物・
+ * ユニークを含む全技の定義表＋分岐・レシピ・ユニークの表。
+ * node 経路は hidden/k03 を fs から読む（loadHiddenCrises と同じ口）。
+ * 本番が無ければ同梱分→公開サンプルに倒す（k03Resolve の既定動作）
+ */
+export function k03Data(): ReturnType<typeof k03Resolve> {
+  const hidden = loadHiddenK03();
+  const hasContent =
+    hidden.uniques.length + hidden.recipes.length + hidden.hiddenBranches.length > 0;
+  return k03Resolve(hasContent ? hidden : undefined);
+}
+
 /** balance.json とコンテンツJSONから実行時の StepConfig を組み立てる */
 export function stepConfig(): StepConfig {
+  const k03 = k03Data();
   return {
     time: balance.time,
     actionLogMax: balance.state.actionLogMax,
@@ -98,8 +112,8 @@ export function stepConfig(): StepConfig {
       ...balance.combat,
       weapons: Object.fromEntries(weapons.weapons.map((w) => [w.id, w])),
       links: balance.links,
-      /** 武技・資源（K-02）：技の定義表とバランス係数（使用記録・気力・構成が効く） */
-      arts: { defs: artDefs, ...balance.arts },
+      /** 武技・資源（K-02＋K-03）：派生・特別な技を含む全定義表とバランス係数 */
+      arts: { defs: k03.defs, ...balance.arts },
     },
     /** 技能リンク（K-01、balance.links）：仕事・移動・読書・危機などのフック */
     links: balance.links,
@@ -108,10 +122,20 @@ export function stepConfig(): StepConfig {
     /** 旧セーブに無い技能への経験用（K-01、balance.player.initialPotential） */
     initialSkillPotential: balance.player.initialPotential,
     /**
-     * 武技・資源・構成（K-02、balance.arts ＋ arts.json の defs）：
-     * 戦闘の使用記録の畳み込み・技の習得・睡眠での気力/魔力回復・setBuild が効く
+     * 武技・資源・構成（K-02＋K-03、balance.arts ＋ 解決済みの全技表）：
+     * 戦闘の使用記録の畳み込み・技の習得・睡眠での気力/魔力回復・setBuild が効く。
+     * 進化形・合成産物・ユニークもこの表にある（使い方で形を変えた技が戦える）
      */
-    arts: { defs: artDefs, ...balance.arts },
+    arts: { defs: k03.defs, ...balance.arts },
+    /**
+     * 技の進化（K-03、09 §7.1）：Lv10 の技が使い方の記録と最も合う分岐へ化ける。
+     * 隠し分岐の表は k03 の解決済みデータから
+     */
+    evolution: { ...balance.evolution, hidden: k03.hiddenBranches },
+    /** 技の合成（K-03、09 §7「響き合い」）：レシピは hidden/k03 由来 */
+    synthesis: { recipes: k03.recipes },
+    /** ユニークスキル（K-03）：ライバルの顔ぶれの規模は balance.rivals.size */
+    uniques: { uniques: k03.uniques, rivalSize: balance.rivals.size },
     society: {
       standings: society.standings,
       professions: society.professions,

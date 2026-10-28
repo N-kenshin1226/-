@@ -2,6 +2,7 @@
 import { canAct, createRng, rivalsOf, type GameState } from "@trace/core";
 import { balance, enemies, pinnacles, rivals, titles } from "@trace/content";
 import {
+  allArtDefs,
   atomList,
   bioLines,
   cfg,
@@ -14,6 +15,7 @@ import {
   societyDefs,
   t,
   tpl,
+  uniqueRecordLines,
   workName,
 } from "../game.js";
 import {
@@ -182,6 +184,19 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
               ),
             )}
           </div>
+          {/* ユニークスキル（K-03）：その世界で一人だけの技の記録。
+              世界の記録は次代にも継がるので、前代の持ち主も列に残る */}
+          <div data-testid="records-uniques">
+            {uniqueRecordLines(state).map((l, i) =>
+              i === 0 ? (
+                <PaperHead key="head">{l}</PaperHead>
+              ) : (
+                <div key={i} style={{ color: P.sub }}>
+                  {l}
+                </div>
+              ),
+            )}
+          </div>
           {/* 世界の出来事（W-01、docs/08）：危機の記録。淡々とした出来事の一覧だけ */}
           <div data-testid="records-crisis">
             {crisisRecordLines(state).map((l, i) =>
@@ -256,6 +271,15 @@ function ChronicleView() {
                   pinnacles: life.pinnacles
                     .map((id) => pinnacles.pinnacles.find((r) => r.id === id)?.name ?? id)
                     .join("、"),
+                })}
+              </div>
+            )}
+            {/* その生が手にしたユニーク（K-03）：「世界に一つだけ」の実績は
+                生を越えて年代記に語り継がれる */}
+            {life.uniques !== undefined && life.uniques.length > 0 && (
+              <div>
+                {tpl(t.text.chronicleUniques, {
+                  uniques: life.uniques.map((id) => `《${allArtDefs[id]?.name ?? id}》`).join("、"),
                 })}
               </div>
             )}

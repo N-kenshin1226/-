@@ -68,6 +68,12 @@ export interface NewGameConfig {
    */
   carryoverCrisis?: CrisisState | null;
   /**
+   * 同じ世界の次代に引き継ぐユニークスキルの記録（succeedLife が渡す。
+   * K-03、09 §7）。ユニークは生ではなく世界のもの —— その世界に
+   * 一人だけの持ち主なので、次代でも前代の記録をそのまま継ぐ
+   */
+  carryoverUniques?: GameState["uniques"];
+  /**
    * 周の開始時に立てる任意フラグ（X-5、06 §2）。
    * 失われた書物の "lostbook.<skillId>" など、前世由来で次の世界に残る刻印。
    * GameState の形は変えず flags だけで表現する
@@ -212,6 +218,10 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       prayedDay: -1,
       journey: null,
     },
+    // ユニークスキル（K-03、v20〜）：引き継ぎがあればそのまま（同じ世界の
+    // 前代で取られた技は次代でも誰の手にも届かない）、なければ誰の手にも
+    // 渡っていない新しい世界
+    uniques: cfg.carryoverUniques !== undefined ? { ...cfg.carryoverUniques } : {},
   };
 }
 

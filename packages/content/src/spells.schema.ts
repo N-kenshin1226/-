@@ -8,6 +8,8 @@ import { z } from "zod";
  * 全体のバランス係数は balance.json の magic 節に置く
  */
 
+import { evolveSchema } from "./evolve.schema.js";
+
 const damageType = z.enum(["slash", "pierce", "blunt", "magic"]);
 const bodyPart = z.enum(["head", "body", "arms", "legs"]);
 const statusId = z.enum([
@@ -74,11 +76,13 @@ export const spellSchema = z
     skill: z.string().min(1),
     /**
      * 習得条件（§7.2）：技能の熟練度が主軸。flag（魔導書・師匠・見取りフラグ）や
-     * counter（生活魔法の反復 spell.cast.<element>）で導線を絞れる
+     * counter（生活魔法の反復 spell.cast.<element>）で導線を絞れる。
+     * at を省略した呪文は技能値では覚えない —— 進化・合成・ユニーク
+     * （K-03、09 §7）のように特別な経路でだけ得られる呪文の印
      */
     learn: z
       .object({
-        at: z.number().nonnegative(),
+        at: z.number().nonnegative().optional(),
         tag: z.string().min(1).optional(),
         share: z.number().min(0).max(1).optional(),
         flag: z.string().min(1).optional(),
@@ -143,11 +147,25 @@ export const spellSchema = z
       })
       .strict()
       .optional(),
+    /**
+     * 進化の分岐（K-03、09 §7.1）。Lv10 に達したとき、使用記録と最も合う
+     * 分岐へ進化する。進化形は分岐の mod からローダーが派生定義を作る
+     */
+    evolve: evolveSchema.optional(),
     desc: z.string().min(1),
   })
   .strict()
   .superRefine((a, ctx) => {
     const bad = (msg: string) => ctx.addIssue({ code: "custom", message: `${a.id}: ${msg}` });
+    // at の無い learn は特別な経路の印 —— 傾き・旗・反復は読まれないので付けられない
+    if (
+      a.learn.at === undefined &&
+      (a.learn.tag !== undefined ||
+        a.learn.share !== undefined ||
+        a.learn.flag !== undefined ||
+        a.learn.counter !== undefined)
+    )
+      bad("learn.at を持たない呪文に tag/share/flag/counter は付けられない");
     if (a.kind === "passive") {
       if (a.effect === undefined) bad("passive には effect が要る");
       if (a.spell !== undefined) bad("passive に spell 側面は付けない（使い切りではなく構成枠）");

@@ -79,8 +79,14 @@ export function succeedLife(
 ): { state: GameState; kind: HeirKind; legacy: Legacy } {
   const kind = heirKindOf(prev);
   const legacy = heirLegacyOf(prev, heirCfg);
-  // 世界の危機は生ではなく世界のもの（W-01）：次代では進行をリセットせず継ぐ
-  const next = newGame(prev.seed, name, { ...cfg, legacy, carryoverCrisis: prev.crisis });
+  // 世界の危機は生ではなく世界のもの（W-01）：次代では進行をリセットせず継ぐ。
+  // ユニークスキルも同じ（K-03）：前代で取られた技は次代でも誰の手にも届かない
+  const next = newGame(prev.seed, name, {
+    ...cfg,
+    legacy,
+    carryoverCrisis: prev.crisis,
+    carryoverUniques: prev.uniques,
+  });
   return {
     kind,
     legacy,

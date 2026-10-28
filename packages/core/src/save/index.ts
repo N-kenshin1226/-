@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -167,6 +167,12 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
         },
       };
     },
+    /**
+     * 19 → 20: ユニークスキルの世界の記録（K-03、docs/09 §7）。
+     * 旧セーブはまだ誰の手にも渡っていない世界（空の記録）。
+     * 既に記録がある入力（将来の中間形式など）はそのまま保持する
+     */
+    19: (old) => ({ ...old, version: 20, uniques: old.uniques ?? {} }),
   };
 
 export function serialize(state: GameState): string {
@@ -246,6 +252,7 @@ function assertShape(data: Record<string, unknown>): void {
     "vows",
     "crisis",
     "life",
+    "uniques",
   ];
   for (const key of required) {
     if (!(key in data)) throw new Error(`deserialize: ${key} がありません`);

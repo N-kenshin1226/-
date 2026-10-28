@@ -1,0 +1,1089 @@
+{
+  "version": 1,
+  "uniques": [
+    {
+      "def": {
+        "id": "x_firstblade",
+        "name": "初の剣",
+        "skill": "swordplay",
+        "kind": "attack",
+        "ki": 14,
+        "ct": 1.4,
+        "desc": "その世界に一つだけの剣技。",
+        "power": 2.4,
+        "dtype": "slash",
+        "part": "body",
+        "pierceArmor": true
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "swordplay",
+            "gte": 60
+          },
+          {
+            "counter": "art.evolved",
+            "gte": 2
+          }
+        ]
+      },
+      "rival": {
+        "dayMin": 45,
+        "chance": 0.05
+      }
+    },
+    {
+      "def": {
+        "id": "x_lastember",
+        "name": "最後の火種",
+        "skill": "fire_magic",
+        "kind": "attack",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "消えない火の形。",
+        "power": 2.8,
+        "dtype": "magic",
+        "status": {
+          "id": "burn",
+          "chance": 0.7,
+          "ticks": 4,
+          "power": 5
+        },
+        "spell": {
+          "element": "fire",
+          "tier": "expert",
+          "mana": 14,
+          "cast": 6
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "fire_magic",
+            "gte": 55
+          },
+          {
+            "counter": "spell.cast.el.fire",
+            "gte": 200
+          }
+        ]
+      },
+      "rival": {
+        "dayMin": 60,
+        "chance": 0.045
+      }
+    },
+    {
+      "def": {
+        "id": "x_worldpulse",
+        "name": "世界の鼓動",
+        "skill": "cure",
+        "kind": "heal",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "聞こえる者だけの癒し。",
+        "spell": {
+          "element": "cure",
+          "tier": "expert",
+          "mana": 16,
+          "cast": 6,
+          "heal": 2.4
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "cure",
+            "gte": 55
+          },
+          {
+            "counter": "spell.cast.life",
+            "gte": 120
+          }
+        ]
+      },
+      "rival": {
+        "dayMin": 70,
+        "chance": 0.04
+      }
+    },
+    {
+      "def": {
+        "id": "x_shadowsaint",
+        "name": "影聖",
+        "skill": "stealth",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "影に選ばれた者だけの居方。",
+        "effect": {
+          "hook": "evade",
+          "value": 0.2
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "stealth",
+            "gte": 50
+          },
+          {
+            "skill": "dark_magic",
+            "gte": 40
+          }
+        ]
+      },
+      "rival": {
+        "dayMin": 55,
+        "chance": 0.05
+      }
+    },
+    {
+      "def": {
+        "id": "x_heavenlance",
+        "name": "天槍",
+        "skill": "lancer",
+        "kind": "attack",
+        "ki": 15,
+        "ct": 1.6,
+        "desc": "天に届いた槍。",
+        "power": 2.6,
+        "dtype": "pierce",
+        "part": "head",
+        "range": "mid"
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "lancer",
+            "gte": 55
+          },
+          {
+            "skill": "wind_magic",
+            "gte": 35
+          }
+        ]
+      },
+      "rival": {
+        "dayMin": 65,
+        "chance": 0.04
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "def": {
+        "id": "x_blazebreak",
+        "name": "緋炎断ち",
+        "skill": "swordplay",
+        "kind": "attack",
+        "ki": 8,
+        "ct": 1.2,
+        "desc": "剣と炎の理を同じ高さに揃えた者の太刀",
+        "power": 1.7,
+        "dtype": "slash",
+        "part": "body",
+        "status": {
+          "id": "burn",
+          "chance": 0.5,
+          "ticks": 3,
+          "power": 3
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "swordplay",
+            "gte": 18
+          },
+          {
+            "skill": "fire_magic",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《緋炎断ち》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_frostfang",
+        "name": "氷牙",
+        "skill": "dagger",
+        "kind": "attack",
+        "ki": 7,
+        "ct": 1.0,
+        "desc": "凍てつく刃",
+        "power": 1.4,
+        "dtype": "pierce",
+        "part": "arms",
+        "status": {
+          "id": "frozen",
+          "chance": 0.45,
+          "ticks": 2,
+          "power": 2
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "dagger",
+            "gte": 16
+          },
+          {
+            "skill": "water_magic",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《氷牙》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_skylance",
+        "name": "天穿つ槍",
+        "skill": "spear",
+        "kind": "attack",
+        "ki": 9,
+        "ct": 1.3,
+        "desc": "風をまとった一点",
+        "power": 1.8,
+        "dtype": "pierce",
+        "part": "body",
+        "hitBonus": 0.05
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "spear",
+            "gte": 18
+          },
+          {
+            "skill": "wind_magic",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《天穿つ槍》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_quakebrand",
+        "name": "震撃斧",
+        "skill": "axe",
+        "kind": "attack",
+        "ki": 10,
+        "ct": 1.5,
+        "desc": "大地を揺らす斧",
+        "power": 1.9,
+        "dtype": "blunt",
+        "part": "body",
+        "status": {
+          "id": "stagger",
+          "chance": 0.4,
+          "ticks": 2,
+          "power": 1
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "axe",
+            "gte": 18
+          },
+          {
+            "skill": "earth_magic",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《震撃斧》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_hawkeye_shot",
+        "name": "鷹眼の一射",
+        "skill": "archery",
+        "kind": "attack",
+        "ki": 8,
+        "ct": 1.2,
+        "desc": "目と弓が一つになった射",
+        "power": 1.7,
+        "dtype": "pierce",
+        "part": "head",
+        "hitBonus": 0.08,
+        "range": "far"
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "archery",
+            "gte": 18
+          },
+          {
+            "skill": "observation",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《鷹眼の一射》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_stonefist",
+        "name": "巌の拳",
+        "skill": "brawl",
+        "kind": "attack",
+        "ki": 7,
+        "ct": 1.1,
+        "desc": "拳に巌をまとう",
+        "power": 1.6,
+        "dtype": "blunt",
+        "part": "body",
+        "status": {
+          "id": "stagger",
+          "chance": 0.35,
+          "ticks": 2,
+          "power": 1
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "brawl",
+            "gte": 16
+          },
+          {
+            "skill": "earth_magic",
+            "gte": 12
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《巌の拳》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_venomfang",
+        "name": "毒牙",
+        "skill": "dagger",
+        "kind": "attack",
+        "ki": 6,
+        "ct": 0.9,
+        "desc": "薬の知識が刃に滲む",
+        "power": 1.3,
+        "dtype": "pierce",
+        "part": "body",
+        "status": {
+          "id": "poison",
+          "chance": 0.6,
+          "ticks": 4,
+          "power": 2
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "dagger",
+            "gte": 16
+          },
+          {
+            "skill": "alchemy",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《毒牙》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_saintsmite",
+        "name": "聖鉄槌",
+        "skill": "axe",
+        "kind": "attack",
+        "ki": 9,
+        "ct": 1.3,
+        "desc": "光を帯びた一撃",
+        "power": 1.8,
+        "dtype": "blunt",
+        "part": "head"
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "axe",
+            "gte": 18
+          },
+          {
+            "skill": "light_magic",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《聖鉄槌》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_shadedge",
+        "name": "陰刃",
+        "skill": "dagger",
+        "kind": "attack",
+        "ki": 7,
+        "ct": 1.0,
+        "desc": "闇に紛れる刃",
+        "power": 1.6,
+        "dtype": "pierce",
+        "part": "body",
+        "status": {
+          "id": "bleed",
+          "chance": 0.45,
+          "ticks": 3,
+          "power": 2
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "dagger",
+            "gte": 18
+          },
+          {
+            "skill": "dark_magic",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《陰刃》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_windcutter",
+        "name": "風切り",
+        "skill": "swordplay",
+        "kind": "attack",
+        "ki": 6,
+        "ct": 0.9,
+        "desc": "身のこなしが剣に乗る",
+        "power": 1.5,
+        "dtype": "slash",
+        "part": "arms",
+        "hitBonus": 0.04
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "swordplay",
+            "gte": 16
+          },
+          {
+            "skill": "evasion",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《風切り》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_ironwall",
+        "name": "鉄壁の構え",
+        "skill": "shield",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "盾と大地の理",
+        "effect": {
+          "hook": "defend",
+          "value": 0.12
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "shield",
+            "gte": 16
+          },
+          {
+            "skill": "earth_magic",
+            "gte": 12
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《鉄壁の構え》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_spellarrow",
+        "name": "魔導矢",
+        "skill": "archery",
+        "kind": "attack",
+        "ki": 8,
+        "ct": 1.2,
+        "desc": "魔力の通った矢",
+        "power": 1.7,
+        "dtype": "magic",
+        "part": "body",
+        "range": "far"
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "archery",
+            "gte": 16
+          },
+          {
+            "skill": "mana",
+            "gte": 12
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《魔導矢》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_galestep",
+        "name": "疾風脚",
+        "skill": "evasion",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "風に乗る足",
+        "effect": {
+          "hook": "evade",
+          "value": 0.12
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "evasion",
+            "gte": 18
+          },
+          {
+            "skill": "wind_magic",
+            "gte": 14
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《疾風脚》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_smithing_fire",
+        "name": "鍛えの心得",
+        "skill": "smithing",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "炉の温度を知る者",
+        "effect": {
+          "hook": "dmg.slash",
+          "value": 0.08
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "smithing",
+            "gte": 14
+          },
+          {
+            "skill": "fire_magic",
+            "gte": 12
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 二つの道を同じだけ往く者にだけ届く、《鍛えの心得》という技があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_truecross",
+        "name": "真・十字斬り",
+        "skill": "swordplay",
+        "kind": "attack",
+        "ki": 12,
+        "ct": 1.5,
+        "desc": "十字の型が極まった斬り",
+        "power": 2.1,
+        "dtype": "slash",
+        "part": "body"
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "s_cross"
+          },
+          {
+            "skill": "swordplay",
+            "gte": 30
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― ある技の先にだけ見える型、《真・十字斬り》があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_shadowtwin",
+        "name": "影双牙",
+        "skill": "dagger",
+        "kind": "attack",
+        "ki": 9,
+        "ct": 1.2,
+        "desc": "影から撃つ双牙",
+        "power": 1.5,
+        "dtype": "pierce",
+        "part": "body",
+        "hits": 2,
+        "hitBonus": 0.05
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "d_twin"
+          },
+          {
+            "skill": "stealth",
+            "gte": 20
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― ある技の先にだけ見える型、《影双牙》があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_piercerain",
+        "name": "槍雨",
+        "skill": "spear",
+        "kind": "attack",
+        "ki": 11,
+        "ct": 1.4,
+        "desc": "雨のように降る突き",
+        "power": 1.1,
+        "dtype": "pierce",
+        "part": "body",
+        "hits": 3
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "p_skewer"
+          },
+          {
+            "skill": "spear",
+            "gte": 28
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― ある技の先にだけ見える型、《槍雨》があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_eyestrike",
+        "name": "見切り一撃",
+        "skill": "brawl",
+        "kind": "attack",
+        "ki": 7,
+        "ct": 1.0,
+        "desc": "見切りから放つ一撃",
+        "power": 1.6,
+        "dtype": "blunt",
+        "part": "head",
+        "hitBonus": 0.08
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "f_jab"
+          },
+          {
+            "skill": "observation",
+            "gte": 22
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― ある技の先にだけ見える型、《見切り一撃》があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_warhawk",
+        "name": "戦鷹の矢",
+        "skill": "archery",
+        "kind": "attack",
+        "ki": 8,
+        "ct": 1.3,
+        "desc": "獲物を逃さない一射",
+        "power": 1.8,
+        "dtype": "pierce",
+        "part": "head",
+        "range": "far",
+        "pierceArmor": true
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "b_aim"
+          },
+          {
+            "skill": "hunting",
+            "gte": 22
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― ある技の先にだけ見える型、《戦鷹の矢》があるらしい。"
+    },
+    {
+      "def": {
+        "id": "x_mirroredge",
+        "name": "鏡刃",
+        "skill": "swordplay",
+        "kind": "response",
+        "ki": 6,
+        "ct": 0.6,
+        "desc": "受けと受けが響き合った型",
+        "response": "parry"
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "s_riposte"
+          },
+          {
+            "art": "p_counter"
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 別々に覚えた型同士が響き合うことがあるらしい。《鏡刃》。"
+    },
+    {
+      "def": {
+        "id": "x_stormdance",
+        "name": "嵐の舞",
+        "skill": "swordplay",
+        "kind": "attack",
+        "ki": 10,
+        "ct": 1.3,
+        "desc": "薙ぎと双撃の響き合い",
+        "power": 1.2,
+        "dtype": "slash",
+        "part": "body",
+        "hits": 2
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "s_slash"
+          },
+          {
+            "art": "d_twin"
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 別々に覚えた型同士が響き合うことがあるらしい。《嵐の舞》。"
+    },
+    {
+      "def": {
+        "id": "x_silentdart",
+        "name": "無音の投刃",
+        "skill": "throwing",
+        "kind": "attack",
+        "ki": 6,
+        "ct": 0.9,
+        "desc": "音もなく飛ぶ刃",
+        "power": 1.4,
+        "dtype": "pierce",
+        "part": "body",
+        "range": "mid"
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "t_dart"
+          },
+          {
+            "skill": "stealth",
+            "gte": 16
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 別々に覚えた型同士が響き合うことがあるらしい。《無音の投刃》。"
+    },
+    {
+      "def": {
+        "id": "x_bulwark",
+        "name": "不落の盾",
+        "skill": "shield",
+        "kind": "response",
+        "ki": 5,
+        "ct": 0.5,
+        "desc": "守りの型が極まった構え",
+        "response": "guard"
+      },
+      "condition": {
+        "and": [
+          {
+            "art": "h_wall"
+          },
+          {
+            "skill": "shield",
+            "gte": 22
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 別々に覚えた型同士が響き合うことがあるらしい。《不落の盾》。"
+    },
+    {
+      "def": {
+        "id": "x_pyresong",
+        "name": "焔の詩",
+        "skill": "fire_magic",
+        "kind": "attack",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "唱え続けた炎の形",
+        "power": 2.2,
+        "dtype": "magic",
+        "part": "body",
+        "status": {
+          "id": "burn",
+          "chance": 0.55,
+          "ticks": 3,
+          "power": 4
+        },
+        "spell": {
+          "element": "fire",
+          "tier": "adept",
+          "mana": 9,
+          "cast": 5
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "counter": "spell.cast.el.fire",
+            "gte": 60
+          },
+          {
+            "skill": "fire_magic",
+            "gte": 24
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 同じ営みを積み上げ続けるうちに生まれる技、《焔の詩》。"
+    },
+    {
+      "def": {
+        "id": "x_tideturn",
+        "name": "潮返し",
+        "skill": "water_magic",
+        "kind": "support",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "流れを返す呪文",
+        "status": {
+          "id": "frozen",
+          "chance": 0.5,
+          "ticks": 3,
+          "power": 2
+        },
+        "spell": {
+          "element": "water",
+          "tier": "adept",
+          "mana": 8,
+          "cast": 4
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "counter": "spell.cast.el.water",
+            "gte": 50
+          },
+          {
+            "skill": "water_magic",
+            "gte": 22
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 同じ営みを積み上げ続けるうちに生まれる技、《潮返し》。"
+    },
+    {
+      "def": {
+        "id": "x_stormcall",
+        "name": "嵐呼び",
+        "skill": "wind_magic",
+        "kind": "attack",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "呼び続けた嵐",
+        "power": 2.0,
+        "dtype": "magic",
+        "part": "body",
+        "status": {
+          "id": "shock",
+          "chance": 0.5,
+          "ticks": 3,
+          "power": 3
+        },
+        "spell": {
+          "element": "wind",
+          "tier": "adept",
+          "mana": 9,
+          "cast": 5
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "counter": "spell.cast.el.wind",
+            "gte": 50
+          },
+          {
+            "skill": "wind_magic",
+            "gte": 22
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 同じ営みを積み上げ続けるうちに生まれる技、《嵐呼び》。"
+    },
+    {
+      "def": {
+        "id": "x_bedrock",
+        "name": "盤石",
+        "skill": "earth_magic",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "積んだ大地の理",
+        "effect": {
+          "hook": "defend",
+          "value": 0.14
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "counter": "spell.cast.el.earth",
+            "gte": 50
+          },
+          {
+            "skill": "earth_magic",
+            "gte": 22
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 同じ営みを積み上げ続けるうちに生まれる技、《盤石》。"
+    },
+    {
+      "def": {
+        "id": "x_warscribe",
+        "name": "戦いの筆",
+        "skill": "swordplay",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "戦いを記し続けた者の目",
+        "effect": {
+          "hook": "hit",
+          "value": 0.08
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "counter": "action.combat",
+            "gte": 120
+          },
+          {
+            "skill": "literacy",
+            "gte": 12
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 同じ営みを積み上げ続けるうちに生まれる技、《戦いの筆》。"
+    },
+    {
+      "def": {
+        "id": "x_enchanthand",
+        "name": "付与の手",
+        "skill": "fire_magic",
+        "kind": "passive",
+        "ki": 0,
+        "ct": 1.0,
+        "desc": "鍛冶と炎が交わる手",
+        "effect": {
+          "hook": "attack",
+          "value": 0.1
+        }
+      },
+      "condition": {
+        "and": [
+          {
+            "skill": "smithing",
+            "gte": 16
+          },
+          {
+            "skill": "fire_magic",
+            "gte": 16
+          }
+        ]
+      },
+      "hint": "噂に聞いた話 ―― 同じ営みを積み上げ続けるうちに生まれる技、《付与の手》。"
+    }
+  ],
+  "hiddenBranches": [
+    {
+      "from": "s_slash",
+      "tilt": "無慈悲",
+      "reason": "瀕死の敵を切り捨て続けた",
+      "weights": {
+        "finisher": 1,
+        "foe.weaker": 0.3
+      },
+      "mod": {
+        "name": "断罪の薙ぎ払い",
+        "power": 1.6,
+        "ct": 1.1
+      }
+    },
+    {
+      "from": "s_thrust",
+      "tilt": "心眼",
+      "reason": "頭ばかりを突き続けた",
+      "weights": {
+        "aim.head": 1
+      },
+      "mod": {
+        "name": "心眼の突き",
+        "power": 1.5,
+        "part": "head",
+        "hitBonus": 0.1
+      }
+    },
+    {
+      "from": "sp_ember",
+      "tilt": "焦土",
+      "reason": "追い込まれてなお撃ち続けた",
+      "weights": {
+        "self.lowhp": 1
+      },
+      "mod": {
+        "name": "焦土の火の粉",
+        "power": 1.5,
+        "spell": {
+          "mana": 4.5
+        }
+      }
+    },
+    {
+      "from": "d_quick",
+      "tilt": "静寂",
+      "reason": "先手ばかりを取り続けた",
+      "weights": {
+        "first.strike": 1
+      },
+      "mod": {
+        "name": "静寂の疾刃",
+        "ct": 0.6,
+        "power": 1.35
+      }
+    }
+  ]
+}

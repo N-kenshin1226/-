@@ -46,6 +46,7 @@ import {
   step,
   succeedLife,
   suggestGoals,
+  synthesisHintOf,
   telegraphLines,
   combatResult,
   combatIntent,
@@ -138,6 +139,8 @@ import {
   enemiesByArea,
   incidents,
   items,
+  k03Resolve,
+  k03Sample,
   life,
   mentors,
   narration,
@@ -189,12 +192,24 @@ export const weaponDefs: Record<string, WeaponJson> = Object.fromEntries(
 );
 
 /**
- * 武技・呪文の定義表（K-02 arts.json ＋ M-01 spells.json → id 引き。
- * 構成画面・戦闘・ステータス・習得の知らせで共有。呪文は sp_ 始まり）。
- * core の ArtDef として扱う —— 武技側には spell 面が無いので、
- * 呪文かどうかは def.spell の有無で見る
+ * K-03 の解決済みデータ（docs/09 §7）：進化形・隠し分岐・合成産物・
+ * ユニークを含む全技の定義表と、分岐・レシピ・ユニークの表。
+ * 本番は hidden/k03 同梱分（k03Resolve() で bundled → sample に倒す）。
+ * e2e は ?k03=sample で公開サンプルに固定できる（?crisis=sample と同じ口）
  */
-export const allArtDefs: Record<string, ArtDef> = { ...artDefs, ...spellDefs };
+const k03: ReturnType<typeof k03Resolve> = (() => {
+  const q =
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("k03");
+  return q === "sample" ? k03Resolve(k03Sample) : k03Resolve();
+})();
+
+/**
+ * 武技・呪文の定義表（K-02 arts.json ＋ M-01 spells.json → id 引き、
+ * K-03 の派生・特別な技を含む。構成画面・戦闘・ステータス・習得の知らせで共有。
+ * 呪文は sp_ 始まり）。core の ArtDef として扱う —— 武技側には spell 面が
+ * 無いので、呪文かどうかは def.spell の有無で見る
+ */
+export const allArtDefs: Record<string, ArtDef> = k03.defs;
 export { artDefs, spellDefs };
 
 export const cfg: StepConfig = {
@@ -254,6 +269,21 @@ export const cfg: StepConfig = {
   arts: { defs: allArtDefs, ...balance.arts },
   /** 魔法（M-01、balance.magic）：魔力の書き戻し・生活魔法・付与が step で効く */
   magic: balance.magic,
+  /**
+   * 技の進化（K-03、09 §7.1）：Lv10 に達した技が使い方の記録と最も合う
+   * 分岐へ形を変える。隠し分岐の表は k03 の解決済みデータから注入する
+   */
+  evolution: { ...balance.evolution, hidden: k03.hiddenBranches },
+  /**
+   * 技の合成（K-03、09 §7「響き合い」）：技・技能・刻印が揃うと新しい技が
+   * 生まれる。レシピの条件は伏せられたまま —— ヒントだけが噂に載る
+   */
+  synthesis: { recipes: k03.recipes },
+  /**
+   * ユニークスキル（K-03、09 §7「その世界で一人だけ持てる技」）：
+   * 厳しい条件で得るが、眠りのあいだにライバルが先取りしうる
+   */
+  uniques: { uniques: k03.uniques, rivalSize: balance.rivals.size },
   society: {
     standings: society.standings,
     professions: society.professions,
@@ -882,6 +912,40 @@ export function discoveryHintLine(state: GameState): string | null {
       });
 }
 
+/**
+ * ユニークの持ち主の表示名（K-03）：state.uniques の holder（"player" /
+ * "rival.<index>"）を名前に解く。ライバルの名はランキング・危機の英雄と
+ * 同じ抽選（drawRivalCast）から —— 世界の顔ぶれは一貫している
+ */
+export function uniqueHolderName(state: GameState | undefined, holder: string): string {
+  if (holder === "player") return state?.player.name ?? "あなた";
+  if (state !== undefined && holder.startsWith("rival.")) {
+    const index = Number.parseInt(holder.slice("rival.".length), 10);
+    return (
+      drawRivalCast(state.seed, { names: rivals.names, epithets: rivals.epithets }, balance.rivals)[
+        index
+      ]?.name ?? holder
+    );
+  }
+  return holder;
+}
+
+/**
+ * 合成の噂ヒント（K-03、09 §7）：未獲得のレシピのヒントを当日の一件返す。
+ * 条件そのものは明かさない —— 「技と技が響き合う」手がかりだけが噂になる
+ * （dailyDiscoveryHint と同じく seed×日付で決定的。レシピの無い世界では null）
+ */
+export function synthesisHintLine(state: GameState): string | null {
+  if (cfg.synthesis === undefined) return null;
+  const recipe = synthesisHintOf(
+    state.seed,
+    state.time.day,
+    cfg.synthesis.recipes,
+    state.player.arts,
+  );
+  return recipe?.hint ?? null;
+}
+
 /** イベント → 表示行（CLIの applyTitles 相当）。state を渡すとライバル名まで解ける（W-03） */
 export function eventLines(events: ActionEvent[], state?: GameState): string[] {
   return events.flatMap((e) => {
@@ -986,6 +1050,36 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       }
       case "buildChanged":
         return [t.text.buildSaved];
+      // 技の進化・合成・ユニーク（K-03、09 §7）：形を変えた技・響き合いで
+      // 生まれた技・世界に刻まれたユニーク。進化形の名はここで初めて明かされる
+      // （傾き表示では分岐の向きだけが見え、進化先は「？？？」だった）
+      case "artEvolved": {
+        const from = allArtDefs[e.from]?.name ?? e.from;
+        const to = allArtDefs[e.to]?.name ?? e.to;
+        return [
+          tpl(e.hidden ? t.text.artEvolvedHidden : t.text.artEvolved, {
+            from,
+            to,
+            reason: e.reason,
+          }),
+        ];
+      }
+      case "artSynthesized": {
+        const name = allArtDefs[e.id]?.name ?? e.id;
+        return [tpl(t.text.artSynthesized, { name })];
+      }
+      case "uniqueGained": {
+        const name = allArtDefs[e.art]?.name ?? e.art;
+        return [
+          e.suppressed
+            ? tpl(t.text.uniqueSuppressed, { name })
+            : tpl(t.text.uniqueGained, { name }),
+        ];
+      }
+      case "uniqueClaimed": {
+        const name = allArtDefs[e.art]?.name ?? e.art;
+        return [tpl(t.text.uniqueClaimed, { name, rival: uniqueHolderName(state, e.rival) })];
+      }
       // 生活魔法（M-01）：唱えた呪文と、掛かった先の一行
       case "magicCast": {
         const def = allArtDefs[e.id];
@@ -1310,6 +1404,8 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
     .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
   // 隠し要素のヒント（X-11）：未発見の発見は噂として新聞に必ず混ぜる
   const hint = discoveryHintLine(state);
+  // 合成の噂（K-03）：未獲得のレシピのヒントも噂に混ぜる（条件は明かさない）
+  const synthHint = synthesisHintLine(state);
   // NPCの歳月（X-12）：今日起きた街の人物の出来事は必ず記事になる
   const npcEvents = npcLifeToday(state, cfg.npcLife).map((e) => ({
     name: e.name,
@@ -1327,7 +1423,9 @@ export function wakeLines(state: GameState, events: ActionEvent[], atHome = fals
           : {}),
         ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
         ...(npcEvents.length > 0 ? { npcEvents } : {}),
-        ...(hint !== null ? { hints: [hint] } : {}),
+        ...(hint !== null || synthHint !== null
+          ? { hints: [hint, synthHint].filter((h): h is string => h !== null) }
+          : {}),
         ...(prevLife !== undefined ? { prevLife } : {}),
         ...(topRival !== undefined ? { rival: topRival } : {}),
         ...(title
@@ -1829,6 +1927,32 @@ export function crisisRecordLines(state: GameState): string[] {
 }
 
 /**
+ * 街の記録の「ユニーク」欄（K-03、09 §7）：その世界で一人だけ持てる技の
+ * 記録。state.uniques（技ID → 持ち主と獲得日）を淡々とした行にする。
+ * 世界の記録は次代にも継がる（succeedLife）ので、前代の持ち主も列に残る
+ */
+export function uniqueRecordLines(state: GameState): string[] {
+  const out: string[] = [t.text.recordsUniques];
+  const entries = Object.entries(state.uniques).sort(
+    (a, b) => a[1].day - b[1].day || a[0].localeCompare(b[0]),
+  );
+  if (entries.length === 0) {
+    out.push(t.text.recordsUniquesNone);
+    return out;
+  }
+  for (const [id, u] of entries.slice(-10)) {
+    const holder =
+      u.holder === "player"
+        ? t.text.recordsUniqueYou
+        : tpl(t.text.recordsUniqueRival, { rival: uniqueHolderName(state, u.holder) });
+    out.push(
+      tpl(t.text.recordsUniqueLine, { day: u.day + 1, name: allArtDefs[id]?.name ?? id, holder }),
+    );
+  }
+  return out;
+}
+
+/**
  * 終幕の素材（W-04、docs/08 §7）：決着/滅びの紙の層の語り＋関与の段階の痕跡。
  * 表示名（NPC・ライバル・役割・段階・作品）はここで解決する。
  * 進行中・危機の無い世界では null（終幕の画面は出さない）
@@ -1994,6 +2118,8 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
     .map((a) => ({ name: occasionName(a.target ?? ""), won: a.variant === "win" }));
   // 隠し要素のヒント（X-11）：未発見の発見は噂として紙面に必ず混ぜる
   const hint = discoveryHintLine(state);
+  // 合成の噂（K-03）：未獲得のレシピのヒントも噂に混ぜる（条件は明かさない）
+  const synthHint = synthesisHintLine(state);
   // NPCの歳月（X-12）：今日起きた街の人物の出来事は続報・噂の欄に必ず混ざる
   const npcEvents = npcLifeToday(state, cfg.npcLife).map((e) => ({
     name: e.name,
@@ -2014,7 +2140,9 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
     ...(weatherReq !== undefined ? { weather: weatherReq } : {}),
     ...(occasionResults.length > 0 ? { occasions: occasionResults } : {}),
     ...(npcEvents.length > 0 ? { npcEvents } : {}),
-    ...(hint !== null ? { hints: [hint] } : {}),
+    ...(hint !== null || synthHint !== null
+      ? { hints: [hint, synthHint].filter((h): h is string => h !== null) }
+      : {}),
     ...(prevLife !== undefined ? { prevLife } : {}),
     ...(topRival !== undefined ? { rival: topRival } : {}),
   };
@@ -2035,6 +2163,23 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
       ? crisisStageLine(state, cfg.crisis, narration.crisis, rng("crisis"))
       : null;
   if (crisisLine !== null) rumors.unshift(crisisLine);
+  // ユニークの記事（K-03）：その世界で一人だけの技が動いた（得た／先取られた）
+  // 出来事は世界の記事として続報の先頭に来る —— 号外級の材料そのもの
+  const uniqueLines = events.flatMap((e) => {
+    if (e.type === "uniqueGained" && !e.suppressed) {
+      return [tpl(t.text.newsUniqueGained, { name: allArtDefs[e.art]?.name ?? e.art })];
+    }
+    if (e.type === "uniqueClaimed") {
+      return [
+        tpl(t.text.newsUniqueClaimed, {
+          name: allArtDefs[e.art]?.name ?? e.art,
+          rival: uniqueHolderName(state, e.rival),
+        }),
+      ];
+    }
+    return [];
+  });
+  rumors.unshift(...uniqueLines);
   rumors.splice(3);
 
   // 昨日の記録：行動種別ごとにまとめる
@@ -2097,11 +2242,14 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
     return { name: npc.name, role: npc.role, text };
   });
 
-  // 号外級：この朝に届く号外＝世界初の記録か強個体討伐が昨夜までに刻まれた日
+  // 号外級：この朝に届く号外＝世界初の記録か強個体討伐・ユニークの行方が
+  // 昨夜までに刻まれた日（K-03：一人だけの技は世界の出来事）
   const extra = events.some(
     (e) =>
       (e.type === "titleGained" && !e.suppressed && e.rank === "S") ||
       e.type === "uniqueDefeated" ||
+      e.type === "uniqueGained" ||
+      e.type === "uniqueClaimed" ||
       (e.type === "pinnacleStageReached" && e.rank === "S"),
   );
   return {
@@ -2329,6 +2477,51 @@ export function noticesOf(events: ActionEvent[], state?: GameState): Notice[] {
         sub: "強個体は図鑑に刻まれました",
         rewards: [{ label: "図鑑", name: `《${name}》` }],
         sound: "fanfare",
+      });
+    }
+    // 技の進化（K-03）：積み重ねの形が変わる節目 —— Aランクの窓。
+    // 隠し分岐は「見知らぬ形」として同じ格で届く（進化形の名はここで初めて明かされる）
+    if (e.type === "artEvolved") {
+      const to = allArtDefs[e.to]?.name ?? e.to;
+      out.push({
+        rank: "A",
+        kicker: e.hidden ? "UNKNOWN FORM" : "EVOLVED",
+        title: `《${to}》`,
+        sub: tpl(e.hidden ? t.text.artEvolvedHidden : t.text.artEvolved, {
+          from: allArtDefs[e.from]?.name ?? e.from,
+          to,
+          reason: e.reason,
+        }),
+        rewards: [{ label: "進化", name: `《${to}》` }],
+        sound: "rankup",
+      });
+    }
+    // ユニークを得た（K-03）：「その世界で一人だけ」の技 —— 世界初の記録として
+    // Sランクの帯で届く（suppressed の分は札へ：tagsOf）
+    if (e.type === "uniqueGained" && !e.suppressed) {
+      const name = allArtDefs[e.art]?.name ?? e.art;
+      out.push({
+        rank: "S",
+        kicker: "UNIQUE ART",
+        title: `《${name}》`,
+        sub: "世界で初めての記録です ―― この技は、この世界であなただけのものです。",
+        rewards: [{ label: "ユニーク", name: `《${name}》` }],
+        sound: "world",
+      });
+    }
+    // ライバルに先取られた（K-03）：世界が動いた記録 —— Aランクの窓
+    if (e.type === "uniqueClaimed") {
+      const name = allArtDefs[e.art]?.name ?? e.art;
+      out.push({
+        rank: "A",
+        kicker: "UNIQUE LOST",
+        title: `《${name}》`,
+        sub: tpl(t.text.uniqueClaimed, {
+          name,
+          rival: uniqueHolderName(state, e.rival),
+        }),
+        rewards: [{ label: "ユニーク", name: `《${name}》` }],
+        sound: "notice",
       });
     }
     if (e.type === "pinnacleStageReached" && e.rank !== "B") {
@@ -2594,6 +2787,23 @@ export function tagsOf(events: ActionEvent[], state?: GameState): FxTag[] {
       // NPCの歳月（X-12）：街の人物の物語が動いた一行
       case "npcEvent":
         out.push({ text: tpl(t.text.npcEvent, { name: e.name, text: e.text }), tone: "plain" });
+        break;
+      // 技の合成（K-03）：通知Bランク —— 生まれた技の名だけ札で知らせる
+      // （レシピは伏せたまま。進化はAの窓、ユニークはSの帯が担う）
+      case "artSynthesized":
+        out.push({
+          text: tpl(t.text.artSynthesized, { name: allArtDefs[e.id]?.name ?? e.id }),
+          tone: "plain",
+        });
+        break;
+      // S予算超過のユニーク獲得（K-03）：帯は出ないが記録は残る —— 囁きの札
+      case "uniqueGained":
+        if (e.suppressed) {
+          out.push({
+            text: tpl(t.text.uniqueSuppressed, { name: allArtDefs[e.art]?.name ?? e.art }),
+            tone: "whisper",
+          });
+        }
         break;
       // 勝負所の行事（X-10）：打診と敗北は札で届く（勝ちはAの窓）
       case "occasionOffered":

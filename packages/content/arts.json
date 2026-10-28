@@ -13,8 +13,50 @@
       "dtype": "slash",
       "part": "body",
       "ki": 3,
-      "ct": 1.0,
-      "desc": "剣を大きく振るう、剣術の基本技。"
+      "ct": 1,
+      "desc": "剣を大きく振るう、剣術の基本技。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の薙ぎ払い",
+              "power": 1.43,
+              "ki": 3.9
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの薙ぎ払い",
+              "heavy": true,
+              "power": 1.21
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの薙ぎ払い",
+              "power": 1.26,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "s_thrust",
@@ -30,7 +72,48 @@
       "hitBonus": 0.03,
       "ki": 3,
       "ct": 0.9,
-      "desc": "最短の軌道で突く。当たりやすい一手。"
+      "desc": "最短の軌道で突く。当たりやすい一手。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の突き",
+              "ct": 0.68,
+              "hitBonus": 0.08
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の突き",
+              "ct": 0.77,
+              "ki": 2.1
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの突き",
+              "hitBonus": 0.11,
+              "ct": 0.81
+            }
+          }
+        ]
+      }
     },
     {
       "id": "s_riposte",
@@ -45,7 +128,49 @@
       "response": "parry",
       "ki": 4,
       "ct": 0.6,
-      "desc": "受け止めた勢いをそのまま刃に変える。受け流しの構え。"
+      "desc": "受け止めた勢いをそのまま刃に変える。受け流しの構え。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "躱し続けた",
+            "weights": {
+              "after.evade": 1
+            },
+            "mod": {
+              "name": "見切りの受け流し斬り",
+              "response": "evade",
+              "ki": 3.2
+            }
+          },
+          {
+            "tilt": "鉄壁",
+            "reason": "守りを固め続けた",
+            "weights": {
+              "after.guard": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "鉄壁の受け流し斬り",
+              "response": "guard",
+              "ki": 4.8,
+              "ct": 0.48
+            }
+          },
+          {
+            "tilt": "受け",
+            "reason": "受け止め続けた",
+            "weights": {
+              "after.guard": 1
+            },
+            "mod": {
+              "name": "受けの受け流し斬り",
+              "ki": 2.8,
+              "ct": 0.51
+            }
+          }
+        ]
+      }
     },
     {
       "id": "s_helm",
@@ -61,7 +186,48 @@
       "hitBonus": -0.05,
       "ki": 6,
       "ct": 1.2,
-      "desc": "頭を目掛けて振り下ろす。外れやすいが重い。"
+      "desc": "頭を目掛けて振り下ろす。外れやすいが重い。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの兜割り",
+              "heavy": true,
+              "power": 1.65
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの兜割り",
+              "power": 1.73,
+              "hitBonus": -0.020000000000000004
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の兜割り",
+              "ct": 0.9,
+              "hitBonus": 0
+            }
+          }
+        ]
+      }
     },
     {
       "id": "s_dash",
@@ -81,8 +247,50 @@
         "power": 1.4
       },
       "ki": 6,
-      "ct": 1.0,
-      "desc": "走り抜けざまに脚を斬る。足を止める。"
+      "ct": 1,
+      "desc": "走り抜けざまに脚を斬る。足を止める。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の疾走斬り",
+              "ct": 0.85,
+              "ki": 4.2
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの疾走斬り",
+              "hitBonus": 0.08,
+              "ct": 0.9
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の疾走斬り",
+              "part": "head",
+              "power": 1.26,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "s_riser",
@@ -102,8 +310,50 @@
         "power": 0
       },
       "ki": 5,
-      "ct": 1.0,
-      "desc": "下から打ち上げ、腕ごと体勢を崩す。"
+      "ct": 1,
+      "desc": "下から打ち上げ、腕ごと体勢を崩す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.s_riser": 1
+            },
+            "mod": {
+              "name": "連撃の斬り上げ",
+              "hits": 2,
+              "ct": 1.1
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の斬り上げ",
+              "power": 1.56,
+              "ki": 6.5
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの斬り上げ",
+              "heavy": true,
+              "power": 1.32
+            }
+          }
+        ]
+      }
     },
     {
       "id": "s_cross",
@@ -119,7 +369,47 @@
       "hits": 2,
       "ki": 9,
       "ct": 1.3,
-      "desc": "縦と横、間を置かず二度斬る。"
+      "desc": "縦と横、間を置かず二度斬る。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの十字斬り",
+              "power": 0.92,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の十字斬り",
+              "ct": 0.98,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の十字斬り",
+              "ct": 1.11,
+              "ki": 6.3
+            }
+          }
+        ]
+      }
     },
     {
       "id": "s_end",
@@ -136,7 +426,49 @@
       "heavy": true,
       "ki": 12,
       "ct": 1.6,
-      "desc": "全身の力を剣に託す一撃。崩した敵には決まる。"
+      "desc": "全身の力を剣に託す一撃。崩した敵には決まる。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの終わりの剣",
+              "hitBonus": 0,
+              "ct": 1.44
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の終わりの剣",
+              "part": "head",
+              "power": 2.42,
+              "hitBonus": -0.05
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.s_end": 1
+            },
+            "mod": {
+              "name": "連撃の終わりの剣",
+              "hits": 2,
+              "ct": 1.76
+            }
+          }
+        ]
+      }
     },
     {
       "id": "d_quick",
@@ -151,7 +483,49 @@
       "part": "body",
       "ki": 2,
       "ct": 0.7,
-      "desc": "短刀の速さを生かした速い突き。"
+      "desc": "短刀の速さを生かした速い突き。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の早突き",
+              "power": 1.17,
+              "ki": 2.6
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの早突き",
+              "heavy": true,
+              "power": 0.99
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの早突き",
+              "power": 1.03,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "d_feint",
@@ -166,7 +540,50 @@
       "response": "evade",
       "ki": 3,
       "ct": 0.7,
-      "desc": "踏み込みを牽制に変え、一瞬で間合いを取る。"
+      "desc": "踏み込みを牽制に変え、一瞬で間合いを取る。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "反撃",
+            "reason": "受け流しから斬り返し続けた",
+            "weights": {
+              "after.parry": 1
+            },
+            "mod": {
+              "name": "反撃の牽制の型",
+              "response": "parry",
+              "ki": 2.7,
+              "ct": 0.63
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "躱し続けた",
+            "weights": {
+              "after.evade": 1
+            },
+            "mod": {
+              "name": "見切りの牽制の型",
+              "response": "evade",
+              "ki": 2.4
+            }
+          },
+          {
+            "tilt": "鉄壁",
+            "reason": "守りを固め続けた",
+            "weights": {
+              "after.guard": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "鉄壁の牽制の型",
+              "response": "guard",
+              "ki": 3.6,
+              "ct": 0.56
+            }
+          }
+        ]
+      }
     },
     {
       "id": "d_shadow",
@@ -176,7 +593,7 @@
         "at": 12
       },
       "kind": "attack",
-      "power": 1.0,
+      "power": 1,
       "dtype": "pierce",
       "part": "legs",
       "status": {
@@ -187,7 +604,49 @@
       },
       "ki": 5,
       "ct": 0.9,
-      "desc": "相手の影に潜り、脚を抉る。"
+      "desc": "相手の影に潜り、脚を抉る。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の影踏み",
+              "part": "head",
+              "power": 1.1,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.d_shadow": 1
+            },
+            "mod": {
+              "name": "連撃の影踏み",
+              "hits": 2,
+              "ct": 0.99
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の影踏み",
+              "power": 1.3,
+              "ki": 6.5
+            }
+          }
+        ]
+      }
     },
     {
       "id": "d_artery",
@@ -197,7 +656,7 @@
         "at": 14
       },
       "kind": "attack",
-      "power": 1.0,
+      "power": 1,
       "dtype": "pierce",
       "part": "arms",
       "status": {
@@ -207,8 +666,49 @@
         "power": 0.6
       },
       "ki": 5,
-      "ct": 1.0,
-      "desc": "腕の脈を穿つ。血が止まらない。"
+      "ct": 1,
+      "desc": "腕の脈を穿つ。血が止まらない。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの脈突き",
+              "heavy": true,
+              "power": 1.1
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの脈突き",
+              "power": 1.15,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の脈突き",
+              "ct": 0.75,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "d_vital",
@@ -224,7 +724,49 @@
       "hitBonus": -0.06,
       "ki": 6,
       "ct": 1.1,
-      "desc": "急所を正確に穿つ短刀の本領。"
+      "desc": "急所を正確に穿つ短刀の本領。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の急所突き",
+              "ct": 0.94,
+              "ki": 4.2
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの急所突き",
+              "hitBonus": 0.020000000000000004,
+              "ct": 0.99
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の急所突き",
+              "part": "head",
+              "power": 1.54,
+              "hitBonus": -0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "d_twin",
@@ -240,7 +782,49 @@
       "hits": 2,
       "ki": 7,
       "ct": 1.1,
-      "desc": "浅く二度、確かに刻む突き。"
+      "desc": "浅く二度、確かに刻む突き。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.d_twin": 1
+            },
+            "mod": {
+              "name": "連撃の二連突き",
+              "hits": 3,
+              "ct": 1.21
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の二連突き",
+              "power": 0.98,
+              "ki": 9.1
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの二連突き",
+              "heavy": true,
+              "power": 0.83
+            }
+          }
+        ]
+      }
     },
     {
       "id": "d_heart",
@@ -252,14 +836,54 @@
         "share": 0.15
       },
       "kind": "attack",
-      "power": 2.0,
+      "power": 2,
       "dtype": "pierce",
       "part": "body",
       "hitBonus": -0.06,
       "heavy": true,
       "ki": 11,
       "ct": 1.5,
-      "desc": "格上と渡り合う者だけが極める、一撃必殺の突き。"
+      "desc": "格上と渡り合う者だけが極める、一撃必殺の突き。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの心臓突き",
+              "power": 2.3,
+              "hitBonus": -0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の心臓突き",
+              "ct": 1.13,
+              "hitBonus": -0.009999999999999995
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の心臓突き",
+              "ct": 1.27,
+              "ki": 7.7
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_thrust",
@@ -273,8 +897,50 @@
       "dtype": "pierce",
       "part": "body",
       "ki": 3,
-      "ct": 1.0,
-      "desc": "槍の間合いから真っ直ぐに突く。"
+      "ct": 1,
+      "desc": "槍の間合いから真っ直ぐに突く。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの一文字突き",
+              "hitBonus": 0.08,
+              "ct": 0.9
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の一文字突き",
+              "part": "head",
+              "power": 1.26,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.p_thrust": 1
+            },
+            "mod": {
+              "name": "連撃の一文字突き",
+              "hits": 2,
+              "ct": 1.1
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_sweep",
@@ -295,7 +961,49 @@
       },
       "ki": 5,
       "ct": 1.2,
-      "desc": "穂ではなく柄で広く払い、体勢を崩す。"
+      "desc": "穂ではなく柄で広く払い、体勢を崩す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の薙ぎ払い",
+              "power": 1.17,
+              "ki": 6.5
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの薙ぎ払い",
+              "heavy": true,
+              "power": 0.99
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの薙ぎ払い",
+              "power": 1.03,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_pin",
@@ -305,7 +1013,7 @@
         "at": 12
       },
       "kind": "attack",
-      "power": 1.0,
+      "power": 1,
       "dtype": "pierce",
       "part": "legs",
       "status": {
@@ -315,8 +1023,49 @@
         "power": 1.4
       },
       "ki": 5,
-      "ct": 1.0,
-      "desc": "脚に槍を絡めて逃げ道を塞ぐ。"
+      "ct": 1,
+      "desc": "脚に槍を絡めて逃げ道を塞ぐ。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の足止め",
+              "ct": 0.75,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の足止め",
+              "ct": 0.85,
+              "ki": 3.5
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの足止め",
+              "hitBonus": 0.08,
+              "ct": 0.9
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_counter",
@@ -332,7 +1081,49 @@
       "part": "body",
       "ki": 6,
       "ct": 0.9,
-      "desc": "仕掛けてくる相手を先んじて迎え撃つ。"
+      "desc": "仕掛けてくる相手を先んじて迎え撃つ。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "躱し続けた",
+            "weights": {
+              "after.evade": 1
+            },
+            "mod": {
+              "name": "見切りの迎え槍",
+              "response": "evade",
+              "ki": 4.8
+            }
+          },
+          {
+            "tilt": "鉄壁",
+            "reason": "守りを固め続けた",
+            "weights": {
+              "after.guard": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "鉄壁の迎え槍",
+              "response": "guard",
+              "ki": 7.2,
+              "ct": 0.72
+            }
+          },
+          {
+            "tilt": "受け",
+            "reason": "受け止め続けた",
+            "weights": {
+              "after.guard": 1
+            },
+            "mod": {
+              "name": "受けの迎え槍",
+              "ki": 4.2,
+              "ct": 0.77
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_skewer",
@@ -347,7 +1138,48 @@
       "part": "body",
       "ki": 8,
       "ct": 1.3,
-      "desc": "体重ごと槍に乗せて貫く重い突き。"
+      "desc": "体重ごと槍に乗せて貫く重い突き。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの串刺し",
+              "heavy": true,
+              "power": 1.76
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの串刺し",
+              "power": 1.84,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の串刺し",
+              "ct": 0.98,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_twin",
@@ -363,7 +1195,49 @@
       "hits": 2,
       "ki": 8,
       "ct": 1.2,
-      "desc": "引かずに二度打ち込む。"
+      "desc": "引かずに二度打ち込む。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の二段突き",
+              "ct": 1.02,
+              "ki": 5.6
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの二段突き",
+              "hitBonus": 0.08,
+              "ct": 1.08
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の二段突き",
+              "part": "head",
+              "power": 0.88,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_vault",
@@ -379,7 +1253,49 @@
       "hitBonus": -0.06,
       "ki": 7,
       "ct": 1.2,
-      "desc": "跳んで頭上から突き下ろす。"
+      "desc": "跳んで頭上から突き下ろす。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.p_vault": 1
+            },
+            "mod": {
+              "name": "連撃の跳躍突き",
+              "hits": 2,
+              "ct": 1.32
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の跳躍突き",
+              "power": 1.95,
+              "ki": 9.1
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの跳躍突き",
+              "heavy": true,
+              "power": 1.65
+            }
+          }
+        ]
+      }
     },
     {
       "id": "p_drill",
@@ -389,14 +1305,54 @@
         "at": 38
       },
       "kind": "attack",
-      "power": 2.0,
+      "power": 2,
       "dtype": "pierce",
       "part": "body",
       "heavy": true,
       "pierceArmor": true,
       "ki": 12,
       "ct": 1.6,
-      "desc": "鎧も肉も一突きに貫く。崩した敵に特に決まる。"
+      "desc": "鎧も肉も一突きに貫く。崩した敵に特に決まる。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの穿ち抜き",
+              "power": 2.3,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の穿ち抜き",
+              "ct": 1.2,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の穿ち抜き",
+              "ct": 1.36,
+              "ki": 8.4
+            }
+          }
+        ]
+      }
     },
     {
       "id": "a_chop",
@@ -411,7 +1367,49 @@
       "part": "body",
       "ki": 4,
       "ct": 1.1,
-      "desc": "斧の重みをそのまま乗せて割る。"
+      "desc": "斧の重みをそのまま乗せて割る。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの鉈割り",
+              "hitBonus": 0.08,
+              "ct": 0.99
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の鉈割り",
+              "part": "head",
+              "power": 1.43,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.a_chop": 1
+            },
+            "mod": {
+              "name": "連撃の鉈割り",
+              "hits": 2,
+              "ct": 1.21
+            }
+          }
+        ]
+      }
     },
     {
       "id": "a_arm",
@@ -426,7 +1424,49 @@
       "part": "arms",
       "ki": 6,
       "ct": 1.1,
-      "desc": "武器を持つ腕を狙い、大技を封じる。"
+      "desc": "武器を持つ腕を狙い、大技を封じる。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の腕割り",
+              "power": 1.56,
+              "ki": 7.8
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの腕割り",
+              "heavy": true,
+              "power": 1.32
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの腕割り",
+              "power": 1.38,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "a_legs",
@@ -447,7 +1487,48 @@
       },
       "ki": 6,
       "ct": 1.1,
-      "desc": "逃げられないように脚を断つ。"
+      "desc": "逃げられないように脚を断つ。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の脚断ち",
+              "ct": 0.83,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の脚断ち",
+              "ct": 0.94,
+              "ki": 4.2
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの脚断ち",
+              "hitBonus": 0.08,
+              "ct": 0.99
+            }
+          }
+        ]
+      }
     },
     {
       "id": "a_skull",
@@ -463,7 +1544,49 @@
       "hitBonus": -0.08,
       "ki": 8,
       "ct": 1.3,
-      "desc": "頭蓋を目掛けた、当たれば恐ろしい一撃。"
+      "desc": "頭蓋を目掛けた、当たれば恐ろしい一撃。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の脳天割り",
+              "part": "head",
+              "power": 1.76,
+              "hitBonus": -0.05
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.a_skull": 1
+            },
+            "mod": {
+              "name": "連撃の脳天割り",
+              "hits": 2,
+              "ct": 1.43
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の脳天割り",
+              "power": 2.08,
+              "ki": 10.4
+            }
+          }
+        ]
+      }
     },
     {
       "id": "a_sunder",
@@ -478,8 +1601,51 @@
       "dtype": "slash",
       "part": "body",
       "ki": 7,
-      "ct": 1.0,
-      "desc": "大技の仕掛けを先読みし、斧で叩き潰す。"
+      "ct": 1,
+      "desc": "大技の仕掛けを先読みし、斧で叩き潰す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "鉄壁",
+            "reason": "守りを固め続けた",
+            "weights": {
+              "after.guard": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "鉄壁の割り込み叩き",
+              "response": "guard",
+              "ki": 8.4,
+              "ct": 0.8
+            }
+          },
+          {
+            "tilt": "受け",
+            "reason": "受け止め続けた",
+            "weights": {
+              "after.guard": 1
+            },
+            "mod": {
+              "name": "受けの割り込み叩き",
+              "ki": 4.9,
+              "ct": 0.85
+            }
+          },
+          {
+            "tilt": "反撃",
+            "reason": "受け流しから斬り返し続けた",
+            "weights": {
+              "after.parry": 1
+            },
+            "mod": {
+              "name": "反撃の割り込み叩き",
+              "response": "parry",
+              "ki": 6.3,
+              "ct": 0.9
+            }
+          }
+        ]
+      }
     },
     {
       "id": "a_pound",
@@ -501,7 +1667,49 @@
       },
       "ki": 9,
       "ct": 1.4,
-      "desc": "斧の頭で装甲ごと砕く。鎧が利かない。"
+      "desc": "斧の頭で装甲ごと砕く。鎧が利かない。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の破城の一撃",
+              "ct": 1.19,
+              "ki": 6.3
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの破城の一撃",
+              "hitBonus": 0.08,
+              "ct": 1.26
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の破城の一撃",
+              "part": "head",
+              "power": 1.54,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "a_cleave",
@@ -518,7 +1726,49 @@
       "heavy": true,
       "ki": 13,
       "ct": 1.7,
-      "desc": "斧の極意。崩した敵を真っ二つにする。"
+      "desc": "斧の極意。崩した敵を真っ二つにする。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.a_cleave": 1
+            },
+            "mod": {
+              "name": "連撃の真っ向割り",
+              "hits": 2,
+              "ct": 1.87
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の真っ向割り",
+              "power": 2.99,
+              "ki": 16.9
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの真っ向割り",
+              "heavy": true,
+              "power": 2.53
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_rapid",
@@ -534,7 +1784,47 @@
       "range": "far",
       "ki": 3,
       "ct": 0.8,
-      "desc": "狙いを絞らず速く射る。"
+      "desc": "狙いを絞らず速く射る。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの早矢",
+              "power": 0.98,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の早矢",
+              "ct": 0.6,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の早矢",
+              "ct": 0.68,
+              "ki": 2.1
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_aim",
@@ -551,7 +1841,49 @@
       "range": "far",
       "ki": 6,
       "ct": 1.3,
-      "desc": "息を整えて頭を射抜く。"
+      "desc": "息を整えて頭を射抜く。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの狙い撃ち",
+              "hitBonus": -0.020000000000000004,
+              "ct": 1.17
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の狙い撃ち",
+              "part": "head",
+              "power": 1.54,
+              "hitBonus": -0.07
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.b_aim": 1
+            },
+            "mod": {
+              "name": "連撃の狙い撃ち",
+              "hits": 2,
+              "ct": 1.43
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_pin",
@@ -561,7 +1893,7 @@
         "at": 12
       },
       "kind": "attack",
-      "power": 1.0,
+      "power": 1,
       "dtype": "pierce",
       "part": "legs",
       "status": {
@@ -572,8 +1904,50 @@
       },
       "range": "far",
       "ki": 5,
-      "ct": 1.0,
-      "desc": "逃げる足に矢を刺す。"
+      "ct": 1,
+      "desc": "逃げる足に矢を刺す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の足狙い",
+              "power": 1.3,
+              "ki": 6.5
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの足狙い",
+              "heavy": true,
+              "power": 1.1
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの足狙い",
+              "power": 1.15,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_cover",
@@ -590,7 +1964,50 @@
       "range": "far",
       "ki": 5,
       "ct": 0.8,
-      "desc": "仕掛ける相手に速い一矢を打ち込む。"
+      "desc": "仕掛ける相手に速い一矢を打ち込む。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "反撃",
+            "reason": "受け流しから斬り返し続けた",
+            "weights": {
+              "after.parry": 1
+            },
+            "mod": {
+              "name": "反撃の牽制射ち",
+              "response": "parry",
+              "ki": 4.5,
+              "ct": 0.72
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "躱し続けた",
+            "weights": {
+              "after.evade": 1
+            },
+            "mod": {
+              "name": "見切りの牽制射ち",
+              "response": "evade",
+              "ki": 4
+            }
+          },
+          {
+            "tilt": "鉄壁",
+            "reason": "守りを固め続けた",
+            "weights": {
+              "after.guard": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "鉄壁の牽制射ち",
+              "response": "guard",
+              "ki": 6,
+              "ct": 0.64
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_strong",
@@ -606,7 +2023,49 @@
       "range": "far",
       "ki": 8,
       "ct": 1.4,
-      "desc": "弓を限界まで引き絞った太い一矢。"
+      "desc": "弓を限界まで引き絞った太い一矢。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の強矢",
+              "part": "head",
+              "power": 1.87,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.b_strong": 1
+            },
+            "mod": {
+              "name": "連撃の強矢",
+              "hits": 2,
+              "ct": 1.54
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の強矢",
+              "power": 2.21,
+              "ki": 10.4
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_rain",
@@ -623,7 +2082,48 @@
       "range": "far",
       "ki": 10,
       "ct": 1.4,
-      "desc": "矢を三本続けて射ち分ける。"
+      "desc": "矢を三本続けて射ち分ける。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの乱れ矢",
+              "heavy": true,
+              "power": 0.66
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの乱れ矢",
+              "power": 0.69,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の乱れ矢",
+              "ct": 1.05,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_pierce",
@@ -642,7 +2142,49 @@
       "range": "far",
       "ki": 8,
       "ct": 1.3,
-      "desc": "格上の敵にも通る、甲を貫く矢。"
+      "desc": "格上の敵にも通る、甲を貫く矢。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の貫通の矢",
+              "ct": 1.11,
+              "ki": 5.6
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの貫通の矢",
+              "hitBonus": 0.08,
+              "ct": 1.17
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の貫通の矢",
+              "part": "head",
+              "power": 1.65,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b_mind",
@@ -654,7 +2196,7 @@
         "share": 0.1
       },
       "kind": "attack",
-      "power": 2.0,
+      "power": 2,
       "dtype": "pierce",
       "part": "head",
       "hitBonus": -0.08,
@@ -662,7 +2204,49 @@
       "range": "far",
       "ki": 12,
       "ct": 1.6,
-      "desc": "敵を見切る目が極まった先に見える必中の一矢。"
+      "desc": "敵を見切る目が極まった先に見える必中の一矢。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.b_mind": 1
+            },
+            "mod": {
+              "name": "連撃の心眼の一矢",
+              "hits": 2,
+              "ct": 1.76
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の心眼の一矢",
+              "power": 2.6,
+              "ki": 15.6
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの心眼の一矢",
+              "heavy": true,
+              "power": 2.2
+            }
+          }
+        ]
+      }
     },
     {
       "id": "h_bash",
@@ -672,12 +2256,52 @@
         "at": 3
       },
       "kind": "attack",
-      "power": 1.0,
+      "power": 1,
       "dtype": "blunt",
       "part": "body",
       "ki": 3,
-      "ct": 1.0,
-      "desc": "盾の面で叩く。守りの武器にも牙はある。"
+      "ct": 1,
+      "desc": "盾の面で叩く。守りの武器にも牙はある。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの盾打ち",
+              "power": 1.15,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の盾打ち",
+              "ct": 0.75,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の盾打ち",
+              "ct": 0.85,
+              "ki": 2.1
+            }
+          }
+        ]
+      }
     },
     {
       "id": "h_wall",
@@ -690,7 +2314,50 @@
       "response": "guard",
       "ki": 4,
       "ct": 0.8,
-      "desc": "盾を深く構える。どんな一撃も受け止める。"
+      "desc": "盾を深く構える。どんな一撃も受け止める。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "鉄壁",
+            "reason": "守りを固め続けた",
+            "weights": {
+              "after.guard": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "鉄壁の鉄壁",
+              "response": "guard",
+              "ki": 4.8,
+              "ct": 0.64
+            }
+          },
+          {
+            "tilt": "受け",
+            "reason": "受け止め続けた",
+            "weights": {
+              "after.guard": 1
+            },
+            "mod": {
+              "name": "受けの鉄壁",
+              "ki": 2.8,
+              "ct": 0.68
+            }
+          },
+          {
+            "tilt": "反撃",
+            "reason": "受け流しから斬り返し続けた",
+            "weights": {
+              "after.parry": 1
+            },
+            "mod": {
+              "name": "反撃の鉄壁",
+              "response": "parry",
+              "ki": 3.6,
+              "ct": 0.72
+            }
+          }
+        ]
+      }
     },
     {
       "id": "h_parry",
@@ -705,7 +2372,48 @@
       "response": "parry",
       "ki": 5,
       "ct": 0.7,
-      "desc": "受けた力を盾面で逸らす。反撃の隙が生まれる。"
+      "desc": "受けた力を盾面で逸らす。反撃の隙が生まれる。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "受け",
+            "reason": "受け止め続けた",
+            "weights": {
+              "after.guard": 1
+            },
+            "mod": {
+              "name": "受けの受け流し",
+              "ki": 3.5,
+              "ct": 0.6
+            }
+          },
+          {
+            "tilt": "反撃",
+            "reason": "受け流しから斬り返し続けた",
+            "weights": {
+              "after.parry": 1
+            },
+            "mod": {
+              "name": "反撃の受け流し",
+              "response": "parry",
+              "ki": 4.5,
+              "ct": 0.63
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "躱し続けた",
+            "weights": {
+              "after.evade": 1
+            },
+            "mod": {
+              "name": "見切りの受け流し",
+              "response": "evade",
+              "ki": 4
+            }
+          }
+        ]
+      }
     },
     {
       "id": "h_charge",
@@ -726,7 +2434,48 @@
       },
       "ki": 6,
       "ct": 1.1,
-      "desc": "盾ごと体当たりして体勢を崩す。"
+      "desc": "盾ごと体当たりして体勢を崩す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の盾突き",
+              "ct": 0.83,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の盾突き",
+              "ct": 0.94,
+              "ki": 4.2
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの盾突き",
+              "hitBonus": 0.08,
+              "ct": 0.99
+            }
+          }
+        ]
+      }
     },
     {
       "id": "h_rattle",
@@ -743,8 +2492,56 @@
         "power": 8
       },
       "ki": 6,
-      "ct": 1.0,
-      "desc": "盾を打ち鳴らして相手の間を乱す。"
+      "ct": 1,
+      "desc": "盾を打ち鳴らして相手の間を乱す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "確実",
+            "reason": "格上へ掛け続けた",
+            "weights": {
+              "foe.stronger": 1
+            },
+            "mod": {
+              "name": "確実な盾鳴らし",
+              "status": {
+                "id": "stun",
+                "chance": 0.84,
+                "ticks": 4,
+                "power": 8
+              }
+            }
+          },
+          {
+            "tilt": "先手",
+            "reason": "先手から仕掛け続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "先手の盾鳴らし",
+              "ct": 0.8
+            }
+          },
+          {
+            "tilt": "長引き",
+            "reason": "長い戦いを支え続けた",
+            "weights": {
+              "foe.even": 1,
+              "after.stagger": 0.4
+            },
+            "mod": {
+              "name": "長引きの盾鳴らし",
+              "status": {
+                "id": "stun",
+                "chance": 0.6,
+                "ticks": 6,
+                "power": 8
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "h_smash",
@@ -759,7 +2556,48 @@
       "part": "arms",
       "ki": 7,
       "ct": 1.2,
-      "desc": "盾の縁で腕を叩き潰す。"
+      "desc": "盾の縁で腕を叩き潰す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの盾潰し",
+              "heavy": true,
+              "power": 1.43
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの盾潰し",
+              "power": 1.5,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の盾潰し",
+              "ct": 0.9,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "h_avalanche",
@@ -769,13 +2607,55 @@
         "at": 34
       },
       "kind": "attack",
-      "power": 2.0,
+      "power": 2,
       "dtype": "blunt",
       "part": "body",
       "heavy": true,
       "ki": 12,
       "ct": 1.6,
-      "desc": "崩れた相手に盾の全重を叩き込む。"
+      "desc": "崩れた相手に盾の全重を叩き込む。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の重盾崩し",
+              "ct": 1.36,
+              "ki": 8.4
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの重盾崩し",
+              "hitBonus": 0.08,
+              "ct": 1.44
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の重盾崩し",
+              "part": "head",
+              "power": 2.2,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_jab",
@@ -785,12 +2665,54 @@
         "at": 3
       },
       "kind": "attack",
-      "power": 1.0,
+      "power": 1,
       "dtype": "blunt",
       "part": "body",
       "ki": 2,
       "ct": 0.8,
-      "desc": "格闘の基本。速く確かな一撃。"
+      "desc": "格闘の基本。速く確かな一撃。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.f_jab": 1
+            },
+            "mod": {
+              "name": "連撃の正拳",
+              "hits": 2,
+              "ct": 0.88
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の正拳",
+              "power": 1.3,
+              "ki": 2.6
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの正拳",
+              "heavy": true,
+              "power": 1.1
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_kick",
@@ -805,7 +2727,47 @@
       "part": "legs",
       "ki": 3,
       "ct": 0.9,
-      "desc": "脚を狙う重い蹴り。"
+      "desc": "脚を狙う重い蹴り。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの蹴り",
+              "power": 1.26,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の蹴り",
+              "ct": 0.68,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の蹴り",
+              "ct": 0.77,
+              "ki": 2.1
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_sweep",
@@ -826,7 +2788,49 @@
       },
       "ki": 4,
       "ct": 0.9,
-      "desc": "低く払って足を刈る。"
+      "desc": "低く払って足を刈る。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの足払い",
+              "hitBonus": 0.08,
+              "ct": 0.81
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の足払い",
+              "part": "head",
+              "power": 0.88,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.f_sweep": 1
+            },
+            "mod": {
+              "name": "連撃の足払い",
+              "hits": 2,
+              "ct": 0.99
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_elbow",
@@ -846,8 +2850,50 @@
         "power": 6
       },
       "ki": 5,
-      "ct": 1.0,
-      "desc": "懐に潜り込み顎を肘で打つ。気を失わせることもある。"
+      "ct": 1,
+      "desc": "懐に潜り込み顎を肘で打つ。気を失わせることもある。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の肘打ち",
+              "power": 1.43,
+              "ki": 6.5
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの肘打ち",
+              "heavy": true,
+              "power": 1.21
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの肘打ち",
+              "power": 1.26,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_rip",
@@ -868,7 +2914,48 @@
       },
       "ki": 4,
       "ct": 0.9,
-      "desc": "爪で裂くように引っ掻く。傷が残る。"
+      "desc": "爪で裂くように引っ掻く。傷が残る。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の引っ掻き",
+              "ct": 0.68,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の引っ掻き",
+              "ct": 0.77,
+              "ki": 2.8
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの引っ掻き",
+              "hitBonus": 0.08,
+              "ct": 0.81
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_parry",
@@ -883,7 +2970,49 @@
       "response": "parry",
       "ki": 4,
       "ct": 0.7,
-      "desc": "素手でも受けられる。間を読む型。"
+      "desc": "素手でも受けられる。間を読む型。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "見切り",
+            "reason": "躱し続けた",
+            "weights": {
+              "after.evade": 1
+            },
+            "mod": {
+              "name": "見切りの受けの型",
+              "response": "evade",
+              "ki": 3.2
+            }
+          },
+          {
+            "tilt": "鉄壁",
+            "reason": "守りを固め続けた",
+            "weights": {
+              "after.guard": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "鉄壁の受けの型",
+              "response": "guard",
+              "ki": 4.8,
+              "ct": 0.56
+            }
+          },
+          {
+            "tilt": "受け",
+            "reason": "受け止め続けた",
+            "weights": {
+              "after.guard": 1
+            },
+            "mod": {
+              "name": "受けの受けの型",
+              "ki": 2.8,
+              "ct": 0.6
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_combo",
@@ -899,7 +3028,48 @@
       "hits": 3,
       "ki": 9,
       "ct": 1.3,
-      "desc": "息を継がずに叩き込む三連撃。"
+      "desc": "息を継がずに叩き込む三連撃。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの連打",
+              "heavy": true,
+              "power": 0.61
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの連打",
+              "power": 0.63,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の連打",
+              "ct": 0.98,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "f_focus",
@@ -917,7 +3087,49 @@
       "heavy": true,
       "ki": 11,
       "ct": 1.5,
-      "desc": "崩れた相手に気を込めて打ち込む渾身の一撃。"
+      "desc": "崩れた相手に気を込めて打ち込む渾身の一撃。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の気合の一撃",
+              "ct": 1.27,
+              "ki": 7.7
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの気合の一撃",
+              "hitBonus": 0.08,
+              "ct": 1.35
+            }
+          },
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の気合の一撃",
+              "part": "head",
+              "power": 2.31,
+              "hitBonus": 0.03
+            }
+          }
+        ]
+      }
     },
     {
       "id": "t_stone",
@@ -933,7 +3145,49 @@
       "range": "mid",
       "ki": 2,
       "ct": 0.8,
-      "desc": "拾った石を投げる。気軽な一手。"
+      "desc": "拾った石を投げる。気軽な一手。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.t_stone": 1
+            },
+            "mod": {
+              "name": "連撃の石礫",
+              "hits": 2,
+              "ct": 0.88
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の石礫",
+              "power": 1.17,
+              "ki": 2.6
+            }
+          },
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの石礫",
+              "heavy": true,
+              "power": 0.99
+            }
+          }
+        ]
+      }
     },
     {
       "id": "t_dart",
@@ -949,7 +3203,47 @@
       "range": "mid",
       "ki": 4,
       "ct": 0.9,
-      "desc": "刃物を投げて突き刺す。"
+      "desc": "刃物を投げて突き刺す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの投げ短剣",
+              "power": 1.26,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の投げ短剣",
+              "ct": 0.68,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の投げ短剣",
+              "ct": 0.77,
+              "ki": 2.8
+            }
+          }
+        ]
+      }
     },
     {
       "id": "t_smoke",
@@ -968,7 +3262,55 @@
       "range": "mid",
       "ki": 5,
       "ct": 0.8,
-      "desc": "足元に煙を撒く。相手の間を乱す。"
+      "desc": "足元に煙を撒く。相手の間を乱す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "先手",
+            "reason": "先手から仕掛け続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "先手の煙玉",
+              "ct": 0.64
+            }
+          },
+          {
+            "tilt": "長引き",
+            "reason": "長い戦いを支え続けた",
+            "weights": {
+              "foe.even": 1,
+              "after.stagger": 0.4
+            },
+            "mod": {
+              "name": "長引きの煙玉",
+              "status": {
+                "id": "stun",
+                "chance": 0.7,
+                "ticks": 6,
+                "power": 8
+              }
+            }
+          },
+          {
+            "tilt": "確実",
+            "reason": "格上へ掛け続けた",
+            "weights": {
+              "foe.stronger": 1
+            },
+            "mod": {
+              "name": "確実な煙玉",
+              "status": {
+                "id": "stun",
+                "chance": 0.98,
+                "ticks": 4,
+                "power": 8
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "t_oil",
@@ -987,7 +3329,55 @@
       "range": "mid",
       "ki": 5,
       "ct": 0.8,
-      "desc": "油を撒いて足を取らせる。"
+      "desc": "油を撒いて足を取らせる。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "長引き",
+            "reason": "長い戦いを支え続けた",
+            "weights": {
+              "foe.even": 1,
+              "after.stagger": 0.4
+            },
+            "mod": {
+              "name": "長引きの油壺",
+              "status": {
+                "id": "slow",
+                "chance": 0.8,
+                "ticks": 16,
+                "power": 1.35
+              }
+            }
+          },
+          {
+            "tilt": "確実",
+            "reason": "格上へ掛け続けた",
+            "weights": {
+              "foe.stronger": 1
+            },
+            "mod": {
+              "name": "確実な油壺",
+              "status": {
+                "id": "slow",
+                "chance": 1,
+                "ticks": 14,
+                "power": 1.35
+              }
+            }
+          },
+          {
+            "tilt": "先手",
+            "reason": "先手から仕掛け続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "先手の油壺",
+              "ct": 0.64
+            }
+          }
+        ]
+      }
     },
     {
       "id": "t_caltrop",
@@ -1009,7 +3399,48 @@
       "range": "mid",
       "ki": 6,
       "ct": 0.9,
-      "desc": "踏むと痛い物を撒く。傷が血を流す。"
+      "desc": "踏むと痛い物を撒く。傷が血を流す。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の釘撒き",
+              "ct": 0.68,
+              "hitBonus": 0.05
+            }
+          },
+          {
+            "tilt": "掃討",
+            "reason": "格下をなぎ倒し続けた",
+            "weights": {
+              "foe.weaker": 1
+            },
+            "mod": {
+              "name": "掃討の釘撒き",
+              "ct": 0.77,
+              "ki": 4.2
+            }
+          },
+          {
+            "tilt": "見切り",
+            "reason": "予兆を見て放ち続けた",
+            "weights": {
+              "vs.telegraph": 1,
+              "interrupt": 0.5
+            },
+            "mod": {
+              "name": "見切りの釘撒き",
+              "hitBonus": 0.08,
+              "ct": 0.81
+            }
+          }
+        ]
+      }
     },
     {
       "id": "t_aim",
@@ -1026,7 +3457,49 @@
       "range": "mid",
       "ki": 6,
       "ct": 1.1,
-      "desc": "頭を狙って重い物を投げる。"
+      "desc": "頭を狙って重い物を投げる。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "急所",
+            "reason": "頭を狙い続けた",
+            "weights": {
+              "aim.head": 1
+            },
+            "mod": {
+              "name": "急所の狙い投げ",
+              "part": "head",
+              "power": 1.43,
+              "hitBonus": -0.03
+            }
+          },
+          {
+            "tilt": "連撃",
+            "reason": "同じ型を撃ち続けた",
+            "weights": {
+              "chain.t_aim": 1
+            },
+            "mod": {
+              "name": "連撃の狙い投げ",
+              "hits": 2,
+              "ct": 1.21
+            }
+          },
+          {
+            "tilt": "修羅",
+            "reason": "格上へ向けられ続けた",
+            "weights": {
+              "foe.stronger": 1,
+              "self.lowhp": 0.5
+            },
+            "mod": {
+              "name": "修羅の狙い投げ",
+              "power": 1.69,
+              "ki": 7.8
+            }
+          }
+        ]
+      }
     },
     {
       "id": "t_great",
@@ -1043,7 +3516,48 @@
       "range": "mid",
       "ki": 10,
       "ct": 1.4,
-      "desc": "大きな物を全力でぶつける。崩した敵に決まる。"
+      "desc": "大きな物を全力でぶつける。崩した敵に決まる。",
+      "evolve": {
+        "branches": [
+          {
+            "tilt": "崩し",
+            "reason": "崩した敵を屠り続けた",
+            "weights": {
+              "after.stagger": 1,
+              "after.parry": 0.4
+            },
+            "mod": {
+              "name": "崩しの大投擲",
+              "heavy": true,
+              "power": 1.98
+            }
+          },
+          {
+            "tilt": "狩り",
+            "reason": "獣を狩り続けた",
+            "weights": {
+              "foe.beast": 1
+            },
+            "mod": {
+              "name": "狩りの大投擲",
+              "power": 2.07,
+              "hitBonus": 0.03
+            }
+          },
+          {
+            "tilt": "疾風",
+            "reason": "先手を取り続けた",
+            "weights": {
+              "first.strike": 1
+            },
+            "mod": {
+              "name": "疾風の大投擲",
+              "ct": 1.05,
+              "hitBonus": 0.05
+            }
+          }
+        ]
+      }
     },
     {
       "id": "pa_edge",

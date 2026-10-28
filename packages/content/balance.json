@@ -856,6 +856,9 @@
     "guardArtFactor": 0.25,
     "styleShareMin": 0.15
   },
+  "evolution": {
+    "hiddenShareMin": 0.65
+  },
   "magic": {
     "aptitudeMean": 0.5,
     "aptitudeSpread": 0.4,

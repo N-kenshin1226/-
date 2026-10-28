@@ -17,6 +17,7 @@ import {
   type MagicConfig,
   type MiniGameCtx,
 } from "@trace/core";
+import { k03Data } from "./config.js";
 import { thresholds } from "./thresholds.js";
 
 /**
@@ -31,12 +32,14 @@ import { thresholds } from "./thresholds.js";
  */
 
 /* ── 戦闘の設定（game.ts/sim の stepConfig と同じ注入） ── */
+/** 公開の素の武技・呪文（構成の方針とカバレッジ採点の対象。K-03 の派生・特別な技は混ぜない） */
 const ALL_DEFS = { ...artDefs, ...spellDefs };
 const COMBAT: CombatConfig = {
   ...balance.combat,
   weapons: Object.fromEntries(weapons.weapons.map((w) => [w.id, w])),
   links: balance.links,
-  arts: { defs: ALL_DEFS, ...balance.arts },
+  /** 定義表は解決済みの全技（K-03 の進化形・合成産物・ユニーク含む） */
+  arts: { defs: k03Data().defs, ...balance.arts },
   magic: balance.magic,
 };
 const MAGIC: MagicConfig = balance.magic;
@@ -130,7 +133,7 @@ function makeBuild(id: string, label: string, weapon: string, ids: string[]): Bu
 /* 武技構成（sword のアクティブ技全部） */
 const swordArts = Object.values(artDefs)
   .filter((a) => a.skill === "swordplay" && a.kind !== "passive")
-  .sort((a, b) => a.learn.at - b.learn.at)
+  .sort((a, b) => (a.learn.at ?? Infinity) - (b.learn.at ?? Infinity))
   .map((a) => a.id);
 
 /** 戦闘呪文（attack/heal/support。life・passive はスロットに入らない） */
@@ -142,7 +145,7 @@ const combatSpells = Object.values(spellDefs).filter(
 const spellsOf = (...els: string[]) =>
   combatSpells
     .filter((s) => els.includes(s.spell?.element ?? ""))
-    .sort((a, b) => a.learn.at - b.learn.at)
+    .sort((a, b) => (a.learn.at ?? Infinity) - (b.learn.at ?? Infinity))
     .map((s) => s.id);
 
 const builds: Build[] = [

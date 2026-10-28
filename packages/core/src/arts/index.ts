@@ -39,8 +39,12 @@ export type ArtRange = "near" | "mid" | "far";
 
 /** 習得条件（§7.1）。技能の熟練度と使い方の傾きで決まる */
 export interface ArtLearn {
-  /** 由来技能の値がこれに達すると習得候補になる */
-  at: number;
+  /**
+   * 由来技能の値がこれに達すると習得候補になる。
+   * 省略時は技能値では覚えない —— 進化・合成・ユニーク（K-03、09 §7）のように
+   * 特別な経路でだけ得られる技の印（checkArtsLearn はこの定義を除く）
+   */
+  at?: number;
   /**
    * 使用タグの傾き条件（任意）。その技能の使い方の記録にこのタグが
    * share 以上の割合を占めるときだけ覚えられる（防御中心なら受け流し系、
@@ -60,6 +64,74 @@ export interface ArtLearn {
    * counters[key] が gte 以上なら覚えられる（例：生活魔法の使用回数）
    */
   counter?: { key: string; gte: number };
+}
+
+/**
+ * 進化形の性能差分（K-03、09 §7）：派生定義を作るとき基底へ畳み込む変更。
+ * 書いたフィールドだけが基底の値を置き換える（spell は下位フィールドごとに合成）
+ */
+export interface EvolveMod {
+  /** 進化形の名（ローダーが派生定義を作るときに使う。例：旋風薙ぎ） */
+  name?: string;
+  /* ── 攻撃技 ── */
+  power?: number;
+  dtype?: DamageType;
+  part?: BodyPart;
+  hits?: number;
+  hitBonus?: number;
+  /** 状態付与を変える（null で外す） */
+  status?: { id: StatusId; chance: number; ticks: number; power: number } | null;
+  heavy?: true;
+  pierceArmor?: true;
+  /* ── 対応技 ── */
+  response?: ResponseKind;
+  /* ── コスト・拍 ── */
+  ki?: number;
+  ct?: number;
+  range?: ArtRange;
+  /** パッシブの効果 */
+  effect?: { hook: string; value: number };
+  /** 呪文面の変更（element/tier は基底を継ぐ） */
+  spell?: {
+    mana?: number;
+    cast?: number;
+    heal?: number;
+    drain?: number;
+    life?: {
+      hook: LifeHook;
+      value: number;
+      transform?: { from: string; to: string; n: number };
+    };
+  };
+  /** 進化形の説明文（省略時はローダーが理由から組み立てる） */
+  desc?: string;
+}
+
+/**
+ * 進化の分岐（K-03、09 §7.1）：どんな使い方に向いているかの重み。
+ * Lv10 に達したとき、使用記録（artTags）と最も合う分岐へ進化する。
+ * 進化形の名は to の定義が持つ —— 進化するまで UI は「？？？」で伏せる
+ */
+export interface EvolveBranch {
+  /**
+   * 傾きの軸の表示名（「群れ」「一点」「静けさ」）。
+   * ステータスの技タブに名前を伏せて出す傾きメーターのラベル
+   */
+  tilt: string;
+  /**
+   * 進化理由の語り片（「群れへ放ち続けた」）。
+   * 進化メッセージ「――あなたは《元》を、{reason}。」に差し込む
+   */
+  reason: string;
+  /**
+   * どんな使い方に向いているか（使用タグ → 重み）。
+   * 分岐のスコア = Σ weight × share(artTags[元id], tag)
+   */
+  weights: Record<string, number>;
+  /** 進化先の技ID（ローダーが派生定義を materialize した id —— JSON 側では書かない） */
+  to: string;
+  /** 隠し分岐か（hidden/k03 由来。極端な使い方だけが通る） */
+  hidden?: boolean;
 }
 
 /** 武技の定義（arts.json の1件。パッシブは kind:"passive" でスロットが別枠） */
@@ -104,6 +176,12 @@ export interface ArtDef {
    * 生活魔法（kind:"life"）は戦闘では使えず lifeSpell コマンドで使う
    */
   spell?: SpellAspect;
+  /**
+   * 進化の分岐（K-03、09 §7.1）。Lv10 に達したとき、使用記録と
+   * 最も合う分岐へ進化する。分岐は2〜4つ —— どの分岐にも合わない
+   * 使い方でも最も近い分岐に進化し、極端な使い方は隠し分岐に通じる
+   */
+  evolve?: { branches: EvolveBranch[] };
   desc: string;
 }
 
@@ -410,10 +488,17 @@ export function defaultBuild(state: GameState, cfg: ArtsConfig): BuildState {
 
 /** 習得済み技を技能→習得順で並べる（構成の初期詰め・一覧用） */
 function artsSorted(state: GameState, cfg: ArtsConfig): { id: string }[] {
-  return Object.keys(state.player.arts)
-    .map((id) => ({ id, def: cfg.defs[id] }))
-    .filter((a) => a.def !== undefined)
-    .sort((a, b) => a.def!.skill.localeCompare(b.def!.skill) || a.def!.learn.at - b.def!.learn.at);
+  return (
+    Object.keys(state.player.arts)
+      .map((id) => ({ id, def: cfg.defs[id] }))
+      .filter((a) => a.def !== undefined)
+      // 特別な経路の技（learn.at を持たない K-03 の技）は一覧の後ろに並べる
+      .sort(
+        (a, b) =>
+          a.def!.skill.localeCompare(b.def!.skill) ||
+          (a.def!.learn.at ?? Infinity) - (b.def!.learn.at ?? Infinity),
+      )
+  );
 }
 
 /**
@@ -435,7 +520,9 @@ export function styleShare(
 /**
  * 習得判定（§7.1）。技能値が learn.at に届き、傾き条件（あれば）を満たす
  * 未習得の技をすべて返す。state は変えずに学んだ技のIDだけを返す
- * （覚える順番は learn.at の昇順＋傾き条件の有無で決まる）
+ * （覚える順番は learn.at の昇順＋傾き条件の有無で決まる）。
+ * learn.at を持たない技（K-03 の進化・合成・ユニーク）は技能値では覚えない
+ * —— 特別な経路だけが player.arts に刻むので、ここでは除く
  */
 export function checkArtsLearn(
   state: GameState,
@@ -445,6 +532,7 @@ export function checkArtsLearn(
   const arts = { ...state.player.arts };
   for (const def of Object.values(cfg.defs)) {
     if (arts[def.id] !== undefined) continue;
+    if (def.learn.at === undefined) continue;
     const skill = state.player.skills[def.skill];
     if ((skill?.value ?? 0) < def.learn.at) continue;
     if (def.learn.tag !== undefined) {

@@ -18,6 +18,25 @@ export type { ArtJson, ArtsFile } from "./arts.schema.js";
 export { spells, spellDefs } from "./spells.js";
 export { spellSchema, spellsFileSchema } from "./spells.schema.js";
 export type { SpellJson, SpellsFile } from "./spells.schema.js";
+// 技の進化・合成・ユニークスキル（K-03、docs/09 §7）：公開サンプル＋
+// hidden 同梱分の解決（派生定義の materialize・レシピ・ユニーク・隠し分岐）
+export {
+  applyEvolveMod,
+  bundledK03,
+  k03File,
+  k03Resolve,
+  k03Sample,
+  materializeArts,
+} from "./k03.js";
+export type { K03Resolved } from "./k03.js";
+export { k03FileSchema } from "../k03/schema.js";
+export type {
+  K03DefJson,
+  K03File,
+  K03HiddenBranchJson,
+  K03RecipeJson,
+  K03UniqueJson,
+} from "../k03/schema.js";
 export { tailwinds } from "./tailwinds.js";
 export { tailwindsFileSchema } from "./tailwinds.schema.js";
 export type { TailwindDef, TailwindsFile } from "./tailwinds.schema.js";

@@ -8,6 +8,7 @@ import {
   canAct,
   COMBAT_ART_KINDS,
   describe,
+  evolveTilts,
   isSkillUnlocked,
   lifespanProgress,
   shelfBooks,
@@ -1047,7 +1048,10 @@ function ArtsPanel({ state }: { state: GameState }) {
             .map((id) => ({ id, def: allArtDefs[id]! }))
             .filter((a) => a.def.kind === kind)
             .sort(
-              (a, b) => a.def.skill.localeCompare(b.def.skill) || a.def.learn.at - b.def.learn.at,
+              (a, b) =>
+                a.def.skill.localeCompare(b.def.skill) ||
+                // 特別な経路の技（learn.at を持たない K-03 の技）は一覧の後ろ
+                (a.def.learn.at ?? Infinity) - (b.def.learn.at ?? Infinity),
             );
           if (rows.length === 0) return null;
           return (
@@ -1070,49 +1074,83 @@ function ArtsPanel({ state }: { state: GameState }) {
                 const next = cfgArts === undefined ? null : artExpToNext(a, cfgArts);
                 const mark = inSlot(id) ? "構" : inPassive(id) ? "受" : "・";
                 const skillName = skillList.find((s) => s.id === def.skill)?.name ?? def.skill;
+                // K-03：進化する技の傾き（09 §7.1）。分岐の向きだけをメーターで
+                // 示し、進化先の名は伏せる（「？？？」のまま —— 進化まで見えない）。
+                // 使い方の記録がなければ「まだ傾きは見えない」の一行
+                const tilts =
+                  def.evolve !== undefined && a.lv < (cfgArts?.maxLevel ?? 0)
+                    ? evolveTilts(state.player.artTags, def)
+                    : [];
+                const hasUse = (state.player.artTags[id]?.["use.total"] ?? 0) > 0;
                 return (
-                  <div
-                    key={id}
-                    data-testid={`art-${id}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      gap: 10,
-                      padding: "7px 4px",
-                      borderBottom: `1px solid ${B.frameInner}`,
-                    }}
-                  >
-                    <span
+                  <div key={id} data-testid={`art-${id}`}>
+                    <div
                       style={{
-                        fontFamily: theme.font.en,
-                        fontSize: 13,
-                        color: theme.colors.grow,
-                        width: 20,
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: 10,
+                        padding: "7px 4px",
+                        borderBottom: `1px solid ${B.frameInner}`,
                       }}
                     >
-                      {mark}
-                    </span>
-                    <span style={{ fontFamily: theme.font.mincho, fontSize: 18, color: "#eaf8fb" }}>
-                      《{def.name}》
-                    </span>
-                    <span
-                      style={{ fontFamily: theme.font.en, fontSize: 14, color: theme.colors.grow }}
-                    >
-                      Lv{a.lv}
-                      {a.pending > 0 ? "+" : ""}
-                    </span>
-                    <span style={{ fontSize: 12, color: B.dim }}>
-                      {skillName}
-                      {def.spell !== undefined
-                        ? `・${t.display.elementNames[def.spell.element] ?? def.spell.element}・魔力 ${def.spell.mana}`
-                        : def.kind !== "passive"
-                          ? `・気力 ${def.ki}`
-                          : ""}
-                      {next !== null ? `・次Lv ${Math.round(a.exp)}/${next}` : "・極"}
-                    </span>
-                    <span style={{ fontSize: 12, color: B.dim, flex: 1, textAlign: "right" }}>
-                      {def.desc}
-                    </span>
+                      <span
+                        style={{
+                          fontFamily: theme.font.en,
+                          fontSize: 13,
+                          color: theme.colors.grow,
+                          width: 20,
+                        }}
+                      >
+                        {mark}
+                      </span>
+                      <span
+                        style={{ fontFamily: theme.font.mincho, fontSize: 18, color: "#eaf8fb" }}
+                      >
+                        《{def.name}》
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: theme.font.en,
+                          fontSize: 14,
+                          color: theme.colors.grow,
+                        }}
+                      >
+                        Lv{a.lv}
+                        {a.pending > 0 ? "+" : ""}
+                      </span>
+                      <span style={{ fontSize: 12, color: B.dim }}>
+                        {skillName}
+                        {def.spell !== undefined
+                          ? `・${t.display.elementNames[def.spell.element] ?? def.spell.element}・魔力 ${def.spell.mana}`
+                          : def.kind !== "passive"
+                            ? `・気力 ${def.ki}`
+                            : ""}
+                        {next !== null ? `・次Lv ${Math.round(a.exp)}/${next}` : "・極"}
+                      </span>
+                      <span style={{ fontSize: 12, color: B.dim, flex: 1, textAlign: "right" }}>
+                        {def.desc}
+                      </span>
+                    </div>
+                    {def.evolve !== undefined && a.lv < (cfgArts?.maxLevel ?? 0) && (
+                      <div
+                        data-testid={`art-tilt-${id}`}
+                        style={{
+                          fontSize: 11,
+                          color: B.dim,
+                          padding: "1px 4px 5px 34px",
+                          borderBottom: `1px solid ${B.frameInner}`,
+                        }}
+                      >
+                        {!hasUse
+                          ? t.text.statusTiltNone
+                          : `${t.text.statusTiltLabel} ${tilts
+                              .map((x) => {
+                                const n = Math.max(0, Math.min(5, Math.round(x.share * 5)));
+                                return `${x.tilt} ${"▮".repeat(n)}${"▯".repeat(5 - n)}`;
+                              })
+                              .join(" ／ ")} → ？？？`}
+                      </div>
+                    )}
                   </div>
                 );
               })}
