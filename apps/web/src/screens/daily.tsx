@@ -212,6 +212,13 @@ export function WakeScreen({
               {t.text.wake.restDayLine}
             </p>
           )}
+          {/* オーバーワーク継続中：滞留は無駄ではなく疲労による停滞で、
+              休養日が治療になることを朝の記録で示す（H-01） */}
+          {p.overwork && (
+            <p style={{ color: theme.colors.warn, textAlign: "center", margin: "8px 0 0" }}>
+              {t.text.wake.overworkLine}
+            </p>
+          )}
 
           {/* 身体の変化＋今日の風（見本の下段） */}
           <div

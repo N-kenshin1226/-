@@ -454,6 +454,8 @@ export const cliTextSchema = z
             weatherLine: z.string(),
             noChange: z.string(),
             restDayLine: z.string(),
+            /** オーバーワーク継続中の朝の行（02 §7。休養日が治療であることも示す） */
+            overworkLine: z.string(),
             /** 錆びたスキルがあった朝の行（{name}/{loss}） */
             rusted: z.string(),
             /** peak未満の再習得が速い行（{name}） */

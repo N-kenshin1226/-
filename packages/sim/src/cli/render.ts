@@ -150,6 +150,9 @@ export function wakeBlock(
   }
   if (report.lines.length === 0) lines.push(w.noChange);
   if (report.restDay) lines.push(w.restDayLine);
+  // オーバーワーク継続中：滞っている経験が「無駄」ではなく「疲労で鈍っている」
+  // ことと、休養日が治療になることを朝の記録で示す（02 §7・H-01）
+  if (report.overwork.active) lines.push(w.overworkLine);
   // 天候（X-13）：今朝の空の風景を1行滲ませる（常時のステータス表示にはしない）
   if (report.weather !== undefined) {
     lines.push(tpl(w.weatherLine, { weather: report.weather.name, line: report.weather.line }));

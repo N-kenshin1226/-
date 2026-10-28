@@ -190,6 +190,7 @@
       "weatherLine": "――今日の空は{weather}。{line}",
       "noChange": "――体は昨日と同じです。",
       "restDayLine": "――よく休みました。素質が少し戻ります。",
+      "overworkLine": "――身体が限界を越えたままだ。積まれた経験は、一日休めばほどけてゆく。",
       "saved": "――記録が残されました。",
       "rusted": "――《{name}》が錆びついている（-{loss}）",
       "relearning": "――身体が覚えている。《{name}》の再習得が速い。",
