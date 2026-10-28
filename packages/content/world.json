@@ -9,8 +9,13 @@
         "pos": [80, 82],
         "desc": "町の出入り口。道は外の世界へ続いている",
         "actions": [
-          { "type": "work", "kinds": ["riding", "footwork", "wind_magic", "lancer"] },
-          { "type": "social" }
+          {
+            "type": "work",
+            "kinds": ["riding", "footwork", "wind_magic", "lancer"]
+          },
+          {
+            "type": "social"
+          }
         ]
       },
       {
@@ -20,14 +25,30 @@
         "pos": [30, 62],
         "desc": "身の回りの物を置ける小さな部屋",
         "actions": [
-          { "type": "rest" },
-          { "type": "cook" },
-          { "type": "eat" },
-          { "type": "shelf" },
-          { "type": "status" },
-          { "type": "settings" },
-          { "type": "retire" },
-          { "type": "reset" }
+          {
+            "type": "rest"
+          },
+          {
+            "type": "cook"
+          },
+          {
+            "type": "eat"
+          },
+          {
+            "type": "shelf"
+          },
+          {
+            "type": "status"
+          },
+          {
+            "type": "settings"
+          },
+          {
+            "type": "retire"
+          },
+          {
+            "type": "reset"
+          }
         ]
       },
       {
@@ -37,12 +58,24 @@
         "pos": [56, 56],
         "desc": "旅人を泊める宿。今夜の眠りはここで",
         "actions": [
-          { "type": "sleep" },
-          { "type": "social" },
-          { "type": "eat" },
-          { "type": "news" },
-          { "type": "incident" },
-          { "type": "mentor" }
+          {
+            "type": "sleep"
+          },
+          {
+            "type": "social"
+          },
+          {
+            "type": "eat"
+          },
+          {
+            "type": "news"
+          },
+          {
+            "type": "incident"
+          },
+          {
+            "type": "mentor"
+          }
         ]
       },
       {
@@ -65,11 +98,21 @@
               "medicinal_meal"
             ]
           },
-          { "type": "gamble" },
-          { "type": "social" },
-          { "type": "eat" },
-          { "type": "news" },
-          { "type": "incident" }
+          {
+            "type": "gamble"
+          },
+          {
+            "type": "social"
+          },
+          {
+            "type": "eat"
+          },
+          {
+            "type": "news"
+          },
+          {
+            "type": "incident"
+          }
         ]
       },
       {
@@ -90,9 +133,15 @@
               "merchant_eye"
             ]
           },
-          { "type": "market" },
-          { "type": "social" },
-          { "type": "stroll" }
+          {
+            "type": "market"
+          },
+          {
+            "type": "social"
+          },
+          {
+            "type": "stroll"
+          }
         ]
       },
       {
@@ -101,7 +150,14 @@
         "scene": "town",
         "pos": [46, 60],
         "desc": "町の中心。張り紙と人の行き来",
-        "actions": [{ "type": "stroll" }, { "type": "board" }]
+        "actions": [
+          {
+            "type": "stroll"
+          },
+          {
+            "type": "board"
+          }
+        ]
       },
       {
         "key": "guild",
@@ -110,13 +166,28 @@
         "pos": [66, 30],
         "desc": "町の用事が集まる場所。鍛錬もここで",
         "actions": [
-          { "type": "work", "default": true },
-          { "type": "train" },
-          { "type": "board" },
-          { "type": "society" },
-          { "type": "records" },
-          { "type": "crisis" },
-          { "type": "occasion" }
+          {
+            "type": "work",
+            "default": true
+          },
+          {
+            "type": "train"
+          },
+          {
+            "type": "board"
+          },
+          {
+            "type": "society"
+          },
+          {
+            "type": "records"
+          },
+          {
+            "type": "crisis"
+          },
+          {
+            "type": "occasion"
+          }
         ]
       },
       {
@@ -143,10 +214,18 @@
               "care_worker"
             ]
           },
-          { "type": "pray" },
-          { "type": "social" },
-          { "type": "lore" },
-          { "type": "mentor" }
+          {
+            "type": "pray"
+          },
+          {
+            "type": "social"
+          },
+          {
+            "type": "lore"
+          },
+          {
+            "type": "mentor"
+          }
         ]
       },
       {
@@ -156,16 +235,33 @@
         "pos": [18, 48],
         "desc": "火と槌の音。武器の売り買いもここで",
         "actions": [
-          { "type": "work", "kinds": ["smithing", "fire_magic", "weapon_eye"] },
-          { "type": "arms" },
-          { "type": "social" },
-          { "type": "mentor" }
+          {
+            "type": "work",
+            "kinds": ["smithing", "fire_magic", "weapon_eye"]
+          },
+          {
+            "type": "arms"
+          },
+          {
+            "type": "social"
+          },
+          {
+            "type": "mentor"
+          }
         ]
       }
     ],
     "npcs": [
-      { "id": "innkeeper", "label": "宿屋の主", "place": "inn" },
-      { "id": "gatekeeper", "label": "門番", "place": "gate" }
+      {
+        "id": "innkeeper",
+        "label": "宿屋の主",
+        "place": "inn"
+      },
+      {
+        "id": "gatekeeper",
+        "label": "門番",
+        "place": "gate"
+      }
     ],
     "market": {
       "stock": ["mat.flour", "mat.salt", "meal.bread", "meal.stew"]
@@ -202,8 +298,13 @@
           "pos": [74, 66],
           "desc": "荷馬と旅人の足を預かる厩。藁の匂いがする",
           "actions": [
-            { "type": "work", "kinds": ["riding", "footwork", "teaching", "leadership"] },
-            { "type": "social" }
+            {
+              "type": "work",
+              "kinds": ["riding", "footwork", "teaching", "leadership"]
+            },
+            {
+              "type": "social"
+            }
           ]
         }
       ],
@@ -221,14 +322,22 @@
           "mentorSkills": ["bargaining", "merchant_eye"]
         }
       ],
-      "market": { "cheap": ["mat.salt", "meal.bread"], "dear": [] },
+      "market": {
+        "cheap": ["mat.salt", "meal.bread", "meat"],
+        "dear": []
+      },
       "errands": [
         {
           "id": "supply",
           "name": "街道の補給",
           "text": "旅の備えを納めてほしいという張り紙",
-          "need": { "meal.bread": 2 },
-          "reward": { "money": 20, "bond": true }
+          "need": {
+            "meal.bread": 2
+          },
+          "reward": {
+            "money": 20,
+            "bond": true
+          }
         }
       ],
       "stroll": [
@@ -240,7 +349,10 @@
         {
           "weight": 2,
           "text": "旅人の噂を耳にした。遠くの町の話は尾ひれが付いている",
-          "gain": { "skill": "geography", "amount": 3 }
+          "gain": {
+            "skill": "geography",
+            "amount": 3
+          }
         }
       ]
     },
@@ -274,10 +386,19 @@
           "pos": [82, 50],
           "desc": "桟橋と帆綱。潮風が町の息吹",
           "actions": [
-            { "type": "work", "kinds": ["fishing", "swimming", "carpentry", "leatherwork"] },
-            { "type": "fish" },
-            { "type": "social" },
-            { "type": "stroll" }
+            {
+              "type": "work",
+              "kinds": ["fishing", "swimming", "carpentry", "leatherwork"]
+            },
+            {
+              "type": "fish"
+            },
+            {
+              "type": "social"
+            },
+            {
+              "type": "stroll"
+            }
           ]
         },
         {
@@ -287,8 +408,13 @@
           "pos": [68, 40],
           "desc": "積み荷の谷間。帳場の算盤が鳴る",
           "actions": [
-            { "type": "work", "kinds": ["arithmetic", "bargaining", "craft", "appraisal"] },
-            { "type": "social" }
+            {
+              "type": "work",
+              "kinds": ["arithmetic", "bargaining", "craft", "appraisal"]
+            },
+            {
+              "type": "social"
+            }
           ]
         }
       ],
@@ -307,25 +433,37 @@
         }
       ],
       "market": {
-        "stock": ["fish.sea", "fish.river", "fish.lake"],
+        "stock": ["fish.sea", "fish.river", "fish.lake", "pearl"],
         "cheap": ["fish.sea", "fish.river", "fish.lake"],
-        "dear": ["ore.copper", "ore.iron"]
+        "dear": ["ore.copper", "ore.iron", "scale"]
       },
       "errands": [
         {
           "id": "fish",
           "name": "魚の納品",
           "text": "朝獲れの魚を納めてほしいという仕事",
-          "need": { "fish.river": 2 },
-          "reward": { "money": 18, "bond": true }
+          "need": {
+            "fish.river": 2
+          },
+          "reward": {
+            "money": 18,
+            "bond": true
+          }
         }
       ],
       "stroll": [
-        { "weight": 3, "text": "波止場で網の手入れを眺めた。潮風が気持ちいい", "fatigue": -4 },
+        {
+          "weight": 3,
+          "text": "波止場で網の手入れを眺めた。潮風が気持ちいい",
+          "fatigue": -4
+        },
         {
           "weight": 2,
           "text": "沖に船の影が見えた。遠くの港へ行く便だろう",
-          "gain": { "skill": "geography", "amount": 3 }
+          "gain": {
+            "skill": "geography",
+            "amount": 3
+          }
         }
       ]
     },
@@ -359,8 +497,13 @@
           "pos": [82, 28],
           "desc": "山の腹へ続く暗い坑道。ツルハシの音が響く",
           "actions": [
-            { "type": "work", "kinds": ["mining", "prospecting", "earth_magic", "gathering"] },
-            { "type": "social" }
+            {
+              "type": "work",
+              "kinds": ["mining", "prospecting", "earth_magic", "gathering"]
+            },
+            {
+              "type": "social"
+            }
           ]
         },
         {
@@ -370,8 +513,13 @@
           "pos": [70, 38],
           "desc": "石を選り分ける場。粉塵が白く舞う",
           "actions": [
-            { "type": "work", "kinds": ["mining", "appraisal", "arithmetic"] },
-            { "type": "social" }
+            {
+              "type": "work",
+              "kinds": ["mining", "appraisal", "arithmetic"]
+            },
+            {
+              "type": "social"
+            }
           ]
         }
       ],
@@ -392,15 +540,32 @@
       "market": {
         "stock": ["ore.copper", "ore.iron"],
         "cheap": ["ore.copper", "ore.iron"],
-        "dear": ["meal.stew", "herb", "wood"]
+        "dear": ["meal.stew", "herb", "wood", "hide.quality", "hide"]
       },
       "errands": [
         {
           "id": "ore",
           "name": "鉱石の納入",
           "text": "選鉱場への鉱石の納品",
-          "need": { "ore.copper": 2 },
-          "reward": { "money": 28, "bond": true }
+          "need": {
+            "ore.copper": 2
+          },
+          "reward": {
+            "money": 28,
+            "bond": true
+          }
+        },
+        {
+          "id": "pelts",
+          "name": "毛皮の買い付け",
+          "text": "坑夫の防寒に毛皮がいるという張り紙",
+          "need": {
+            "hide.quality": 2
+          },
+          "reward": {
+            "money": 55,
+            "bond": true
+          }
         }
       ],
       "stroll": [
@@ -409,7 +574,13 @@
           "text": "坑口から出てきた坑夫たちと挨拶を交わした。粉塵まみれの笑顔",
           "fatigue": -3
         },
-        { "weight": 2, "text": "足元に光る石の欠片を見つけた", "items": { "ore.copper": 1 } }
+        {
+          "weight": 2,
+          "text": "足元に光る石の欠片を見つけた",
+          "items": {
+            "ore.copper": 1
+          }
+        }
       ]
     },
     {
@@ -457,7 +628,9 @@
                 "intimidation"
               ]
             },
-            { "type": "social" }
+            {
+              "type": "social"
+            }
           ]
         }
       ],
@@ -478,24 +651,37 @@
       "market": {
         "stock": ["mat.spice"],
         "cheap": [],
-        "dear": ["fish.river", "fish.lake", "meal.stew"]
+        "dear": ["fish.river", "fish.lake", "meal.stew", "hide.quality", "scale.dragon"]
       },
       "errands": [
         {
           "id": "equip",
           "name": "武具の材料",
           "text": "修理のための材料を集めてほしい",
-          "need": { "ore.iron": 1, "wood": 2 },
-          "reward": { "money": 32, "bond": true }
+          "need": {
+            "ore.iron": 1,
+            "wood": 2
+          },
+          "reward": {
+            "money": 32,
+            "bond": true
+          }
         }
       ],
       "stroll": [
         {
           "weight": 3,
           "text": "練兵の掛け声が聞こえる。足並みを真似てみた",
-          "gain": { "skill": "footwork", "amount": 3 }
+          "gain": {
+            "skill": "footwork",
+            "amount": 3
+          }
         },
-        { "weight": 2, "text": "城の見物人と雑談した。町の自慢話を聞かされる", "fatigue": -3 }
+        {
+          "weight": 2,
+          "text": "城の見物人と雑談した。町の自慢話を聞かされる",
+          "fatigue": -3
+        }
       ]
     },
     {
@@ -529,25 +715,57 @@
           "pos": [78, 66],
           "desc": "村人で耕す畑。季節の作が実る",
           "actions": [
-            { "type": "work", "kinds": ["farming", "gathering", "cooking", "care_worker"] },
-            { "type": "gather" },
-            { "type": "social" },
-            { "type": "stroll" }
+            {
+              "type": "work",
+              "kinds": ["farming", "gathering", "cooking", "care_worker"]
+            },
+            {
+              "type": "gather"
+            },
+            {
+              "type": "social"
+            },
+            {
+              "type": "stroll"
+            }
           ],
           "gather": {
             "skill": "farming",
             "difficulty": 8,
             "entries": [
-              { "item": "grain", "weight": 4, "n": [1, 3] },
-              { "item": "egg", "weight": 2, "n": [1, 2] },
-              { "item": "nut", "weight": 1, "n": [1, 2], "seasons": [2] },
-              { "item": "herb", "weight": 1, "n": [1, 1], "seasons": [0, 1] }
+              {
+                "item": "grain",
+                "weight": 4,
+                "n": [1, 3]
+              },
+              {
+                "item": "egg",
+                "weight": 2,
+                "n": [1, 2]
+              },
+              {
+                "item": "nut",
+                "weight": 1,
+                "n": [1, 2],
+                "seasons": [2]
+              },
+              {
+                "item": "herb",
+                "weight": 1,
+                "n": [1, 1],
+                "seasons": [0, 1]
+              }
             ]
           }
         }
       ],
       "npcs": [
-        { "id": "fieldmaster", "label": "畑の長", "place": "fields", "mentorSkills": ["farming"] },
+        {
+          "id": "fieldmaster",
+          "label": "畑の長",
+          "place": "fields",
+          "mentorSkills": ["farming"]
+        },
         {
           "id": "elder",
           "label": "村の古老",
@@ -556,8 +774,8 @@
         }
       ],
       "market": {
-        "stock": ["grain", "egg"],
-        "cheap": ["grain", "egg", "meal.bread", "mat.flour"],
+        "stock": ["grain", "egg", "meat"],
+        "cheap": ["grain", "egg", "meal.bread", "mat.flour", "meat"],
         "dear": ["mat.salt", "mat.spice", "ore.iron"]
       },
       "errands": [
@@ -565,17 +783,31 @@
           "id": "harvest",
           "name": "収穫の納め",
           "text": "収穫の取り分を納めてほしいという頼み",
-          "need": { "grain": 3 },
-          "reward": { "money": 14, "bond": true }
+          "need": {
+            "grain": 3
+          },
+          "reward": {
+            "money": 14,
+            "bond": true
+          }
         }
       ],
       "stroll": [
         {
           "weight": 3,
           "text": "畑仕事を手伝わせてもらった。土の匂いがする",
-          "gain": { "skill": "farming", "amount": 3 }
+          "gain": {
+            "skill": "farming",
+            "amount": 3
+          }
         },
-        { "weight": 2, "text": "納屋の陰で卵を見つけた", "items": { "egg": 1 } }
+        {
+          "weight": 2,
+          "text": "納屋の陰で卵を見つけた",
+          "items": {
+            "egg": 1
+          }
+        }
       ]
     },
     {
@@ -612,10 +844,18 @@
               "type": "work",
               "kinds": ["literacy", "archaeology", "medicine", "teaching", "arithmetic", "mana"]
             },
-            { "type": "book" },
-            { "type": "lore" },
-            { "type": "social" },
-            { "type": "mentor" }
+            {
+              "type": "book"
+            },
+            {
+              "type": "lore"
+            },
+            {
+              "type": "social"
+            },
+            {
+              "type": "mentor"
+            }
           ]
         }
       ],
@@ -626,28 +866,59 @@
           "place": "library",
           "mentorSkills": ["literacy", "archaeology"]
         },
-        { "id": "apprentice", "label": "学徒", "place": "library" }
+        {
+          "id": "apprentice",
+          "label": "学徒",
+          "place": "library"
+        }
       ],
-      "market": { "cheap": ["mat.spice"], "dear": ["wood", "meal.stew", "grain"] },
+      "market": {
+        "cheap": ["mat.spice"],
+        "dear": ["wood", "meal.stew", "grain", "stone.mana", "ectoplasm", "relic"]
+      },
       "errands": [
         {
           "id": "relic",
           "name": "資料の提供",
           "text": "調査のための古い品を求めている",
-          "need": { "relic": 1 },
-          "reward": { "money": 40, "bond": true }
+          "need": {
+            "relic": 1
+          },
+          "reward": {
+            "money": 40,
+            "bond": true
+          }
+        },
+        {
+          "id": "reagents",
+          "name": "術材の徴収",
+          "text": "実習の術材を納めてほしいという張り紙",
+          "need": {
+            "stone.mana": 1,
+            "ectoplasm": 1
+          },
+          "reward": {
+            "money": 40,
+            "bond": true
+          }
         }
       ],
       "stroll": [
         {
           "weight": 3,
           "text": "公開講義を立ち聞きした。難しいが面白い",
-          "gain": { "skill": "literacy", "amount": 3 }
+          "gain": {
+            "skill": "literacy",
+            "amount": 3
+          }
         },
         {
           "weight": 2,
           "text": "学者たちが遺跡の噂で盛り上がっている",
-          "gain": { "skill": "archaeology", "amount": 3 }
+          "gain": {
+            "skill": "archaeology",
+            "amount": 3
+          }
         }
       ]
     },
@@ -694,8 +965,12 @@
                 "riding"
               ]
             },
-            { "type": "social" },
-            { "type": "mentor" }
+            {
+              "type": "social"
+            },
+            {
+              "type": "mentor"
+            }
           ]
         },
         {
@@ -709,7 +984,9 @@
               "type": "work",
               "kinds": ["observation", "geography", "archery", "throwing", "hidden_weapon"]
             },
-            { "type": "stroll" }
+            {
+              "type": "stroll"
+            }
           ]
         }
       ],
@@ -727,22 +1004,51 @@
           "mentorSkills": ["observation", "stealth", "archery"]
         }
       ],
-      "market": { "cheap": [], "dear": ["meal.stew", "mat.flour", "grain", "wood"] },
+      "market": {
+        "cheap": [],
+        "dear": ["meal.stew", "mat.flour", "grain", "wood", "hide", "fang"]
+      },
       "errands": [
         {
           "id": "provision",
           "name": "兵站の備蓄",
           "text": "砦の備蓄に食料を納めてほしい",
-          "need": { "meal.bread": 2, "meal.stew": 1 },
-          "reward": { "money": 36, "bond": true }
+          "need": {
+            "meal.bread": 2,
+            "meal.stew": 1
+          },
+          "reward": {
+            "money": 36,
+            "bond": true
+          }
+        },
+        {
+          "id": "hides",
+          "name": "革の補充",
+          "text": "武具の革が足りないという張り紙",
+          "need": {
+            "hide": 2,
+            "fang": 1
+          },
+          "reward": {
+            "money": 30,
+            "bond": true
+          }
         }
       ],
       "stroll": [
-        { "weight": 3, "text": "巡回の兵とすれ違った。警戒の目つきが緩む", "fatigue": -3 },
+        {
+          "weight": 3,
+          "text": "巡回の兵とすれ違った。警戒の目つきが緩む",
+          "fatigue": -3
+        },
         {
           "weight": 2,
           "text": "国境の空を眺めた。遠くに鳥の群れ",
-          "gain": { "skill": "observation", "amount": 3 }
+          "gain": {
+            "skill": "observation",
+            "amount": 3
+          }
         }
       ]
     },
@@ -790,10 +1096,18 @@
                 "literacy"
               ]
             },
-            { "type": "pray" },
-            { "type": "lore" },
-            { "type": "social" },
-            { "type": "mentor" }
+            {
+              "type": "pray"
+            },
+            {
+              "type": "lore"
+            },
+            {
+              "type": "social"
+            },
+            {
+              "type": "mentor"
+            }
           ]
         },
         {
@@ -803,10 +1117,19 @@
           "pos": [52, 44],
           "desc": "巡礼の土産と簡素な食べ物が並ぶ通り",
           "actions": [
-            { "type": "work", "kinds": ["eloquence", "bargaining"] },
-            { "type": "market" },
-            { "type": "social" },
-            { "type": "stroll" }
+            {
+              "type": "work",
+              "kinds": ["eloquence", "bargaining"]
+            },
+            {
+              "type": "market"
+            },
+            {
+              "type": "social"
+            },
+            {
+              "type": "stroll"
+            }
           ]
         }
       ],
@@ -817,32 +1140,47 @@
           "place": "temple",
           "mentorSkills": ["prayer", "cure", "light_magic"]
         },
-        { "id": "pilgrimnpc", "label": "巡礼者", "place": "inn" }
+        {
+          "id": "pilgrimnpc",
+          "label": "巡礼者",
+          "place": "inn"
+        }
       ],
       "market": {
         "stock": ["herb", "herb.wild"],
         "cheap": ["herb", "herb.wild"],
-        "dear": ["mat.spice", "ore.iron"]
+        "dear": ["mat.spice", "ore.iron", "ectoplasm"]
       },
       "errands": [
         {
           "id": "rite",
           "name": "儀式の香草",
           "text": "儀式に使う香草を納めてほしい",
-          "need": { "herb": 2 },
-          "reward": { "money": 16, "bond": true }
+          "need": {
+            "herb": 2
+          },
+          "reward": {
+            "money": 16,
+            "bond": true
+          }
         }
       ],
       "stroll": [
         {
           "weight": 3,
           "text": "神殿の鐘が鳴った。身が引き締まる",
-          "gain": { "skill": "prayer", "amount": 3 }
+          "gain": {
+            "skill": "prayer",
+            "amount": 3
+          }
         },
         {
           "weight": 2,
           "text": "巡礼者の話を聞いた。遠い国の話に心が動く",
-          "gain": { "skill": "geography", "amount": 3 }
+          "gain": {
+            "skill": "geography",
+            "amount": 3
+          }
         }
       ]
     },
@@ -877,13 +1215,28 @@
           "pos": [46, 34],
           "desc": "里の取り仕切りの家。静かな威厳がある",
           "actions": [
-            { "type": "work", "default": true },
-            { "type": "train" },
-            { "type": "board" },
-            { "type": "society" },
-            { "type": "records" },
-            { "type": "crisis" },
-            { "type": "occasion" }
+            {
+              "type": "work",
+              "default": true
+            },
+            {
+              "type": "train"
+            },
+            {
+              "type": "board"
+            },
+            {
+              "type": "society"
+            },
+            {
+              "type": "records"
+            },
+            {
+              "type": "crisis"
+            },
+            {
+              "type": "occasion"
+            }
           ]
         },
         {
@@ -893,9 +1246,16 @@
           "pos": [26, 42],
           "desc": "干し草と薬の匂い。里の知恵が詰まっている",
           "actions": [
-            { "type": "work", "kinds": ["gathering", "medicine", "alchemy", "cure", "life_magic"] },
-            { "type": "social" },
-            { "type": "mentor" }
+            {
+              "type": "work",
+              "kinds": ["gathering", "medicine", "alchemy", "cure", "life_magic"]
+            },
+            {
+              "type": "social"
+            },
+            {
+              "type": "mentor"
+            }
           ]
         }
       ],
@@ -906,7 +1266,11 @@
           "place": "herbhut",
           "mentorSkills": ["gathering", "life_magic", "stealth"]
         },
-        { "id": "chiefnpc", "label": "隠れ里の長", "place": "chief" }
+        {
+          "id": "chiefnpc",
+          "label": "隠れ里の長",
+          "place": "chief"
+        }
       ],
       "market": {},
       "errands": [
@@ -914,17 +1278,29 @@
           "id": "herbs",
           "name": "薬草の納品",
           "text": "里の薬草を納めてほしいという頼み",
-          "need": { "herb.wild": 2 },
-          "reward": { "money": 22, "bond": true }
+          "need": {
+            "herb.wild": 2
+          },
+          "reward": {
+            "money": 22,
+            "bond": true
+          }
         }
       ],
       "stroll": [
         {
           "weight": 3,
           "text": "里の人が薬草の乾かし方を教えてくれた",
-          "gain": { "skill": "gathering", "amount": 3 }
+          "gain": {
+            "skill": "gathering",
+            "amount": 3
+          }
         },
-        { "weight": 2, "text": "静けさの中、遠くの鳥の声が聞こえる", "fatigue": -5 }
+        {
+          "weight": 2,
+          "text": "静けさの中、遠くの鳥の声が聞こえる",
+          "fatigue": -5
+        }
       ]
     }
   ],
@@ -948,33 +1324,118 @@
       ],
       "descs": ["木立の合間に光が差す静かな森", "鳥の声と葉擦れの音。歩きやすい森"],
       "hunt": true,
-      "work": { "kinds": ["logging", "gathering", "hunting"] },
+      "work": {
+        "kinds": ["logging", "gathering", "hunting"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 10,
         "entries": [
-          { "item": "herb", "weight": 3, "n": [1, 2] },
-          { "item": "nut", "weight": 3, "n": [1, 3] },
-          { "item": "mushroom", "weight": 2, "n": [1, 2] },
-          { "item": "wood", "weight": 2, "n": [1, 2] },
-          { "item": "herb.wild", "weight": 2, "n": [1, 1], "seasons": [0, 1] },
-          { "item": "honey", "weight": 1, "n": [1, 1], "seasons": [0] }
+          {
+            "item": "herb",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "nut",
+            "weight": 3,
+            "n": [1, 3]
+          },
+          {
+            "item": "mushroom",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "herb.wild",
+            "weight": 2,
+            "n": [1, 1],
+            "seasons": [0, 1]
+          },
+          {
+            "item": "honey",
+            "weight": 1,
+            "n": [1, 1],
+            "seasons": [0]
+          },
+          {
+            "item": "mat.timber",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "berry",
+            "weight": 2,
+            "n": [1, 2]
+          }
         ]
       },
       "enemies": [
-        { "id": "stray_dog", "weight": 4 },
-        { "id": "wolf", "weight": 3 },
-        { "id": "boar", "weight": 2 }
+        {
+          "id": "stray_dog",
+          "weight": 4
+        },
+        {
+          "id": "giant_rat",
+          "weight": 3
+        },
+        {
+          "id": "hornet",
+          "weight": 3
+        },
+        {
+          "id": "wolf",
+          "weight": 3
+        },
+        {
+          "id": "slime",
+          "weight": 2
+        },
+        {
+          "id": "boar",
+          "weight": 2
+        },
+        {
+          "id": "poacher",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "spring", "weight": 3 },
-        { "kind": "charcoal_hut", "weight": 2 },
-        { "kind": "game_trail", "weight": 3 },
-        { "kind": "giant_tree", "weight": 2 }
+        {
+          "kind": "spring",
+          "weight": 3
+        },
+        {
+          "kind": "charcoal_hut",
+          "weight": 2
+        },
+        {
+          "kind": "game_trail",
+          "weight": 3
+        },
+        {
+          "kind": "giant_tree",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 2, "text": "木の実の落ちる音に振り返った。何かが逃げていく", "fatigue": 2 },
-        { "weight": 2, "text": "茸の群生を見つけた", "items": { "mushroom": 1 } }
+        {
+          "weight": 2,
+          "text": "木の実の落ちる音に振り返った。何かが逃げていく",
+          "fatigue": 2
+        },
+        {
+          "weight": 2,
+          "text": "茸の群生を見つけた",
+          "items": {
+            "mushroom": 1
+          }
+        }
       ]
     },
     {
@@ -994,36 +1455,113 @@
       ],
       "descs": ["光の届かない深い森。何かが潜んでいる", "空気が重い。帰り道を見失わないように"],
       "hunt": true,
-      "work": { "kinds": ["logging", "gathering", "hunting", "stealth"] },
+      "work": {
+        "kinds": ["logging", "gathering", "hunting", "stealth"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 22,
         "entries": [
-          { "item": "mushroom", "weight": 3, "n": [1, 2] },
-          { "item": "herb.wild", "weight": 3, "n": [1, 2] },
-          { "item": "wood", "weight": 2, "n": [1, 2] },
-          { "item": "honey", "weight": 1, "n": [1, 1], "seasons": [0, 1] },
-          { "item": "nut", "weight": 1, "n": [1, 2], "seasons": [2] }
+          {
+            "item": "mushroom",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "herb.wild",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "honey",
+            "weight": 1,
+            "n": [1, 1],
+            "seasons": [0, 1]
+          },
+          {
+            "item": "nut",
+            "weight": 1,
+            "n": [1, 2],
+            "seasons": [2]
+          },
+          {
+            "item": "mat.timber",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "berry",
+            "weight": 1,
+            "n": [1, 2]
+          }
         ]
       },
       "enemies": [
-        { "id": "green_ape", "weight": 3 },
-        { "id": "dire_wolf", "weight": 3 },
-        { "id": "shade_wisp", "weight": 2 },
-        { "id": "boar", "weight": 1 }
+        {
+          "id": "green_ape",
+          "weight": 3
+        },
+        {
+          "id": "dire_wolf",
+          "weight": 3
+        },
+        {
+          "id": "shade_wisp",
+          "weight": 2
+        },
+        {
+          "id": "giant_spider",
+          "weight": 2
+        },
+        {
+          "id": "bear",
+          "weight": 2
+        },
+        {
+          "id": "boar__deep_forest",
+          "weight": 2
+        },
+        {
+          "id": "poacher",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "game_trail", "weight": 4 },
-        { "kind": "giant_tree", "weight": 3 },
-        { "kind": "cave_mouth", "weight": 2 },
-        { "kind": "charcoal_hut", "weight": 1 }
+        {
+          "kind": "game_trail",
+          "weight": 4
+        },
+        {
+          "kind": "giant_tree",
+          "weight": 3
+        },
+        {
+          "kind": "cave_mouth",
+          "weight": 2
+        },
+        {
+          "kind": "charcoal_hut",
+          "weight": 1
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "木々の間に気配を感じる。背筋が寒くなる", "fatigue": 6 },
+        {
+          "weight": 3,
+          "text": "木々の間に気配を感じる。背筋が寒くなる",
+          "fatigue": 6
+        },
         {
           "weight": 2,
           "text": "獣の抜け殻のような蔓を見つけた",
-          "gain": { "skill": "observation", "amount": 4 }
+          "gain": {
+            "skill": "observation",
+            "amount": 4
+          }
         }
       ]
     },
@@ -1044,34 +1582,99 @@
       ],
       "descs": ["緩やかな起伏の続く丘陵。風が草を撫でる", "見晴らしのいい丘。遠くに町が見える"],
       "hunt": true,
-      "work": { "kinds": ["gathering", "hunting", "footwork"] },
+      "work": {
+        "kinds": ["gathering", "hunting", "footwork"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 8,
         "entries": [
-          { "item": "herb", "weight": 3, "n": [1, 2] },
-          { "item": "nut", "weight": 2, "n": [1, 2] },
-          { "item": "wood", "weight": 2, "n": [1, 2] },
-          { "item": "grain", "weight": 2, "n": [1, 2], "seasons": [1, 2] }
+          {
+            "item": "herb",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "nut",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "grain",
+            "weight": 2,
+            "n": [1, 2],
+            "seasons": [1, 2]
+          },
+          {
+            "item": "feather",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "berry",
+            "weight": 1,
+            "n": [1, 2]
+          }
         ]
       },
       "enemies": [
-        { "id": "wild_goat", "weight": 3 },
-        { "id": "hawk", "weight": 3 },
-        { "id": "bandit", "weight": 2 }
+        {
+          "id": "wild_goat",
+          "weight": 4
+        },
+        {
+          "id": "hawk",
+          "weight": 3
+        },
+        {
+          "id": "kobold",
+          "weight": 2
+        },
+        {
+          "id": "bandit",
+          "weight": 2
+        },
+        {
+          "id": "dragonet",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "spring", "weight": 3 },
-        { "kind": "watch_tower", "weight": 3 },
-        { "kind": "game_trail", "weight": 2 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "spring",
+          "weight": 3
+        },
+        {
+          "kind": "watch_tower",
+          "weight": 3
+        },
+        {
+          "kind": "game_trail",
+          "weight": 2
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "丘の上で昼寝をした。風が涼しい", "fatigue": -8 },
+        {
+          "weight": 3,
+          "text": "丘の上で昼寝をした。風が涼しい",
+          "fatigue": -8
+        },
         {
           "weight": 2,
           "text": "遠くに道が見えた。方角を確かめる",
-          "gain": { "skill": "geography", "amount": 4 }
+          "gain": {
+            "skill": "geography",
+            "amount": 4
+          }
         }
       ]
     },
@@ -1095,32 +1698,114 @@
         "空気が薄く、風が強い。足元に気をつけて"
       ],
       "hunt": true,
-      "work": { "kinds": ["mining", "prospecting", "footwork", "gathering"] },
+      "work": {
+        "kinds": ["mining", "prospecting", "footwork", "gathering"]
+      },
       "gather": {
         "skill": "mining",
         "difficulty": 24,
         "entries": [
-          { "item": "ore.copper", "weight": 3, "n": [1, 2] },
-          { "item": "ore.iron", "weight": 2, "n": [1, 2] },
-          { "item": "wood", "weight": 1, "n": [1, 2] },
-          { "item": "relic", "weight": 1, "n": [1, 1] }
+          {
+            "item": "ore.copper",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "ore.iron",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "relic",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "stone.mana",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "feather",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "rock_lizard", "weight": 3 },
-        { "id": "mountain_troll", "weight": 2 },
-        { "id": "griffin", "weight": 2 },
-        { "id": "hawk", "weight": 1 }
+        {
+          "id": "rock_lizard",
+          "weight": 3
+        },
+        {
+          "id": "wild_goat__mountain",
+          "weight": 2
+        },
+        {
+          "id": "frost_hare__mountain",
+          "weight": 2
+        },
+        {
+          "id": "wind_sprite",
+          "weight": 2
+        },
+        {
+          "id": "mountain_troll",
+          "weight": 2
+        },
+        {
+          "id": "griffin",
+          "weight": 2
+        },
+        {
+          "id": "earth_sprite",
+          "weight": 1
+        },
+        {
+          "id": "bear",
+          "weight": 1
+        },
+        {
+          "id": "drake",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "cave_mouth", "weight": 4 },
-        { "kind": "watch_tower", "weight": 2 },
-        { "kind": "spring", "weight": 2 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "cave_mouth",
+          "weight": 4
+        },
+        {
+          "kind": "watch_tower",
+          "weight": 2
+        },
+        {
+          "kind": "spring",
+          "weight": 2
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "足元の岩が崩れた。危うく踏み外すところだった", "fatigue": 8 },
-        { "weight": 2, "text": "鉱脈の名残を見つけた", "items": { "ore.copper": 1 } }
+        {
+          "weight": 3,
+          "text": "足元の岩が崩れた。危うく踏み外すところだった",
+          "fatigue": 8
+        },
+        {
+          "weight": 2,
+          "text": "鉱脈の名残を見つけた",
+          "items": {
+            "ore.copper": 1
+          }
+        }
       ]
     },
     {
@@ -1132,30 +1817,93 @@
       "descs": ["静かな湖面。魚の影が時折光る", "水辺の草むら。釣り人に人気の場所"],
       "hunt": true,
       "fish": true,
-      "work": { "kinds": ["fishing", "swimming", "gathering"] },
+      "work": {
+        "kinds": ["fishing", "swimming", "gathering"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 8,
         "entries": [
-          { "item": "fish.lake", "weight": 3, "n": [1, 2] },
-          { "item": "herb", "weight": 2, "n": [1, 2] },
-          { "item": "fish.river", "weight": 1, "n": [1, 1] },
-          { "item": "wood", "weight": 1, "n": [1, 1] }
+          {
+            "item": "fish.lake",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "herb",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "fish.river",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "wood",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "pearl",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "turtle", "weight": 3 },
-        { "id": "pike", "weight": 3 },
-        { "id": "lake_serpent", "weight": 2 }
+        {
+          "id": "turtle",
+          "weight": 3
+        },
+        {
+          "id": "pike",
+          "weight": 3
+        },
+        {
+          "id": "big_frog",
+          "weight": 1
+        },
+        {
+          "id": "lake_serpent",
+          "weight": 2
+        },
+        {
+          "id": "water_sprite",
+          "weight": 2
+        },
+        {
+          "id": "sea_wyrm",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "spring", "weight": 3 },
-        { "kind": "game_trail", "weight": 2 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "spring",
+          "weight": 3
+        },
+        {
+          "kind": "game_trail",
+          "weight": 2
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "湖面に魚が跳ねた。大物の気配", "fatigue": -4 },
-        { "weight": 2, "text": "水際で貝殻を拾った", "items": { "shell": 1 } }
+        {
+          "weight": 3,
+          "text": "湖面に魚が跳ねた。大物の気配",
+          "fatigue": -4
+        },
+        {
+          "weight": 2,
+          "text": "水際で貝殻を拾った",
+          "items": {
+            "shell": 1
+          }
+        }
       ]
     },
     {
@@ -1176,31 +1924,97 @@
       "descs": ["澄んだ流れの川。浅瀬に魚が見える", "水の流れに沿った道。釣り人の気配"],
       "hunt": true,
       "fish": true,
-      "work": { "kinds": ["fishing", "swimming", "logging", "gathering"] },
+      "work": {
+        "kinds": ["fishing", "swimming", "logging", "gathering"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 8,
         "entries": [
-          { "item": "fish.river", "weight": 3, "n": [1, 2] },
-          { "item": "wood", "weight": 2, "n": [1, 2] },
-          { "item": "herb", "weight": 2, "n": [1, 2] },
-          { "item": "shell", "weight": 1, "n": [1, 1] }
+          {
+            "item": "fish.river",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "herb",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "shell",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "pearl",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "big_frog", "weight": 3 },
-        { "id": "river_bandit", "weight": 3 },
-        { "id": "marsh_viper", "weight": 1 }
+        {
+          "id": "big_frog",
+          "weight": 3
+        },
+        {
+          "id": "river_bandit",
+          "weight": 2
+        },
+        {
+          "id": "marsh_viper",
+          "weight": 2
+        },
+        {
+          "id": "crab__river",
+          "weight": 2
+        },
+        {
+          "id": "slime",
+          "weight": 1
+        },
+        {
+          "id": "water_sprite",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "spring", "weight": 3 },
-        { "kind": "charcoal_hut", "weight": 2 },
-        { "kind": "game_trail", "weight": 2 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "spring",
+          "weight": 3
+        },
+        {
+          "kind": "charcoal_hut",
+          "weight": 2
+        },
+        {
+          "kind": "game_trail",
+          "weight": 2
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "川の流れに足を浸した。冷たくて気持ちいい", "fatigue": -8 },
-        { "weight": 2, "text": "流れてきた木材を拾った", "items": { "wood": 1 } }
+        {
+          "weight": 3,
+          "text": "川の流れに足を浸した。冷たくて気持ちいい",
+          "fatigue": -8
+        },
+        {
+          "weight": 2,
+          "text": "流れてきた木材を拾った",
+          "items": {
+            "wood": 1
+          }
+        }
       ]
     },
     {
@@ -1221,31 +2035,98 @@
       "descs": ["波の砕ける海岸。沖に島影が見える", "潮の香りと浜辺の貝殻"],
       "hunt": true,
       "fish": true,
-      "work": { "kinds": ["fishing", "swimming", "gathering"] },
+      "work": {
+        "kinds": ["fishing", "swimming", "gathering"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 12,
         "entries": [
-          { "item": "fish.sea", "weight": 3, "n": [1, 2] },
-          { "item": "shell", "weight": 3, "n": [1, 2] },
-          { "item": "wood", "weight": 1, "n": [1, 2] },
-          { "item": "herb", "weight": 1, "n": [1, 1], "seasons": [0, 1] }
+          {
+            "item": "fish.sea",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "shell",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "herb",
+            "weight": 1,
+            "n": [1, 1],
+            "seasons": [0, 1]
+          },
+          {
+            "item": "pearl",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "crab", "weight": 3 },
-        { "id": "shore_shark", "weight": 2 },
-        { "id": "pirate", "weight": 2 }
+        {
+          "id": "crab",
+          "weight": 3
+        },
+        {
+          "id": "turtle__coast",
+          "weight": 2
+        },
+        {
+          "id": "shore_shark",
+          "weight": 2
+        },
+        {
+          "id": "pirate",
+          "weight": 2
+        },
+        {
+          "id": "drowned_dead",
+          "weight": 1
+        },
+        {
+          "id": "sea_wyrm",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "cave_mouth", "weight": 3 },
-        { "kind": "watch_tower", "weight": 2 },
-        { "kind": "spring", "weight": 2 },
-        { "kind": "game_trail", "weight": 1 }
+        {
+          "kind": "cave_mouth",
+          "weight": 3
+        },
+        {
+          "kind": "watch_tower",
+          "weight": 2
+        },
+        {
+          "kind": "spring",
+          "weight": 2
+        },
+        {
+          "kind": "game_trail",
+          "weight": 1
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "波打ち際を歩いた。潮風が髪を乱す", "fatigue": -4 },
-        { "weight": 2, "text": "綺麗な貝殻を拾った", "items": { "shell": 1 } }
+        {
+          "weight": 3,
+          "text": "波打ち際を歩いた。潮風が髪を乱す",
+          "fatigue": -4
+        },
+        {
+          "weight": 2,
+          "text": "綺麗な貝殻を拾った",
+          "items": {
+            "shell": 1
+          }
+        }
       ]
     },
     {
@@ -1265,31 +2146,110 @@
       ],
       "descs": ["足の沈む沼地。腐葉の匂いが強い", "霧のかかった湿地。瘴気に注意して"],
       "hunt": true,
-      "work": { "kinds": ["gathering", "medicine", "hunting", "stealth"] },
+      "work": {
+        "kinds": ["gathering", "medicine", "hunting", "stealth"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 20,
         "entries": [
-          { "item": "herb.wild", "weight": 3, "n": [1, 2] },
-          { "item": "mushroom", "weight": 3, "n": [1, 2] },
-          { "item": "fish.river", "weight": 1, "n": [1, 1] },
-          { "item": "herb", "weight": 1, "n": [1, 1] }
+          {
+            "item": "herb.wild",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "mushroom",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "fish.river",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "herb",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "venom",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "ectoplasm",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "marsh_viper", "weight": 3 },
-        { "id": "bog_lurker", "weight": 2 },
-        { "id": "plague_rat", "weight": 3 }
+        {
+          "id": "marsh_viper",
+          "weight": 3
+        },
+        {
+          "id": "big_frog__marsh",
+          "weight": 2
+        },
+        {
+          "id": "plague_rat",
+          "weight": 3
+        },
+        {
+          "id": "bog_lurker",
+          "weight": 2
+        },
+        {
+          "id": "giant_spider",
+          "weight": 1
+        },
+        {
+          "id": "will_o_wisp",
+          "weight": 2
+        },
+        {
+          "id": "rotting_shambler",
+          "weight": 1
+        },
+        {
+          "id": "drowned_dead",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "game_trail", "weight": 3 },
-        { "kind": "ruin_house", "weight": 3 },
-        { "kind": "spring", "weight": 2 },
-        { "kind": "giant_tree", "weight": 2 }
+        {
+          "kind": "game_trail",
+          "weight": 3
+        },
+        {
+          "kind": "ruin_house",
+          "weight": 3
+        },
+        {
+          "kind": "spring",
+          "weight": 2
+        },
+        {
+          "kind": "giant_tree",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "足を泥に取られた。引き抜くのに苦労した", "fatigue": 10 },
-        { "weight": 2, "text": "珍しい茸を見つけた", "items": { "mushroom": 1 } }
+        {
+          "weight": 3,
+          "text": "足を泥に取られた。引き抜くのに苦労した",
+          "fatigue": 10
+        },
+        {
+          "weight": 2,
+          "text": "珍しい茸を見つけた",
+          "items": {
+            "mushroom": 1
+          }
+        }
       ]
     },
     {
@@ -1309,32 +2269,106 @@
       ],
       "descs": ["草木の少ない荒れ地。物陰に気をつけて", "風の吹きすさぶ荒野。獣より人が怖い"],
       "hunt": true,
-      "work": { "kinds": ["gathering", "hunting", "prospecting"] },
+      "work": {
+        "kinds": ["gathering", "hunting", "prospecting"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 18,
         "entries": [
-          { "item": "herb", "weight": 2, "n": [1, 1] },
-          { "item": "ore.copper", "weight": 2, "n": [1, 2] },
-          { "item": "relic", "weight": 2, "n": [1, 1] },
-          { "item": "wood", "weight": 1, "n": [1, 2] }
+          {
+            "item": "herb",
+            "weight": 2,
+            "n": [1, 1]
+          },
+          {
+            "item": "ore.copper",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "relic",
+            "weight": 2,
+            "n": [1, 1]
+          },
+          {
+            "item": "wood",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "bone",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "fang",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "vulture", "weight": 3 },
-        { "id": "bandit", "weight": 3 },
-        { "id": "deserter", "weight": 2 },
-        { "id": "scorpion", "weight": 2 }
+        {
+          "id": "vulture",
+          "weight": 3
+        },
+        {
+          "id": "scorpion",
+          "weight": 3
+        },
+        {
+          "id": "bandit",
+          "weight": 2
+        },
+        {
+          "id": "raider",
+          "weight": 2
+        },
+        {
+          "id": "deserter",
+          "weight": 2
+        },
+        {
+          "id": "hedge_mage",
+          "weight": 1
+        },
+        {
+          "id": "wyvern",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "ruin_house", "weight": 3 },
-        { "kind": "watch_tower", "weight": 3 },
-        { "kind": "game_trail", "weight": 2 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "ruin_house",
+          "weight": 3
+        },
+        {
+          "kind": "watch_tower",
+          "weight": 3
+        },
+        {
+          "kind": "game_trail",
+          "weight": 2
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "風に砂が舞った。目を擦る", "fatigue": 6 },
-        { "weight": 2, "text": "古い品の欠片を見つけた", "items": { "relic": 1 } }
+        {
+          "weight": 3,
+          "text": "風に砂が舞った。目を擦る",
+          "fatigue": 6
+        },
+        {
+          "weight": 2,
+          "text": "古い品の欠片を見つけた",
+          "items": {
+            "relic": 1
+          }
+        }
       ]
     },
     {
@@ -1354,31 +2388,104 @@
       ],
       "descs": ["一面の銀世界。寒さが骨に染みる", "深い雪に足を取られる。装備と覚悟が要る"],
       "hunt": true,
-      "work": { "kinds": ["hunting", "gathering", "footwork"] },
+      "work": {
+        "kinds": ["hunting", "gathering", "footwork"]
+      },
       "gather": {
         "skill": "gathering",
         "difficulty": 28,
         "entries": [
-          { "item": "herb.snow", "weight": 3, "n": [1, 2], "seasons": [3] },
-          { "item": "ore.iron", "weight": 2, "n": [1, 2] },
-          { "item": "wood", "weight": 1, "n": [1, 1] },
-          { "item": "herb.wild", "weight": 1, "n": [1, 1], "seasons": [1, 2] }
+          {
+            "item": "herb.snow",
+            "weight": 3,
+            "n": [1, 2],
+            "seasons": [3]
+          },
+          {
+            "item": "ore.iron",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "herb.wild",
+            "weight": 1,
+            "n": [1, 1],
+            "seasons": [1, 2]
+          },
+          {
+            "item": "stone.ice",
+            "weight": 2,
+            "n": [1, 1]
+          },
+          {
+            "item": "bone",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "frost_hare", "weight": 3 },
-        { "id": "snow_wolf", "weight": 3 },
-        { "id": "yeti", "weight": 2 }
+        {
+          "id": "frost_hare",
+          "weight": 3
+        },
+        {
+          "id": "boar__snowfield",
+          "weight": 2
+        },
+        {
+          "id": "hawk__snowfield",
+          "weight": 1
+        },
+        {
+          "id": "snow_wolf",
+          "weight": 3
+        },
+        {
+          "id": "dire_wolf__snowfield",
+          "weight": 2
+        },
+        {
+          "id": "yeti",
+          "weight": 2
+        }
       ],
       "spots": [
-        { "kind": "spring", "weight": 2 },
-        { "kind": "cave_mouth", "weight": 3 },
-        { "kind": "game_trail", "weight": 3 },
-        { "kind": "ruin_house", "weight": 2 }
+        {
+          "kind": "spring",
+          "weight": 2
+        },
+        {
+          "kind": "cave_mouth",
+          "weight": 3
+        },
+        {
+          "kind": "game_trail",
+          "weight": 3
+        },
+        {
+          "kind": "ruin_house",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "吹雪に見舞われた。身を寄せて凌ぐ", "fatigue": 12 },
-        { "weight": 2, "text": "雪の下から草を見つけた", "items": { "herb.snow": 1 } }
+        {
+          "weight": 3,
+          "text": "吹雪に見舞われた。身を寄せて凌ぐ",
+          "fatigue": 12
+        },
+        {
+          "weight": 2,
+          "text": "雪の下から草を見つけた",
+          "items": {
+            "herb.snow": 1
+          }
+        }
       ]
     },
     {
@@ -1398,31 +2505,101 @@
       ],
       "descs": ["噴煙の上がる火山。熱気と硫黄の匂い", "溶岩の流れる山。命を賭す場所"],
       "hunt": true,
-      "work": { "kinds": ["mining", "prospecting", "gathering"] },
+      "work": {
+        "kinds": ["mining", "prospecting", "gathering"]
+      },
       "gather": {
         "skill": "mining",
         "difficulty": 34,
         "entries": [
-          { "item": "ore.iron", "weight": 3, "n": [1, 2] },
-          { "item": "ore.gold", "weight": 2, "n": [1, 1] },
-          { "item": "ore.copper", "weight": 1, "n": [1, 2] },
-          { "item": "relic", "weight": 1, "n": [1, 1] }
+          {
+            "item": "ore.iron",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "ore.gold",
+            "weight": 2,
+            "n": [1, 1]
+          },
+          {
+            "item": "ore.copper",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "relic",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "stone.fire",
+            "weight": 2,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "ash_bat", "weight": 3 },
-        { "id": "fire_lizard", "weight": 3 },
-        { "id": "magma_golem", "weight": 2 }
+        {
+          "id": "ash_bat",
+          "weight": 2
+        },
+        {
+          "id": "fire_lizard",
+          "weight": 3
+        },
+        {
+          "id": "rock_lizard__volcano",
+          "weight": 2
+        },
+        {
+          "id": "fire_sprite",
+          "weight": 2
+        },
+        {
+          "id": "imp",
+          "weight": 1
+        },
+        {
+          "id": "salamander",
+          "weight": 1
+        },
+        {
+          "id": "magma_golem",
+          "weight": 2
+        }
       ],
       "spots": [
-        { "kind": "cave_mouth", "weight": 4 },
-        { "kind": "ruin_house", "weight": 2 },
-        { "kind": "watch_tower", "weight": 1 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "cave_mouth",
+          "weight": 4
+        },
+        {
+          "kind": "ruin_house",
+          "weight": 2
+        },
+        {
+          "kind": "watch_tower",
+          "weight": 1
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "熱気に咽せた。汗が噴き出す", "fatigue": 14 },
-        { "weight": 2, "text": "熱い岩の間から鉱石を拾った", "items": { "ore.iron": 1 } }
+        {
+          "weight": 3,
+          "text": "熱気に咽せた。汗が噴き出す",
+          "fatigue": 14
+        },
+        {
+          "weight": 2,
+          "text": "熱い岩の間から鉱石を拾った",
+          "items": {
+            "ore.iron": 1
+          }
+        }
       ]
     },
     {
@@ -1442,31 +2619,114 @@
       ],
       "descs": ["昔の戦いの跡。錆びた武具が散らばる", "静まり返った古戦場。空気が重い"],
       "hunt": true,
-      "work": { "kinds": ["gathering", "archaeology", "hunting"] },
+      "work": {
+        "kinds": ["gathering", "archaeology", "hunting"]
+      },
       "gather": {
         "skill": "archaeology",
         "difficulty": 26,
         "entries": [
-          { "item": "relic", "weight": 3, "n": [1, 1] },
-          { "item": "ore.iron", "weight": 2, "n": [1, 1] },
-          { "item": "herb.wild", "weight": 2, "n": [1, 2] },
-          { "item": "wood", "weight": 1, "n": [1, 1] }
+          {
+            "item": "relic",
+            "weight": 3,
+            "n": [1, 1]
+          },
+          {
+            "item": "ore.iron",
+            "weight": 2,
+            "n": [1, 1]
+          },
+          {
+            "item": "herb.wild",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "bone",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "fang",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "deserter", "weight": 3 },
-        { "id": "ghoul", "weight": 3 },
-        { "id": "war_ghost", "weight": 2 }
+        {
+          "id": "skeleton_soldier",
+          "weight": 3
+        },
+        {
+          "id": "tomb_bat__battlefield",
+          "weight": 2
+        },
+        {
+          "id": "bandit__battlefield",
+          "weight": 2
+        },
+        {
+          "id": "grave_robber",
+          "weight": 1
+        },
+        {
+          "id": "deserter",
+          "weight": 2
+        },
+        {
+          "id": "ghoul",
+          "weight": 3
+        },
+        {
+          "id": "war_ghost",
+          "weight": 2
+        },
+        {
+          "id": "graveyard_knight",
+          "weight": 1
+        },
+        {
+          "id": "renegade_knight",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "ruin_house", "weight": 4 },
-        { "kind": "watch_tower", "weight": 2 },
-        { "kind": "game_trail", "weight": 2 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "ruin_house",
+          "weight": 4
+        },
+        {
+          "kind": "watch_tower",
+          "weight": 2
+        },
+        {
+          "kind": "game_trail",
+          "weight": 2
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "錆びた武具を見つけた。昔の戦いの名残", "items": { "relic": 1 } },
-        { "weight": 2, "text": "冷たい風が骨を撫でる。誰かがここで死んだ", "fatigue": 8 }
+        {
+          "weight": 3,
+          "text": "錆びた武具を見つけた。昔の戦いの名残",
+          "items": {
+            "relic": 1
+          }
+        },
+        {
+          "weight": 2,
+          "text": "冷たい風が骨を撫でる。誰かがここで死んだ",
+          "fatigue": 8
+        }
       ]
     },
     {
@@ -1486,31 +2746,112 @@
       ],
       "descs": ["人の去った村。倒れた家屋が残る", "静まり返った集落。何があったのか"],
       "hunt": true,
-      "work": { "kinds": ["gathering", "archaeology"] },
+      "work": {
+        "kinds": ["gathering", "archaeology"]
+      },
       "gather": {
         "skill": "archaeology",
         "difficulty": 22,
         "entries": [
-          { "item": "relic", "weight": 2, "n": [1, 1] },
-          { "item": "herb.wild", "weight": 2, "n": [1, 2] },
-          { "item": "mushroom", "weight": 2, "n": [1, 2] },
-          { "item": "wood", "weight": 1, "n": [1, 2] }
+          {
+            "item": "relic",
+            "weight": 2,
+            "n": [1, 1]
+          },
+          {
+            "item": "herb.wild",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "mushroom",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "wood",
+            "weight": 1,
+            "n": [1, 2]
+          },
+          {
+            "item": "ectoplasm",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "bone",
+            "weight": 1,
+            "n": [1, 2]
+          }
         ]
       },
       "enemies": [
-        { "id": "feral_pack", "weight": 3 },
-        { "id": "ghoul", "weight": 2 },
-        { "id": "hanged_wraith", "weight": 2 }
+        {
+          "id": "giant_rat",
+          "weight": 3
+        },
+        {
+          "id": "stray_dog__dead_village",
+          "weight": 3
+        },
+        {
+          "id": "plague_rat__dead_village",
+          "weight": 2
+        },
+        {
+          "id": "vulture__dead_village",
+          "weight": 1
+        },
+        {
+          "id": "feral_pack",
+          "weight": 3
+        },
+        {
+          "id": "ghoul",
+          "weight": 2
+        },
+        {
+          "id": "rotting_shambler",
+          "weight": 1
+        },
+        {
+          "id": "hanged_wraith",
+          "weight": 2
+        },
+        {
+          "id": "cultist",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "ruin_house", "weight": 5 },
-        { "kind": "spring", "weight": 2 },
-        { "kind": "charcoal_hut", "weight": 3 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "ruin_house",
+          "weight": 5
+        },
+        {
+          "kind": "spring",
+          "weight": 2
+        },
+        {
+          "kind": "charcoal_hut",
+          "weight": 3
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "廃屋の影から物音。獣か、それとも", "fatigue": 8 },
-        { "weight": 2, "text": "残された家財を漁った", "money": 12 }
+        {
+          "weight": 3,
+          "text": "廃屋の影から物音。獣か、それとも",
+          "fatigue": 8
+        },
+        {
+          "weight": 2,
+          "text": "残された家財を漁った",
+          "money": 12
+        }
       ]
     },
     {
@@ -1530,31 +2871,110 @@
       ],
       "descs": ["石積みの遺構が散在する野。古い何かが眠る", "風化した石の森。古代の気配"],
       "hunt": true,
-      "work": { "kinds": ["archaeology", "appraisal", "gathering"] },
+      "work": {
+        "kinds": ["archaeology", "appraisal", "gathering"]
+      },
       "gather": {
         "skill": "archaeology",
         "difficulty": 32,
         "entries": [
-          { "item": "relic", "weight": 3, "n": [1, 2] },
-          { "item": "ore.gold", "weight": 1, "n": [1, 1] },
-          { "item": "ore.copper", "weight": 1, "n": [1, 1] },
-          { "item": "herb.wild", "weight": 1, "n": [1, 1] }
+          {
+            "item": "relic",
+            "weight": 3,
+            "n": [1, 2]
+          },
+          {
+            "item": "ore.gold",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "ore.copper",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "herb.wild",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "stone.mana",
+            "weight": 1,
+            "n": [1, 1]
+          },
+          {
+            "item": "ectoplasm",
+            "weight": 1,
+            "n": [1, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "tomb_bat", "weight": 3 },
-        { "id": "ruin_stalker", "weight": 2 },
-        { "id": "stone_guardian", "weight": 2 }
+        {
+          "id": "tomb_bat",
+          "weight": 2
+        },
+        {
+          "id": "grave_robber",
+          "weight": 2
+        },
+        {
+          "id": "gargoyle",
+          "weight": 2
+        },
+        {
+          "id": "ruin_stalker",
+          "weight": 2
+        },
+        {
+          "id": "stone_guardian",
+          "weight": 2
+        },
+        {
+          "id": "crypt_wight",
+          "weight": 1
+        },
+        {
+          "id": "cultist",
+          "weight": 1
+        },
+        {
+          "id": "wyrm",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "ruin_house", "weight": 4 },
-        { "kind": "watch_tower", "weight": 3 },
-        { "kind": "cave_mouth", "weight": 2 },
-        { "kind": "wayside_shrine", "weight": 2 }
+        {
+          "kind": "ruin_house",
+          "weight": 4
+        },
+        {
+          "kind": "watch_tower",
+          "weight": 3
+        },
+        {
+          "kind": "cave_mouth",
+          "weight": 2
+        },
+        {
+          "kind": "wayside_shrine",
+          "weight": 2
+        }
       ],
       "stroll": [
-        { "weight": 3, "text": "石積みの欠片を調べた。古い技術の痕跡", "items": { "relic": 1 } },
-        { "weight": 2, "text": "遺跡の奥に目を凝らした。気配がする", "fatigue": 8 }
+        {
+          "weight": 3,
+          "text": "石積みの欠片を調べた。古い技術の痕跡",
+          "items": {
+            "relic": 1
+          }
+        },
+        {
+          "weight": 2,
+          "text": "遺跡の奥に目を凝らした。気配がする",
+          "fatigue": 8
+        }
       ]
     },
     {
@@ -1574,33 +2994,85 @@
       ],
       "descs": ["開かれたばかりの畑。耕しの香りがする", "村人が耕す共同の畑。季節の作が実る"],
       "hunt": true,
-      "work": { "kinds": ["farming", "gathering", "cooking", "earth_magic"] },
+      "work": {
+        "kinds": ["farming", "gathering", "cooking", "earth_magic"]
+      },
       "gather": {
         "skill": "farming",
         "difficulty": 8,
         "entries": [
-          { "item": "grain", "weight": 4, "n": [1, 3] },
-          { "item": "egg", "weight": 2, "n": [1, 2] },
-          { "item": "nut", "weight": 1, "n": [1, 2], "seasons": [2] },
-          { "item": "herb", "weight": 1, "n": [1, 1], "seasons": [0, 1] }
+          {
+            "item": "grain",
+            "weight": 4,
+            "n": [1, 3]
+          },
+          {
+            "item": "egg",
+            "weight": 2,
+            "n": [1, 2]
+          },
+          {
+            "item": "nut",
+            "weight": 1,
+            "n": [1, 2],
+            "seasons": [2]
+          },
+          {
+            "item": "herb",
+            "weight": 1,
+            "n": [1, 1],
+            "seasons": [0, 1]
+          }
         ]
       },
       "enemies": [
-        { "id": "stray_dog", "weight": 4 },
-        { "id": "boar", "weight": 3 }
+        {
+          "id": "stray_dog",
+          "weight": 3
+        },
+        {
+          "id": "giant_rat",
+          "weight": 3
+        },
+        {
+          "id": "hornet",
+          "weight": 1
+        },
+        {
+          "id": "boar",
+          "weight": 1
+        }
       ],
       "spots": [
-        { "kind": "spring", "weight": 3 },
-        { "kind": "charcoal_hut", "weight": 2 },
-        { "kind": "game_trail", "weight": 2 }
+        {
+          "kind": "spring",
+          "weight": 3
+        },
+        {
+          "kind": "charcoal_hut",
+          "weight": 2
+        },
+        {
+          "kind": "game_trail",
+          "weight": 2
+        }
       ],
       "stroll": [
         {
           "weight": 3,
           "text": "畑仕事を手伝った。土の匂いがする",
-          "gain": { "skill": "farming", "amount": 3 }
+          "gain": {
+            "skill": "farming",
+            "amount": 3
+          }
         },
-        { "weight": 2, "text": "納屋の陰で卵を見つけた", "items": { "egg": 1 } }
+        {
+          "weight": 2,
+          "text": "納屋の陰で卵を見つけた",
+          "items": {
+            "egg": 1
+          }
+        }
       ]
     },
     {
@@ -1611,9 +3083,39 @@
       "special": "abyss",
       "names": ["深層の穴", "深淵の穴", "奈落の穴", "無底の穴"],
       "descs": ["底の見えない大穴。深い闇が広がる", "世界の裂け目。帰れるのは灯りの続く間だけ"],
-      "work": { "kinds": ["mining", "prospecting", "gathering"] },
+      "work": {
+        "kinds": ["mining", "prospecting", "gathering"]
+      },
       "spots": [],
-      "stroll": [{ "weight": 3, "text": "穴の縁から底を覗いた。底は見えない", "fatigue": 6 }]
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "穴の縁から底を覗いた。底は見えない",
+          "fatigue": 6
+        }
+      ],
+      "enemies": [
+        {
+          "id": "frost_sprite",
+          "weight": 3
+        },
+        {
+          "id": "imp",
+          "weight": 2
+        },
+        {
+          "id": "crypt_wight",
+          "weight": 1
+        },
+        {
+          "id": "cave_shaman",
+          "weight": 2
+        },
+        {
+          "id": "wyrm",
+          "weight": 1
+        }
+      ]
     }
   ],
   "spotKinds": [
@@ -1626,11 +3128,17 @@
           "text": "冷たい水を汲んで飲んだ。喉が潤い、足取りが軽くなる",
           "fatigue": -12
         },
-        { "weight": 3, "text": "泉のほとりで小休止した。風が頬を撫でていく", "fatigue": -8 },
+        {
+          "weight": 3,
+          "text": "泉のほとりで小休止した。風が頬を撫でていく",
+          "fatigue": -8
+        },
         {
           "weight": 2,
           "text": "水際に香草の葉を見つけた",
-          "items": { "herb.wild": 1 },
+          "items": {
+            "herb.wild": 1
+          },
           "fatigue": -4
         }
       ]
@@ -1642,17 +3150,29 @@
         {
           "weight": 4,
           "text": "小屋の隅に使える材が残っていた",
-          "items": { "wood": 1 },
-          "gain": { "skill": "logging", "amount": 4 },
+          "items": {
+            "wood": 1
+          },
+          "gain": {
+            "skill": "logging",
+            "amount": 4
+          },
           "fatigue": 4
         },
         {
           "weight": 3,
           "text": "炭窯の跡を眺めた。火の入れ方の工夫が読み取れる",
-          "gain": { "skill": "craft", "amount": 5 },
+          "gain": {
+            "skill": "craft",
+            "amount": 5
+          },
           "fatigue": 3
         },
-        { "weight": 2, "text": "雨宿りに丁度いい。少し休んでいく", "fatigue": -6 }
+        {
+          "weight": 2,
+          "text": "雨宿りに丁度いい。少し休んでいく",
+          "fatigue": -6
+        }
       ]
     },
     {
@@ -1662,14 +3182,25 @@
         {
           "weight": 4,
           "text": "塔の上から辺りを見渡した。地形が頭に入る",
-          "gain": { "skill": "geography", "amount": 6 },
+          "gain": {
+            "skill": "geography",
+            "amount": 6
+          },
           "fatigue": 4
         },
-        { "weight": 3, "text": "石の隙間に何かが落ちている", "money": 8, "fatigue": 3 },
+        {
+          "weight": 3,
+          "text": "石の隙間に何かが落ちている",
+          "money": 8,
+          "fatigue": 3
+        },
         {
           "weight": 2,
           "text": "壁に刻まれた古い記号を見つけた",
-          "gain": { "skill": "archaeology", "amount": 5 },
+          "gain": {
+            "skill": "archaeology",
+            "amount": 5
+          },
           "fatigue": 3
         }
       ]
@@ -1681,18 +3212,36 @@
         {
           "weight": 5,
           "text": "獣の足跡をたどった。獲物の気配が近い",
-          "gain": { "skill": "hunting", "amount": 6 },
+          "gain": {
+            "skill": "hunting",
+            "amount": 6
+          },
           "fatigue": 6
         },
-        { "weight": 3, "text": "足元に木の実が落ちている", "items": { "nut": 1 }, "fatigue": 3 }
+        {
+          "weight": 3,
+          "text": "足元に木の実が落ちている",
+          "items": {
+            "nut": 1
+          },
+          "fatigue": 3
+        }
       ]
     },
     {
       "id": "wayside_shrine",
       "names": ["道端の祠", "苔むす小祠", "旅の守り神"],
       "outcomes": [
-        { "weight": 4, "text": "祠に手を合わせた。今夜は少し眠れそうだ", "pray": true },
-        { "weight": 2, "text": "供え物の前で目を閉じる。心が静まる", "fatigue": -8 }
+        {
+          "weight": 4,
+          "text": "祠に手を合わせた。今夜は少し眠れそうだ",
+          "pray": true
+        },
+        {
+          "weight": 2,
+          "text": "供え物の前で目を閉じる。心が静まる",
+          "fatigue": -8
+        }
       ]
     },
     {
@@ -1702,20 +3251,30 @@
         {
           "weight": 4,
           "text": "穴の口で光る石を拾った",
-          "items": { "ore.copper": 1 },
-          "gain": { "skill": "mining", "amount": 4 },
+          "items": {
+            "ore.copper": 1
+          },
+          "gain": {
+            "skill": "mining",
+            "amount": 4
+          },
           "fatigue": 5
         },
         {
           "weight": 3,
           "text": "洞の奥に冷たい風を感じる。深そうだ",
-          "gain": { "skill": "observation", "amount": 4 },
+          "gain": {
+            "skill": "observation",
+            "amount": 4
+          },
           "fatigue": 4
         },
         {
           "weight": 2,
           "text": "壁の鉱脈の名残を確かめた",
-          "items": { "ore.iron": 1 },
+          "items": {
+            "ore.iron": 1
+          },
           "fatigue": 6
         }
       ]
@@ -1724,17 +3283,27 @@
       "id": "ruin_house",
       "names": ["倒れかけの廃屋", "無人の家", "骨組みの小屋"],
       "outcomes": [
-        { "weight": 4, "text": "廃屋を漁った。使えそうなものを拾う", "money": 10, "fatigue": 5 },
+        {
+          "weight": 4,
+          "text": "廃屋を漁った。使えそうなものを拾う",
+          "money": 10,
+          "fatigue": 5
+        },
         {
           "weight": 3,
           "text": "焦げた柱の下から小さな品を見つけた",
-          "items": { "relic": 1 },
+          "items": {
+            "relic": 1
+          },
           "fatigue": 5
         },
         {
           "weight": 2,
           "text": "ここに住んだ人の気配を思う",
-          "gain": { "skill": "archaeology", "amount": 5 },
+          "gain": {
+            "skill": "archaeology",
+            "amount": 5
+          },
           "fatigue": 3
         }
       ]
@@ -1743,12 +3312,25 @@
       "id": "giant_tree",
       "names": ["大樹", "根張りの古木", "天を衝く老木"],
       "outcomes": [
-        { "weight": 4, "text": "木陰で憩った。木漏れ日が暖かい", "fatigue": -8 },
-        { "weight": 3, "text": "根元に木の実を集めた", "items": { "nut": 2 }, "fatigue": 2 },
+        {
+          "weight": 4,
+          "text": "木陰で憩った。木漏れ日が暖かい",
+          "fatigue": -8
+        },
+        {
+          "weight": 3,
+          "text": "根元に木の実を集めた",
+          "items": {
+            "nut": 2
+          },
+          "fatigue": 2
+        },
         {
           "weight": 2,
           "text": "幹のうろから香草が出ている",
-          "items": { "herb.wild": 1 },
+          "items": {
+            "herb.wild": 1
+          },
           "fatigue": 2
         }
       ]

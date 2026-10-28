@@ -188,6 +188,98 @@
       "name": "古びた遺物",
       "kind": "gather",
       "price": 45
+    },
+    {
+      "id": "meat",
+      "name": "野獣の肉",
+      "kind": "gather",
+      "price": 10,
+      "food": 16
+    },
+    {
+      "id": "hide",
+      "name": "獣革",
+      "kind": "material",
+      "price": 8
+    },
+    {
+      "id": "hide.quality",
+      "name": "上質な毛皮",
+      "kind": "material",
+      "price": 32
+    },
+    {
+      "id": "fang",
+      "name": "獣牙",
+      "kind": "material",
+      "price": 12
+    },
+    {
+      "id": "bone",
+      "name": "獣骨",
+      "kind": "material",
+      "price": 6
+    },
+    {
+      "id": "feather",
+      "name": "大羽",
+      "kind": "material",
+      "price": 10
+    },
+    {
+      "id": "venom",
+      "name": "毒袋",
+      "kind": "material",
+      "price": 14
+    },
+    {
+      "id": "scale",
+      "name": "蜥蜴の鱗",
+      "kind": "material",
+      "price": 16
+    },
+    {
+      "id": "scale.dragon",
+      "name": "竜鱗",
+      "kind": "material",
+      "price": 80
+    },
+    {
+      "id": "stone.fire",
+      "name": "火炎石",
+      "kind": "material",
+      "price": 35
+    },
+    {
+      "id": "stone.ice",
+      "name": "氷晶",
+      "kind": "material",
+      "price": 30
+    },
+    {
+      "id": "ectoplasm",
+      "name": "霊質",
+      "kind": "material",
+      "price": 25
+    },
+    {
+      "id": "stone.mana",
+      "name": "魔晶石",
+      "kind": "material",
+      "price": 45
+    },
+    {
+      "id": "pearl",
+      "name": "真珠",
+      "kind": "material",
+      "price": 55
+    },
+    {
+      "id": "meal.game",
+      "name": "焼き獣肉",
+      "kind": "meal",
+      "price": 18,
+      "food": 30
     }
   ]
 }

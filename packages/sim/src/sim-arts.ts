@@ -56,6 +56,7 @@ function toEnemyDef(id: string): EnemyDef {
     challenge: e.challenge,
     agility: e.agility,
     ...(e.beast === true ? { beast: true as const } : {}),
+    ...(e.family !== undefined ? { family: e.family } : {}),
     attack: e.attack,
     moves: e.moves,
     pattern: e.pattern,

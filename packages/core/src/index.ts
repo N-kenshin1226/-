@@ -128,6 +128,7 @@ export type {
   CombatResult,
   CombatState,
   EnemyDef,
+  EnemyFamily,
   EnemyMove,
   EnemyPatternStep,
   EnemyTrait,
@@ -135,7 +136,7 @@ export type {
   Telegraph,
   WeaponDef,
 } from "./combat/index.js";
-export { weaponDefOf } from "./combat/index.js";
+export { weaponDefOf, ENEMY_FAMILIES } from "./combat/index.js";
 // 武技・資源・構成（K-02、docs/09）：技の定義・習得・レベル・構成の検証
 export {
   artExpGain,

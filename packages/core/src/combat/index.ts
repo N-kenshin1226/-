@@ -62,6 +62,15 @@ export interface EnemyMove {
   spell?: string;
 }
 
+/**
+ * 敵の系統（G-04、docs/10_world_generation.md §11）：
+ * 獣・人・不死・魔物・精霊・竜種。使用記録の foe.<family> タグと
+ * 「何を相手にしてきたか」の世界の記録に使う。獣は beast としても扱う
+ * （beast.attack / beast.exp の技能リンクが効く相手）
+ */
+export const ENEMY_FAMILIES = ["beast", "human", "undead", "demon", "spirit", "dragon"] as const;
+export type EnemyFamily = (typeof ENEMY_FAMILIES)[number];
+
 export interface EnemyPatternStep {
   /** attack=通常攻撃 / telegraph=大技の予兆（ticks 後に move が発動） */
   type: "attack" | "telegraph";
@@ -81,6 +90,11 @@ export interface EnemyDef {
   agility: number;
   /** 獣か（K-01。beast.attack の技能リンクが与ダメージに乗る相手） */
   beast?: true;
+  /**
+   * 系統（G-04。enemies.json の family）。使用記録に foe.<family>
+   * タグを足す —— 不死・魔物・精霊・竜種は foe.human と区別して数える
+   */
+  family?: EnemyFamily;
   attack: EnemyMove;
   moves: Record<string, EnemyMove>;
   pattern: EnemyPatternStep[];
@@ -885,7 +899,12 @@ export function turn(
     const edge = enemy.challenge - s.playerWeaponSkill;
     baseTags.push(edge >= 15 ? "foe.stronger" : edge <= -15 ? "foe.weaker" : "foe.even");
     baseTags.push("foe.single");
-    baseTags.push(enemy.beast === true ? "foe.beast" : "foe.human");
+    if (enemy.beast === true) baseTags.push("foe.beast");
+    // G-04：系統が獣でも人でもない敵（不死・魔物・精霊・竜種）は
+    // foe.<family> で数える（09 §7.1 の種族の次元）
+    else if (enemy.family !== undefined && enemy.family !== "human")
+      baseTags.push(`foe.${enemy.family}`);
+    else baseTags.push("foe.human");
     if (s.telegraph !== null) baseTags.push("vs.telegraph");
     if (s.turn === 1) baseTags.push("first.strike");
     if (s.playerHp <= s.playerHpMax * 0.3) baseTags.push("self.lowhp");
