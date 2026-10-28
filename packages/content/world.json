@@ -1,0 +1,1809 @@
+{
+  "version": 1,
+  "townBase": {
+    "places": [
+      {
+        "key": "gate",
+        "name": "門",
+        "scene": "gate",
+        "pos": [80, 82],
+        "desc": "町の出入り口。道は外の世界へ続いている",
+        "actions": [
+          { "type": "work", "kinds": ["riding", "footwork", "wind_magic", "lancer"] },
+          { "type": "social" }
+        ]
+      },
+      {
+        "key": "home",
+        "name": "宿の自室",
+        "scene": "home",
+        "pos": [30, 62],
+        "desc": "身の回りの物を置ける小さな部屋",
+        "actions": [
+          { "type": "rest" },
+          { "type": "cook" },
+          { "type": "eat" },
+          { "type": "shelf" },
+          { "type": "status" },
+          { "type": "settings" },
+          { "type": "retire" },
+          { "type": "reset" }
+        ]
+      },
+      {
+        "key": "inn",
+        "name": "宿屋",
+        "scene": "inn",
+        "pos": [56, 56],
+        "desc": "旅人を泊める宿。今夜の眠りはここで",
+        "actions": [
+          { "type": "sleep" },
+          { "type": "social" },
+          { "type": "eat" },
+          { "type": "news" },
+          { "type": "incident" },
+          { "type": "mentor" }
+        ]
+      },
+      {
+        "key": "tavern",
+        "name": "酒場",
+        "scene": "tavern",
+        "pos": [38, 44],
+        "desc": "酒と話と、たまの揉め事",
+        "actions": [
+          {
+            "type": "work",
+            "kinds": [
+              "performance",
+              "singing",
+              "cooking",
+              "brewing",
+              "gambling",
+              "flourish",
+              "storyteller",
+              "medicinal_meal"
+            ]
+          },
+          { "type": "gamble" },
+          { "type": "social" },
+          { "type": "eat" },
+          { "type": "news" },
+          { "type": "incident" }
+        ]
+      },
+      {
+        "key": "market",
+        "name": "市場",
+        "scene": "market",
+        "pos": [55, 38],
+        "desc": "品物の売り買い。値段は町と日で変わる",
+        "actions": [
+          {
+            "type": "work",
+            "kinds": [
+              "eloquence",
+              "appraisal",
+              "bargaining",
+              "arithmetic",
+              "etiquette",
+              "merchant_eye"
+            ]
+          },
+          { "type": "market" },
+          { "type": "social" },
+          { "type": "stroll" }
+        ]
+      },
+      {
+        "key": "square",
+        "name": "広場",
+        "scene": "town",
+        "pos": [46, 60],
+        "desc": "町の中心。張り紙と人の行き来",
+        "actions": [{ "type": "stroll" }, { "type": "board" }]
+      },
+      {
+        "key": "guild",
+        "name": "集会所",
+        "scene": "guild",
+        "pos": [66, 30],
+        "desc": "町の用事が集まる場所。鍛錬もここで",
+        "actions": [
+          { "type": "work", "default": true },
+          { "type": "train" },
+          { "type": "board" },
+          { "type": "society" },
+          { "type": "records" },
+          { "type": "crisis" },
+          { "type": "occasion" }
+        ]
+      },
+      {
+        "key": "church",
+        "name": "教会",
+        "scene": "church",
+        "pos": [26, 30],
+        "desc": "祈りと癒しの場。静かな光が差す",
+        "actions": [
+          {
+            "type": "work",
+            "kinds": [
+              "prayer",
+              "medicine",
+              "cure",
+              "literacy",
+              "archaeology",
+              "mana",
+              "water_magic",
+              "light_magic",
+              "dark_magic",
+              "void_magic",
+              "life_magic",
+              "care_worker"
+            ]
+          },
+          { "type": "pray" },
+          { "type": "social" },
+          { "type": "lore" },
+          { "type": "mentor" }
+        ]
+      },
+      {
+        "key": "forge",
+        "name": "鍛冶場",
+        "scene": "forge",
+        "pos": [18, 48],
+        "desc": "火と槌の音。武器の売り買いもここで",
+        "actions": [
+          { "type": "work", "kinds": ["smithing", "fire_magic", "weapon_eye"] },
+          { "type": "arms" },
+          { "type": "social" },
+          { "type": "mentor" }
+        ]
+      }
+    ],
+    "npcs": [
+      { "id": "innkeeper", "label": "宿屋の主", "place": "inn" },
+      { "id": "gatekeeper", "label": "門番", "place": "gate" }
+    ],
+    "market": {
+      "stock": ["mat.flour", "mat.salt", "meal.bread", "meal.stew"]
+    }
+  },
+  "townTypes": [
+    {
+      "id": "shukuba",
+      "name": "宿場街",
+      "desc": "街道筋の宿場町。旅人と荷が行き交い、仕事も雑多に集まる",
+      "startWeight": 3,
+      "weight": 3,
+      "names": [
+        "アルディ",
+        "カルナ",
+        "リィゼ",
+        "トルメ",
+        "ハルシュ",
+        "セイン",
+        "ネムル",
+        "オルド",
+        "フェイル",
+        "マルク",
+        "ドーナ",
+        "ブレン",
+        "カッサ",
+        "ヴィア"
+      ],
+      "places": [
+        {
+          "key": "stable",
+          "name": "馬屋",
+          "scene": "town",
+          "pos": [74, 66],
+          "desc": "荷馬と旅人の足を預かる厩。藁の匂いがする",
+          "actions": [
+            { "type": "work", "kinds": ["riding", "footwork", "teaching", "leadership"] },
+            { "type": "social" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "carter",
+          "label": "荷運びの頭",
+          "place": "stable",
+          "mentorSkills": ["riding", "footwork"]
+        },
+        {
+          "id": "peddler",
+          "label": "行商人",
+          "place": "market",
+          "mentorSkills": ["bargaining", "merchant_eye"]
+        }
+      ],
+      "market": { "cheap": ["mat.salt", "meal.bread"], "dear": [] },
+      "errands": [
+        {
+          "id": "supply",
+          "name": "街道の補給",
+          "text": "旅の備えを納めてほしいという張り紙",
+          "need": { "meal.bread": 2 },
+          "reward": { "money": 20, "bond": true }
+        }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "街道から荷馬の隊が入ってきた。御者が軽く会釈していく",
+          "fatigue": -4
+        },
+        {
+          "weight": 2,
+          "text": "旅人の噂を耳にした。遠くの町の話は尾ひれが付いている",
+          "gain": { "skill": "geography", "amount": 3 }
+        }
+      ]
+    },
+    {
+      "id": "port",
+      "name": "港町",
+      "desc": "潮の匂いのする港町。魚と荷物が集まり、船の便が行き交う",
+      "startWeight": 1,
+      "weight": 2,
+      "names": [
+        "ベルン",
+        "ナウス",
+        "ポルタ",
+        "セイル",
+        "ラゴス",
+        "ミーナ",
+        "カイロ",
+        "トスカ",
+        "ヴェル",
+        "ハーヴ",
+        "ロータ",
+        "ネーナ",
+        "ポーサ",
+        "マリナ"
+      ],
+      "places": [
+        {
+          "key": "harbor",
+          "name": "港",
+          "scene": "lake",
+          "pos": [82, 50],
+          "desc": "桟橋と帆綱。潮風が町の息吹",
+          "actions": [
+            { "type": "work", "kinds": ["fishing", "swimming", "carpentry", "leatherwork"] },
+            { "type": "fish" },
+            { "type": "social" },
+            { "type": "stroll" }
+          ]
+        },
+        {
+          "key": "warehouse",
+          "name": "倉庫街",
+          "scene": "town",
+          "pos": [68, 40],
+          "desc": "積み荷の谷間。帳場の算盤が鳴る",
+          "actions": [
+            { "type": "work", "kinds": ["arithmetic", "bargaining", "craft", "appraisal"] },
+            { "type": "social" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "fisher",
+          "label": "漁師",
+          "place": "harbor",
+          "mentorSkills": ["fishing", "swimming"]
+        },
+        {
+          "id": "shipwright",
+          "label": "船大工",
+          "place": "warehouse",
+          "mentorSkills": ["carpentry"]
+        }
+      ],
+      "market": {
+        "stock": ["fish.sea", "fish.river", "fish.lake"],
+        "cheap": ["fish.sea", "fish.river", "fish.lake"],
+        "dear": ["ore.copper", "ore.iron"]
+      },
+      "errands": [
+        {
+          "id": "fish",
+          "name": "魚の納品",
+          "text": "朝獲れの魚を納めてほしいという仕事",
+          "need": { "fish.river": 2 },
+          "reward": { "money": 18, "bond": true }
+        }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "波止場で網の手入れを眺めた。潮風が気持ちいい", "fatigue": -4 },
+        {
+          "weight": 2,
+          "text": "沖に船の影が見えた。遠くの港へ行く便だろう",
+          "gain": { "skill": "geography", "amount": 3 }
+        }
+      ]
+    },
+    {
+      "id": "mine",
+      "name": "鉱山町",
+      "desc": "山に喰い込む鉱山の町。石と鉄、粉塵の匂いが絶えない",
+      "startWeight": 1,
+      "weight": 2,
+      "names": [
+        "ガーヌ",
+        "ドルフ",
+        "カッパ",
+        "ロッカ",
+        "ベイン",
+        "ソルド",
+        "ツェル",
+        "グロト",
+        "ハンマ",
+        "ラスク",
+        "ボーラ",
+        "シュタ",
+        "デルヴ",
+        "コーガ"
+      ],
+      "places": [
+        {
+          "key": "pithead",
+          "name": "坑道口",
+          "scene": "forge",
+          "pos": [82, 28],
+          "desc": "山の腹へ続く暗い坑道。ツルハシの音が響く",
+          "actions": [
+            { "type": "work", "kinds": ["mining", "prospecting", "earth_magic", "gathering"] },
+            { "type": "social" }
+          ]
+        },
+        {
+          "key": "oreyard",
+          "name": "選鉱場",
+          "scene": "town",
+          "pos": [70, 38],
+          "desc": "石を選り分ける場。粉塵が白く舞う",
+          "actions": [
+            { "type": "work", "kinds": ["mining", "appraisal", "arithmetic"] },
+            { "type": "social" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "foreman",
+          "label": "坑夫長",
+          "place": "pithead",
+          "mentorSkills": ["mining", "prospecting"]
+        },
+        {
+          "id": "assayer",
+          "label": "鑑定士",
+          "place": "oreyard",
+          "mentorSkills": ["appraisal", "weapon_eye"]
+        }
+      ],
+      "market": {
+        "stock": ["ore.copper", "ore.iron"],
+        "cheap": ["ore.copper", "ore.iron"],
+        "dear": ["meal.stew", "herb", "wood"]
+      },
+      "errands": [
+        {
+          "id": "ore",
+          "name": "鉱石の納入",
+          "text": "選鉱場への鉱石の納品",
+          "need": { "ore.copper": 2 },
+          "reward": { "money": 28, "bond": true }
+        }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "坑口から出てきた坑夫たちと挨拶を交わした。粉塵まみれの笑顔",
+          "fatigue": -3
+        },
+        { "weight": 2, "text": "足元に光る石の欠片を見つけた", "items": { "ore.copper": 1 } }
+      ]
+    },
+    {
+      "id": "castle",
+      "name": "城下町",
+      "desc": "城の麓に広がる町。武家の気風と祭りの賑わいが同居する",
+      "startWeight": 1,
+      "weight": 2,
+      "names": [
+        "ヴァール",
+        "リオネ",
+        "カステ",
+        "グラン",
+        "ゼーク",
+        "バルド",
+        "アルガ",
+        "ルフト",
+        "シグル",
+        "オスカ",
+        "ヘルム",
+        "タイド",
+        "ヴェイン",
+        "ロイン"
+      ],
+      "places": [
+        {
+          "key": "arena",
+          "name": "闘技場",
+          "scene": "guild",
+          "pos": [64, 24],
+          "desc": "木剣の音と歓声。腕試しの場",
+          "actions": [
+            {
+              "type": "work",
+              "kinds": [
+                "swordplay",
+                "spear",
+                "brawl",
+                "shield",
+                "archery",
+                "parry",
+                "iaijutsu",
+                "lancer",
+                "flourish",
+                "intimidation"
+              ]
+            },
+            { "type": "social" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "drillmaster",
+          "label": "稽古頭",
+          "place": "arena",
+          "mentorSkills": ["swordplay", "spear", "parry"]
+        },
+        {
+          "id": "guard",
+          "label": "衛士",
+          "place": "gate",
+          "mentorSkills": ["shield", "intimidation"]
+        }
+      ],
+      "market": {
+        "stock": ["mat.spice"],
+        "cheap": [],
+        "dear": ["fish.river", "fish.lake", "meal.stew"]
+      },
+      "errands": [
+        {
+          "id": "equip",
+          "name": "武具の材料",
+          "text": "修理のための材料を集めてほしい",
+          "need": { "ore.iron": 1, "wood": 2 },
+          "reward": { "money": 32, "bond": true }
+        }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "練兵の掛け声が聞こえる。足並みを真似てみた",
+          "gain": { "skill": "footwork", "amount": 3 }
+        },
+        { "weight": 2, "text": "城の見物人と雑談した。町の自慢話を聞かされる", "fatigue": -3 }
+      ]
+    },
+    {
+      "id": "farm",
+      "name": "農村",
+      "desc": "畑と人の営みでできた村。収穫の匂いと素朴な笑顔",
+      "startWeight": 3,
+      "weight": 3,
+      "names": [
+        "ムギノ",
+        "タニダ",
+        "ホッサ",
+        "ミノリ",
+        "ナノハ",
+        "フルタ",
+        "カザハ",
+        "ツチダ",
+        "イナホ",
+        "ソラノ",
+        "クルミ",
+        "ヤマネ",
+        "アシダ",
+        "ノミヤ"
+      ],
+      "omit": ["forge"],
+      "places": [
+        {
+          "key": "fields",
+          "name": "共同畑",
+          "scene": "highway",
+          "pos": [78, 66],
+          "desc": "村人で耕す畑。季節の作が実る",
+          "actions": [
+            { "type": "work", "kinds": ["farming", "gathering", "cooking", "care_worker"] },
+            { "type": "gather" },
+            { "type": "social" },
+            { "type": "stroll" }
+          ],
+          "gather": {
+            "skill": "farming",
+            "difficulty": 8,
+            "entries": [
+              { "item": "grain", "weight": 4, "n": [1, 3] },
+              { "item": "egg", "weight": 2, "n": [1, 2] },
+              { "item": "nut", "weight": 1, "n": [1, 2], "seasons": [2] },
+              { "item": "herb", "weight": 1, "n": [1, 1], "seasons": [0, 1] }
+            ]
+          }
+        }
+      ],
+      "npcs": [
+        { "id": "fieldmaster", "label": "畑の長", "place": "fields", "mentorSkills": ["farming"] },
+        {
+          "id": "elder",
+          "label": "村の古老",
+          "place": "square",
+          "mentorSkills": ["care_worker", "medicine"]
+        }
+      ],
+      "market": {
+        "stock": ["grain", "egg"],
+        "cheap": ["grain", "egg", "meal.bread", "mat.flour"],
+        "dear": ["mat.salt", "mat.spice", "ore.iron"]
+      },
+      "errands": [
+        {
+          "id": "harvest",
+          "name": "収穫の納め",
+          "text": "収穫の取り分を納めてほしいという頼み",
+          "need": { "grain": 3 },
+          "reward": { "money": 14, "bond": true }
+        }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "畑仕事を手伝わせてもらった。土の匂いがする",
+          "gain": { "skill": "farming", "amount": 3 }
+        },
+        { "weight": 2, "text": "納屋の陰で卵を見つけた", "items": { "egg": 1 } }
+      ]
+    },
+    {
+      "id": "academy",
+      "name": "学術都市",
+      "desc": "書物と学び舎の町。論争の声とインクの匂いが漂う",
+      "startWeight": 1,
+      "weight": 1,
+      "names": [
+        "アルナ",
+        "セフェル",
+        "リブラ",
+        "ノウム",
+        "カデン",
+        "オクス",
+        "テラム",
+        "ソフィア",
+        "エジル",
+        "マーサ",
+        "リンデ",
+        "ヴォルト",
+        "アステ",
+        "クレル"
+      ],
+      "places": [
+        {
+          "key": "library",
+          "name": "図書館",
+          "scene": "guild",
+          "pos": [40, 26],
+          "desc": "書架の谷間。誰かが何かを調べている",
+          "actions": [
+            {
+              "type": "work",
+              "kinds": ["literacy", "archaeology", "medicine", "teaching", "arithmetic", "mana"]
+            },
+            { "type": "book" },
+            { "type": "lore" },
+            { "type": "social" },
+            { "type": "mentor" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "scholar",
+          "label": "書記官",
+          "place": "library",
+          "mentorSkills": ["literacy", "archaeology"]
+        },
+        { "id": "apprentice", "label": "学徒", "place": "library" }
+      ],
+      "market": { "cheap": ["mat.spice"], "dear": ["wood", "meal.stew", "grain"] },
+      "errands": [
+        {
+          "id": "relic",
+          "name": "資料の提供",
+          "text": "調査のための古い品を求めている",
+          "need": { "relic": 1 },
+          "reward": { "money": 40, "bond": true }
+        }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "公開講義を立ち聞きした。難しいが面白い",
+          "gain": { "skill": "literacy", "amount": 3 }
+        },
+        {
+          "weight": 2,
+          "text": "学者たちが遺跡の噂で盛り上がっている",
+          "gain": { "skill": "archaeology", "amount": 3 }
+        }
+      ]
+    },
+    {
+      "id": "fort",
+      "name": "辺境の砦",
+      "desc": "国境を守る砦の町。緊張と規律、そして仲間意識",
+      "startWeight": 0,
+      "weight": 2,
+      "names": [
+        "ゼーレ",
+        "ガルン",
+        "ファング",
+        "ドラコ",
+        "ノルト",
+        "ストル",
+        "ヴァイス",
+        "カルグ",
+        "エッジ",
+        "ロガン",
+        "ベルク",
+        "ザイン",
+        "グリム",
+        "フォール"
+      ],
+      "places": [
+        {
+          "key": "barracks",
+          "name": "兵舎",
+          "scene": "guild",
+          "pos": [60, 30],
+          "desc": "武器と寝具の並ぶ兵の家。規律が空気を引き締める",
+          "actions": [
+            {
+              "type": "work",
+              "kinds": [
+                "swordplay",
+                "spear",
+                "shield",
+                "archery",
+                "leadership",
+                "intimidation",
+                "lancer",
+                "riding"
+              ]
+            },
+            { "type": "social" },
+            { "type": "mentor" }
+          ]
+        },
+        {
+          "key": "watchtower",
+          "name": "見張り台",
+          "scene": "gate",
+          "pos": [84, 22],
+          "desc": "国境を見渡す台。風が強い",
+          "actions": [
+            {
+              "type": "work",
+              "kinds": ["observation", "geography", "archery", "throwing", "hidden_weapon"]
+            },
+            { "type": "stroll" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "captain",
+          "label": "砦の隊長",
+          "place": "barracks",
+          "mentorSkills": ["leadership", "spear", "shield"]
+        },
+        {
+          "id": "scout",
+          "label": "斥候",
+          "place": "watchtower",
+          "mentorSkills": ["observation", "stealth", "archery"]
+        }
+      ],
+      "market": { "cheap": [], "dear": ["meal.stew", "mat.flour", "grain", "wood"] },
+      "errands": [
+        {
+          "id": "provision",
+          "name": "兵站の備蓄",
+          "text": "砦の備蓄に食料を納めてほしい",
+          "need": { "meal.bread": 2, "meal.stew": 1 },
+          "reward": { "money": 36, "bond": true }
+        }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "巡回の兵とすれ違った。警戒の目つきが緩む", "fatigue": -3 },
+        {
+          "weight": 2,
+          "text": "国境の空を眺めた。遠くに鳥の群れ",
+          "gain": { "skill": "observation", "amount": 3 }
+        }
+      ]
+    },
+    {
+      "id": "holy",
+      "name": "聖地",
+      "desc": "巡礼の集まる聖なる町。祈りの声と線香の煙",
+      "startWeight": 1,
+      "weight": 1,
+      "names": [
+        "エルナ",
+        "ミヤコ",
+        "セリア",
+        "アーデン",
+        "テオス",
+        "リリア",
+        "カノン",
+        "サリエ",
+        "ベール",
+        "オルト",
+        "ナジア",
+        "ヒメラ",
+        "ソレン",
+        "マイル"
+      ],
+      "omit": ["church"],
+      "places": [
+        {
+          "key": "temple",
+          "name": "大神殿",
+          "scene": "church",
+          "pos": [44, 22],
+          "desc": "壮麗な神殿。祈りの声が谺する",
+          "actions": [
+            {
+              "type": "work",
+              "kinds": [
+                "prayer",
+                "light_magic",
+                "cure",
+                "life_magic",
+                "medicine",
+                "care_worker",
+                "etiquette",
+                "literacy"
+              ]
+            },
+            { "type": "pray" },
+            { "type": "lore" },
+            { "type": "social" },
+            { "type": "mentor" }
+          ]
+        },
+        {
+          "key": "pilgrim",
+          "name": "参道",
+          "scene": "town",
+          "pos": [52, 44],
+          "desc": "巡礼の土産と簡素な食べ物が並ぶ通り",
+          "actions": [
+            { "type": "work", "kinds": ["eloquence", "bargaining"] },
+            { "type": "market" },
+            { "type": "social" },
+            { "type": "stroll" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "priest",
+          "label": "神官",
+          "place": "temple",
+          "mentorSkills": ["prayer", "cure", "light_magic"]
+        },
+        { "id": "pilgrimnpc", "label": "巡礼者", "place": "inn" }
+      ],
+      "market": {
+        "stock": ["herb", "herb.wild"],
+        "cheap": ["herb", "herb.wild"],
+        "dear": ["mat.spice", "ore.iron"]
+      },
+      "errands": [
+        {
+          "id": "rite",
+          "name": "儀式の香草",
+          "text": "儀式に使う香草を納めてほしい",
+          "need": { "herb": 2 },
+          "reward": { "money": 16, "bond": true }
+        }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "神殿の鐘が鳴った。身が引き締まる",
+          "gain": { "skill": "prayer", "amount": 3 }
+        },
+        {
+          "weight": 2,
+          "text": "巡礼者の話を聞いた。遠い国の話に心が動く",
+          "gain": { "skill": "geography", "amount": 3 }
+        }
+      ]
+    },
+    {
+      "id": "hidden",
+      "name": "隠れ里",
+      "desc": "人目を避ける小さな集落。知る人ぞ知る隠れ家",
+      "startWeight": 0,
+      "weight": 1,
+      "names": [
+        "コクリ",
+        "シノブ",
+        "カクレ",
+        "ミチカ",
+        "オクチ",
+        "サトリ",
+        "ユメノ",
+        "ツヅミ",
+        "カゲロ",
+        "イブキ",
+        "ナズナ",
+        "セドノ",
+        "ミソラ",
+        "アヤメ"
+      ],
+      "omit": ["forge", "tavern", "market", "church"],
+      "places": [
+        {
+          "key": "chief",
+          "name": "長の家",
+          "scene": "guild",
+          "pos": [46, 34],
+          "desc": "里の取り仕切りの家。静かな威厳がある",
+          "actions": [
+            { "type": "work", "default": true },
+            { "type": "train" },
+            { "type": "board" },
+            { "type": "society" },
+            { "type": "records" },
+            { "type": "crisis" },
+            { "type": "occasion" }
+          ]
+        },
+        {
+          "key": "herbhut",
+          "name": "薬草師の小屋",
+          "scene": "home",
+          "pos": [26, 42],
+          "desc": "干し草と薬の匂い。里の知恵が詰まっている",
+          "actions": [
+            { "type": "work", "kinds": ["gathering", "medicine", "alchemy", "cure", "life_magic"] },
+            { "type": "social" },
+            { "type": "mentor" }
+          ]
+        }
+      ],
+      "npcs": [
+        {
+          "id": "hermit",
+          "label": "薬草師",
+          "place": "herbhut",
+          "mentorSkills": ["gathering", "life_magic", "stealth"]
+        },
+        { "id": "chiefnpc", "label": "隠れ里の長", "place": "chief" }
+      ],
+      "market": {},
+      "errands": [
+        {
+          "id": "herbs",
+          "name": "薬草の納品",
+          "text": "里の薬草を納めてほしいという頼み",
+          "need": { "herb.wild": 2 },
+          "reward": { "money": 22, "bond": true }
+        }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "里の人が薬草の乾かし方を教えてくれた",
+          "gain": { "skill": "gathering", "amount": 3 }
+        },
+        { "weight": 2, "text": "静けさの中、遠くの鳥の声が聞こえる", "fatigue": -5 }
+      ]
+    }
+  ],
+  "areaTypes": [
+    {
+      "id": "forest",
+      "name": "森",
+      "scene": "forest",
+      "danger": 1,
+      "names": [
+        "近郊の森",
+        "朝霧の森",
+        "苔むす森",
+        "鳥の森",
+        "薄闇の森",
+        "若葉の森",
+        "静かな森",
+        "語りの森",
+        "深緑の森",
+        "木漏れ日の森"
+      ],
+      "descs": ["木立の合間に光が差す静かな森", "鳥の声と葉擦れの音。歩きやすい森"],
+      "hunt": true,
+      "work": { "kinds": ["logging", "gathering", "hunting"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 10,
+        "entries": [
+          { "item": "herb", "weight": 3, "n": [1, 2] },
+          { "item": "nut", "weight": 3, "n": [1, 3] },
+          { "item": "mushroom", "weight": 2, "n": [1, 2] },
+          { "item": "wood", "weight": 2, "n": [1, 2] },
+          { "item": "herb.wild", "weight": 2, "n": [1, 1], "seasons": [0, 1] },
+          { "item": "honey", "weight": 1, "n": [1, 1], "seasons": [0] }
+        ]
+      },
+      "enemies": [
+        { "id": "stray_dog", "weight": 4 },
+        { "id": "wolf", "weight": 3 },
+        { "id": "boar", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "spring", "weight": 3 },
+        { "kind": "charcoal_hut", "weight": 2 },
+        { "kind": "game_trail", "weight": 3 },
+        { "kind": "giant_tree", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 2, "text": "木の実の落ちる音に振り返った。何かが逃げていく", "fatigue": 2 },
+        { "weight": 2, "text": "茸の群生を見つけた", "items": { "mushroom": 1 } }
+      ]
+    },
+    {
+      "id": "deep_forest",
+      "name": "深い森",
+      "scene": "forest",
+      "danger": 3,
+      "names": [
+        "忘れられた森",
+        "闇の森",
+        "獣の森",
+        "囁く森",
+        "苔深き森",
+        "迷いの森",
+        "影の森",
+        "老木の森"
+      ],
+      "descs": ["光の届かない深い森。何かが潜んでいる", "空気が重い。帰り道を見失わないように"],
+      "hunt": true,
+      "work": { "kinds": ["logging", "gathering", "hunting", "stealth"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 22,
+        "entries": [
+          { "item": "mushroom", "weight": 3, "n": [1, 2] },
+          { "item": "herb.wild", "weight": 3, "n": [1, 2] },
+          { "item": "wood", "weight": 2, "n": [1, 2] },
+          { "item": "honey", "weight": 1, "n": [1, 1], "seasons": [0, 1] },
+          { "item": "nut", "weight": 1, "n": [1, 2], "seasons": [2] }
+        ]
+      },
+      "enemies": [
+        { "id": "green_ape", "weight": 3 },
+        { "id": "dire_wolf", "weight": 3 },
+        { "id": "shade_wisp", "weight": 2 },
+        { "id": "boar", "weight": 1 }
+      ],
+      "spots": [
+        { "kind": "game_trail", "weight": 4 },
+        { "kind": "giant_tree", "weight": 3 },
+        { "kind": "cave_mouth", "weight": 2 },
+        { "kind": "charcoal_hut", "weight": 1 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "木々の間に気配を感じる。背筋が寒くなる", "fatigue": 6 },
+        {
+          "weight": 2,
+          "text": "獣の抜け殻のような蔓を見つけた",
+          "gain": { "skill": "observation", "amount": 4 }
+        }
+      ]
+    },
+    {
+      "id": "hills",
+      "name": "丘陵",
+      "scene": "highway",
+      "danger": 1,
+      "names": [
+        "草むらの丘陵",
+        "風の丘",
+        "羊の丘",
+        "緩やかな起伏",
+        "遠見の丘",
+        "芒の丘",
+        "日当たりの丘",
+        "緑の丘陵"
+      ],
+      "descs": ["緩やかな起伏の続く丘陵。風が草を撫でる", "見晴らしのいい丘。遠くに町が見える"],
+      "hunt": true,
+      "work": { "kinds": ["gathering", "hunting", "footwork"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 8,
+        "entries": [
+          { "item": "herb", "weight": 3, "n": [1, 2] },
+          { "item": "nut", "weight": 2, "n": [1, 2] },
+          { "item": "wood", "weight": 2, "n": [1, 2] },
+          { "item": "grain", "weight": 2, "n": [1, 2], "seasons": [1, 2] }
+        ]
+      },
+      "enemies": [
+        { "id": "wild_goat", "weight": 3 },
+        { "id": "hawk", "weight": 3 },
+        { "id": "bandit", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "spring", "weight": 3 },
+        { "kind": "watch_tower", "weight": 3 },
+        { "kind": "game_trail", "weight": 2 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "丘の上で昼寝をした。風が涼しい", "fatigue": -8 },
+        {
+          "weight": 2,
+          "text": "遠くに道が見えた。方角を確かめる",
+          "gain": { "skill": "geography", "amount": 4 }
+        }
+      ]
+    },
+    {
+      "id": "mountain",
+      "name": "山岳",
+      "scene": "highway",
+      "danger": 4,
+      "names": [
+        "岩稜の山",
+        "雲の尾根",
+        "荒れた山",
+        "吹き下ろしの嶺",
+        "霧の峰",
+        "高嶺",
+        "切り立つ山",
+        "風鳴りの山"
+      ],
+      "descs": [
+        "切り立つ岩場と細い道。落ちればただでは済まない",
+        "空気が薄く、風が強い。足元に気をつけて"
+      ],
+      "hunt": true,
+      "work": { "kinds": ["mining", "prospecting", "footwork", "gathering"] },
+      "gather": {
+        "skill": "mining",
+        "difficulty": 24,
+        "entries": [
+          { "item": "ore.copper", "weight": 3, "n": [1, 2] },
+          { "item": "ore.iron", "weight": 2, "n": [1, 2] },
+          { "item": "wood", "weight": 1, "n": [1, 2] },
+          { "item": "relic", "weight": 1, "n": [1, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "rock_lizard", "weight": 3 },
+        { "id": "mountain_troll", "weight": 2 },
+        { "id": "griffin", "weight": 2 },
+        { "id": "hawk", "weight": 1 }
+      ],
+      "spots": [
+        { "kind": "cave_mouth", "weight": 4 },
+        { "kind": "watch_tower", "weight": 2 },
+        { "kind": "spring", "weight": 2 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "足元の岩が崩れた。危うく踏み外すところだった", "fatigue": 8 },
+        { "weight": 2, "text": "鉱脈の名残を見つけた", "items": { "ore.copper": 1 } }
+      ]
+    },
+    {
+      "id": "lake",
+      "name": "湖",
+      "scene": "lake",
+      "danger": 1,
+      "names": ["静かな湖", "鏡の湖", "緑の湖", "深い湖", "霧の湖", "湖畔の湖", "月の湖", "蒼い湖"],
+      "descs": ["静かな湖面。魚の影が時折光る", "水辺の草むら。釣り人に人気の場所"],
+      "hunt": true,
+      "fish": true,
+      "work": { "kinds": ["fishing", "swimming", "gathering"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 8,
+        "entries": [
+          { "item": "fish.lake", "weight": 3, "n": [1, 2] },
+          { "item": "herb", "weight": 2, "n": [1, 2] },
+          { "item": "fish.river", "weight": 1, "n": [1, 1] },
+          { "item": "wood", "weight": 1, "n": [1, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "turtle", "weight": 3 },
+        { "id": "pike", "weight": 3 },
+        { "id": "lake_serpent", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "spring", "weight": 3 },
+        { "kind": "game_trail", "weight": 2 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "湖面に魚が跳ねた。大物の気配", "fatigue": -4 },
+        { "weight": 2, "text": "水際で貝殻を拾った", "items": { "shell": 1 } }
+      ]
+    },
+    {
+      "id": "river",
+      "name": "川",
+      "scene": "lake",
+      "danger": 1,
+      "names": [
+        "浅瀬の川",
+        "流れの川",
+        "曲がりの川",
+        "清い川",
+        "早瀬の川",
+        "蛇行の川",
+        "水脈の川",
+        "せせらぎの川"
+      ],
+      "descs": ["澄んだ流れの川。浅瀬に魚が見える", "水の流れに沿った道。釣り人の気配"],
+      "hunt": true,
+      "fish": true,
+      "work": { "kinds": ["fishing", "swimming", "logging", "gathering"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 8,
+        "entries": [
+          { "item": "fish.river", "weight": 3, "n": [1, 2] },
+          { "item": "wood", "weight": 2, "n": [1, 2] },
+          { "item": "herb", "weight": 2, "n": [1, 2] },
+          { "item": "shell", "weight": 1, "n": [1, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "big_frog", "weight": 3 },
+        { "id": "river_bandit", "weight": 3 },
+        { "id": "marsh_viper", "weight": 1 }
+      ],
+      "spots": [
+        { "kind": "spring", "weight": 3 },
+        { "kind": "charcoal_hut", "weight": 2 },
+        { "kind": "game_trail", "weight": 2 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "川の流れに足を浸した。冷たくて気持ちいい", "fatigue": -8 },
+        { "weight": 2, "text": "流れてきた木材を拾った", "items": { "wood": 1 } }
+      ]
+    },
+    {
+      "id": "coast",
+      "name": "海岸",
+      "scene": "lake",
+      "danger": 2,
+      "names": [
+        "白砂の海岸",
+        "荒磯",
+        "静かな入り江",
+        "風の浜",
+        "潮の香りの海岸",
+        "岩の海岸",
+        "日の当たる浜",
+        "波打ち際の海岸"
+      ],
+      "descs": ["波の砕ける海岸。沖に島影が見える", "潮の香りと浜辺の貝殻"],
+      "hunt": true,
+      "fish": true,
+      "work": { "kinds": ["fishing", "swimming", "gathering"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 12,
+        "entries": [
+          { "item": "fish.sea", "weight": 3, "n": [1, 2] },
+          { "item": "shell", "weight": 3, "n": [1, 2] },
+          { "item": "wood", "weight": 1, "n": [1, 2] },
+          { "item": "herb", "weight": 1, "n": [1, 1], "seasons": [0, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "crab", "weight": 3 },
+        { "id": "shore_shark", "weight": 2 },
+        { "id": "pirate", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "cave_mouth", "weight": 3 },
+        { "kind": "watch_tower", "weight": 2 },
+        { "kind": "spring", "weight": 2 },
+        { "kind": "game_trail", "weight": 1 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "波打ち際を歩いた。潮風が髪を乱す", "fatigue": -4 },
+        { "weight": 2, "text": "綺麗な貝殻を拾った", "items": { "shell": 1 } }
+      ]
+    },
+    {
+      "id": "marsh",
+      "name": "湿地",
+      "scene": "forest",
+      "danger": 3,
+      "names": [
+        "沈む湿地",
+        "瘴気の沼",
+        "泥の深い湿地",
+        "霧の沼地",
+        "腐葉の湿地",
+        "淀んだ沼",
+        "蠢く湿地",
+        "暗い沼"
+      ],
+      "descs": ["足の沈む沼地。腐葉の匂いが強い", "霧のかかった湿地。瘴気に注意して"],
+      "hunt": true,
+      "work": { "kinds": ["gathering", "medicine", "hunting", "stealth"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 20,
+        "entries": [
+          { "item": "herb.wild", "weight": 3, "n": [1, 2] },
+          { "item": "mushroom", "weight": 3, "n": [1, 2] },
+          { "item": "fish.river", "weight": 1, "n": [1, 1] },
+          { "item": "herb", "weight": 1, "n": [1, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "marsh_viper", "weight": 3 },
+        { "id": "bog_lurker", "weight": 2 },
+        { "id": "plague_rat", "weight": 3 }
+      ],
+      "spots": [
+        { "kind": "game_trail", "weight": 3 },
+        { "kind": "ruin_house", "weight": 3 },
+        { "kind": "spring", "weight": 2 },
+        { "kind": "giant_tree", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "足を泥に取られた。引き抜くのに苦労した", "fatigue": 10 },
+        { "weight": 2, "text": "珍しい茸を見つけた", "items": { "mushroom": 1 } }
+      ]
+    },
+    {
+      "id": "wasteland",
+      "name": "荒野",
+      "scene": "highway",
+      "danger": 4,
+      "names": [
+        "枯れた荒野",
+        "石の荒野",
+        "風の吹き荒れる野",
+        "乾いた大地",
+        "見晴らしの荒野",
+        "砂利の野",
+        "荒れ果てた野",
+        "赤茶けた荒れ地"
+      ],
+      "descs": ["草木の少ない荒れ地。物陰に気をつけて", "風の吹きすさぶ荒野。獣より人が怖い"],
+      "hunt": true,
+      "work": { "kinds": ["gathering", "hunting", "prospecting"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 18,
+        "entries": [
+          { "item": "herb", "weight": 2, "n": [1, 1] },
+          { "item": "ore.copper", "weight": 2, "n": [1, 2] },
+          { "item": "relic", "weight": 2, "n": [1, 1] },
+          { "item": "wood", "weight": 1, "n": [1, 2] }
+        ]
+      },
+      "enemies": [
+        { "id": "vulture", "weight": 3 },
+        { "id": "bandit", "weight": 3 },
+        { "id": "deserter", "weight": 2 },
+        { "id": "scorpion", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "ruin_house", "weight": 3 },
+        { "kind": "watch_tower", "weight": 3 },
+        { "kind": "game_trail", "weight": 2 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "風に砂が舞った。目を擦る", "fatigue": 6 },
+        { "weight": 2, "text": "古い品の欠片を見つけた", "items": { "relic": 1 } }
+      ]
+    },
+    {
+      "id": "snowfield",
+      "name": "雪原",
+      "scene": "highway",
+      "danger": 5,
+      "names": [
+        "白い雪原",
+        "静寂の雪原",
+        "吹雪の野",
+        "凍てつく大地",
+        "銀の雪原",
+        "雪埋めの野",
+        "北風の雪原",
+        "凍原"
+      ],
+      "descs": ["一面の銀世界。寒さが骨に染みる", "深い雪に足を取られる。装備と覚悟が要る"],
+      "hunt": true,
+      "work": { "kinds": ["hunting", "gathering", "footwork"] },
+      "gather": {
+        "skill": "gathering",
+        "difficulty": 28,
+        "entries": [
+          { "item": "herb.snow", "weight": 3, "n": [1, 2], "seasons": [3] },
+          { "item": "ore.iron", "weight": 2, "n": [1, 2] },
+          { "item": "wood", "weight": 1, "n": [1, 1] },
+          { "item": "herb.wild", "weight": 1, "n": [1, 1], "seasons": [1, 2] }
+        ]
+      },
+      "enemies": [
+        { "id": "frost_hare", "weight": 3 },
+        { "id": "snow_wolf", "weight": 3 },
+        { "id": "yeti", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "spring", "weight": 2 },
+        { "kind": "cave_mouth", "weight": 3 },
+        { "kind": "game_trail", "weight": 3 },
+        { "kind": "ruin_house", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "吹雪に見舞われた。身を寄せて凌ぐ", "fatigue": 12 },
+        { "weight": 2, "text": "雪の下から草を見つけた", "items": { "herb.snow": 1 } }
+      ]
+    },
+    {
+      "id": "volcano",
+      "name": "火山",
+      "scene": "abyss",
+      "danger": 7,
+      "names": [
+        "煙る火山",
+        "焔の山",
+        "灰の山",
+        "焦熱の嶺",
+        "溶岩の山",
+        "噴煙の峰",
+        "燃える山地",
+        "黒曜の山"
+      ],
+      "descs": ["噴煙の上がる火山。熱気と硫黄の匂い", "溶岩の流れる山。命を賭す場所"],
+      "hunt": true,
+      "work": { "kinds": ["mining", "prospecting", "gathering"] },
+      "gather": {
+        "skill": "mining",
+        "difficulty": 34,
+        "entries": [
+          { "item": "ore.iron", "weight": 3, "n": [1, 2] },
+          { "item": "ore.gold", "weight": 2, "n": [1, 1] },
+          { "item": "ore.copper", "weight": 1, "n": [1, 2] },
+          { "item": "relic", "weight": 1, "n": [1, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "ash_bat", "weight": 3 },
+        { "id": "fire_lizard", "weight": 3 },
+        { "id": "magma_golem", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "cave_mouth", "weight": 4 },
+        { "kind": "ruin_house", "weight": 2 },
+        { "kind": "watch_tower", "weight": 1 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "熱気に咽せた。汗が噴き出す", "fatigue": 14 },
+        { "weight": 2, "text": "熱い岩の間から鉱石を拾った", "items": { "ore.iron": 1 } }
+      ]
+    },
+    {
+      "id": "battlefield",
+      "name": "古戦場",
+      "scene": "highway",
+      "danger": 5,
+      "names": [
+        "名もなき古戦場",
+        "剣折れの野",
+        "骨の散る野",
+        "忘れられた戦場",
+        "血染めの野",
+        "錆びた武器の野",
+        "兵どもの夢の跡",
+        "古き決戦の地"
+      ],
+      "descs": ["昔の戦いの跡。錆びた武具が散らばる", "静まり返った古戦場。空気が重い"],
+      "hunt": true,
+      "work": { "kinds": ["gathering", "archaeology", "hunting"] },
+      "gather": {
+        "skill": "archaeology",
+        "difficulty": 26,
+        "entries": [
+          { "item": "relic", "weight": 3, "n": [1, 1] },
+          { "item": "ore.iron", "weight": 2, "n": [1, 1] },
+          { "item": "herb.wild", "weight": 2, "n": [1, 2] },
+          { "item": "wood", "weight": 1, "n": [1, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "deserter", "weight": 3 },
+        { "id": "ghoul", "weight": 3 },
+        { "id": "war_ghost", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "ruin_house", "weight": 4 },
+        { "kind": "watch_tower", "weight": 2 },
+        { "kind": "game_trail", "weight": 2 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "錆びた武具を見つけた。昔の戦いの名残", "items": { "relic": 1 } },
+        { "weight": 2, "text": "冷たい風が骨を撫でる。誰かがここで死んだ", "fatigue": 8 }
+      ]
+    },
+    {
+      "id": "dead_village",
+      "name": "廃村",
+      "scene": "forest",
+      "danger": 4,
+      "names": [
+        "捨てられた村",
+        "崩れた村",
+        "無人の集落",
+        "朽ちた村",
+        "忘れられた集落",
+        "煙の止んだ村",
+        "静まり返った村",
+        "闇に沈む村"
+      ],
+      "descs": ["人の去った村。倒れた家屋が残る", "静まり返った集落。何があったのか"],
+      "hunt": true,
+      "work": { "kinds": ["gathering", "archaeology"] },
+      "gather": {
+        "skill": "archaeology",
+        "difficulty": 22,
+        "entries": [
+          { "item": "relic", "weight": 2, "n": [1, 1] },
+          { "item": "herb.wild", "weight": 2, "n": [1, 2] },
+          { "item": "mushroom", "weight": 2, "n": [1, 2] },
+          { "item": "wood", "weight": 1, "n": [1, 2] }
+        ]
+      },
+      "enemies": [
+        { "id": "feral_pack", "weight": 3 },
+        { "id": "ghoul", "weight": 2 },
+        { "id": "hanged_wraith", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "ruin_house", "weight": 5 },
+        { "kind": "spring", "weight": 2 },
+        { "kind": "charcoal_hut", "weight": 3 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "廃屋の影から物音。獣か、それとも", "fatigue": 8 },
+        { "weight": 2, "text": "残された家財を漁った", "money": 12 }
+      ]
+    },
+    {
+      "id": "ruins_field",
+      "name": "遺跡の野",
+      "scene": "highway",
+      "danger": 6,
+      "names": [
+        "石塔の野",
+        "埋もれた遺跡",
+        "円環の石積み",
+        "古代の野",
+        "崩れた神殿の野",
+        "静寂の遺跡",
+        "風化した野",
+        "失われた街の野"
+      ],
+      "descs": ["石積みの遺構が散在する野。古い何かが眠る", "風化した石の森。古代の気配"],
+      "hunt": true,
+      "work": { "kinds": ["archaeology", "appraisal", "gathering"] },
+      "gather": {
+        "skill": "archaeology",
+        "difficulty": 32,
+        "entries": [
+          { "item": "relic", "weight": 3, "n": [1, 2] },
+          { "item": "ore.gold", "weight": 1, "n": [1, 1] },
+          { "item": "ore.copper", "weight": 1, "n": [1, 1] },
+          { "item": "herb.wild", "weight": 1, "n": [1, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "tomb_bat", "weight": 3 },
+        { "id": "ruin_stalker", "weight": 2 },
+        { "id": "stone_guardian", "weight": 2 }
+      ],
+      "spots": [
+        { "kind": "ruin_house", "weight": 4 },
+        { "kind": "watch_tower", "weight": 3 },
+        { "kind": "cave_mouth", "weight": 2 },
+        { "kind": "wayside_shrine", "weight": 2 }
+      ],
+      "stroll": [
+        { "weight": 3, "text": "石積みの欠片を調べた。古い技術の痕跡", "items": { "relic": 1 } },
+        { "weight": 2, "text": "遺跡の奥に目を凝らした。気配がする", "fatigue": 8 }
+      ]
+    },
+    {
+      "id": "farm",
+      "name": "開墾地",
+      "scene": "highway",
+      "danger": 1,
+      "special": "farm",
+      "names": [
+        "開墾地",
+        "新墾の畑",
+        "共同の畑",
+        "開かれた畑",
+        "新しい畑",
+        "耕された土地",
+        "収穫の畑"
+      ],
+      "descs": ["開かれたばかりの畑。耕しの香りがする", "村人が耕す共同の畑。季節の作が実る"],
+      "hunt": true,
+      "work": { "kinds": ["farming", "gathering", "cooking", "earth_magic"] },
+      "gather": {
+        "skill": "farming",
+        "difficulty": 8,
+        "entries": [
+          { "item": "grain", "weight": 4, "n": [1, 3] },
+          { "item": "egg", "weight": 2, "n": [1, 2] },
+          { "item": "nut", "weight": 1, "n": [1, 2], "seasons": [2] },
+          { "item": "herb", "weight": 1, "n": [1, 1], "seasons": [0, 1] }
+        ]
+      },
+      "enemies": [
+        { "id": "stray_dog", "weight": 4 },
+        { "id": "boar", "weight": 3 }
+      ],
+      "spots": [
+        { "kind": "spring", "weight": 3 },
+        { "kind": "charcoal_hut", "weight": 2 },
+        { "kind": "game_trail", "weight": 2 }
+      ],
+      "stroll": [
+        {
+          "weight": 3,
+          "text": "畑仕事を手伝った。土の匂いがする",
+          "gain": { "skill": "farming", "amount": 3 }
+        },
+        { "weight": 2, "text": "納屋の陰で卵を見つけた", "items": { "egg": 1 } }
+      ]
+    },
+    {
+      "id": "abyss",
+      "name": "深層の穴",
+      "scene": "abyss",
+      "danger": 10,
+      "special": "abyss",
+      "names": ["深層の穴", "深淵の穴", "奈落の穴", "無底の穴"],
+      "descs": ["底の見えない大穴。深い闇が広がる", "世界の裂け目。帰れるのは灯りの続く間だけ"],
+      "work": { "kinds": ["mining", "prospecting", "gathering"] },
+      "spots": [],
+      "stroll": [{ "weight": 3, "text": "穴の縁から底を覗いた。底は見えない", "fatigue": 6 }]
+    }
+  ],
+  "spotKinds": [
+    {
+      "id": "spring",
+      "names": ["湧き泉", "清らかな泉", "古い泉", "細流の泉"],
+      "outcomes": [
+        {
+          "weight": 5,
+          "text": "冷たい水を汲んで飲んだ。喉が潤い、足取りが軽くなる",
+          "fatigue": -12
+        },
+        { "weight": 3, "text": "泉のほとりで小休止した。風が頬を撫でていく", "fatigue": -8 },
+        {
+          "weight": 2,
+          "text": "水際に香草の葉を見つけた",
+          "items": { "herb.wild": 1 },
+          "fatigue": -4
+        }
+      ]
+    },
+    {
+      "id": "charcoal_hut",
+      "names": ["炭焼き小屋", "寂れた炭小屋", "炭取りの庵"],
+      "outcomes": [
+        {
+          "weight": 4,
+          "text": "小屋の隅に使える材が残っていた",
+          "items": { "wood": 1 },
+          "gain": { "skill": "logging", "amount": 4 },
+          "fatigue": 4
+        },
+        {
+          "weight": 3,
+          "text": "炭窯の跡を眺めた。火の入れ方の工夫が読み取れる",
+          "gain": { "skill": "craft", "amount": 5 },
+          "fatigue": 3
+        },
+        { "weight": 2, "text": "雨宿りに丁度いい。少し休んでいく", "fatigue": -6 }
+      ]
+    },
+    {
+      "id": "watch_tower",
+      "names": ["崩れた見張り塔", "古い望楼", "石組みの台座"],
+      "outcomes": [
+        {
+          "weight": 4,
+          "text": "塔の上から辺りを見渡した。地形が頭に入る",
+          "gain": { "skill": "geography", "amount": 6 },
+          "fatigue": 4
+        },
+        { "weight": 3, "text": "石の隙間に何かが落ちている", "money": 8, "fatigue": 3 },
+        {
+          "weight": 2,
+          "text": "壁に刻まれた古い記号を見つけた",
+          "gain": { "skill": "archaeology", "amount": 5 },
+          "fatigue": 3
+        }
+      ]
+    },
+    {
+      "id": "game_trail",
+      "names": ["獣道", "薄い踏み跡", "茂みの抜け道"],
+      "outcomes": [
+        {
+          "weight": 5,
+          "text": "獣の足跡をたどった。獲物の気配が近い",
+          "gain": { "skill": "hunting", "amount": 6 },
+          "fatigue": 6
+        },
+        { "weight": 3, "text": "足元に木の実が落ちている", "items": { "nut": 1 }, "fatigue": 3 }
+      ]
+    },
+    {
+      "id": "wayside_shrine",
+      "names": ["道端の祠", "苔むす小祠", "旅の守り神"],
+      "outcomes": [
+        { "weight": 4, "text": "祠に手を合わせた。今夜は少し眠れそうだ", "pray": true },
+        { "weight": 2, "text": "供え物の前で目を閉じる。心が静まる", "fatigue": -8 }
+      ]
+    },
+    {
+      "id": "cave_mouth",
+      "names": ["小さな洞穴", "闇の洞穴", "岩の隙間"],
+      "outcomes": [
+        {
+          "weight": 4,
+          "text": "穴の口で光る石を拾った",
+          "items": { "ore.copper": 1 },
+          "gain": { "skill": "mining", "amount": 4 },
+          "fatigue": 5
+        },
+        {
+          "weight": 3,
+          "text": "洞の奥に冷たい風を感じる。深そうだ",
+          "gain": { "skill": "observation", "amount": 4 },
+          "fatigue": 4
+        },
+        {
+          "weight": 2,
+          "text": "壁の鉱脈の名残を確かめた",
+          "items": { "ore.iron": 1 },
+          "fatigue": 6
+        }
+      ]
+    },
+    {
+      "id": "ruin_house",
+      "names": ["倒れかけの廃屋", "無人の家", "骨組みの小屋"],
+      "outcomes": [
+        { "weight": 4, "text": "廃屋を漁った。使えそうなものを拾う", "money": 10, "fatigue": 5 },
+        {
+          "weight": 3,
+          "text": "焦げた柱の下から小さな品を見つけた",
+          "items": { "relic": 1 },
+          "fatigue": 5
+        },
+        {
+          "weight": 2,
+          "text": "ここに住んだ人の気配を思う",
+          "gain": { "skill": "archaeology", "amount": 5 },
+          "fatigue": 3
+        }
+      ]
+    },
+    {
+      "id": "giant_tree",
+      "names": ["大樹", "根張りの古木", "天を衝く老木"],
+      "outcomes": [
+        { "weight": 4, "text": "木陰で憩った。木漏れ日が暖かい", "fatigue": -8 },
+        { "weight": 3, "text": "根元に木の実を集めた", "items": { "nut": 2 }, "fatigue": 2 },
+        {
+          "weight": 2,
+          "text": "幹のうろから香草が出ている",
+          "items": { "herb.wild": 1 },
+          "fatigue": 2
+        }
+      ]
+    }
+  ],
+  "npcNames": [
+    "アルン",
+    "ベルタ",
+    "カレン",
+    "ダリオ",
+    "エルナ",
+    "フィン",
+    "グレタ",
+    "ハンナ",
+    "イェン",
+    "ユリア",
+    "ケスタ",
+    "ロラン",
+    "マリア",
+    "ネロ",
+    "オデル",
+    "ペトラ",
+    "クエン",
+    "リナ",
+    "サシャ",
+    "タマラ",
+    "ウルフ",
+    "ヴェラ",
+    "ワルト",
+    "クセン",
+    "ユーゴ",
+    "ザラ",
+    "アスト",
+    "ベアタ",
+    "コラ",
+    "ディータ"
+  ],
+  "npcVoice": {
+    "greet": [
+      "「ああ、{name}か。いい天気だ」",
+      "「{name}。今日も元気そうだな」",
+      "「お、{name}。何か用かい」",
+      "「{name}か。最近の調子はどうだ」",
+      "「ああ、{name}。よく来たな」",
+      "「{name}。町は静かだよ」"
+    ],
+    "respect": [
+      "「{deed}、か。さすがだな、{name}」",
+      "「{deed}――{name}の名はこの町でも聞こえている」",
+      "「{deed}、{name}。町の者が頼りにしている」",
+      "「{deed}か。{name}はなかなかの者だ」"
+    ]
+  },
+  "mentorText": {
+    "desc": "{town}の師。{skill}の立ち回りを教える。弟子の間、{skill}の伸びが上がる",
+    "note": "{skill}の師。入門には{skill}{condition}以上"
+  }
+}

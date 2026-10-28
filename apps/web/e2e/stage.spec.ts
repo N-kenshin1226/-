@@ -12,7 +12,7 @@ const CASES = [
 for (const c of CASES) {
   test(`stage が ${c.w}x${c.h} で比率を保って縮退する`, async ({ page }) => {
     await page.setViewportSize({ width: c.w, height: c.h });
-    await page.goto("/?seed=e2e-stage");
+    await page.goto("/?world=legacy&seed=e2e-stage");
     await expect(page.getByRole("heading", { name: "TRACE" })).toBeVisible();
 
     const box = await page.locator(".stage").boundingBox();
@@ -36,7 +36,7 @@ for (const c of CASES) {
 
 test("小さいウィンドウでもメイン画面の全要素が収まる", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("/?seed=e2e-stage");
+  await page.goto("/?world=legacy&seed=e2e-stage");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
   // 常設クロームと主要部品が viewport 内に見える（P-01：見取り図の窓・名札・HUD）

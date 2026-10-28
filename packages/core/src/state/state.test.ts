@@ -418,6 +418,32 @@ describe("save", () => {
     expect(restored.vows).toEqual([]);
   });
 
+  it("version 19 のセーブは world/rep を補って version 20 へ移行される（G-01）", () => {
+    const g = newGame("seed-19", "移行9", newGameCfg);
+    const v19 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v19["version"] = 19;
+    delete v19["world"];
+    const life = v19["life"] as Record<string, unknown>;
+    delete life["rep"];
+    const restored = deserialize(JSON.stringify(v19));
+    expect(restored.version).toBe(SAVE_VERSION);
+    // 旧セーブは「今の地図を持つ世界」として legacy 扱い。評判は空から積み始める
+    expect(restored.world).toEqual({ kind: "legacy", recipe: 0 });
+    expect(restored.life.rep).toEqual({});
+  });
+
+  it("生成世界の world 刻印はセーブ往復で保たれる（地図は seed から引き直す）", () => {
+    const g = newGame("seed-gen", "生成", {
+      ...newGameCfg,
+      world: { kind: "gen", recipe: 1 },
+      initialTown: "t0",
+    });
+    const restored = deserialize(serialize(g));
+    expect(restored).toEqual(g);
+    expect(restored.world.kind).toBe("gen");
+    expect(restored.life.town).toBe("t0");
+  });
+
   it("未知のバージョンは拒否する", () => {
     expect(() => deserialize(JSON.stringify({ version: 99 }))).toThrow();
   });

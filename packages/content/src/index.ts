@@ -177,3 +177,25 @@ export type {
   CrisisTouchpointJson,
   CrisisTypeJson,
 } from "../crises/schema.js";
+// 地方生成（G-01、docs/10。町・地域・地点の「型」の定義表）
+export { world } from "./world.js";
+export {
+  areaTypeSchema,
+  npcTemplateSchema,
+  spotKindSchema,
+  townErrandSchema,
+  townMarketSchema,
+  townPlaceSchema,
+  townTypeSchema,
+  worldFileSchema,
+} from "./world.schema.js";
+export type {
+  AreaTypeJson,
+  NpcTemplateJson,
+  SpotKindJson,
+  TownErrandJson,
+  TownMarketJson,
+  TownPlaceJson,
+  TownTypeJson,
+  WorldFile,
+} from "./world.schema.js";

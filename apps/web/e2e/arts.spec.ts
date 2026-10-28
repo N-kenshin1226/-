@@ -66,7 +66,7 @@ const loadSave = (page: Page, save: string) =>
 
 test("武器屋で技の構えを整える：スロットに収まり、行動は消費しない（K-02）", async ({ page }) => {
   await loadSave(page, saveWithArts("e2e-k02-build"));
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
   const actionsBefore = await page.getByTestId("status").textContent();
 
@@ -90,7 +90,7 @@ test("武器屋で技の構えを整える：スロットに収まり、行動�
 
 test("能力画面の技タブに覚えた技が Lv・気力と共に並ぶ（K-02）", async ({ page }) => {
   await loadSave(page, saveWithArts("e2e-k02-status"));
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   await placeAct(page, "home", "status");
@@ -108,7 +108,7 @@ test("能力画面の技タブに覚えた技が Lv・気力と共に並ぶ（K-
 
 test("戦闘で武技を撃つ：気力が減り、技名が拍に刻まれる（K-02）", async ({ page }) => {
   await loadSave(page, saveWithArts("e2e-k02-combat"));
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   await travelTo(page, "forest");

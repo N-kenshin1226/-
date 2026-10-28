@@ -8,6 +8,7 @@ import {
   type PlayerState,
   type SkillState,
   type TendencyId,
+  type WorldState,
 } from "./types.js";
 import { SAVE_VERSION } from "../save/index.js";
 import type { Legacy } from "../legacy/index.js";
@@ -82,9 +83,18 @@ export interface NewGameConfig {
   initialWeapon?: string;
   /**
    * 基点の町（P-02、life.json towns の id。v18〜）。
-   * 省略時は "ardi"（最初の町。転生・引き継ぎの呼び出し側が別の町を渡せる）
+   * 省略時は "ardi"（最初の町。転生・引き継ぎの呼び出し側が別の町を渡せる。
+   * 生成世界では呼び出し側が生成結果の始まりの町 id を渡す）
    */
   initialTown?: string;
+  /**
+   * 世界の地図の出所（G-01、docs/10。v20〜）。
+   * "gen" を渡すとこの周はシードから生成した地方で遊ぶ（町・地域・道は
+   * core/world の generateWorld が seed から導く —— 呼び出し側は生成結果の
+   * 始まりの町を initialTown にも渡すこと）。
+   * 省略時は "legacy"（places.json の固定マップ。旧来どおりの世界）
+   */
+  world?: WorldState;
   /**
    * 武技・資源（K-02、balance.arts）。指定すると気力・魔力を上限いっぱいで
    * 始める（新しい旅立ちの朝は整っている）。省略時は 0 から（従来どおり）
@@ -207,11 +217,15 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       town: cfg.initialTown ?? "ardi",
       items: {},
       bonds: {},
+      // 町ごとの評判（G-01、v20〜）：まだどこにも名が通っていない
+      rep: {},
       mealDay: -1,
       mealQuality: 0,
       prayedDay: -1,
       journey: null,
     },
+    // 世界の地図（G-01、v20〜）：省略時は固定マップのまま（旧来どおり）
+    world: cfg.world ?? { kind: "legacy", recipe: 0 },
   };
 }
 

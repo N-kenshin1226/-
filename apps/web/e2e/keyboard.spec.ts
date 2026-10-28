@@ -5,7 +5,7 @@ import { waitVeil, wakeUp } from "./helpers.js";
 // ↑↓ で選択・Enter で決定・Esc で戻る。使えない項目は飛ばす。
 // P-01：見取り図（場所の印を ↑↓ で選ぶ）→ 場所 → 行動、の移動もキーだけで辿れる
 test("キーボードだけで1日遊べる（見取り図→ギルド→鍛錬→宿→起床）", async ({ page }) => {
-  await page.goto("/?seed=e2e-keys");
+  await page.goto("/?world=legacy&seed=e2e-keys");
   // React のマウントとキー監視の取り付けが済むまで待つ（見えても効果未付の隙間がある）
   await expect(page.getByRole("heading", { name: "TRACE" })).toBeVisible();
   await page.waitForTimeout(250);

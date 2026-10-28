@@ -65,6 +65,7 @@ import {
   cookQuality,
   drawGamble,
   drawGather,
+  drawSpot,
   drawStroll,
   errandsFor,
   gambleWinChance,
@@ -74,9 +75,12 @@ import {
   marketStock,
   mealToday,
   prayedToday,
+  repOf,
+  strollTableOf,
   townOf,
   townName,
   withItem,
+  withRep,
   type ItemDef,
   type LifeConfig,
 } from "./life/index.js";
@@ -294,6 +298,11 @@ export type Command =
       expFactor?: number;
       /** 注文の報酬（G）。省略時は台帳の市場価値がそのまま入る */
       rewardMoney?: number;
+      /**
+       * 仕事をした場所の id（G-01）。生成世界では場所の属する町の評判に
+       * 積む（省略時は今いる町 —— 町の中の仕事は従来どおりその町への評判）
+       */
+      place?: string;
     }
   /**
    * 戦闘の結果を世界に反映する（03 §4）。戦闘の進行自体は combat/ で行い、
@@ -456,10 +465,17 @@ export type Command =
   // ---- 日々の営み（P-02「行動の種類を増やす」） ----
   /**
    * 散策（1行動）。scope は表のキー（"town"=街の中 / "region"=街の外。
-   * 省略時は旅の途中なら "road"、町にいれば "town"）。歩いて起きる小さな
-   * 出来事を life.json stroll の表から決定的に1件引く
+   * 省略時は旅の途中なら "road"、町にいれば "town"）。place は歩いている
+   * 場所の id —— G-01 の生成世界では場所の型に応じて型別の表を引く。
+   * 歩いて起きる小さな出来事を表から決定的に1件引く
    */
-  | { type: "stroll"; scope?: "town" | "region" }
+  | { type: "stroll"; scope?: "town" | "region"; place?: string }
+  /**
+   * 地域の中の小さな地点へ立ち寄る（G-01、docs/10 §5。1行動）。
+   * spot は生成された地点の id（泉・炭焼き小屋・見張り塔跡…）。
+   * 地点の型の出来事表から1件引き、散策と同じ小さな効果を受ける
+   */
+  | { type: "spot"; spot: string }
   /**
    * 採集（1行動）。place は life.json gather の表のある場所 id。
    * 場所ごとの採集表から季節・天候を見て品を引き、その場所の技能に経験が入る
@@ -679,6 +695,60 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       life: { ...next.life, bonds: { ...next.life.bonds, [npc]: total } },
     };
     events.push({ type: "bonded", npc, amount, total });
+  };
+
+  /**
+   * 散策・地点の出来事1件の小さな効果を state に反映する（P-02/G-01。
+   * 金・拾い物・出会い・見聞・経験・疲労・旗印・祈り —— stroll と spot で同じ処理）。
+   * 結末の一文は呼び出し側が strollOutcome イベントとして出す
+   */
+  const applyLifeOutcome = (outcome: import("./life/index.js").LifeOutcome): void => {
+    if (outcome.money !== undefined && outcome.money !== 0) {
+      const amount = Math.trunc(outcome.money);
+      next = {
+        ...next,
+        player: { ...next.player, money: Math.max(0, next.player.money + amount) },
+      };
+      if (amount > 0) events.push({ type: "moneyPaid", amount });
+    }
+    for (const [id, n] of Object.entries(outcome.items ?? {})) {
+      giveItem(id, Math.trunc(n));
+    }
+    if (outcome.npc !== undefined) {
+      deepen(outcome.npc, outcome.bond ?? cfg.life!.social.talk.bond * 0.8);
+    }
+    if (outcome.gain !== undefined && outcome.gain.amount !== 0) {
+      grantPending(outcome.gain.skill, outcome.gain.amount);
+    }
+    if (outcome.fatigue !== undefined && outcome.fatigue !== 0) {
+      next = {
+        ...next,
+        player: {
+          ...next.player,
+          fatigue: Math.max(0, Math.min(100, next.player.fatigue + outcome.fatigue)),
+        },
+      };
+    }
+    if (outcome.flag !== undefined) {
+      next = { ...next, flags: { ...next.flags, [outcome.flag]: true } };
+    }
+    if (outcome.pray === true) {
+      // 祈りの刻印（G-01。祠などの地点の出来事）：その日の眠りが少し深くなる
+      next = { ...next, life: { ...next.life, prayedDay: next.time.day } };
+    }
+    if (outcome.atom !== undefined) {
+      // 手がかり：アトムを読み終えたことにする（出来事の atom と同じ道。
+      // 読み済みなら何も起きない）
+      const res = readAtom(next, outcome.atom, cfg.lore);
+      if (res.ok) {
+        next = res.state;
+        events.push({ type: "atomRead", id: outcome.atom });
+        for (const f of res.newFacts) events.push({ type: "factLearned", id: f });
+        for (const c of res.connections) {
+          events.push({ type: "loreConnection", id: c.eventId, flag: c.flag });
+        }
+      }
+    }
   };
 
   switch (command.type) {
@@ -1118,6 +1188,19 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         player: { ...next.player, money: next.player.money + pay },
       };
       events.push({ type: "moneyPaid", amount: pay });
+      // 町ごとの評判（G-01）：仕事をこなすと場所の属する町で顔が売れる
+      if (cfg.life?.rep !== undefined) {
+        const workTown =
+          (command.place !== undefined ? cfg.life.places?.[command.place]?.town : undefined) ??
+          townOf(next);
+        next = { ...next, life: withRep(next, workTown, cfg.life.rep.work, cfg.life) };
+        events.push({
+          type: "repGained",
+          town: workTown,
+          amount: cfg.life.rep.work,
+          total: repOf(next, workTown, cfg.life),
+        });
+      }
       // 接点（W-02、docs/08 §5）：注文が今日の危機の接点なら、世界の備えに寄与する。
       // 通常の注文と同じ流れで積むだけ —— 提示を受けない・無視する側には何も起きない。
       // 確認は入力時点の state（＝画面に出ていた今日の提示）に対して行う：
@@ -1574,6 +1657,17 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       next = applyActionLoad(next, "donate", cfg.body);
       events.push({ type: "actionPerformed", kind: "donate", day: next.time.day });
       events.push({ type: "donated", amount });
+      // 町ごとの評判（G-01）：奉仕はその町で顔が売れる
+      if (cfg.life?.rep !== undefined) {
+        const town = townOf(next);
+        next = { ...next, life: withRep(next, town, cfg.life.rep.donate, cfg.life) };
+        events.push({
+          type: "repGained",
+          town,
+          amount: cfg.life.rep.donate,
+          total: repOf(next, town, cfg.life),
+        });
+      }
       break;
     }
     case "readAtom": {
@@ -2032,11 +2126,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     // ---- 日々の営み（P-02「行動の種類を増やす」） ----
     case "stroll": {
       // 散策：歩いて起きる小さな出来事。表は scope で分かれる
-      // （旅の途中は常に "road" —— 街道の出来事しか起きない）
+      // （旅の途中は常に "road" —— 街道の出来事しか起きない）。
+      // G-01：場所・町の型に応じた型別の表があればそちらを引く
       if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
       const scope = next.life.journey !== null ? "road" : (command.scope ?? "town");
+      const table =
+        scope === "road" ? "road" : strollTableOf(cfg.life, scope, command.place, townOf(next));
       const seq = next.counters["action.stroll"] ?? 0;
-      const outcome = drawStroll(next.seed, next.time.day, scope, seq, cfg.life);
+      const outcome = drawStroll(next.seed, next.time.day, table, seq, cfg.life);
       if (outcome === undefined) break;
       next.time = advanceTime(next.time, cfg.time);
       next = applyActionLoad(next, "stroll", cfg.body);
@@ -2047,49 +2144,31 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         variant: scope,
       });
       events.push({ type: "strollOutcome", text: outcome.text });
-      // 小さな効果：金・拾い物・出会い・見聞・経験・疲労・旗印
-      if (outcome.money !== undefined && outcome.money !== 0) {
-        const amount = Math.trunc(outcome.money);
-        next = {
-          ...next,
-          player: { ...next.player, money: Math.max(0, next.player.money + amount) },
-        };
-        if (amount > 0) events.push({ type: "moneyPaid", amount });
-      }
-      for (const [id, n] of Object.entries(outcome.items ?? {})) {
-        giveItem(id, Math.trunc(n));
-      }
-      if (outcome.npc !== undefined) {
-        deepen(outcome.npc, outcome.bond ?? cfg.life.social.talk.bond * 0.8);
-      }
-      if (outcome.gain !== undefined && outcome.gain.amount !== 0) {
-        grantPending(outcome.gain.skill, outcome.gain.amount);
-      }
-      if (outcome.fatigue !== undefined && outcome.fatigue !== 0) {
-        next = {
-          ...next,
-          player: {
-            ...next.player,
-            fatigue: Math.max(0, Math.min(100, next.player.fatigue + outcome.fatigue)),
-          },
-        };
-      }
-      if (outcome.flag !== undefined) {
-        next = { ...next, flags: { ...next.flags, [outcome.flag]: true } };
-      }
-      if (outcome.atom !== undefined) {
-        // 手がかり：アトムを読み終えたことにする（出来事の atom と同じ道。
-        // 読み済みなら何も起きない）
-        const res = readAtom(next, outcome.atom, cfg.lore);
-        if (res.ok) {
-          next = res.state;
-          events.push({ type: "atomRead", id: outcome.atom });
-          for (const f of res.newFacts) events.push({ type: "factLearned", id: f });
-          for (const c of res.connections) {
-            events.push({ type: "loreConnection", id: c.eventId, flag: c.flag });
-          }
-        }
-      }
+      applyLifeOutcome(outcome);
+      break;
+    }
+    case "spot": {
+      // 地点への立ち寄り（G-01）：地域の中の小さな場所（泉・小屋・塔跡…）で
+      // 型の出来事表から1件引く。効果は散策と同じ
+      if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      const outcome = drawSpot(
+        next.seed,
+        next.time.day,
+        command.spot,
+        next.counters["action.spot"] ?? 0,
+        cfg.life,
+      );
+      if (outcome === undefined) break;
+      next.time = advanceTime(next.time, cfg.time);
+      next = applyActionLoad(next, "stroll", cfg.body);
+      events.push({
+        type: "actionPerformed",
+        kind: "spot",
+        day: next.time.day,
+        target: command.spot,
+      });
+      events.push({ type: "strollOutcome", text: outcome.text });
+      applyLifeOutcome(outcome);
       break;
     }
     case "gather": {
@@ -2149,7 +2228,17 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const n = Math.max(1, Math.trunc(command.n ?? 1));
       const town = townOf(next);
       if (!marketStock(town, cfg.life).includes(command.id)) break;
-      const cost = itemPrice(next.seed, next.time.day, command.id, town, "buy", cfg.life, def) * n;
+      const cost =
+        itemPrice(
+          next.seed,
+          next.time.day,
+          command.id,
+          town,
+          "buy",
+          cfg.life,
+          def,
+          repOf(next, town, cfg.life),
+        ) * n;
       if (next.player.money < cost) break;
       next = {
         ...next,
@@ -2167,7 +2256,17 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       const n = Math.max(1, Math.trunc(command.n ?? 1));
       if (itemCount(next, command.id) < n) break;
       const town = townOf(next);
-      const gain = itemPrice(next.seed, next.time.day, command.id, town, "sell", cfg.life, def) * n;
+      const gain =
+        itemPrice(
+          next.seed,
+          next.time.day,
+          command.id,
+          town,
+          "sell",
+          cfg.life,
+          def,
+          repOf(next, town, cfg.life),
+        ) * n;
       next = { ...next, life: withItem(next, command.id, -n) };
       next = {
         ...next,
@@ -2354,6 +2453,17 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (def.reward.bond !== undefined) deepen(def.reward.bond.npc, def.reward.bond.amount);
       if (def.reward.gain !== undefined && def.reward.gain.amount > 0) {
         grantPending(def.reward.gain.skill, def.reward.gain.amount);
+      }
+      // 町ごとの評判（G-01）：掲示板の依頼をこなすとその町で顔が売れる
+      if (cfg.life?.rep !== undefined) {
+        const town = townOf(next);
+        next = { ...next, life: withRep(next, town, cfg.life.rep.errand, cfg.life) };
+        events.push({
+          type: "repGained",
+          town,
+          amount: cfg.life.rep.errand,
+          total: repOf(next, town, cfg.life),
+        });
       }
       break;
     }

@@ -18,7 +18,7 @@ const audioState = (page: Page): Promise<AudioState> =>
   page.evaluate(() => (window as unknown as { __traceAudio: () => AudioState }).__traceAudio());
 
 test("場面ごとにBGMが切り替わり、場所ごとに環境音が鳴る", async ({ page }) => {
-  await page.goto("/?seed=e2e-audio-scene");
+  await page.goto("/?world=legacy&seed=e2e-audio-scene");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
   await expect(page.getByTestId("menu")).toBeVisible();
@@ -55,7 +55,7 @@ test("場面ごとにBGMが切り替わり、場所ごとに環境音が鳴る",
 });
 
 test("音設定は3系統それぞれ保存され、再読み込み後も残る", async ({ page }) => {
-  await page.goto("/?seed=e2e-audio-set");
+  await page.goto("/?world=legacy&seed=e2e-audio-set");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
   await placeAct(page, "home", "settings");
@@ -104,7 +104,7 @@ test("sound=false（F-02互換の切り方）で全系統が無音でもゲー�
   await page.addInitScript(() => {
     localStorage.setItem("trace.fx.v1", JSON.stringify({ sound: false }));
   });
-  await page.goto("/?seed=e2e-audio-off");
+  await page.goto("/?world=legacy&seed=e2e-audio-off");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
   await expect(page.getByTestId("menu")).toBeVisible();

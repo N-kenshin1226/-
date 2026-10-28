@@ -80,7 +80,7 @@ test("何もしないままでも世界は終幕へ進む ―― S通知から�
     localStorage.setItem("trace.save.v1", save);
   }, saveNearEnding("shot-w04-idle"));
   // セーブの危機は公開サンプル型（crisis.sample_mist）で仕込んである —— 実行側も同じ型で解決する
-  await page.goto("/?crisis=sample");
+  await page.goto("/?world=legacy&crisis=sample");
   await expect(page.getByTestId("menu")).toBeVisible();
   // 打診は届いていないので「決着の場面」の項目は出ない（クエスト一覧ではない。
   // 決着の場面はギルドの行動 —— ギルドを開いて項目が無いことを見る。P-01）
@@ -109,7 +109,7 @@ test("段階4の打診は会話の窓の人物が運び、率いた先にも終�
   await page.addInitScript((save) => {
     localStorage.setItem("trace.save.v1", save);
   }, saveStage4("shot-w04-lead"));
-  await page.goto("/?crisis=sample");
+  await page.goto("/?world=legacy&crisis=sample");
   await expect(page.getByTestId("menu")).toBeVisible();
   await placeAct(page, "guild", "crisis");
   const scr = page.getByTestId("screen-crisis");

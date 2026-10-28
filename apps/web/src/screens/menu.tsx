@@ -7,6 +7,7 @@ import { useMemo, useRef, useState } from "react";
 import { canAct, describe, isSkillUnlocked, type GameState } from "@trace/core";
 import {
   cfg,
+  cfgFor,
   crisisFinaleOffers,
   incidentPendingChoice,
   occasionOffers,
@@ -21,7 +22,7 @@ import {
   tpl,
   windChips,
 } from "../game.js";
-import type { PlaceJson } from "@trace/content";
+import type { PlaceLike } from "../world.js";
 import { playSfx } from "../fx/sound.js";
 import {
   DialogueBox,
@@ -41,26 +42,28 @@ import { theme } from "../theme.js";
 const W = theme.colors.world;
 
 /** 見取り図の印の並び（↑↓ の巡回順）：上から下へ、同じ高さなら左から右へ */
-function mapOrder(town: string): PlaceJson[] {
-  return [...townPlacesIn(town)].sort(
+function mapOrder(state: GameState, town: string): PlaceLike[] {
+  return [...townPlacesIn(state, town)].sort(
     (a, b) => (a.pos?.[1] ?? 0) - (b.pos?.[1] ?? 0) || (a.pos?.[0] ?? 0) - (b.pos?.[0] ?? 0),
   );
 }
 
 /** 場所に届き物の印（P-01）：出来事・打診はその届く場所の印で光らせる */
-function placePip(state: GameState, place: PlaceJson): boolean {
+function placePip(state: GameState, place: PlaceLike): boolean {
+  // 話し手の名簿はその世界のもの（G-01：生成地方は生成の住人が差し込まれる）
+  const c = cfgFor(state);
   const types = new Set(place.actions.map((a) => a.type));
   if (
     types.has("incident") &&
-    cfg.incidents !== undefined &&
-    incidentPendingChoice(state, cfg.incidents).length > 0
+    c.incidents !== undefined &&
+    incidentPendingChoice(state, c.incidents).length > 0
   ) {
     return true;
   }
   if (
     types.has("crisis") &&
-    canAct(state.time, cfg.time) &&
-    crisisFinaleOffers(state, cfg.crisis).some(
+    canAct(state.time, c.time) &&
+    crisisFinaleOffers(state, c.crisis).some(
       (o) => o.joinable || (o.joined && !o.attempted) || o.leadable,
     )
   ) {
@@ -68,9 +71,9 @@ function placePip(state: GameState, place: PlaceJson): boolean {
   }
   if (
     types.has("occasion") &&
-    canAct(state.time, cfg.time) &&
-    cfg.occasions !== undefined &&
-    occasionOffers(state, cfg.occasions).some((o) => !o.attempted)
+    canAct(state.time, c.time) &&
+    c.occasions !== undefined &&
+    occasionOffers(state, c.occasions).some((o) => !o.attempted)
   ) {
     return true;
   }
@@ -87,9 +90,9 @@ export function MenuScreen({
   act: Act;
   log: readonly string[];
 }) {
-  // 見取り図は今いる町のものだけ（P-02：アルディとベルンは別の街）
+  // 見取り図は今いる町のものだけ（P-02：町ごとに別の街。G-01：生成地方も同じ仕組み）
   const town = townOf(state);
-  const marks = useMemo(() => mapOrder(town), [town]);
+  const marks = useMemo(() => mapOrder(state, town), [state, town]);
   const [focus, setFocus] = useState(0);
   const focusRef = useRef(focus);
   focusRef.current = focus;
@@ -156,7 +159,7 @@ export function MenuScreen({
                 color: W.hi,
               }}
             >
-              {tpl(t.text.mapTitle, { town: townName(town) })}
+              {tpl(t.text.mapTitle, { town: townName(state, town) })}
             </div>
           </div>
           <div data-testid="map-pick" style={{ fontSize: 13, color: W.dim }}>

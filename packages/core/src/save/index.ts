@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -167,6 +167,21 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
         },
       };
     },
+    /**
+     * 19 → 20: 地方生成（G-01、docs/10）。world（地図の出所）と町ごとの
+     * 評判（life.rep）を追加。旧セーブは「今の地図を持つ世界」として
+     * legacy 扱い —— places.json のアルディ・ベルンをそのまま使い、
+     * 生成は新しい周（種）から始まる
+     */
+    19: (old) => {
+      const life = (old.life ?? {}) as Record<string, unknown>;
+      return {
+        ...old,
+        version: 20,
+        life: { ...life, rep: {} },
+        world: { kind: "legacy", recipe: 0 },
+      };
+    },
   };
 
 export function serialize(state: GameState): string {
@@ -246,6 +261,7 @@ function assertShape(data: Record<string, unknown>): void {
     "vows",
     "crisis",
     "life",
+    "world",
   ];
   for (const key of required) {
     if (!(key in data)) throw new Error(`deserialize: ${key} がありません`);

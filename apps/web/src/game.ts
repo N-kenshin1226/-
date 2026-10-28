@@ -6,6 +6,7 @@ import {
   abyssRunSeed,
   activeBookEffects,
   activeEffects,
+  WORLD_RECIPE,
   appraisalGame,
   attackFactorWithEnchant,
   biographyMaterial,
@@ -86,7 +87,7 @@ import {
   errandsFor as coreErrandsFor,
   itemPrice,
   marketStock as coreMarketStock,
-  townName as coreTownName,
+  repOf,
   townOf,
   marketFactor,
   weatherOf,
@@ -113,6 +114,7 @@ import {
   type IncidentOffer,
   type Legacy,
   type LifeCause,
+  type LifeConfig,
   type MiniGameCtx,
   type NewGameConfig,
   type Rng,
@@ -161,11 +163,24 @@ import {
   type EnemyJson,
   type Order,
   type Origin,
-  type PlaceJson,
-  type VoiceNpc,
   type WeaponJson,
 } from "@trace/content";
 import type { SoundId } from "./fx/sound.js";
+import {
+  genLifeContrib,
+  genWorld,
+  mentorsAtPlace,
+  mentorsOf,
+  npcListOf,
+  npcNameOf,
+  placeOfState,
+  placesOf,
+  townNameOf,
+  townPlacesOf,
+  voiceNpcsOf,
+  type PlaceLike,
+  type VoiceLike,
+} from "./world.js";
 
 export const t = cliText;
 
@@ -452,27 +467,31 @@ export const townPlaces = placeList.filter((p) => p.kind === "town");
 /** 街の外の地域（門から出て行く先） */
 export const regionPlaces = placeList.filter((p) => p.kind === "region");
 
-export function placeOf(id: string | undefined): PlaceJson | undefined {
-  return placeList.find((p) => p.id === id);
+/**
+ * 場所の定義（G-01）：固定マップは places.json、生成地方は seed から
+ * 引き直した生成物を返す。画面は state を渡すだけで地図の出所を意識しない
+ */
+export function placeOf(state: GameState, id: string | undefined): PlaceLike | undefined {
+  return placeOfState(state, id);
 }
-export function placeName(id: string | undefined): string {
-  return placeOf(id)?.name ?? id ?? "";
+export function placeName(state: GameState, id: string | undefined): string {
+  return placeOf(state, id)?.name ?? id ?? "";
 }
 
-/** 場所に居る師匠（npcs と mentors.json の人物紐付けで見る） */
-export function mentorsAt(place: PlaceJson) {
-  return mentorList.filter((m) => place.npcs.includes(m.npc));
+/** 場所に居る師匠（npcs と師匠定義の人物紐付けで見る。生成地方は生成の師匠） */
+export function mentorsAt(state: GameState, place: PlaceLike) {
+  return mentorsAtPlace(state, place);
 }
 
 /**
  * 場所に届く注文の技能か（work 行動の kinds。default の受け皿は
  * 「どこにも割り当たっていない注文」だけを受ける）
  */
-export function placeTakesKind(place: PlaceJson, kind: string): boolean {
+export function placeTakesKind(state: GameState, place: PlaceLike, kind: string): boolean {
   const work = place.actions.filter((a) => a.type === "work");
   if (work.some((a) => a.kinds?.includes(kind))) return true;
   if (!work.some((a) => a.default === true)) return false;
-  return !placeList.some(
+  return !placesOf(state).some(
     (p) => p.id !== place.id && p.actions.some((a) => a.type === "work" && a.kinds?.includes(kind)),
   );
 }
@@ -494,45 +513,119 @@ export const itemDefs = cfg.items ?? {};
 export function itemName(id: string): string {
   return itemDefs[id]?.name ?? id;
 }
-/** 町の表示名（life.json towns） */
-export function townName(id: string): string {
-  return cfg.life !== undefined ? coreTownName(id, cfg.life) : id;
+/**
+ * この state の世界での日々の営みの定義表（G-01）。
+ * 固定マップは life.json のまま。生成地方では生成の寄与分（町表・道・
+ * 型別散策表・採集・市場・掲示依頼・場所の帰属・地点の表）で差し替え、
+ * 料理・賭け・人との時間・係数は共通のものをそのまま使う。
+ * 評判（rep）は生成地方でだけ働く（固定マップは rep を持たない）
+ */
+export function lifeCfgFor(state: GameState): LifeConfig | undefined {
+  if (cfg.life === undefined) return undefined;
+  const gen = genLifeContrib(state);
+  if (gen === null) return cfg.life;
+  return {
+    ...cfg.life,
+    towns: gen.towns,
+    journeys: gen.journeys,
+    // 型別の表を基本キー（"town"/"region"/"road" は共通の表のまま残す）に畳み込む
+    stroll: { ...cfg.life.stroll, ...gen.stroll },
+    // 採集表は場所 id で引く —— 固定マップの表を混ぜると同じ id の地域に
+    // 旧マップの表が当たるので、生成世界では生成の表だけを使う
+    gather: gen.gather,
+    market: { ...cfg.life.market, stock: gen.marketStock, townFactor: gen.townFactor },
+    errands: gen.errands,
+    places: gen.places,
+    spots: gen.spots,
+    rep: balance.world.rep,
+  };
+}
+
+/**
+ * この state の世界に合わせた StepConfig（G-01）。生成地方では営みの表・
+ * 師匠・話し手の名簿がその世界のものになる。それ以外は共通の cfg
+ */
+export function cfgFor(state: GameState): StepConfig {
+  const gen = genWorld(state);
+  if (gen === null) return cfg;
+  const lifeCfg = lifeCfgFor(state);
+  const npcs = npcListOf(state);
+  const mentorDefs = mentorsOf(state);
+  return {
+    ...cfg,
+    ...(lifeCfg !== undefined ? { life: lifeCfg } : {}),
+    ...(cfg.mentors !== undefined ? { mentors: { ...cfg.mentors, mentors: mentorDefs } } : {}),
+    ...(cfg.incidents !== undefined ? { incidents: { ...cfg.incidents, npcs } } : {}),
+    ...(cfg.occasions !== undefined ? { occasions: { ...cfg.occasions, npcs } } : {}),
+    ...(cfg.npcLife !== undefined
+      ? {
+          npcLife: {
+            ...cfg.npcLife,
+            mentors: mentorDefs,
+            name: (s: GameState, npcId: string) => {
+              if (npcId.startsWith("rival.")) {
+                const index = Number.parseInt(npcId.slice("rival.".length), 10);
+                return drawRivalCast(
+                  s.seed,
+                  { names: rivals.names, epithets: rivals.epithets },
+                  balance.rivals,
+                )[index]?.name;
+              }
+              return npcNameOf(s, npcId);
+            },
+          },
+        }
+      : {}),
+  };
+}
+
+/** 町の表示名（生成地方は生成の町名、固定マップは life.json towns） */
+export function townName(state: GameState | undefined, id: string): string {
+  if (state === undefined) return life.towns[id]?.name ?? id;
+  return townNameOf(state, id);
 }
 /** 今いる町の見取り図に出る場所（town 欄の無い場所は基点の町に属する） */
-export function townPlacesIn(town: string): PlaceJson[] {
-  return townPlaces.filter((p) => (p.town ?? "ardi") === town);
+export function townPlacesIn(state: GameState, town: string): PlaceLike[] {
+  return townPlacesOf(state, town);
 }
 /** 今いる町に届く掲示板の依頼 */
 export function errandsNow(state: GameState) {
-  return cfg.life !== undefined ? coreErrandsFor(townOf(state), cfg.life) : [];
+  const life = lifeCfgFor(state);
+  return life !== undefined ? coreErrandsFor(townOf(state), life) : [];
 }
 /** その町の市場に並ぶ品の id */
 export function marketStockNow(state: GameState): string[] {
-  return cfg.life !== undefined ? coreMarketStock(townOf(state), cfg.life) : [];
+  const life = lifeCfgFor(state);
+  return life !== undefined ? coreMarketStock(townOf(state), life) : [];
 }
-/** 品の相場（表示用。side は "buy"=店で買う / "sell"=店に売る） */
+/** 品の相場（表示用。side は "buy"=店で買う / "sell"=店に売る。評判が効く） */
 export function itemPriceNow(state: GameState, id: string, side: "buy" | "sell"): number {
   const def = itemDefs[id];
-  if (def === undefined || cfg.life === undefined) return 0;
-  return itemPrice(state.seed, state.time.day, id, townOf(state), side, cfg.life, def);
+  const life = lifeCfgFor(state);
+  if (def === undefined || life === undefined) return 0;
+  const rep = repOf(state, townOf(state), life);
+  return itemPrice(state.seed, state.time.day, id, townOf(state), side, life, def, rep);
 }
-/** 人物の表示名（voices.json の npc id） */
-export function npcName(id: string): string {
-  return voices.npcs.find((n) => n.id === id)?.name ?? id;
+/** 人物の表示名（生成地方の住人 → 生成名、固定マップ → voices.json） */
+export function npcName(state: GameState | undefined, id: string): string {
+  if (state === undefined) return voices.npcs.find((n) => n.id === id)?.name ?? id;
+  return npcNameOf(state, id);
 }
 /** 人との仲の値（bonds 欄。上限は balance.life.bondMax） */
 export function bondOfNow(state: GameState, npc: string): number {
-  return cfg.life !== undefined ? bondOf(state, npc, cfg.life) : 0;
+  const life = lifeCfgFor(state);
+  return life !== undefined ? bondOf(state, npc, life) : 0;
 }
 /** 旅の行き先の町名（旅の途中でなければ null） */
 export function journeyDestName(state: GameState): string | null {
-  return state.life.journey !== null ? townName(state.life.journey.to) : null;
+  return state.life.journey !== null ? townName(state, state.life.journey.to) : null;
 }
 /** 旅の行き来がある隣町の id（現在の町から。無ければ null） */
 export function journeyTargetNow(state: GameState): string | null {
-  if (cfg.life === undefined) return null;
+  const life = lifeCfgFor(state);
+  if (life === undefined) return null;
   const town = townOf(state);
-  const road = cfg.life.journeys.find((j) => j.from === town || j.to === town);
+  const road = life.journeys.find((j) => j.from === town || j.to === town);
   if (road === undefined) return null;
   return road.from === town ? road.to : road.from;
 }
@@ -709,6 +802,18 @@ export interface FateChoice {
   vows?: readonly string[];
 }
 
+/**
+ * このブラウザセッションで遊ぶ地図の出所（G-01、docs/10）。
+ * 既定は "gen"（世界シードから生成する地方 —— シードごとに違う世界）。
+ * `?world=legacy` で固定マップ（アルディ・ベルン）を選べる —— e2e や
+ * 確認用の互換経路として残す。旧セーブは読み込んだ時点で legacy の世界
+ */
+export function worldMode(): "gen" | "legacy" {
+  const q =
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("world");
+  return q === "legacy" ? "legacy" : "gen";
+}
+
 /** 新規開始・転生で共通の newGame 初期値（出自は呼び出し側で選ぶ） */
 const gameInit = (
   origin: Origin,
@@ -716,6 +821,11 @@ const gameInit = (
   fate?: FateChoice,
   flags?: readonly string[],
 ): NewGameConfig => ({
+  // 世界の地図（G-01）：新しい周はこのセッションの地図で始まる。
+  // 生成世界の始まりの町は常に "t0"（generateWorld の約束）
+  world:
+    worldMode() === "gen" ? { kind: "gen", recipe: WORLD_RECIPE } : { kind: "legacy", recipe: 0 },
+  ...(worldMode() === "gen" ? { initialTown: "t0" } : {}),
   skillIds: skills.skills.map((s) => s.id),
   initialPotential: balance.player.initialPotential,
   origin,
@@ -1184,18 +1294,23 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       case "bonded":
         return [
           e.amount > 0
-            ? tpl(t.text.life.bonded, { name: npcName(e.npc) })
-            : tpl(t.text.life.bondMissed, { name: npcName(e.npc) }),
+            ? tpl(t.text.life.bonded, { name: npcName(state, e.npc) })
+            : tpl(t.text.life.bondMissed, { name: npcName(state, e.npc) }),
         ];
       case "errandDone": {
-        const def = cfg.life?.errands.find((x) => x.id === e.id);
+        // 依頼名はその世界の依頼表から引く（G-01：生成地方は生成の掲示依頼）
+        const lifeCfg = state !== undefined ? lifeCfgFor(state) : cfg.life;
+        const def = lifeCfg?.errands.find((x) => x.id === e.id);
         return [tpl(t.text.life.errandDone, { name: def?.name ?? e.id })];
       }
       case "journeyStarted":
-        return [tpl(t.text.life.journeyStarted, { town: townName(e.to), days: e.days })];
+        return [tpl(t.text.life.journeyStarted, { town: townName(state, e.to), days: e.days })];
       case "journeyArrived":
         // 到着の一行は起床の「驚き」の列に既に出る（sleep 側が texts.arrive を載せる）
         return [];
+      case "repGained":
+        // 町ごとの評判（G-01）：顔が売れた一行は記録にだけ残す（通知ではない）
+        return [tpl(t.text.life.repGained, { town: townName(state, e.town) })];
       default:
         return [];
     }
@@ -1804,11 +1919,10 @@ function crisisLogRefName(state: GameState, entry: { kind: string; ref?: string 
     return cfg.crisis !== undefined ? crisisRivalName(state, cfg.crisis, entry.ref) : entry.ref;
   }
   if (entry.kind.startsWith("npc.")) {
-    return (
-      voices.npcs.find((n) => n.id === entry.ref)?.name ??
-      canon.figures.find((f) => f.id === entry.ref)?.name ??
-      entry.ref
-    );
+    // G-01：生成地方の住人の参照は生成の名簿から引く
+    const n = npcNameOf(state, entry.ref);
+    if (n !== entry.ref) return n;
+    return canon.figures.find((f) => f.id === entry.ref)?.name ?? entry.ref;
   }
   return entry.ref;
 }
@@ -1838,7 +1952,8 @@ export function endingOf(state: GameState): CrisisEnding | null {
     stage: (s) => t.display.crisisStageNames[String(s)] ?? String(s),
     role: (r) => t.display.crisisRoleNames[r] ?? r,
     npc: (id) =>
-      voices.npcs.find((n) => n.id === id)?.name ??
+      // G-01：生成地方の住人の名は生成の名簿から引く
+      (npcNameOf(state, id) !== id ? npcNameOf(state, id) : undefined) ??
       canon.figures.find((f) => f.id === id)?.name ??
       id,
     rival: (ref) => (cfg.crisis !== undefined ? crisisRivalName(state, cfg.crisis, ref) : ref),
@@ -1901,7 +2016,7 @@ export function skillChip(
 }
 
 /** 行動 kind の表示名（新聞の「昨日の記録」欄用） */
-function deedLabel(kind: string, target?: string): string {
+function deedLabel(state: GameState, kind: string, target?: string): string {
   switch (kind) {
     case "train":
       return `${skills.skills.find((s) => s.id === target)?.name ?? target ?? ""}の鍛錬`;
@@ -1922,26 +2037,29 @@ function deedLabel(kind: string, target?: string): string {
       return "休息";
     case "travel":
       // 街の外への移動（P-01）：行き先の場所名まで記録欄に出す
-      return `${placeName(target)}への移動`;
+      return `${placeName(state, target)}への移動`;
     // ---- 日々の営み（P-02） ----
     case "stroll":
       return "散策";
     case "gather":
-      return `${placeName(target)}での採集`;
+      return `${placeName(state, target)}での採集`;
     case "cook":
       return `${itemName(target ?? "")}の料理`;
     case "gamble":
       return "賭け事";
     case "pray":
       return "祈り";
+    case "spot":
+      // 地点への立ち寄り（G-01）：地点の名は生成の場所・行動から引く
+      return "地点への立ち寄り";
     case "social":
-      return `${npcName(target ?? "")}との時間`;
+      return `${npcName(state, target ?? "")}との時間`;
     case "errand": {
-      const name = cfg.life?.errands.find((e) => e.id === target)?.name ?? target ?? "";
+      const name = lifeCfgFor(state)?.errands.find((e) => e.id === target)?.name ?? target ?? "";
       return `依頼《${name}》`;
     }
     case "journey":
-      return `${townName(target ?? "")}への旅`;
+      return `${townName(state, target ?? "")}への旅`;
     default:
       return kind;
   }
@@ -2040,7 +2158,7 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
   // 昨日の記録：行動種別ごとにまとめる
   const grouped = new Map<string, number>();
   for (const a of state.actionLog.filter((x) => x.day === day)) {
-    const key = deedLabel(a.kind, a.target);
+    const key = deedLabel(state, a.kind, a.target);
     grouped.set(key, (grouped.get(key) ?? 0) + 1);
   }
   const recordLines = [...grouped.entries()].map(([label, n]) =>
@@ -2058,7 +2176,7 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
         ? "奉仕"
         : undefined;
   const npcRng = rng("npc");
-  const rest = voices.npcs.filter((n) => npcGoneReason(state, n.id) === null);
+  const rest = [...voiceNpcsOf(state)].filter((n) => npcGoneReason(state, n.id) === null);
   const pool = [0, 1, 2].flatMap(() =>
     rest.length > 0 ? [rest.splice(npcRng.int(0, rest.length - 1), 1)[0]!] : [],
   );
@@ -2122,9 +2240,10 @@ export function newsPack(state: GameState, events: readonly ActionEvent[] = []):
 export function townVoice(state: GameState): { name: string; role: string; text: string } {
   const rng = createRng(`${state.seed}:voice:${state.time.day}`);
   // 危機の段階・歳月の退場で街に居なくなった住人は窓に出ない（W-04/X-12：人の不在で伝える）
-  const locals = new Set(townPlacesIn(townOf(state)).flatMap((p) => p.npcs));
-  const pool = voices.npcs.filter((n) => locals.has(n.id) && npcGoneReason(state, n.id) === null);
-  const npc = rng.pick(pool.length > 0 ? pool : [...voices.npcs]);
+  const locals = new Set(townPlacesIn(state, townOf(state)).flatMap((p) => p.npcs));
+  const all = voiceNpcsOf(state);
+  const pool = all.filter((n) => locals.has(n.id) && npcGoneReason(state, n.id) === null);
+  const npc = rng.pick(pool.length > 0 ? pool : [...all]);
   return npcVoiceLine(state, rng, npc);
 }
 
@@ -2134,9 +2253,9 @@ export function townVoice(state: GameState): { name: string; role: string; text:
  */
 export function placeVoice(
   state: GameState,
-  place: PlaceJson,
+  place: PlaceLike,
 ): { name: string; role: string; text: string } | null {
-  const pool = voices.npcs.filter(
+  const pool = voiceNpcsOf(state).filter(
     (n) => place.npcs.includes(n.id) && npcGoneReason(state, n.id) === null,
   );
   if (pool.length === 0) return null;
@@ -2148,7 +2267,7 @@ export function placeVoice(
 function npcVoiceLine(
   state: GameState,
   rng: Rng,
-  npc: VoiceNpc,
+  npc: VoiceLike,
 ): { name: string; role: string; text: string } {
   const deeds = state.actionLog.filter((a) => a.day === state.time.day - 1).map((a) => a.kind);
   const deed = deeds.includes("combat")
@@ -2162,7 +2281,7 @@ function npcVoiceLine(
           : undefined;
   // 歳月の出来事の話題（X-12）：最近の街の出来事を「聞いたかい？」と囁く。
   // 噂が残る期間のあいだ、半分ほどの日で挨拶の代わりにこの話題になる
-  const recent = npcLifeRecent(state, cfg.npcLife, balance.town.npcRumorDays);
+  const recent = npcLifeRecent(state, cfgFor(state).npcLife, balance.town.npcRumorDays);
   if (recent.length > 0 && rng.next() < 0.5) {
     const ev = rng.pick(recent.map((r) => r.text));
     return {
@@ -2193,7 +2312,7 @@ export function townRumor(state: GameState): string {
   }
   // 歳月の噂（X-12）：街の人物の出来事は噂が残る期間（balance.town.npcRumorDays）
   // だけ下帯に混ざる。起きた日は必ず、あとは4日おきに取り上げられる
-  const recent = npcLifeRecent(state, cfg.npcLife, balance.town.npcRumorDays);
+  const recent = npcLifeRecent(state, cfgFor(state).npcLife, balance.town.npcRumorDays);
   if (recent.length > 0 && (recent[0]!.day === state.time.day || state.time.day % 4 === 3)) {
     return `噂 ―「${rng.pick(recent.map((r) => r.text))}」`;
   }

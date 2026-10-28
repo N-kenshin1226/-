@@ -68,6 +68,8 @@ export const PLACE_ACTION_TYPES = [
   "journey",
   /** 魔法（M-01）：生活魔法の使用と武器への付与（エンチャント）の窓 */
   "magic",
+  /** 地域の中の小さな地点への立ち寄り（G-01。world.json の生成が付ける） */
+  "spot",
 ] as const;
 
 export type PlaceActionType = (typeof PLACE_ACTION_TYPES)[number];
@@ -81,6 +83,10 @@ export const placeActionSchema = z
     default: z.literal(true).optional(),
     /** travel は行き先の場所 id、journey は行き先の町 id（P-02） */
     to: z.string().min(1).optional(),
+    /** spot のみ：立ち寄る地点の id（world.json の生成で付く） */
+    spot: z.string().min(1).optional(),
+    /** コマンドの表示名（spot などデータ由来の名が要る行動） */
+    label: z.string().min(1).optional(),
   })
   .strict()
   .superRefine((a, ctx) => {
@@ -96,11 +102,20 @@ export const placeActionSchema = z
     if (a.type === "journey" && a.to === undefined) {
       ctx.addIssue({ code: "custom", message: "journey の行動には to（行き先の町）が必要" });
     }
+    if (a.type === "spot" && a.spot === undefined) {
+      ctx.addIssue({ code: "custom", message: "spot の行動には spot（地点 id）が必要" });
+    }
     if (a.type !== "work" && (a.kinds !== undefined || a.default !== undefined)) {
       ctx.addIssue({ code: "custom", message: "kinds/default は work の行動にだけ使う" });
     }
     if (a.type !== "travel" && a.type !== "journey" && a.to !== undefined) {
       ctx.addIssue({ code: "custom", message: "to は travel/journey の行動にだけ使う" });
+    }
+    if (a.type !== "spot" && a.spot !== undefined) {
+      ctx.addIssue({ code: "custom", message: "spot は spot の行動にだけ使う" });
+    }
+    if (a.type !== "spot" && a.label !== undefined) {
+      ctx.addIssue({ code: "custom", message: "label は spot の行動にだけ使う" });
     }
   });
 

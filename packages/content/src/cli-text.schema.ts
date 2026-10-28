@@ -529,6 +529,8 @@ export const cliTextSchema = z
             bondMissed: z.string(),
             errandDone: z.string(),
             journeyStarted: z.string(),
+            /** 町ごとの評判が積まれた（G-01。記録の行のみ） */
+            repGained: z.string(),
           })
           .strict(),
         eof: z.string(),

@@ -235,8 +235,13 @@ export function runArts(): number {
   const t = thresholds.arts;
   // 格上の目安：enemy.challenge − 武器技能 ≥ 15（combat の foe.stronger と同じ線）。
   // 主力は「強個体」（T-44、balance.combat.unique で強化した最強種）——
-  // 素の最強種では連打も半分勝ててしまうので、連打が通じない格上として強化版を使う
-  const strongest = enemies.enemies.reduce((a, b) => (a.challenge >= b.challenge ? a : b));
+  // 素の最強種では連打も半分勝ててしまうので、連打が通じない格上として強化版を使う。
+  // G-01：最深部の地域型（火山・廃村…）は生成地方の奥の敵として roster の
+  // 上限を引き上げた —— 修行中の腕利き（技能25）が張り合う「格上」の範囲は
+  // 固定マップの帯（森・街道・深層）までに留める
+  const LEGACY_AREAS = new Set(["forest", "highway", "abyss"]);
+  const legacyRoster = enemies.enemies.filter((e) => LEGACY_AREAS.has(e.area));
+  const strongest = legacyRoster.reduce((a, b) => (a.challenge >= b.challenge ? a : b));
   const primary =
     COMBAT.unique !== undefined
       ? {
@@ -246,7 +251,7 @@ export function runArts(): number {
       : toEnemyDef(strongest.id);
   // もう1体（素の最強種。違う耐性・行動の相手で、補助・対応・連撃の揺れを別の角度で試す）
   const secondary = toEnemyDef(
-    enemies.enemies
+    legacyRoster
       .filter((e) => e.id !== primary.id && e.challenge - WEAPON_SKILL >= 0)
       .sort((a, b) => b.challenge - a.challenge)[0]?.id ?? primary.id,
   );

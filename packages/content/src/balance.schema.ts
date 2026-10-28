@@ -992,6 +992,112 @@ export const balanceSchema = z
           .strict(),
       })
       .strict(),
+    /**
+     * 地方生成（G-01、docs/10_world_generation.md）。core/world の
+     * WorldGenConfig に対応 —— 町・地域の型は world.json が持ち、
+     * ここには生成ルールの数値だけを置く（型の重み・危険度・中身は型側）
+     */
+    world: z
+      .object({
+        /** 町の数の範囲（docs/10 §3「6〜9」） */
+        towns: z
+          .object({ min: z.number().int().min(2), max: z.number().int().min(2) })
+          .strict()
+          .refine((t) => t.min <= t.max, { message: "towns.min <= max が必要" }),
+        /** 地域の数の範囲（docs/10 §3「15〜25」） */
+        areas: z
+          .object({ min: z.number().int().min(4), max: z.number().int().min(4) })
+          .strict()
+          .refine((a) => a.min <= a.max, { message: "areas.min <= max が必要" }),
+        /** 同じ町の型が1つの世界に出る上限（隠れ里など珍しい型は1） */
+        typeMaxPerWorld: z.number().int().min(1),
+        /** 町の道の基本つなぎに足す追加の道の確率（0〜1。輪と近道が生まれる） */
+        extraEdgeChance: z.number().min(0).max(1),
+        /** 町と町の間の旅日数の範囲（野営の回数） */
+        journeyDays: z
+          .object({ min: z.number().int().min(1), max: z.number().int().min(1) })
+          .strict()
+          .refine((j) => j.min <= j.max, { message: "journeyDays.min <= max が必要" }),
+        /**
+         * 危険度（docs/10 §5「距離と地形で決まる」）。
+         * 地域の危険度 = 型の danger + 始まりの町からの距離(輪) × ringDangerFactor ± jitter。
+         * 輪ごとに出られる型の上限は safeDanger + ring × ringDangerStep で切る
+         */
+        ringDangerFactor: z.number().nonnegative(),
+        ringDangerStep: z.number().nonnegative(),
+        /** 序盤に必ず近くに欲しい安全な地域の危険度上限（受け入れ基準） */
+        safeDanger: z.number().int().min(1).max(10),
+        /** 危険度のゆらぎの半幅（型の danger ± この値まで） */
+        dangerJitter: z.number().nonnegative(),
+        dangerMin: z.number().int().min(1),
+        dangerMax: z.number().int().min(1),
+        /** 1つの町にぶら下がる地域の数（最低数＋輪ごとの追加分） */
+        areasPerTownMin: z.number().int().min(1),
+        /** 遠い町ほど地域が多い量（輪1つあたりの追加確率の重み） */
+        areasExtraPerRing: z.number().nonnegative(),
+        /** 1つの地域に出る敵の種類数の範囲 */
+        areaEnemies: z
+          .object({ min: z.number().int().min(1), max: z.number().int().min(1) })
+          .strict()
+          .refine((e) => e.min <= e.max, { message: "areaEnemies.min <= max が必要" }),
+        /**
+         * 敵の強さの蓋：その地域に出られる敵の挑戦差の上限 =
+         * dangerChallengeBase + 危険度 × dangerChallengePer（残りが少なすぎるときは
+         * 弱い順に areaEnemies.min まで入れる —— 危険度1の森にも獲物は居る）
+         */
+        dangerChallengeBase: z.number().nonnegative(),
+        dangerChallengePer: z.number().nonnegative(),
+        /** 1つの地域に作る地点（泉・小屋・塔跡…）の数の範囲 */
+        spots: z
+          .object({ min: z.number().int().min(0), max: z.number().int().min(0) })
+          .strict()
+          .refine((s) => s.min <= s.max, { message: "spots.min <= max が必要" }),
+        /** 見取り図での場所の位置ゆらぎ（%座標の散りの半幅） */
+        placeJitter: z.number().nonnegative(),
+        /** 特産・不足の市場係数と町ごとの揺らぎ */
+        market: z
+          .object({
+            /** 特産品の町係数（<1 で安い） */
+            cheapFactor: z.number().min(0.3).max(1),
+            /** 不足品の町係数（>1 で高い） */
+            dearFactor: z.number().min(1).max(3),
+            /** 町ごとの相場ゆらぎの半幅（係数 ×(1±この値)） */
+            townJitter: z.number().min(0).max(0.5),
+          })
+          .strict(),
+        /** 生成される師匠の係数（費用・素質回復・効果・入門条件の技能値） */
+        mentor: z
+          .object({
+            feeMin: z.number().nonnegative(),
+            feeMax: z.number().nonnegative(),
+            potentialRecover: z.number().nonnegative(),
+            gainVs: z.number().min(1),
+            condition: z.number().nonnegative(),
+          })
+          .strict()
+          .refine((m) => m.feeMin <= m.feeMax, { message: "mentor.feeMin <= feeMax が必要" }),
+        /**
+         * 町ごとの評判（docs/10 §4「ある町では有名、別の町では無名」）。
+         * state.life.rep[町id] に積み、市場価格に少し効く
+         */
+        rep: z
+          .object({
+            /** 評判の上限 */
+            max: z.number().nonnegative(),
+            /** 掲示板の依頼1件で増える評判 */
+            errand: z.number().nonnegative(),
+            /** 仕事1回で増える評判 */
+            work: z.number().nonnegative(),
+            /** 寄付1口で増える評判 */
+            donate: z.number().nonnegative(),
+            /** 評判1点あたりの市場価格の下がり（買い・売り両方に有利に効く） */
+            pricePer: z.number().nonnegative(),
+          })
+          .strict(),
+        /** 掲示依頼の仲の増分（bond:true → その町の宿屋の主） */
+        errandBond: z.number().positive(),
+      })
+      .strict(),
     /** 実時間の換算（sim のボット用。ゲーム進行には使わない） */
     sim: z
       .object({

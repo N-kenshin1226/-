@@ -79,8 +79,16 @@ export function succeedLife(
 ): { state: GameState; kind: HeirKind; legacy: Legacy } {
   const kind = heirKindOf(prev);
   const legacy = heirLegacyOf(prev, heirCfg);
-  // 世界の危機は生ではなく世界のもの（W-01）：次代では進行をリセットせず継ぐ
-  const next = newGame(prev.seed, name, { ...cfg, legacy, carryoverCrisis: prev.crisis });
+  // 世界の危機は生ではなく世界のもの（W-01）：次代では進行をリセットせず継ぐ。
+  // 地図も同じ世界のもの（G-01）：同じ seed から同じ地方が出るので出所と
+  // 基点の町だけを継ぐ（呼び出し側が cfg で上書きした場合はそれに従う）
+  const next = newGame(prev.seed, name, {
+    ...cfg,
+    legacy,
+    carryoverCrisis: prev.crisis,
+    world: cfg.world ?? prev.world,
+    initialTown: cfg.initialTown ?? prev.life.town,
+  });
   return {
     kind,
     legacy,

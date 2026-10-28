@@ -19,7 +19,7 @@ const withChronicle = `localStorage.setItem("trace.chronicle.v1", JSON.stringify
 test("1周目の開始画面は出自だけ（誓約・運命の傾向は出ない）→ 導入の会話窓 → メニュー", async ({
   page,
 }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   const app = page.getByTestId("app");
   // 出自の3択だけが並ぶ。「選ばなくても始められる」以下の節は出ない
   await expect(app).toContainText("出自");
@@ -49,7 +49,7 @@ test("1周目の開始画面は出自だけ（誓約・運命の傾向は出な�
 });
 
 test("導入の会話窓は Esc で飛ばせる", async ({ page }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await expect(page.getByTestId("screen-intro")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -58,7 +58,7 @@ test("導入の会話窓は Esc で飛ばせる", async ({ page }) => {
 
 test("2周目以降の開始画面は運命の傾向と誓約が出る（導入は挟まらない）", async ({ page }) => {
   await page.addInitScript(withChronicle);
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   const app = page.getByTestId("app");
   await expect(app).toContainText("選ばなくても始められる");
   await expect(app).toContainText("運命の傾向");
@@ -73,7 +73,7 @@ test("2周目以降の開始画面は運命の傾向と誓約が出る（導入�
 test("最初の一日：働けば称号が付き、寝れば起床の窓に成長が載る（F-06 受け入れ）", async ({
   page,
 }) => {
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 
@@ -103,7 +103,7 @@ test("最初の一日：働けば称号が付き、寝れば起床の窓に成�
 });
 
 test("戦闘に勝つと敵の名前入りの勝利文が出る（{name} 置換漏れの回帰）", async ({ page }) => {
-  await page.goto("/?seed=e2e-combat");
+  await page.goto("/?world=legacy&seed=e2e-combat");
   await page.getByTestId("origin-wanderer").click();
   await skipIntro(page);
 

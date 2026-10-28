@@ -13,9 +13,16 @@ const ambientById = new Map(audio.ambient.map((a) => [a.id, a]));
 
 /**
  * BGM を引く。screen=画面名（ui.tsx の Screen["name"]）、place=その画面が
- * 属する場所 id（place プロパティか、場所に縛られない画面は最後に居た場所）
+ * 属する場所 id（place プロパティか、場所に縛られない画面は最後に居た場所）。
+ * placeKind=解決済みの場所の種別（G-01：生成地方の場所は places.json に
+ * 載らないので、呼び出し側が解決した kind を渡す。省略時は固定表から引く）
  */
-export function resolveTrack(screen: string, place: string | undefined, tod: TimeOfDay): string {
+export function resolveTrack(
+  screen: string,
+  place: string | undefined,
+  tod: TimeOfDay,
+  placeKind?: "town" | "region",
+): string {
   const { bgm } = audio.assign;
   // 画面名が最優先（戦闘・起床・終幕・机まわりの画面など）
   const byScreen = bgm.screens[screen];
@@ -25,7 +32,7 @@ export function resolveTrack(screen: string, place: string | undefined, tod: Tim
     const byPlace = bgm.places[place];
     if (byPlace !== undefined) return byPlace;
     // 街の外の場所で個別指定が無いなら街の時間帯曲には倒さない
-    if (placeById.get(place)?.kind === "region") return bgm.default;
+    if ((placeKind ?? placeById.get(place)?.kind) === "region") return bgm.default;
   }
   // 街の場所・見取り図・場所の分からない画面は街の時間帯曲
   return bgm.townTod[tod] ?? bgm.default;

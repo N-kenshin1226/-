@@ -240,12 +240,19 @@ export interface CrisisState {
  * 日付と一緒に持つ欄は「その日だけ効くもの」を日またぎのリセットなしで表す
  */
 export interface LifeState {
-  /** 今いる町（life.json towns の id。旅の到着で変わる） */
+  /** 今いる町（life.json towns の id / 生成世界では t0〜。旅の到着で変わる） */
   town: string;
   /** 持ち物（items.json の id → 個数） */
   items: Record<string, number>;
-  /** 人との仲の値（voices.json の npc id → 0〜100） */
+  /** 人との仲の値（voices.json の npc id / 生成世界では npc.<町>.<役割> → 0〜100） */
   bonds: Record<string, number>;
+  /**
+   * 町ごとの評判（G-01、docs/10 §4「ある町では有名、別の町では無名」。v20〜）。
+   * 町 id → 値。掲示板の依頼・仕事・寄付でその町の評判が積み上がり、
+   * 市場の相場に少し効く。立場（society.standing）は世界全体の肩書で、
+   * 評判は町ごとの顔の売れ具合 —— 別の軸として持つ
+   */
+  rep: Record<string, number>;
   /** 食べた日とその食事の質（0〜100。その日の眠りにだけ効く） */
   mealDay: number;
   mealQuality: number;
@@ -253,6 +260,26 @@ export interface LifeState {
   prayedDay: number;
   /** 旅の途中：行き先の町 id と残りの野営数。null なら町にいる */
   journey: { to: string; daysLeft: number } | null;
+}
+
+/**
+ * 世界の地図の出所（G-01、docs/10_world_generation.md。v20〜）。
+ * 生成される地方そのものは state に持たず seed から導出する ——
+ * ここには「どちらの地図で遊んでいるか」の刻印だけを置く
+ */
+export interface WorldState {
+  /**
+   * "legacy"=固定マップ（places.json のアルディ・ベルンの世界。旧セーブと
+   *   e2e・シミュレーションの互換経路）
+   * "gen"=世界シードから生成した地方（町6〜9・地域15〜25・道のグラフ）
+   */
+  kind: "legacy" | "gen";
+  /**
+   * 生成レシピの版（core/world の WORLD_RECIPE）。同じ版なら同じ seed から
+   * 同じ地方が出る。生成器の形が変わったとき版を上げ、古い版の世界は
+   * 旧版の生成器で引き直す（legacy は 0 固定）
+   */
+  recipe: number;
 }
 
 export interface GameState {
@@ -352,4 +379,9 @@ export interface GameState {
    * 寄付が読み書きする欄
    */
   life: LifeState;
+  /**
+   * 世界の地図（G-01、docs/10。v20〜）。旧セーブは固定マップの "legacy"。
+   * 生成される町・地域・道は core/world が seed から決定論的に導く
+   */
+  world: WorldState;
 }

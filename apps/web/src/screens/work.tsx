@@ -49,6 +49,7 @@ import {
   type SpecialOrder,
   type TimingState,
 } from "../game.js";
+import { orderReachesTown } from "../world.js";
 import { theme } from "../theme.js";
 import {
   CommandMenu,
@@ -153,7 +154,7 @@ export function WorkScreen({
   place?: string;
   setScreen: (s: Screen) => void;
 }) {
-  const placeDef = placeOf(place);
+  const placeDef = placeOf(state, place);
   const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   const special = specialOrderOf(state.seed, state.time.day);
   // 今日の勝負所の注文（F-05）：showdown の印のある注文から日替わり1件。
@@ -166,11 +167,13 @@ export function WorkScreen({
   // 場所ごとの注文（P-01）：その場所に届く技能の注文だけを並べる。
   // 場所が無い（古い画面遷移）なら全注文のまま —— 機能は必ずどこかの場所から届く
   // P-02：町の注文（orders.json town）はその町の場所にだけ届く。
-  // town 無しの注文は基点の町（アルディ）に届く
+  // town 無しの注文は基点の町に届く（G-01：生成地方ではどの町にも届く）
   const town = state.life.town;
   const list =
     placeDef !== undefined
-      ? all.filter((o) => placeTakesKind(placeDef, o.kind) && (o.town ?? "ardi") === town)
+      ? all.filter(
+          (o) => placeTakesKind(state, placeDef, o.kind) && orderReachesTown(state, o, town),
+        )
       : all;
   const entries: MenuEntry[] = [
     ...(special !== undefined || crisis.length > 0

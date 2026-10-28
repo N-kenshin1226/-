@@ -174,7 +174,7 @@
     "playerName": "旅人",
     "banner": "―――――― TRACE ――――――",
     "intro": "行動したことだけが強さになる。世界はそれを見ていて、記録し、語り継ぐ。",
-    "introWelcome": "「{name}さん、宿場街アルディへようこそ。ここじゃ、行動したことだけがあんたの力になるよ」",
+    "introWelcome": "「{name}さん、{town}へようこそ。ここじゃ、行動したことだけがあんたの力になるよ」",
     "introGuide": "「仕事に鍛錬、狩り――好きに動いていい。夜が来たら宿で眠るんだ。眠っているあいだに、今日の頑張りが身に付いていくからね」",
     "saveFound": "セーブを見つけました。",
     "choiceResume": "  1) つづきから",
@@ -520,7 +520,8 @@
       "bonded": "――{name}との仲が深まった",
       "bondMissed": "――{name}は今日はいないようだ",
       "errandDone": "――掲示板の依頼《{name}》を果たした",
-      "journeyStarted": "――{town}への旅に出た。{days}日の道のり"
+      "journeyStarted": "――{town}への旅に出た。{days}日の道のり",
+      "repGained": "――{town}での評判が少し広まった"
     },
     "combatManaLine": "（魔力 {mana}/{max}）",
     "combatSpellsLabel": "呪文",

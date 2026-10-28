@@ -25,7 +25,7 @@ test("年代記が開始画面と街の記録に出る", async ({ page }) => {
       }),
     );
   });
-  await page.goto("/?seed=e2e");
+  await page.goto("/?world=legacy&seed=e2e");
   // セーブが無くても年代記の件数が開始画面に出る
   await expect(page.getByTestId("app")).toContainText("年代記には 1 人の人生が記録されている");
   await page.getByTestId("origin-wanderer").click();

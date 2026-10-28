@@ -7,6 +7,7 @@
 import type { GameState } from "@trace/core";
 import {
   cfg,
+  cfgFor,
   enemyList,
   eventLines,
   occasionOffers,
@@ -51,7 +52,8 @@ export function OccasionScreen({
   act: Act;
 }) {
   if (cfg.occasions === undefined) return null;
-  const occs = occasionOffers(state, cfg.occasions);
+  // G-01：話し手の名簿はその世界のもの（生成地方は生成の住人が打診を届ける）
+  const occs = occasionOffers(state, cfgFor(state).occasions!);
 
   const statusOf = (o: (typeof occs)[number]) =>
     o.attempted
@@ -133,7 +135,7 @@ export function OccasionScreen({
         {occs
           .filter((o) => !o.attempted)
           .map((o) => {
-            const sp = occasionSpeaker(state, cfg.occasions!, o.def);
+            const sp = occasionSpeaker(state, cfgFor(state).occasions!, o.def);
             const speaker =
               sp !== undefined
                 ? sp.role !== undefined && sp.role !== ""

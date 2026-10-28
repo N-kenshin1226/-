@@ -67,7 +67,7 @@ test("鍛冶（タイミング系）：拍レールが動き、窓の内側で�
     },
   }));
   await page.addInitScript(putSave, save);
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   // 仕事 → 釘の束 → 「自分でやる」でミニゲームへ（鍛冶の注文は鍛冶場に届く —— P-01）
@@ -139,7 +139,7 @@ test("採掘（盤面系）：キーで選んで掘ると鉱石が光り、品�
   expect(rocks.length).toBeGreaterThan(0);
 
   await page.addInitScript(putSave, serialize(g));
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   // 鉱石の仕事はギルドの注文板に届く（P-01）

@@ -20,7 +20,6 @@ import {
   crisisEnemyChallengeBonus,
   crisisEnemyTouchpoints,
   endRun,
-  enemyAreas,
   enemyDefOf,
   enemyDisplayName,
   eventLines,
@@ -55,6 +54,7 @@ import {
   type Screen,
 } from "../ui.js";
 import { theme } from "../theme.js";
+import { areaNameOf, enemyAreasOf } from "../world.js";
 
 const W = theme.colors.world;
 
@@ -326,10 +326,12 @@ export function HuntScreen({
   const backTo: Screen = place !== undefined ? { name: "place", place } : { name: "menu" };
   // 危機の接点（W-02）：今日の接点の相手には「異変：」の印を付ける。印は示すだけ、倒しても逃げてもよい
   const tpEnemies = crisisEnemyTouchpoints(state);
-  // 場所が指定されればその地域の獲物だけ（P-01）：森の獣は森、追い剥ぎは旧街道
-  const areas = place !== undefined ? enemyAreas.filter(([a]) => a === place) : enemyAreas;
+  // 場所が指定されればその地域の獲物だけ（P-01）。G-01：生成地方は
+  // 地域ごとの敵表（危険度で絞り込み済み）を、固定マップは敵の area 欄を見る
+  const allAreas = enemyAreasOf(state);
+  const areas = place !== undefined ? allAreas.filter(([a]) => a === place) : allAreas;
   const entries: MenuEntry[] = areas.flatMap(([area, group]): MenuEntry[] => {
-    const areaName = t.display.huntAreas[area] ?? area;
+    const areaName = areaNameOf(state, area, t.display.huntAreas);
     // 危機の段階で閉じられたエリアは「立ち入れない」とだけ出す（W-01。段階が変われば解放）
     if (crisisAreaClosed(state, cfg.crisis, area)) {
       return [{ kind: "header", text: tpl(t.text.huntAreaClosed, { name: areaName }) }];

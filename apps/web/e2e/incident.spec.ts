@@ -64,7 +64,7 @@ test("日々の出来事：割り込み → 応え → 結末と小さな効果 
     },
     saveOf(seed, ["incident.garo_invite", "incident.dropped_coin", "incident.stray_cat"]),
   );
-  await page.goto("/");
+  await page.goto("/?world=legacy");
 
   // メニューに居ると届いた分が会話の窓として割り込む（クエストボードではなく会話）
   const scr = page.getByTestId("screen-incident");
@@ -130,7 +130,7 @@ test("仕事：勝負所の印は今日の勝負所の注文にだけ付く（�
     },
     saveOf("e2e-inc2", []),
   );
-  await page.goto("/");
+  await page.goto("/?world=legacy");
   await expect(page.getByTestId("menu")).toBeVisible();
 
   // 鍛冶の注文は鍛冶場に届く（P-01：仕事は場所に属する）

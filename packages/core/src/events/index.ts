@@ -285,6 +285,11 @@ export type ActionEvent =
   | { type: "journeyStarted"; to: string; days: number }
   /** 町に着いた（旅の最後の野営の朝。town は着いた町の id） */
   | { type: "journeyArrived"; town: string }
+  /**
+   * 町の評判が上がった（G-01、docs/10 §4。掲示板・仕事・寄付でその町の
+   * 分だけ積み上がる。amount は増分、total は増分後の評判）
+   */
+  | { type: "repGained"; town: string; amount: number; total: number }
   // ---- 魔法（M-01、docs/09 §4〜5） ----
   /**
    * 生活魔法を唱えた（1行動＋魔力。id は spells.json の呪文 id、
