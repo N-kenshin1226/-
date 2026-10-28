@@ -459,6 +459,10 @@ export const cfg: StepConfig = {
   },
   /** 品物の定義表（P-02、items.json の id → 定義。市場・料理・食事・贈り物に使う） */
   items: Object.fromEntries(items.items.map((i) => [i.id, i])),
+  /** 敵の戦利品表（G-04。撃破ごとの決定的な抽選でモンスター素材が落ちる） */
+  enemyDrops: Object.fromEntries(
+    enemies.enemies.filter((e) => e.drops !== undefined).map((e) => [e.id, e.drops!]),
+  ),
 };
 
 /**
@@ -1755,6 +1759,8 @@ function toEnemyDef(e: EnemyJson): EnemyDef {
     agility: e.agility,
     // 獣（K-01）：beast.attack / beast.exp の技能リンクが効く印
     ...(e.beast === true ? { beast: true as const } : {}),
+    // 系統（G-04）：foe.<family> の使用タグに使う
+    ...(e.family !== undefined ? { family: e.family } : {}),
     attack: e.attack,
     moves: e.moves,
     pattern: e.pattern,

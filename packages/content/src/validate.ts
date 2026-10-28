@@ -230,9 +230,15 @@ try {
   const itemIds = new Set(
     ((read("items.json") as { items?: { id?: string }[] }).items ?? []).map((i) => i.id),
   );
-  const enemyIds = new Set(
-    ((read("enemies.json") as { enemies?: { id?: string }[] }).enemies ?? []).map((e) => e.id),
-  );
+  // 敵の id は基の種＋亜種（<base>__<biome> で展開される）の両方を数える（G-04）
+  const enemiesRawForIds = read("enemies.json") as {
+    enemies?: { id?: string }[];
+    variants?: { base?: string; biome?: string }[];
+  };
+  const enemyIds = new Set([
+    ...(enemiesRawForIds.enemies ?? []).map((e) => e.id),
+    ...(enemiesRawForIds.variants ?? []).map((v) => `${v.base ?? ""}__${v.biome ?? ""}`),
+  ]);
   const skillIds = new Set(
     ((read("skills.json") as { skills?: { id?: string }[] }).skills ?? []).map((s) => s.id),
   );
@@ -399,6 +405,7 @@ try {
     enemies?: {
       id?: string;
       moves?: Record<string, { spell?: string }> | { spell?: string }[];
+      drops?: { item?: string }[];
     }[];
   };
   const booksRaw = JSON.parse(readFileSync(join(root, "books.json"), "utf8")) as {
@@ -473,6 +480,11 @@ try {
     for (const m of list) {
       if (m.spell !== undefined && !spellIds.has(m.spell))
         bad.push(`enemies.json ${e.id ?? "?"}: 未定義の呪文 ${m.spell}`);
+    }
+    // G-04：戦利品は items.json の品物 id
+    for (const dr of e.drops ?? []) {
+      if (dr.item !== undefined && !itemIds.has(dr.item))
+        bad.push(`enemies.json ${e.id ?? "?"}: 未定義の戦利品 ${dr.item}`);
     }
   }
   if (bad.length > 0) {

@@ -166,15 +166,15 @@ describe("T-45/T-46 運命の傾向・誓約", () => {
 describe("T-23 狩りメニュー（エリア別）", () => {
   it("エリア見出しつきで敵が列挙され、通し番号で選べる", async () => {
     const savePath = tmpSave();
-    // 「3) 狩り」→ 一覧 → 「4) 追い剥ぎ」（旧街道側）で戦闘開始 → EOFで中断
-    const { io, output } = scriptedIo(["1", "1", "", "3", "4"]); // 出自→傾向→誓約→狩り;
+    // 「3) 狩り」→ 一覧 → 「7) 追い剥ぎ」（旧街道側。G-04 で森の獲物が増え、通し番号がずれた）で戦闘開始 → EOFで中断
+    const { io, output } = scriptedIo(["1", "1", "", "3", "7"]); // 出自→傾向→誓約→狩り;
     const state = await playCli({ io, savePath, seed: SEED, delay: async () => {} });
     const text = output.join("\n");
 
     expect(text).toContain("近郊の森");
     expect(text).toContain("旧街道");
     expect(text).toContain("1) 野犬");
-    expect(text).toContain("4) 追い剥ぎ");
+    expect(text).toContain("7) 追い剥ぎ");
     expect(text).toContain("追い剥ぎ が立ちはだかった");
     expect(state!.time.day).toBe(0);
   });

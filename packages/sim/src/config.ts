@@ -6,6 +6,7 @@ import {
   cliText,
   crisisTypes,
   discoveries,
+  enemies,
   incidents,
   items,
   k03Resolve,
@@ -265,6 +266,10 @@ export function stepConfig(): StepConfig {
     },
     /** 品物の定義表（P-02、items.json。市場・料理・贈り物に使う） */
     items: Object.fromEntries(items.items.map((i) => [i.id, i])),
+    /** 敵の戦利品表（G-04。撃破ごとの決定的な抽選でモンスター素材が落ちる） */
+    enemyDrops: Object.fromEntries(
+      enemies.enemies.filter((e) => e.drops !== undefined).map((e) => [e.id, e.drops!]),
+    ),
   };
 }
 

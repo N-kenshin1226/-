@@ -141,6 +141,20 @@ import {
  * cfg は balance.json 由来（数値をコードに直書きしない）。
  */
 
+/**
+ * 敵が落とす戦利品1件（G-04、enemies.json の drops）。
+ * 撃破のたびに chance の確率で n[min..max] 個を得る —— 抽選は
+ * 世界シード×敵×撃破序数の独立した乱数列で決定的に引く
+ */
+export interface EnemyDrop {
+  /** items.json の品物 id */
+  item: string;
+  /** 落とす確率（0 < chance <= 1） */
+  chance: number;
+  /** 個数の範囲 [min, max]（等確率） */
+  n: readonly [number, number];
+}
+
 export interface StepConfig {
   time: TimeConfig;
   /** actionLog の保持上限（balance.json state.actionLogMax） */
@@ -260,6 +274,12 @@ export interface StepConfig {
   life?: LifeConfig;
   /** 品物の定義表（items.json の id → 定義。値段・食事の質・贈り物の価値に使う） */
   items?: Record<string, ItemDef>;
+  /**
+   * 敵の戦利品表（G-04、enemies.json の drops の敵 id → 表）。
+   * 指定すると、戦闘・深層での撃破ごとに品物が落ちる（モンスター素材
+   * の出所。料理・依頼・市場へ流れる）
+   */
+  enemyDrops?: Record<string, readonly EnemyDrop[]>;
   /**
    * 武技・資源・構成（K-02、balance.arts ＋ arts.json の defs）。
    * 指定すると：戦闘の使用記録が artTags/skillTags に畳まれ、使った技に
@@ -741,6 +761,21 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
     if (n <= 0) return;
     next = { ...next, life: withItem(next, id, -n) };
     events.push({ type: "itemSpent", id, n });
+  };
+  /**
+   * G-04：撃破の戦利品を引く（enemies.json の drops）。抽選は世界シード
+   * ×敵×撃破序数の独立した乱数列 —— state.rng は消費せず、同じ敵の
+   * 何度目の撃破か（killIdx）で回目ごとに別の抽選になる
+   */
+  const rollDrops = (enemyId: string, killIdx: number): void => {
+    const drops = cfg.enemyDrops?.[enemyId];
+    if (drops === undefined || drops.length === 0) return;
+    const rng = createRng(`${next.seed}:drops:${enemyId}:${killIdx}`);
+    for (const d of drops) {
+      if (rng.next() >= d.chance) continue;
+      const n = d.n[0] + Math.floor(rng.next() * (d.n[1] - d.n[0] + 1));
+      giveItem(d.item, n);
+    }
   };
   /** 仲を深める（bondOf の上限まで。amount<=0 のときは「会えなかった」だけを出す） */
   const deepen = (npc: string, amount: number): void => {
@@ -1492,6 +1527,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       if (command.won) {
         const key = `kill.species.${command.enemyId}`;
         counters[key] = (counters[key] ?? 0) + 1;
+        // G-04：撃破の戦利品（モンスター素材。乱数は撃破序数で決定的）
+        rollDrops(command.enemyId, counters[key]!);
         // 強個体の討伐は別系統でも数える（T-44。図鑑・称号の条件用）
         if (command.unique === true) {
           const uKey = `kill.unique.${command.enemyId}`;
@@ -1605,6 +1642,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         if (won) {
           const key = `kill.species.${fight.enemyId}`;
           counters[key] = (counters[key] ?? 0) + 1;
+          // G-04：深層の撃破にも戦利品を引く（combat と同じ抽選）
+          rollDrops(fight.enemyId, counters[key]!);
         }
       };
       for (const k of command.kills ?? []) applyFight(k, true);

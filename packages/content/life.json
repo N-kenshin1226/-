@@ -403,6 +403,17 @@
       "out": "meal.herb",
       "skill": "medicinal_meal",
       "difficulty": 48
+    },
+    {
+      "id": "meal.game",
+      "name": "焼き獣肉",
+      "inputs": {
+        "meat": 1,
+        "mat.salt": 1
+      },
+      "out": "meal.game",
+      "skill": "cooking",
+      "difficulty": 20
     }
   ],
   "market": {

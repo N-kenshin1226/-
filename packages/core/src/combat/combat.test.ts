@@ -437,3 +437,94 @@ describe("combat コマンド（step への反映）", () => {
     expect(events.some((e) => e.type === "died")).toBe(true);
   });
 });
+
+describe("G-04：系統タグ（foe.<family>）", () => {
+  const ghoul: EnemyDef = { ...wolf, id: "ghoul", name: "食屍鬼", family: "undead" };
+  const knight: EnemyDef = { ...wolf, id: "knight", family: "human" };
+
+  it("獣でも人でもない敵は foe.<family> で刻まれる", () => {
+    let s = startCombat(ghoul, cfg, mkPlayer(0, 5, 15));
+    s = turn(s, "attack", ghoul, cfg, CTX);
+    const u = s.uses[s.uses.length - 1]!;
+    expect(u.tags).toContain("foe.undead");
+    expect(u.tags).not.toContain("foe.human");
+    expect(u.tags).not.toContain("foe.beast");
+  });
+
+  it("人は従来どおり foe.human、獣は foe.beast", () => {
+    let s = startCombat(knight, cfg, mkPlayer(0, 5, 15));
+    s = turn(s, "attack", knight, cfg, CTX);
+    expect(s.uses[s.uses.length - 1]!.tags).toContain("foe.human");
+    let s2 = startCombat({ ...wolf, beast: true }, cfg, mkPlayer(0, 5, 15));
+    s2 = turn(s2, "attack", { ...wolf, beast: true }, cfg, CTX);
+    expect(s2.uses[s2.uses.length - 1]!.tags).toContain("foe.beast");
+  });
+});
+
+describe("G-04：撃破の戦利品（モンスター素材）", () => {
+  const dropsCfg = (): StepConfig => ({
+    ...baseCfg(),
+    enemyDrops: {
+      wolf: [
+        { item: "meat", chance: 1, n: [2, 3] },
+        { item: "hide", chance: 0.5, n: [1, 1] },
+      ],
+      bandit: [{ item: "relic", chance: 0.01, n: [1, 1] }],
+    },
+  });
+  const mk = (seed: string) =>
+    newGame(seed, "名無し", { skillIds: SKILL_IDS, initialPotential: 100, initialStatValue: 10 });
+
+  it("撃破すると戦利品が落ち、同じ抽選は再現できる（決定性）", () => {
+    const cmd = { type: "combat", enemyId: "wolf", difficulty: 15, won: true } as const;
+    const a = step(mk("seed-drops"), cmd, dropsCfg());
+    const meat = a.events.find((e) => e.type === "itemGot" && e.id === "meat");
+    expect(meat !== undefined && meat.type === "itemGot" ? meat.n : 0).toBeGreaterThanOrEqual(2);
+    expect(meat !== undefined && meat.type === "itemGot" ? meat.n : 0).toBeLessThanOrEqual(3);
+    expect(a.state.life.items["meat"]).toBe(
+      meat !== undefined && meat.type === "itemGot" ? meat.n : -1,
+    );
+    // 同じ世界シード・同じ撃破序数 → 同じ戦利品（セーブ／リプレイでも同じ）
+    const b = step(mk("seed-drops"), cmd, dropsCfg());
+    expect(b.state.life.items).toEqual(a.state.life.items);
+    // 別シードは別の抽選になり得る（結果の同一性は要求しない。ここでは生じることだけ）
+    const c = step(mk("seed-other"), cmd, dropsCfg());
+    expect(c.state.life.items["meat"] ?? 0).toBeGreaterThanOrEqual(2);
+  });
+
+  it("敗けた戦闘・表の無い敵では落ちない", () => {
+    const lost = step(
+      mk("seed-drops"),
+      { type: "combat", enemyId: "wolf", difficulty: 15, won: false },
+      dropsCfg(),
+    );
+    expect(lost.events.some((e) => e.type === "itemGot")).toBe(false);
+    const other = step(
+      mk("seed-drops"),
+      { type: "combat", enemyId: "stray_dog", difficulty: 8, won: true },
+      dropsCfg(),
+    );
+    expect(other.events.some((e) => e.type === "itemGot")).toBe(false);
+  });
+
+  it("何度目の撃破かで別の抽選になる（撃破序数が鍵）", () => {
+    let s = mk("seed-drops");
+    const cmd = { type: "combat", enemyId: "wolf", difficulty: 15, won: true } as const;
+    s = step(s, cmd, dropsCfg()).state;
+    const first = s.life.items["meat"] ?? 0;
+    s = step(s, cmd, dropsCfg()).state;
+    const total = s.life.items["meat"] ?? 0;
+    expect(s.counters["kill.species.wolf"]).toBe(2);
+    expect(total - first).toBeGreaterThanOrEqual(2);
+    expect(total - first).toBeLessThanOrEqual(3);
+  });
+
+  it("深層の撃破にも戦利品が落ちる", () => {
+    const r = step(
+      mk("seed-drops"),
+      { type: "abyss", end: "retreat", kills: [{ enemyId: "wolf", difficulty: 15 }] },
+      dropsCfg(),
+    );
+    expect(r.events.some((e) => e.type === "itemGot" && e.id === "meat")).toBe(true);
+  });
+});

@@ -13,19 +13,38 @@
         "name": "噛みつき",
         "power": 2
       },
-      "moves": {},
+      "moves": {
+        "lunge": {
+          "id": "lunge",
+          "name": "突進噛み",
+          "power": 6
+        }
+      },
       "pattern": [
         {
           "type": "attack"
         },
         {
           "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "lunge",
+          "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
-        "pierce": 1.1
-      }
+        "pierce": 1.1,
+        "blunt": 0.9
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "wolf",
@@ -60,11 +79,28 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "blunt": 0.8,
         "pierce": 1.15
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "hide",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "fang",
+          "chance": 0.25,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "boar",
@@ -99,7 +135,7 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.7,
         "pierce": 1.3,
@@ -107,7 +143,183 @@
       },
       "statusResist": {
         "slow": 0.5
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.8,
+          "n": [1, 2]
+        },
+        {
+          "item": "hide",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "hornet",
+      "name": "大雀蜂",
+      "area": "forest",
+      "hp": 36,
+      "intervalTicks": 7,
+      "challenge": 14,
+      "agility": 22,
+      "attack": {
+        "id": "sting",
+        "name": "刺突",
+        "power": 4
+      },
+      "moves": {
+        "stinger_dive": {
+          "id": "stinger_dive",
+          "name": "急降下刺し",
+          "power": 12
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "stinger_dive",
+          "ticks": 6
+        }
+      ],
+      "family": "beast",
+      "resist": {
+        "pierce": 0.9,
+        "blunt": 1.25
+      },
+      "statusResist": {
+        "poison": 0.2,
+        "frozen": 1.2
+      },
+      "drops": [
+        {
+          "item": "venom",
+          "chance": 0.45,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "poacher",
+      "name": "密猟者",
+      "area": "forest",
+      "hp": 55,
+      "intervalTicks": 9,
+      "challenge": 18,
+      "agility": 9,
+      "attack": {
+        "id": "bow_shot",
+        "name": "狩りの一矢",
+        "power": 6
+      },
+      "moves": {
+        "aimed_shot": {
+          "id": "aimed_shot",
+          "name": "狙い撃ち",
+          "power": 18
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "aimed_shot",
+          "ticks": 8
+        }
+      ],
+      "family": "human",
+      "resist": {
+        "pierce": 0.9,
+        "slash": 1.1
+      },
+      "statusResist": {
+        "poison": 0.7
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.5,
+          "n": [1, 2]
+        },
+        {
+          "item": "hide",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "fang",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "slime",
+      "name": "粘体",
+      "area": "forest",
+      "hp": 24,
+      "intervalTicks": 12,
+      "challenge": 6,
+      "agility": 5,
+      "attack": {
+        "id": "slap",
+        "name": "粘体の打撃",
+        "power": 2
+      },
+      "moves": {
+        "envelope": {
+          "id": "envelope",
+          "name": "包み込み",
+          "power": 8
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "envelope",
+          "ticks": 8
+        }
+      ],
+      "family": "demon",
+      "resist": {
+        "slash": 0.4,
+        "pierce": 0.3,
+        "blunt": 0.6,
+        "magic": 1.4
+      },
+      "statusResist": {
+        "bleed": 0,
+        "poison": 0.5,
+        "stun": 0.5,
+        "burn": 1.3
+      },
+      "parts": ["body"],
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.15,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "bandit",
@@ -142,13 +354,21 @@
           "ticks": 8
         }
       ],
+      "family": "human",
       "resist": {
         "slash": 1.15,
         "pierce": 0.9
       },
       "statusResist": {
         "poison": 0.7
-      }
+      },
+      "drops": [
+        {
+          "item": "hide",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "deserter",
@@ -186,6 +406,7 @@
           "ticks": 10
         }
       ],
+      "family": "human",
       "resist": {
         "slash": 0.6,
         "pierce": 0.75,
@@ -194,7 +415,14 @@
       "statusResist": {
         "stun": 0.5,
         "poison": 0.5
-      }
+      },
+      "drops": [
+        {
+          "item": "ore.iron",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "hedge_mage",
@@ -244,6 +472,7 @@
           "ticks": 16
         }
       ],
+      "family": "human",
       "resist": {
         "slash": 0.85,
         "pierce": 0.9,
@@ -253,7 +482,19 @@
       "statusResist": {
         "poison": 0.5,
         "slow": 0.5
-      }
+      },
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.3,
+          "n": [1, 1]
+        },
+        {
+          "item": "ectoplasm",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "frost_sprite",
@@ -317,6 +558,7 @@
           "ticks": 24
         }
       ],
+      "family": "spirit",
       "resist": {
         "slash": 0.8,
         "pierce": 0.8,
@@ -327,7 +569,19 @@
         "frozen": 0,
         "burn": 1.5,
         "wet": 0
-      }
+      },
+      "drops": [
+        {
+          "item": "stone.ice",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "ectoplasm",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "cave_shaman",
@@ -377,6 +631,7 @@
           "ticks": 18
         }
       ],
+      "family": "human",
       "resist": {
         "slash": 0.9,
         "pierce": 0.9,
@@ -386,7 +641,19 @@
       "statusResist": {
         "poison": 0.5,
         "stun": 0.5
-      }
+      },
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.35,
+          "n": [1, 1]
+        },
+        {
+          "item": "ectoplasm",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "green_ape",
@@ -421,11 +688,23 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "blunt": 0.8,
         "pierce": 1.1
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "hide",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "dire_wolf",
@@ -463,11 +742,28 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.85,
         "pierce": 1.1
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "hide.quality",
+          "chance": 0.35,
+          "n": [1, 1]
+        },
+        {
+          "item": "fang",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "shade_wisp",
@@ -503,6 +799,7 @@
           "type": "attack"
         }
       ],
+      "family": "spirit",
       "resist": {
         "slash": 0.7,
         "pierce": 0.7,
@@ -513,7 +810,151 @@
         "poison": 0.3,
         "stun": 0.3,
         "bleed": 0.3
-      }
+      },
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "stone.mana",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "giant_spider",
+      "name": "大蜘蛛",
+      "area": "deep_forest",
+      "hp": 70,
+      "intervalTicks": 10,
+      "challenge": 22,
+      "agility": 16,
+      "attack": {
+        "id": "fang",
+        "name": "毒牙",
+        "power": 6
+      },
+      "moves": {
+        "web_spit": {
+          "id": "web_spit",
+          "name": "粘糸",
+          "power": 14
+        },
+        "venom_bite": {
+          "id": "venom_bite",
+          "name": "猛毒の一噛",
+          "power": 18
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "web_spit",
+          "ticks": 8
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "venom_bite",
+          "ticks": 10
+        }
+      ],
+      "family": "beast",
+      "resist": {
+        "slash": 0.9,
+        "blunt": 1.2
+      },
+      "statusResist": {
+        "poison": 0.2
+      },
+      "parts": ["head", "body", "legs"],
+      "drops": [
+        {
+          "item": "venom",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "hide",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "bear",
+      "name": "熊",
+      "area": "deep_forest",
+      "hp": 165,
+      "intervalTicks": 15,
+      "challenge": 36,
+      "agility": 8,
+      "attack": {
+        "id": "claw",
+        "name": "爪の一薙ぎ",
+        "power": 12
+      },
+      "moves": {
+        "maul": {
+          "id": "maul",
+          "name": "熊の撃墜",
+          "power": 32
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "maul",
+          "ticks": 12
+        }
+      ],
+      "family": "beast",
+      "resist": {
+        "slash": 0.85,
+        "pierce": 1.15,
+        "blunt": 0.9
+      },
+      "statusResist": {
+        "stun": 0.4,
+        "bleed": 0.7
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.9,
+          "n": [2, 3]
+        },
+        {
+          "item": "hide.quality",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "fang",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "wild_goat",
@@ -548,10 +989,23 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
+        "blunt": 0.9,
         "pierce": 1.1
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "hide",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "hawk",
@@ -586,10 +1040,136 @@
           "ticks": 6
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
+        "pierce": 0.85,
         "blunt": 1.2
-      }
+      },
+      "drops": [
+        {
+          "item": "feather",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "meat",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "kobold",
+      "name": "小鬼",
+      "area": "hills",
+      "hp": 40,
+      "intervalTicks": 8,
+      "challenge": 12,
+      "agility": 10,
+      "attack": {
+        "id": "sling",
+        "name": "投げ石",
+        "power": 3
+      },
+      "moves": {
+        "swarm": {
+          "id": "swarm",
+          "name": "寄せ集めの突撃",
+          "power": 10
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "swarm",
+          "ticks": 6
+        }
+      ],
+      "family": "demon",
+      "resist": {
+        "slash": 0.95,
+        "pierce": 1.1
+      },
+      "statusResist": {
+        "stun": 0.7
+      },
+      "drops": [
+        {
+          "item": "bone",
+          "chance": 0.35,
+          "n": [1, 1]
+        },
+        {
+          "item": "fang",
+          "chance": 0.25,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "dragonet",
+      "name": "子竜",
+      "area": "hills",
+      "hp": 90,
+      "intervalTicks": 11,
+      "challenge": 30,
+      "agility": 10,
+      "attack": {
+        "id": "bite",
+        "name": "子竜の咬みつき",
+        "power": 8
+      },
+      "moves": {
+        "flame_puff": {
+          "id": "flame_puff",
+          "name": "小さな火の息",
+          "power": 18,
+          "spell": "sp_ember"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "flame_puff",
+          "ticks": 10
+        }
+      ],
+      "family": "dragon",
+      "resist": {
+        "slash": 0.75,
+        "pierce": 0.9,
+        "blunt": 1.0,
+        "magic": 1.15
+      },
+      "statusResist": {
+        "burn": 0.4,
+        "stun": 0.6
+      },
+      "parts": ["head", "body", "legs"],
+      "drops": [
+        {
+          "item": "scale",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "fang",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "rock_lizard",
@@ -624,7 +1204,7 @@
           "ticks": 10
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.6,
         "pierce": 0.6,
@@ -632,7 +1212,19 @@
       },
       "statusResist": {
         "bleed": 0.3
-      }
+      },
+      "drops": [
+        {
+          "item": "scale",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "meat",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "mountain_troll",
@@ -670,13 +1262,26 @@
           "ticks": 12
         }
       ],
+      "family": "demon",
       "resist": {
         "blunt": 0.8,
         "slash": 1.1
       },
       "statusResist": {
         "stun": 0.4
-      }
+      },
+      "drops": [
+        {
+          "item": "hide.quality",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "meat",
+          "chance": 0.6,
+          "n": [1, 2]
+        }
+      ]
     },
     {
       "id": "griffin",
@@ -714,10 +1319,251 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
+        "slash": 0.9,
         "pierce": 1.15
-      }
+      },
+      "drops": [
+        {
+          "item": "feather",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "scale",
+          "chance": 0.3,
+          "n": [1, 1]
+        },
+        {
+          "item": "meat",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "wind_sprite",
+      "name": "風精",
+      "area": "mountain",
+      "hp": 50,
+      "intervalTicks": 18,
+      "challenge": 30,
+      "agility": 18,
+      "attack": {
+        "id": "breeze",
+        "name": "風の撓り",
+        "power": 7
+      },
+      "moves": {
+        "air_cutter": {
+          "id": "air_cutter",
+          "name": "風の刃",
+          "power": 20,
+          "spell": "sp_air_cutter"
+        },
+        "gust": {
+          "id": "gust",
+          "name": "突風",
+          "power": 28,
+          "spell": "sp_gust"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "air_cutter",
+          "ticks": 12
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "gust",
+          "ticks": 16
+        }
+      ],
+      "family": "spirit",
+      "resist": {
+        "slash": 0.7,
+        "pierce": 0.6,
+        "blunt": 1.1
+      },
+      "statusResist": {
+        "shock": 0.3,
+        "stun": 0.4
+      },
+      "drops": [
+        {
+          "item": "feather",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "stone.mana",
+          "chance": 0.25,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "earth_sprite",
+      "name": "土精",
+      "area": "mountain",
+      "hp": 95,
+      "intervalTicks": 20,
+      "challenge": 34,
+      "agility": 5,
+      "attack": {
+        "id": "stone_fist",
+        "name": "石の拳",
+        "power": 9
+      },
+      "moves": {
+        "stone_shot": {
+          "id": "stone_shot",
+          "name": "石つぶて",
+          "power": 22,
+          "spell": "sp_stone_shot"
+        },
+        "quake": {
+          "id": "quake",
+          "name": "地ならし",
+          "power": 34,
+          "spell": "sp_quake"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "stone_shot",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "quake",
+          "ticks": 18
+        }
+      ],
+      "family": "spirit",
+      "resist": {
+        "slash": 0.6,
+        "pierce": 0.5,
+        "blunt": 0.8,
+        "magic": 1.1
+      },
+      "statusResist": {
+        "stun": 0.3,
+        "bleed": 0
+      },
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.45,
+          "n": [1, 1]
+        },
+        {
+          "item": "ore.iron",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "drake",
+      "name": "飛竜",
+      "area": "mountain",
+      "hp": 190,
+      "intervalTicks": 11,
+      "challenge": 52,
+      "agility": 11,
+      "attack": {
+        "id": "talon",
+        "name": "竜の鉤爪",
+        "power": 13
+      },
+      "moves": {
+        "fire_breath": {
+          "id": "fire_breath",
+          "name": "火の息",
+          "power": 34,
+          "spell": "sp_fireball"
+        },
+        "dive": {
+          "id": "dive",
+          "name": "急降下の爪",
+          "power": 30
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "fire_breath",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dive",
+          "ticks": 10
+        }
+      ],
+      "family": "dragon",
+      "resist": {
+        "slash": 0.6,
+        "pierce": 0.8,
+        "blunt": 0.9,
+        "magic": 1.1
+      },
+      "statusResist": {
+        "burn": 0.2,
+        "stun": 0.4,
+        "bleed": 0.7
+      },
+      "drops": [
+        {
+          "item": "scale.dragon",
+          "chance": 0.45,
+          "n": [1, 1]
+        },
+        {
+          "item": "scale",
+          "chance": 0.6,
+          "n": [1, 2]
+        },
+        {
+          "item": "fang",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "turtle",
@@ -752,12 +1598,24 @@
           "ticks": 10
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.5,
         "pierce": 0.5,
-        "blunt": 1.0
-      }
+        "blunt": 1.25
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "scale",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "pike",
@@ -792,11 +1650,23 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.9,
         "blunt": 1.1
-      }
+      },
+      "drops": [
+        {
+          "item": "fish.lake",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "scale",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "lake_serpent",
@@ -832,15 +1702,100 @@
           "ticks": 12
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.8,
-        "blunt": 0.9
+        "blunt": 0.9,
+        "pierce": 1.15
       },
       "statusResist": {
         "frozen": 0.4
       },
-      "parts": ["head", "body"]
+      "parts": ["head", "body"],
+      "drops": [
+        {
+          "item": "scale",
+          "chance": 0.6,
+          "n": [1, 2]
+        },
+        {
+          "item": "meat",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "water_sprite",
+      "name": "水精",
+      "area": "lake",
+      "hp": 55,
+      "intervalTicks": 19,
+      "challenge": 26,
+      "agility": 13,
+      "attack": {
+        "id": "ripple",
+        "name": "さざ波",
+        "power": 6
+      },
+      "moves": {
+        "water_shot": {
+          "id": "water_shot",
+          "name": "水の弾",
+          "power": 18,
+          "spell": "sp_water_shot"
+        },
+        "freeze": {
+          "id": "freeze",
+          "name": "凍てつき",
+          "power": 26,
+          "spell": "sp_freeze"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "water_shot",
+          "ticks": 12
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "freeze",
+          "ticks": 16
+        }
+      ],
+      "family": "spirit",
+      "resist": {
+        "slash": 0.7,
+        "pierce": 0.6,
+        "blunt": 1.1
+      },
+      "statusResist": {
+        "wet": 0,
+        "frozen": 0.4,
+        "shock": 1.4
+      },
+      "drops": [
+        {
+          "item": "pearl",
+          "chance": 0.2,
+          "n": [1, 1]
+        },
+        {
+          "item": "ectoplasm",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "big_frog",
@@ -875,10 +1830,18 @@
           "ticks": 6
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
+        "slash": 0.85,
         "blunt": 1.2
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "river_bandit",
@@ -913,12 +1876,21 @@
           "ticks": 8
         }
       ],
+      "family": "human",
       "resist": {
+        "pierce": 0.9,
         "slash": 1.1
       },
       "statusResist": {
         "poison": 0.7
-      }
+      },
+      "drops": [
+        {
+          "item": "hide",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "crab",
@@ -953,12 +1925,19 @@
           "ticks": 10
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.5,
         "pierce": 0.6,
         "blunt": 1.3
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        }
+      ]
     },
     {
       "id": "shore_shark",
@@ -996,10 +1975,23 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
-        "slash": 0.85
-      }
+        "slash": 0.85,
+        "pierce": 1.15
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "scale",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "pirate",
@@ -1037,12 +2029,166 @@
           "ticks": 8
         }
       ],
+      "family": "human",
       "resist": {
+        "pierce": 0.9,
         "slash": 1.1
       },
       "statusResist": {
         "poison": 0.7
-      }
+      },
+      "drops": [
+        {
+          "item": "relic",
+          "chance": 0.12,
+          "n": [1, 1]
+        },
+        {
+          "item": "hide",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "drowned_dead",
+      "name": "水死者",
+      "area": "coast",
+      "hp": 85,
+      "intervalTicks": 13,
+      "challenge": 26,
+      "agility": 5,
+      "attack": {
+        "id": "sodden_grip",
+        "name": "濡れた掴み",
+        "power": 7
+      },
+      "moves": {
+        "undertow": {
+          "id": "undertow",
+          "name": "引きずり込み",
+          "power": 20
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "undertow",
+          "ticks": 10
+        }
+      ],
+      "family": "undead",
+      "resist": {
+        "slash": 0.8,
+        "pierce": 0.8
+      },
+      "statusResist": {
+        "poison": 0,
+        "bleed": 0,
+        "wet": 0,
+        "frozen": 0.5,
+        "shock": 1.3
+      },
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "pearl",
+          "chance": 0.15,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "sea_wyrm",
+      "name": "海竜",
+      "area": "coast",
+      "hp": 185,
+      "intervalTicks": 12,
+      "challenge": 50,
+      "agility": 9,
+      "attack": {
+        "id": "fangs",
+        "name": "海竜の牙",
+        "power": 12
+      },
+      "moves": {
+        "torrent": {
+          "id": "torrent",
+          "name": "奔流",
+          "power": 34,
+          "spell": "sp_torrent"
+        },
+        "water_shot": {
+          "id": "water_shot",
+          "name": "水の弾",
+          "power": 22,
+          "spell": "sp_water_shot"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "torrent",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "water_shot",
+          "ticks": 12
+        }
+      ],
+      "family": "dragon",
+      "resist": {
+        "slash": 0.6,
+        "pierce": 0.75,
+        "blunt": 0.95,
+        "magic": 1.05
+      },
+      "statusResist": {
+        "wet": 0,
+        "frozen": 0.5,
+        "shock": 1.3
+      },
+      "parts": ["head", "body"],
+      "drops": [
+        {
+          "item": "scale.dragon",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "pearl",
+          "chance": 0.3,
+          "n": [1, 1]
+        },
+        {
+          "item": "scale",
+          "chance": 0.6,
+          "n": [1, 2]
+        }
+      ]
     },
     {
       "id": "marsh_viper",
@@ -1077,10 +2223,26 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
+      "resist": {
+        "slash": 0.9,
+        "blunt": 1.2
+      },
       "statusResist": {
         "poison": 0.2
-      }
+      },
+      "drops": [
+        {
+          "item": "venom",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "meat",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "bog_lurker",
@@ -1115,6 +2277,7 @@
           "ticks": 10
         }
       ],
+      "family": "demon",
       "resist": {
         "slash": 0.7,
         "blunt": 0.8,
@@ -1123,7 +2286,19 @@
       "statusResist": {
         "poison": 0.3,
         "bleed": 0.3
-      }
+      },
+      "drops": [
+        {
+          "item": "venom",
+          "chance": 0.3,
+          "n": [1, 1]
+        },
+        {
+          "item": "ectoplasm",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "plague_rat",
@@ -1158,10 +2333,101 @@
           "ticks": 6
         }
       ],
-      "beast": true,
+      "family": "beast",
+      "resist": {
+        "slash": 0.9,
+        "blunt": 1.15
+      },
       "statusResist": {
         "poison": 0.4
-      }
+      },
+      "drops": [
+        {
+          "item": "venom",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "will_o_wisp",
+      "name": "鬼火",
+      "area": "marsh",
+      "hp": 45,
+      "intervalTicks": 15,
+      "challenge": 28,
+      "agility": 16,
+      "attack": {
+        "id": "flicker",
+        "name": "揺らめき",
+        "power": 6
+      },
+      "moves": {
+        "shadow_bolt": {
+          "id": "shadow_bolt",
+          "name": "闇の矢",
+          "power": 20,
+          "spell": "sp_shadow_bolt"
+        },
+        "life_drain": {
+          "id": "life_drain",
+          "name": "命の吸収",
+          "power": 24,
+          "spell": "sp_life_drain"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "shadow_bolt",
+          "ticks": 12
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "life_drain",
+          "ticks": 16
+        }
+      ],
+      "family": "spirit",
+      "resist": {
+        "slash": 0.5,
+        "pierce": 0.5,
+        "blunt": 0.7,
+        "magic": 0.8
+      },
+      "statusResist": {
+        "poison": 0,
+        "bleed": 0,
+        "stun": 0.3,
+        "burn": 1.2
+      },
+      "parts": ["body"],
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "stone.mana",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "vulture",
@@ -1196,10 +2462,23 @@
           "ticks": 6
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
+        "pierce": 0.85,
         "blunt": 1.2
-      }
+      },
+      "drops": [
+        {
+          "item": "feather",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "scorpion",
@@ -1237,14 +2516,163 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
         "slash": 0.6,
-        "blunt": 0.8
+        "blunt": 0.8,
+        "pierce": 1.2
       },
       "statusResist": {
         "poison": 0.3
-      }
+      },
+      "drops": [
+        {
+          "item": "venom",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "scale",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "raider",
+      "name": "略奪者",
+      "area": "wasteland",
+      "hp": 90,
+      "intervalTicks": 10,
+      "challenge": 32,
+      "agility": 8,
+      "attack": {
+        "id": "axe_swing",
+        "name": "斧の一薙ぎ",
+        "power": 8
+      },
+      "moves": {
+        "pillage": {
+          "id": "pillage",
+          "name": "略奪の一撃",
+          "power": 24
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "pillage",
+          "ticks": 8
+        }
+      ],
+      "family": "human",
+      "resist": {
+        "slash": 1.1,
+        "pierce": 0.9
+      },
+      "statusResist": {
+        "poison": 0.7
+      },
+      "drops": [
+        {
+          "item": "hide",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "wyvern",
+      "name": "翼竜",
+      "area": "wasteland",
+      "hp": 210,
+      "intervalTicks": 9,
+      "challenge": 58,
+      "agility": 13,
+      "attack": {
+        "id": "bite",
+        "name": "翼竜の牙",
+        "power": 14
+      },
+      "moves": {
+        "skyfall": {
+          "id": "skyfall",
+          "name": "墜落の一撃",
+          "power": 40
+        },
+        "air_cutter": {
+          "id": "air_cutter",
+          "name": "風の刃",
+          "power": 28,
+          "spell": "sp_air_cutter"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "skyfall",
+          "ticks": 12
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "air_cutter",
+          "ticks": 12
+        }
+      ],
+      "family": "dragon",
+      "resist": {
+        "slash": 0.65,
+        "pierce": 0.8,
+        "blunt": 0.9,
+        "magic": 1.1
+      },
+      "statusResist": {
+        "stun": 0.4,
+        "frozen": 1.2
+      },
+      "drops": [
+        {
+          "item": "scale.dragon",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "scale",
+          "chance": 0.6,
+          "n": [1, 2]
+        },
+        {
+          "item": "feather",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "frost_hare",
@@ -1279,10 +2707,26 @@
           "ticks": 6
         }
       ],
-      "beast": true,
+      "family": "beast",
+      "resist": {
+        "slash": 0.9,
+        "blunt": 1.2
+      },
       "statusResist": {
         "frozen": 0.2
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "hide.quality",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "snow_wolf",
@@ -1320,14 +2764,32 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
-        "slash": 0.85
+        "slash": 0.85,
+        "pierce": 1.1
       },
       "statusResist": {
         "frozen": 0.2,
         "burn": 1.3
-      }
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "hide.quality",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "fang",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "yeti",
@@ -1365,14 +2827,32 @@
           "ticks": 10
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
-        "blunt": 0.7
+        "blunt": 0.7,
+        "pierce": 1.15
       },
       "statusResist": {
         "frozen": 0.1,
         "burn": 1.3
-      }
+      },
+      "drops": [
+        {
+          "item": "hide.quality",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "meat",
+          "chance": 0.8,
+          "n": [2, 3]
+        },
+        {
+          "item": "fang",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "ash_bat",
@@ -1407,10 +2887,26 @@
           "ticks": 6
         }
       ],
-      "beast": true,
+      "family": "beast",
+      "resist": {
+        "pierce": 0.9,
+        "blunt": 1.2
+      },
       "statusResist": {
         "burn": 0.3
-      }
+      },
+      "drops": [
+        {
+          "item": "bone",
+          "chance": 0.3,
+          "n": [1, 1]
+        },
+        {
+          "item": "stone.fire",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "fire_lizard",
@@ -1446,10 +2942,26 @@
           "ticks": 12
         }
       ],
-      "beast": true,
+      "family": "beast",
       "statusResist": {
         "burn": 0.1,
         "frozen": 1.3
+      },
+      "drops": [
+        {
+          "item": "scale",
+          "chance": 0.6,
+          "n": [1, 2]
+        },
+        {
+          "item": "stone.fire",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ],
+      "resist": {
+        "slash": 0.85,
+        "pierce": 1.1
       }
     },
     {
@@ -1486,6 +2998,7 @@
           "ticks": 14
         }
       ],
+      "family": "demon",
       "resist": {
         "slash": 0.5,
         "pierce": 0.4,
@@ -1494,10 +3007,249 @@
       },
       "statusResist": {
         "burn": 0,
-        "frozen": 0.8,
+        "frozen": 1.25,
         "bleed": 0
       },
-      "parts": ["body", "arms"]
+      "parts": ["body", "arms"],
+      "drops": [
+        {
+          "item": "stone.fire",
+          "chance": 0.6,
+          "n": [1, 2]
+        },
+        {
+          "item": "stone.mana",
+          "chance": 0.3,
+          "n": [1, 1]
+        },
+        {
+          "item": "ore.iron",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "imp",
+      "name": "小悪魔",
+      "area": "volcano",
+      "hp": 55,
+      "intervalTicks": 13,
+      "challenge": 34,
+      "agility": 14,
+      "attack": {
+        "id": "claw",
+        "name": "小悪魔の爪",
+        "power": 7
+      },
+      "moves": {
+        "ember": {
+          "id": "ember",
+          "name": "残り火",
+          "power": 18,
+          "spell": "sp_ember"
+        },
+        "dark_bolt": {
+          "id": "dark_bolt",
+          "name": "闇の矢",
+          "power": 26,
+          "spell": "sp_shadow_bolt"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "ember",
+          "ticks": 10
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "dark_bolt",
+          "ticks": 14
+        }
+      ],
+      "family": "demon",
+      "resist": {
+        "slash": 0.8,
+        "pierce": 0.9,
+        "blunt": 1.15,
+        "magic": 0.8
+      },
+      "statusResist": {
+        "burn": 0.3,
+        "poison": 0.6
+      },
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.35,
+          "n": [1, 1]
+        },
+        {
+          "item": "stone.fire",
+          "chance": 0.25,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "fire_sprite",
+      "name": "炎精",
+      "area": "volcano",
+      "hp": 60,
+      "intervalTicks": 22,
+      "challenge": 36,
+      "agility": 15,
+      "attack": {
+        "id": "spark_touch",
+        "name": "火の手",
+        "power": 8
+      },
+      "moves": {
+        "fireball": {
+          "id": "fireball",
+          "name": "火の玉",
+          "power": 22,
+          "spell": "sp_fireball"
+        },
+        "flame_wall": {
+          "id": "flame_wall",
+          "name": "炎の壁",
+          "power": 32,
+          "spell": "sp_flame_wall"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "fireball",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "flame_wall",
+          "ticks": 18
+        }
+      ],
+      "family": "spirit",
+      "resist": {
+        "slash": 0.7,
+        "pierce": 0.7,
+        "blunt": 1.1
+      },
+      "statusResist": {
+        "burn": 0,
+        "frozen": 1.4,
+        "wet": 1.3
+      },
+      "drops": [
+        {
+          "item": "stone.fire",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "ectoplasm",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "salamander",
+      "name": "火竜蜥蜴",
+      "area": "volcano",
+      "hp": 175,
+      "intervalTicks": 12,
+      "challenge": 50,
+      "agility": 8,
+      "attack": {
+        "id": "fangs",
+        "name": "灼熱の牙",
+        "power": 12
+      },
+      "moves": {
+        "flame": {
+          "id": "flame",
+          "name": "灼熱の吐息",
+          "power": 32,
+          "spell": "sp_fireball"
+        },
+        "inferno": {
+          "id": "inferno",
+          "name": "業火",
+          "power": 44,
+          "spell": "sp_inferno"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "flame",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "inferno",
+          "ticks": 20
+        }
+      ],
+      "family": "dragon",
+      "resist": {
+        "slash": 0.65,
+        "pierce": 0.7,
+        "blunt": 0.85,
+        "magic": 1.05
+      },
+      "statusResist": {
+        "burn": 0,
+        "frozen": 1.4
+      },
+      "parts": ["head", "body", "legs"],
+      "drops": [
+        {
+          "item": "scale.dragon",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "stone.fire",
+          "chance": 0.6,
+          "n": [1, 2]
+        },
+        {
+          "item": "scale",
+          "chance": 0.5,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "ghoul",
@@ -1532,6 +3284,7 @@
           "ticks": 8
         }
       ],
+      "family": "undead",
       "resist": {
         "slash": 0.8,
         "pierce": 1.1
@@ -1539,7 +3292,19 @@
       "statusResist": {
         "poison": 0.2,
         "bleed": 0.2
-      }
+      },
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.5,
+          "n": [1, 2]
+        }
+      ]
     },
     {
       "id": "war_ghost",
@@ -1575,18 +3340,216 @@
           "ticks": 14
         }
       ],
+      "family": "undead",
       "resist": {
         "slash": 0.5,
         "pierce": 0.5,
         "blunt": 0.6,
-        "magic": 0.8
+        "magic": 1.2
       },
       "statusResist": {
         "stun": 0,
         "bleed": 0,
         "poison": 0
       },
-      "parts": ["body"]
+      "parts": ["body"],
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "renegade_knight",
+      "name": "堕ちた騎士",
+      "area": "battlefield",
+      "hp": 130,
+      "intervalTicks": 12,
+      "challenge": 44,
+      "agility": 7,
+      "attack": {
+        "id": "longsword",
+        "name": "騎士剣",
+        "power": 10
+      },
+      "moves": {
+        "crescent": {
+          "id": "crescent",
+          "name": "円月斬",
+          "power": 30
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "crescent",
+          "ticks": 10
+        }
+      ],
+      "family": "human",
+      "resist": {
+        "slash": 0.75,
+        "pierce": 0.85,
+        "blunt": 1.2,
+        "magic": 1.1
+      },
+      "statusResist": {
+        "stun": 0.5,
+        "bleed": 0.6
+      },
+      "parts": ["head", "body", "arms"],
+      "drops": [
+        {
+          "item": "ore.iron",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "hide.quality",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "skeleton_soldier",
+      "name": "骸骨剣士",
+      "area": "battlefield",
+      "hp": 80,
+      "intervalTicks": 11,
+      "challenge": 34,
+      "agility": 7,
+      "attack": {
+        "id": "rusty_blade",
+        "name": "錆びた剣",
+        "power": 8
+      },
+      "moves": {
+        "bone_march": {
+          "id": "bone_march",
+          "name": "骸骨の踏み込み斬り",
+          "power": 24
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "bone_march",
+          "ticks": 10
+        }
+      ],
+      "family": "undead",
+      "resist": {
+        "slash": 0.7,
+        "pierce": 0.35,
+        "blunt": 1.5,
+        "magic": 0.9
+      },
+      "statusResist": {
+        "bleed": 0,
+        "poison": 0,
+        "stun": 0.4,
+        "burn": 1.2
+      },
+      "parts": ["head", "body", "arms"],
+      "drops": [
+        {
+          "item": "bone",
+          "chance": 0.7,
+          "n": [1, 2]
+        },
+        {
+          "item": "ectoplasm",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "graveyard_knight",
+      "name": "墓守の騎士",
+      "area": "battlefield",
+      "hp": 120,
+      "intervalTicks": 12,
+      "challenge": 42,
+      "agility": 6,
+      "attack": {
+        "id": "grave_sword",
+        "name": "墓守の大剣",
+        "power": 10
+      },
+      "moves": {
+        "last_watch": {
+          "id": "last_watch",
+          "name": "終わりなき番の一撃",
+          "power": 28
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "last_watch",
+          "ticks": 10
+        }
+      ],
+      "family": "undead",
+      "resist": {
+        "slash": 0.6,
+        "pierce": 0.5,
+        "blunt": 1.3
+      },
+      "statusResist": {
+        "bleed": 0,
+        "poison": 0,
+        "stun": 0.3
+      },
+      "parts": ["head", "body", "arms"],
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "ore.iron",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "feral_pack",
@@ -1624,10 +3587,28 @@
           "ticks": 8
         }
       ],
-      "beast": true,
+      "family": "beast",
       "resist": {
-        "blunt": 0.9
-      }
+        "blunt": 0.9,
+        "slash": 1.1
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "hide",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "hanged_wraith",
@@ -1662,18 +3643,212 @@
           "ticks": 12
         }
       ],
+      "family": "undead",
       "resist": {
         "slash": 0.5,
         "pierce": 0.5,
         "blunt": 0.6,
-        "magic": 0.9
+        "magic": 1.15
       },
       "statusResist": {
         "stun": 0,
         "bleed": 0,
         "poison": 0
       },
-      "parts": ["body", "arms"]
+      "parts": ["body", "arms"],
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.6,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "giant_rat",
+      "name": "大鼠",
+      "area": "dead_village",
+      "hp": 18,
+      "intervalTicks": 9,
+      "challenge": 6,
+      "agility": 12,
+      "attack": {
+        "id": "gnaw",
+        "name": "齧りつき",
+        "power": 2
+      },
+      "moves": {
+        "frenzy": {
+          "id": "frenzy",
+          "name": "鼠の狂乱",
+          "power": 6
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "frenzy",
+          "ticks": 6
+        }
+      ],
+      "family": "beast",
+      "resist": {
+        "pierce": 0.9,
+        "blunt": 1.15
+      },
+      "statusResist": {
+        "poison": 0.6
+      },
+      "drops": [
+        {
+          "item": "meat",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "hide",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "cultist",
+      "name": "邪教の徒",
+      "area": "dead_village",
+      "hp": 78,
+      "intervalTicks": 18,
+      "challenge": 36,
+      "agility": 9,
+      "attack": {
+        "id": "ritual_dagger",
+        "name": "儀式の短剣",
+        "power": 7
+      },
+      "moves": {
+        "shadow_bolt": {
+          "id": "shadow_bolt",
+          "name": "闇の矢",
+          "power": 24,
+          "spell": "sp_shadow_bolt"
+        },
+        "eclipse": {
+          "id": "eclipse",
+          "name": "蝕",
+          "power": 34,
+          "spell": "sp_eclipse"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "shadow_bolt",
+          "ticks": 12
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "eclipse",
+          "ticks": 18
+        }
+      ],
+      "family": "human",
+      "resist": {
+        "slash": 0.9,
+        "blunt": 1.15,
+        "magic": 0.7
+      },
+      "statusResist": {
+        "poison": 0.5,
+        "stun": 0.6
+      },
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.35,
+          "n": [1, 1]
+        },
+        {
+          "item": "stone.mana",
+          "chance": 0.25,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "rotting_shambler",
+      "name": "腐乱の屍",
+      "area": "dead_village",
+      "hp": 95,
+      "intervalTicks": 14,
+      "challenge": 24,
+      "agility": 4,
+      "attack": {
+        "id": "claw",
+        "name": "腐った爪",
+        "power": 6
+      },
+      "moves": {
+        "festering_hug": {
+          "id": "festering_hug",
+          "name": "抱きつき",
+          "power": 18
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "festering_hug",
+          "ticks": 10
+        }
+      ],
+      "family": "undead",
+      "resist": {
+        "slash": 0.8,
+        "pierce": 0.9,
+        "magic": 1.1
+      },
+      "statusResist": {
+        "poison": 0,
+        "bleed": 0,
+        "stun": 0.5,
+        "burn": 1.3
+      },
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.4,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.3,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "tomb_bat",
@@ -1708,10 +3883,21 @@
           "ticks": 6
         }
       ],
-      "beast": true,
+      "family": "beast",
+      "resist": {
+        "pierce": 0.9,
+        "blunt": 1.2
+      },
       "statusResist": {
         "poison": 0.4
-      }
+      },
+      "drops": [
+        {
+          "item": "bone",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "ruin_stalker",
@@ -1749,10 +3935,24 @@
           "ticks": 8
         }
       ],
+      "family": "demon",
       "resist": {
         "slash": 0.8,
-        "pierce": 0.8
-      }
+        "pierce": 0.8,
+        "blunt": 1.15
+      },
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.35,
+          "n": [1, 1]
+        },
+        {
+          "item": "relic",
+          "chance": 0.15,
+          "n": [1, 1]
+        }
+      ]
     },
     {
       "id": "stone_guardian",
@@ -1790,10 +3990,11 @@
           "ticks": 12
         }
       ],
+      "family": "demon",
       "resist": {
         "slash": 0.4,
         "pierce": 0.3,
-        "blunt": 0.9,
+        "blunt": 1.25,
         "magic": 0.7
       },
       "statusResist": {
@@ -1801,7 +4002,418 @@
         "poison": 0,
         "stun": 0.3
       },
-      "parts": ["body", "arms"]
+      "parts": ["body", "arms"],
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "relic",
+          "chance": 0.2,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "grave_robber",
+      "name": "墓荒らし",
+      "area": "ruins_field",
+      "hp": 68,
+      "intervalTicks": 9,
+      "challenge": 28,
+      "agility": 9,
+      "attack": {
+        "id": "shovel",
+        "name": "円匙の一撃",
+        "power": 6
+      },
+      "moves": {
+        "ambush": {
+          "id": "ambush",
+          "name": "闇からの一撃",
+          "power": 20
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "ambush",
+          "ticks": 8
+        }
+      ],
+      "family": "human",
+      "resist": {
+        "pierce": 0.85,
+        "slash": 1.1
+      },
+      "statusResist": {
+        "poison": 0.7
+      },
+      "drops": [
+        {
+          "item": "bone",
+          "chance": 0.45,
+          "n": [1, 1]
+        },
+        {
+          "item": "relic",
+          "chance": 0.12,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "crypt_wight",
+      "name": "古墳の屍鬼",
+      "area": "ruins_field",
+      "hp": 110,
+      "intervalTicks": 16,
+      "challenge": 44,
+      "agility": 8,
+      "attack": {
+        "id": "grave_claw",
+        "name": "墓の爪",
+        "power": 10
+      },
+      "moves": {
+        "life_drain": {
+          "id": "life_drain",
+          "name": "命の吸収",
+          "power": 26,
+          "spell": "sp_life_drain"
+        },
+        "eclipse": {
+          "id": "eclipse",
+          "name": "蝕",
+          "power": 36,
+          "spell": "sp_eclipse"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "life_drain",
+          "ticks": 14
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "eclipse",
+          "ticks": 18
+        }
+      ],
+      "family": "undead",
+      "resist": {
+        "slash": 0.7,
+        "pierce": 0.6,
+        "blunt": 1.2,
+        "magic": 0.8
+      },
+      "statusResist": {
+        "bleed": 0,
+        "poison": 0,
+        "stun": 0.3
+      },
+      "drops": [
+        {
+          "item": "ectoplasm",
+          "chance": 0.6,
+          "n": [1, 1]
+        },
+        {
+          "item": "bone",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "gargoyle",
+      "name": "石像鬼",
+      "area": "ruins_field",
+      "hp": 120,
+      "intervalTicks": 12,
+      "challenge": 38,
+      "agility": 8,
+      "attack": {
+        "id": "stone_claw",
+        "name": "石の爪",
+        "power": 10
+      },
+      "moves": {
+        "plunge": {
+          "id": "plunge",
+          "name": "石像の急降下",
+          "power": 26
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "plunge",
+          "ticks": 10
+        }
+      ],
+      "family": "demon",
+      "resist": {
+        "slash": 0.5,
+        "pierce": 0.4,
+        "blunt": 1.3,
+        "magic": 0.9
+      },
+      "statusResist": {
+        "bleed": 0,
+        "poison": 0,
+        "burn": 0.7
+      },
+      "parts": ["body", "arms"],
+      "drops": [
+        {
+          "item": "stone.mana",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
+    },
+    {
+      "id": "wyrm",
+      "name": "地竜",
+      "area": "ruins_field",
+      "hp": 240,
+      "intervalTicks": 15,
+      "challenge": 60,
+      "agility": 6,
+      "attack": {
+        "id": "maw",
+        "name": "地竜の顎",
+        "power": 15
+      },
+      "moves": {
+        "quake": {
+          "id": "quake",
+          "name": "地ならし",
+          "power": 40,
+          "spell": "sp_quake"
+        },
+        "rock_fall": {
+          "id": "rock_fall",
+          "name": "岩落とし",
+          "power": 32,
+          "spell": "sp_rock_fall"
+        }
+      },
+      "pattern": [
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "quake",
+          "ticks": 16
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "attack"
+        },
+        {
+          "type": "telegraph",
+          "move": "rock_fall",
+          "ticks": 12
+        }
+      ],
+      "family": "dragon",
+      "resist": {
+        "slash": 0.55,
+        "pierce": 0.5,
+        "blunt": 0.85,
+        "magic": 1.15
+      },
+      "statusResist": {
+        "stun": 0.3,
+        "bleed": 0.5,
+        "frozen": 0.8
+      },
+      "parts": ["head", "body"],
+      "drops": [
+        {
+          "item": "scale.dragon",
+          "chance": 0.5,
+          "n": [1, 1]
+        },
+        {
+          "item": "scale",
+          "chance": 0.7,
+          "n": [1, 3]
+        },
+        {
+          "item": "stone.mana",
+          "chance": 0.4,
+          "n": [1, 1]
+        }
+      ]
+    }
+  ],
+  "biomes": {
+    "deep_forest": {
+      "prefix": "深森の",
+      "challenge": 6,
+      "hp": 1.15,
+      "power": 1.1
+    },
+    "mountain": {
+      "prefix": "高峰の",
+      "challenge": 8,
+      "hp": 1.2,
+      "power": 1.1,
+      "agility": -1
+    },
+    "marsh": {
+      "prefix": "沼の",
+      "challenge": 4,
+      "statusResist": {
+        "poison": 0.2,
+        "wet": 0.3
+      }
+    },
+    "snowfield": {
+      "prefix": "雪原の",
+      "challenge": 7,
+      "hp": 1.15,
+      "power": 1.05,
+      "resist": {
+        "slash": 0.85
+      },
+      "statusResist": {
+        "frozen": 0.2,
+        "burn": 1.3
+      }
+    },
+    "volcano": {
+      "prefix": "火山の",
+      "challenge": 8,
+      "hp": 1.15,
+      "power": 1.15,
+      "statusResist": {
+        "burn": 0.2,
+        "frozen": 1.3
+      }
+    },
+    "battlefield": {
+      "prefix": "古戦場の",
+      "challenge": 6,
+      "power": 1.1
+    },
+    "dead_village": {
+      "prefix": "廃村の",
+      "challenge": 4,
+      "hp": 1.1
+    },
+    "coast": {
+      "prefix": "磯の",
+      "challenge": 4,
+      "hp": 1.1,
+      "statusResist": {
+        "wet": 0.3
+      }
+    },
+    "river": {
+      "prefix": "川の",
+      "challenge": 3,
+      "agility": 2
+    }
+  },
+  "variants": [
+    {
+      "base": "boar",
+      "biome": "deep_forest"
+    },
+    {
+      "base": "wild_goat",
+      "biome": "mountain"
+    },
+    {
+      "base": "frost_hare",
+      "biome": "mountain"
+    },
+    {
+      "base": "hawk",
+      "biome": "snowfield"
+    },
+    {
+      "base": "boar",
+      "biome": "snowfield"
+    },
+    {
+      "base": "dire_wolf",
+      "biome": "snowfield"
+    },
+    {
+      "base": "rock_lizard",
+      "biome": "volcano"
+    },
+    {
+      "base": "stray_dog",
+      "biome": "dead_village"
+    },
+    {
+      "base": "plague_rat",
+      "biome": "dead_village"
+    },
+    {
+      "base": "vulture",
+      "biome": "dead_village"
+    },
+    {
+      "base": "tomb_bat",
+      "biome": "battlefield"
+    },
+    {
+      "base": "bandit",
+      "biome": "battlefield",
+      "name": "古戦場の追い剥ぎ"
+    },
+    {
+      "base": "big_frog",
+      "biome": "marsh"
+    },
+    {
+      "base": "turtle",
+      "biome": "coast",
+      "name": "磯の大亀"
+    },
+    {
+      "base": "crab",
+      "biome": "river"
     }
   ]
 }
