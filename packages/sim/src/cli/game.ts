@@ -354,6 +354,13 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
         const name = enemies.enemies.find((x) => x.id === e.enemyId)?.name ?? e.enemyId;
         return [tpl(t.text.uniqueDefeated, { name })];
       }
+      // 怪我（X-32）：刻印と癒えを1行で出す（部位名は cli.json display.partNames）
+      if (e.type === "injured") {
+        return [tpl(t.text.combatInjured, { part: t.display.partNames[e.part] ?? e.part })];
+      }
+      if (e.type === "injuryHealed") {
+        return [tpl(t.text.combatInjuryHealed, { part: t.display.partNames[e.part] ?? e.part })];
+      }
       // 頂点ルートの段（T-41）：通知文は pinnacles.json 側に書かれている
       if (e.type === "pinnacleStageReached") {
         const notice = pinnacles.pinnacles
@@ -659,6 +666,15 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
               peakSkill: {
                 name: skillNames.get(m.peakSkill.id) ?? m.peakSkill.id,
                 value: Math.round(m.peakSkill.value * 10) / 10,
+              },
+            }
+          : {}),
+        // 生涯の傷（X-35）：通算と古傷の部位を語りに渡す
+        ...(m.injuries !== null
+          ? {
+              injuries: {
+                count: m.injuries.total,
+                part: t.display.partNames[m.injuries.worstPart] ?? m.injuries.worstPart,
               },
             }
           : {}),
