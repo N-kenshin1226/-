@@ -197,8 +197,10 @@ export function TrainScreen({
             style={{ margin: "0 16px 8px", fontSize: 13, color: W.dim }}
             data-testid="train-difficulty"
           >
-            {tpl(t.text.difficultyPrompt, {
+            {tpl(t.text.difficultyGuide, {
+              low: Math.round(state.player.skills[sk.id]!.value),
               recommended: Math.round(state.player.skills[sk.id]!.value) + 10,
+              high: Math.round(state.player.skills[sk.id]!.value) + 20,
             })}
           </div>
         )}

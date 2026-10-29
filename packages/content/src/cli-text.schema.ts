@@ -281,6 +281,7 @@ export const cliTextSchema = z
         skillPick: z.string(),
         skillLine: z.string(),
         difficultyPrompt: z.string(),
+        difficultyGuide: z.string(),
         trainResult: z.string(),
         restDone: z.string(),
         innPick: z.string(),

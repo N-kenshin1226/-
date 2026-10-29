@@ -21,6 +21,10 @@ test("3日分遊べる（鍛錬・仕事・睡眠・起床ログ）", async ({ p
 
   await placeAct(page, "guild", "train");
   await page.getByTestId("skill-smithing").click();
+  // 難度の案内はweb用の文で、{…} が生のまま出ない（X-17 回帰）
+  await expect(page.getByTestId("train-difficulty")).toContainText("抑えめ");
+  await expect(page.getByTestId("train-difficulty")).toContainText("推奨");
+  await expect(page.getByTestId("train-difficulty")).not.toContainText("{");
   await page.getByTestId("diff-10").click();
   await expect(page.getByTestId("log")).toContainText("未定着");
   // 難度を選んだあとは「選び直す」で技能一覧へ戻り、そこからギルドへ戻る

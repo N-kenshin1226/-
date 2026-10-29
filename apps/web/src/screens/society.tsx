@@ -231,7 +231,14 @@ export function MentorScreen({
       ];
     };
     const entries: MenuEntry[] = [
-      { kind: "header", text: tpl(t.text.difficultyPrompt, { recommended }) },
+      {
+        kind: "header",
+        text: tpl(t.text.difficultyGuide, {
+          low: recommended - 10,
+          recommended,
+          high: recommended + 10,
+        }),
+      },
       ...[0, 10, 20, 30].map((add): MenuEntry => {
         const diff = recommended - 10 + add;
         return {
