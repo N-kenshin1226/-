@@ -13,6 +13,7 @@ import {
   crisisJoinFlag,
   crisisOfferFlag,
   crisisRivals,
+  isCrisisPinnacleRoute,
   type CrisisConfig,
   type CrisisInvolvementConfig,
   type CrisisTypeDef,
@@ -757,5 +758,68 @@ describe("決定性（同じ世界・同じ行いは同じ結果）", () => {
     const r2 = step(b, { type: "crisisLead", id: "finale.f1" }, cfg);
     expect(r1.events).toEqual(r2.events);
     expect(r1.state.crisis).toEqual(r2.state.crisis);
+  });
+});
+
+describe("危機由来の頂点ルートは近道に数えない（X-39）", () => {
+  /** 英雄ルート相当：全段が危機の足跡（crisis.* のカウンタ・旗）で出来ている */
+  const CRISIS_ROUTE: PinnacleRouteDef = {
+    id: "route.hero",
+    name: "英雄",
+    desc: "テスト用",
+    title: "title.test",
+    stages: [
+      {
+        id: "s1",
+        name: "備え",
+        rank: "B",
+        notice: "――",
+        condition: { counter: "crisis.tp.done", gte: 2 },
+      },
+      {
+        id: "s2",
+        name: "列",
+        rank: "A",
+        notice: "――",
+        condition: {
+          and: [
+            { counter: "crisis.tp.done", gte: 5 },
+            { counter: "crisis.join", gte: 1 },
+          ],
+        },
+      },
+      {
+        id: "s3",
+        name: "場",
+        rank: "A",
+        notice: "――",
+        condition: { counter: "crisis.attempt", gte: 1 },
+      },
+      { id: "apex", name: "頂", rank: "S", notice: "――", condition: { flag: "crisis.hero" } },
+    ],
+  };
+
+  it("全段が crisis.* の足跡で出来たルートは危機由来と判定される", () => {
+    expect(isCrisisPinnacleRoute(CRISIS_ROUTE)).toBe(true);
+    // 技能・台帳など別の道の積み重ねを読むルートは危機由来ではない
+    expect(isCrisisPinnacleRoute(TEST_ROUTE)).toBe(false);
+  });
+
+  it("危機由来ルートの完走は近道項に乗らない（同じ足跡を二重に数えない）", () => {
+    const cfgBoth = invConfig(INV_TYPE, { ...INV, pinnacles: [TEST_ROUTE, CRISIS_ROUTE] });
+    const g = startWorld("w-inv-crisisroute");
+    const s = profile(g, {
+      pinnacle: [
+        pinnacleFlag("route.test", "s1"),
+        pinnacleFlag("route.test", "s2"),
+        pinnacleFlag("route.hero", "s1"),
+        pinnacleFlag("route.hero", "s2"),
+        pinnacleFlag("route.hero", "s3"),
+        pinnacleFlag("route.hero", "apex"),
+      ],
+    });
+    const inv = crisisInvolvement(s, cfgBoth);
+    // 近道に乗るのは route.test 分だけ（2段×8 + 完走15 = 31）。hero は 0
+    expect(inv.parts.pinnacle).toBeCloseTo(31);
   });
 });

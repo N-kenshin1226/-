@@ -56,6 +56,8 @@ export interface CrisisRun {
   stage4Day: number | null;
   /** 頂点に至ったルートの数（終了時） */
   pinnacleTops: number;
+  /** 頂点に至ったルートのID（終了時。英雄のような危機由来のルートも含む） */
+  pinnacleTopIds: string[];
   /** 頂点ルートの達成段数の合計（終了時） */
   pinnacleStages: number;
   /** 判定された決着の場面（成功可否と備え合計） */
@@ -210,6 +212,7 @@ export function runCrisisWorld(
     maxStage,
     stage4Day,
     pinnacleTops: reachedPinnacles(g, pinnacleRoutes).length,
+    pinnacleTopIds: reachedPinnacles(g, pinnacleRoutes),
     pinnacleStages: pinnacleRoutes.reduce((s, r) => s + routeProgress(g, r).done, 0),
     finales: (g.crisis?.finales ?? [])
       .filter((f) => f.resolved)

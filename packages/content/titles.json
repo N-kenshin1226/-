@@ -360,6 +360,23 @@
       "message": "――称号《鉱脈を読む者》を獲得しました。世界がこの名を記録します。"
     },
     {
+      "id": "title.hero",
+      "name": "英雄",
+      "rank": "S",
+      "hidden": false,
+      "simReachable": false,
+      "condition": {
+        "flag": "pinnacle.hero.apex"
+      },
+      "effect": {
+        "gainVs": {
+          "combat": 1.05
+        },
+        "note": "災厄を討った者の武勇は、なお冴え続ける（頂点ルート X-39、pinnacles.json hero の最終段）"
+      },
+      "message": "――称号《英雄》を獲得しました。災厄を討った者の名は、年代記に刻まれます。"
+    },
+    {
       "id": "title.sword_saint",
       "name": "剣聖",
       "rank": "S",

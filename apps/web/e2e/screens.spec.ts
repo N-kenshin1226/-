@@ -33,6 +33,11 @@ test("立場画面が開ける（目標と認定）", async ({ page }) => {
   await placeAct(page, "guild", "society");
   await expect(page.getByTestId("screen-society")).toBeVisible();
   await expect(page.getByTestId("screen-society")).toContainText("目標と認定");
+  // 頂点ルート：英雄・剣聖・伝説の職人・大賢者が見える（隠しルートは噂を読むまで出ない）
+  for (const id of ["hero", "sword_saint", "legendary_artisan", "great_sage"]) {
+    await expect(page.getByTestId(`pinnacle-${id}`)).toBeVisible();
+  }
+  await expect(page.getByTestId("pinnacle-merchant_king")).not.toBeVisible();
   await page.screenshot({ path: "e2e/artifacts/trace-society.png", fullPage: true });
 });
 

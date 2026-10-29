@@ -74,9 +74,12 @@ describe("runCrisisWorld（危機シムの世界ランナー）", () => {
     expect(r.outcome).toBe("resolved");
   });
 
-  it("頂点に向かわないボット：頂点未踏のまま段階4に届く（縛られない）", () => {
+  it("頂点に向かわないボット：頂点（英雄除く）未踏のまま段階4に届く（縛られない）", () => {
     const r = run(crisisBots.noPinnacle, "crisis:w0");
-    expect(r.pinnacleTops).toBe(0);
+    // 英雄ルート（X-39）は危機行動そのものが段になるので、危機に身を
+    // 投じたボットは頂点を目指さなくても踏みうる。縛られないことの証左は
+    // 「英雄以外の頂点（別の道の極み）は要らない」こと
+    expect(r.pinnacleTopIds.every((id) => id === "hero")).toBe(true);
     expect(r.maxStage).toBe(4);
     expect(r.tpDone).toBeGreaterThan(0);
   });

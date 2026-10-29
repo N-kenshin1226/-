@@ -1,6 +1,55 @@
 {
   "pinnacles": [
     {
+      "id": "hero",
+      "name": "英雄",
+      "desc": "災厄の討伐。世界の危機に備えを積み、決着の場に立ち、勝ち取るまでの道",
+      "title": "title.hero",
+      "stages": [
+        {
+          "id": "answered",
+          "name": "備えの一片",
+          "rank": "B",
+          "notice": "――頂点への段《備えの一片》に至りました。世界の備えに、あなたの一筆が加わりました。",
+          "condition": {
+            "counter": "crisis.tp.done",
+            "gte": 2
+          }
+        },
+        {
+          "id": "called",
+          "name": "決着の列",
+          "rank": "A",
+          "notice": "――頂点への段《決着の列》に至りました。世界があなたの名を、決着の列に並べます。",
+          "condition": {
+            "and": [
+              { "counter": "crisis.tp.done", "gte": 5 },
+              { "counter": "crisis.join", "gte": 1 }
+            ]
+          }
+        },
+        {
+          "id": "stood",
+          "name": "決着の場",
+          "rank": "A",
+          "notice": "――頂点への段《決着の場》に至りました。勝敗の行方は、まだあなたの手の中にあります。",
+          "condition": {
+            "counter": "crisis.attempt",
+            "gte": 1
+          }
+        },
+        {
+          "id": "apex",
+          "name": "英雄",
+          "rank": "S",
+          "notice": "――頂点《英雄》に至りました。この世界の危機は、あなたの名で語られます。",
+          "condition": {
+            "flag": "crisis.hero"
+          }
+        }
+      ]
+    },
+    {
       "id": "sword_saint",
       "name": "剣聖",
       "desc": "武の頂点。連戦の末に奥義を極め、剣聖と呼ばれるまでの道",

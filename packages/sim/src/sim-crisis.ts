@@ -1,8 +1,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { skills } from "@trace/content";
+import { pinnacles, skills } from "@trace/content";
 import { loadHiddenCrises } from "@trace/content/hidden";
+import { isCrisisPinnacleRoute } from "@trace/core";
 import { crisisBotDomains, crisisBots } from "./crisis-bots.js";
 import { runCrisisWorld, type CrisisRun } from "./crisis-runner.js";
 import { simClock, stepConfig } from "./config.js";
@@ -196,8 +197,15 @@ export function runCrisis(): number {
   const mixed = engagedRuns.get(crisisBots.mixed.id)!;
   const mixed4 = mixed.filter((r) => r.maxStage >= 4).length;
   const noPin = engagedRuns.get(crisisBots.noPinnacle.id)!;
-  const noPinApexFree = noPin.filter((r) => r.pinnacleTops === 0).length;
-  const noPin4 = noPin.filter((r) => r.maxStage >= 4 && r.pinnacleTops === 0).length;
+  // 危機の足跡だけで出来たルート（英雄）は「頂点未踏」の対象外 ——
+  // 危機に身を投じれば踏まれるのが設計（X-39）。別の道の極みが
+  // 要らないことが証左なので、危機由来以外の頂点が無いかを見る
+  const crisisRouteIds = new Set(
+    pinnacles.pinnacles.filter(isCrisisPinnacleRoute).map((r) => r.id),
+  );
+  const apexFree = (r: CrisisRun) => r.pinnacleTopIds.every((id) => crisisRouteIds.has(id));
+  const noPinApexFree = noPin.filter(apexFree).length;
+  const noPin4 = noPin.filter((r) => r.maxStage >= 4 && apexFree(r)).length;
   ok(
     "縛られない(混ざった生き方)",
     `鍛冶＋剣の段階4到達 ${mixed4}/${mixed.length}世界 （基準 ≥${t.unbound.mixedStage4MinWorlds}世界）`,
@@ -205,7 +213,7 @@ export function runCrisis(): number {
   );
   ok(
     "縛られない(頂点なし)",
-    `頂点未踏のまま段階4到達 ${noPin4}/${noPin.length}世界 （基準 ≥${t.unbound.noPinnacleStage4MinWorlds}世界。頂点到達ゼロの世界は${noPinApexFree}）`,
+    `頂点未踏のまま段階4到達 ${noPin4}/${noPin.length}世界 （基準 ≥${t.unbound.noPinnacleStage4MinWorlds}世界。頂点（英雄除く）到達ゼロの世界は${noPinApexFree}）`,
     noPin4 >= t.unbound.noPinnacleStage4MinWorlds && noPinApexFree === noPin.length,
   );
 

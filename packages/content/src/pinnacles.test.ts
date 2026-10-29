@@ -19,8 +19,9 @@ import { pinnaclesFileSchema } from "./pinnacles.schema.js";
 import { titles } from "./titles.js";
 
 describe("pinnacles.json（T-41 頂点ルート）", () => {
-  it("剣聖・伝説の職人・大賢者・商王・領主の5ルートがあり、各段は id/name/rank/notice/condition を持つ", () => {
+  it("英雄・剣聖・伝説の職人・大賢者・商王・領主の6ルートがあり、各段は id/name/rank/notice/condition を持つ", () => {
     expect(pinnacles.pinnacles.map((r) => r.id)).toEqual([
+      "hero",
       "sword_saint",
       "legendary_artisan",
       "great_sage",
@@ -104,6 +105,7 @@ describe("pinnacles.json（T-41 頂点ルート）", () => {
     });
     // 未発見：一覧にも評価にも出ない（条件を全部満たしても段は立たない）
     expect(visiblePinnacles(pinnacles.pinnacles, s.flags).map((r) => r.id)).toEqual([
+      "hero",
       "sword_saint",
       "legendary_artisan",
       "great_sage",
@@ -129,12 +131,12 @@ describe("pinnacles.json（T-41 頂点ルート）", () => {
     expect(checkPinnacles(s, pinnacles.pinnacles, time).reached).toEqual([]);
 
     // 発見（噂を読んでフラグが立つ）と一覧に出て、段の評価も始まる
-    // （領主はまだ未発見なので 4 件。両方読めば 5 件）
+    // （領主はまだ未発見なので 5 件。両方読めば 6 件）
     s = { ...s, flags: { ...s.flags, "found.merchant_king": true } };
     expect(isRouteVisible(mk, s.flags)).toBe(true);
-    expect(visiblePinnacles(pinnacles.pinnacles, s.flags)).toHaveLength(4);
-    s = { ...s, flags: { ...s.flags, "found.lord": true } };
     expect(visiblePinnacles(pinnacles.pinnacles, s.flags)).toHaveLength(5);
+    s = { ...s, flags: { ...s.flags, "found.lord": true } };
+    expect(visiblePinnacles(pinnacles.pinnacles, s.flags)).toHaveLength(6);
     const r = checkPinnacles(s, pinnacles.pinnacles, time);
     expect(r.reached.map((x) => `${x.route.id}.${x.stage.id}`)).toContain(
       "merchant_king.first_gain",

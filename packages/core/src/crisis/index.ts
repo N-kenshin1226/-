@@ -883,6 +883,27 @@ export const CRISIS_HERO_FLAG = "crisis.hero";
 export const crisisRivalRef = (index: number): string => `rival.${index}`;
 
 /**
+ * 危機の足跡（crisis.* のカウンタ・旗・進行条件）だけで出来た条件か。
+ * 関与スコアは危機の生の足跡を読む —— 英雄ルート（X-39）のような
+ * 「同じ足跡の要約」は近道の対象外とし、二重計上を防ぐ
+ */
+function crisisOnlyCond(cond: Cond): boolean {
+  if ("and" in cond) return cond.and.every(crisisOnlyCond);
+  if ("or" in cond) return cond.or.every(crisisOnlyCond);
+  if ("not" in cond) return crisisOnlyCond(cond.not);
+  if ("counter" in cond) return cond.counter.startsWith("crisis.");
+  if ("flag" in cond) return cond.flag.startsWith("crisis.");
+  if ("crisis" in cond) return true;
+  if ("within" in cond) return cond.within.kind.startsWith("crisis.");
+  return false;
+}
+
+/** 頂点ルートの全段が危機の足跡だけで出来ているか（英雄ルート等） */
+export function isCrisisPinnacleRoute(route: PinnacleRouteDef): boolean {
+  return route.stages.every((s) => crisisOnlyCond(s.condition));
+}
+
+/**
  * 関与スコアの内訳と段階。
  * 各項：危機の接点の達成・世界の備えへの寄与・名声・立場・最高スキル・頂点ルート
  */
@@ -944,12 +965,12 @@ export function crisisInvolvement(
     inv.standings !== undefined ? Math.max(0, inv.standings.indexOf(state.society.standing)) : 0;
   // 関連スキル：その人の実際の得意（最高スキル値）
   const bestSkill = Math.max(0, ...Object.values(state.player.skills).map((s) => s.value));
-  // 頂点ルート：達成した段の合計＋完走ボーナス（近道）
-  const pinnacleStages = (inv.pinnacles ?? []).reduce(
-    (s, r) => s + routeProgress(state, r).done,
-    0,
-  );
-  const pinnacleTops = inv.pinnacles !== undefined ? reachedPinnacles(state, inv.pinnacles) : [];
+  // 頂点ルート：達成した段の合計＋完走ボーナス（近道）。
+  // 危機の足跡だけで出来たルート（英雄）は除く —— 接点・打診・決着として
+  // 既に生の項で数えている足跡を、段として重ねて数えないため
+  const leverageRoutes = (inv.pinnacles ?? []).filter((r) => !isCrisisPinnacleRoute(r));
+  const pinnacleStages = leverageRoutes.reduce((s, r) => s + routeProgress(state, r).done, 0);
+  const pinnacleTops = inv.pinnacles !== undefined ? reachedPinnacles(state, leverageRoutes) : [];
 
   const parts = {
     tpDone: tpDone * w.tpDone,

@@ -439,6 +439,7 @@ export {
   crisisTypeOf,
   drawCrisis,
   emptyCrisisFields,
+  isCrisisPinnacleRoute,
 } from "./crisis/index.js";
 export type {
   ActiveCrisisEffects,
