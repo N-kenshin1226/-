@@ -401,7 +401,7 @@ export function DungeonScreen({
           />
         </div>
         <div style={{ margin: "0 16px 8px", fontSize: 12, color: W.faint }}>
-          {`${index + 1} / ${totalRooms(dgn)}室目 ―― 抜いた部屋 ${progress.cleared}/${progress.total}`}
+          {`${Math.min(index + 1, totalRooms(dgn))} / ${totalRooms(dgn)}室目 ―― 抜いた部屋 ${index}/${progress.total}`}
         </div>
         {cs !== null && enemy !== null && def !== null && (
           <>
