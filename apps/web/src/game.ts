@@ -3017,6 +3017,22 @@ function npcVoiceLine(
   return { name: npc.name, role: npc.role, text };
 }
 
+/**
+ * 同行者の声（X-37 の会話の最小版）：「話す」を選ぶと相手が応える。
+ * 話した回数（action.social）で抽選が進むので、同じ日でも話すたびに
+ * 違う言葉が返る —— 立場・直近の話題・街の歳月を知っている人の口で
+ */
+export function companionVoice(
+  state: GameState,
+  npc: string,
+): { name: string; text: string } | null {
+  const v = voiceNpcsOf(state).find((n) => n.id === npc);
+  if (v === undefined) return null;
+  const rng = createRng(`${state.seed}:cvoice:${npc}:${state.counters["action.social"] ?? 0}`);
+  const line = npcVoiceLine(state, rng, v);
+  return { name: line.name, text: line.text };
+}
+
 /** 下帯の「噂」（新聞の rumor 系を1本、日替わり・決定的） */
 export function townRumor(state: GameState): string {
   const rng = createRng(`${state.seed}:rumor:${state.time.day}`);

@@ -23,8 +23,10 @@ import {
   bondOfNow,
   cfg,
   canErrand,
+  companionVoice,
   enemyList,
   errandsNow,
+  eventLines,
   itemCount,
   itemDefs,
   itemName,
@@ -346,7 +348,23 @@ function SocialView({
               id: "way-talk",
               label: "話す",
               sub: "他愛のない話",
-              onPick: () => act({ type: "social", npc, way: "talk" }),
+              onPick: () =>
+                act(
+                  { type: "social", npc, way: "talk" },
+                  // 同行者（X-38）：話せば相手が応える —— 仲が深まった記録の
+                  // あとに、その人の口で一言が続く（街の声と同じ語彙）
+                  companionId === npc
+                    ? {
+                        format: (ev) => {
+                          const voice = companionVoice(state, npc);
+                          return [
+                            ...eventLines(ev, state),
+                            ...(voice !== null ? [`${voice.name}――${voice.text}`] : []),
+                          ];
+                        },
+                      }
+                    : undefined,
+                ),
             },
             {
               id: "way-drink",

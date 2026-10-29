@@ -67,10 +67,14 @@ test("人と過ごす：住人を選んで話すと仲が深まる", async ({ pa
 /**
  * X-37：同行者（docs/10 §13「仲間との会話」の最小版）。仲が深まった
  * 住人を旅に誘うと一緒に歩く —— 状態画面に同行の行が出て、
- * 別れを告げれば同行は解かれる。仲の値は注入セーブで温めておく
+ * 別れを告げれば同行は解かれる。X-38：話すと相手が応える
+ * （仲が深まった記録のあとにその人の声が続く）。
+ * 仲の値は注入セーブで温めておく
  * （seed "e2e" は 0 日目にイルダが酒場にいる決定的な種）
  */
-test("人と過ごす：仲の深い住人を旅に誘い、別れを告げる（X-37）", async ({ page }) => {
+test("人と過ごす：仲の深い住人を旅に誘い、声を交わし、別れを告げる（X-37/X-38）", async ({
+  page,
+}) => {
   const skills = JSON.parse(
     readFileSync(new URL("../../../packages/content/skills.json", import.meta.url), "utf8"),
   ) as { skills: { id: string }[] };
@@ -96,6 +100,15 @@ test("人と過ごす：仲の深い住人を旅に誘い、別れを告げる�
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("social-npc.ilda")).toContainText("同行中");
   await page.screenshot({ path: "e2e/artifacts/trace-companion.png", fullPage: true });
+
+  // 同行者に話すと相手が応える（X-38：仲が深まった記録のあとに
+  // その人の口で一言が続く —— 《名――「…」》の形で記録に残る）
+  await page.getByTestId("social-npc.ilda").click();
+  await page.getByTestId("way-talk").click();
+  await expect(page.getByTestId("log")).toContainText("仲が深まった");
+  await expect(page.getByTestId("log")).toContainText(/イルダ――「/);
+  await page.screenshot({ path: "e2e/artifacts/trace-companion-talk.png", fullPage: true });
+  await page.keyboard.press("Escape");
   // 一覧 → 場所（社交の窓を畳む）
   await page.keyboard.press("Escape");
 
