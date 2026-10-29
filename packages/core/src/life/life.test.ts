@@ -489,6 +489,15 @@ describe("同行者（X-37）", () => {
     expect(r.events.some((e) => e.type === "companionJoined")).toBe(false);
   });
 
+  it("街を去った人とは話せない（去場は「会えなかった」だけが残る）", () => {
+    let g = warm(game());
+    g = { ...g, flags: { ...g.flags, "npc.gone.npc.marta": true } };
+    const r = step(g, { type: "social", npc: "npc.marta", way: "talk" }, cfg);
+    expect(bondOf(r.state, "npc.marta", lifeCfg)).toBe(50); // 変わらない
+    const ev = r.events.find((e) => e.type === "bonded");
+    expect(ev?.type === "bonded" && ev.amount).toBe(0);
+  });
+
   it("街を去った人は誘えない", () => {
     let g = warm(game());
     g = { ...g, flags: { ...g.flags, "npc.gone.npc.marta": true } };

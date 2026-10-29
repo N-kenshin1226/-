@@ -113,7 +113,7 @@ import {
 } from "./life/index.js";
 import { linkFlat, linkFlatCap, linkSum, type SkillLinks } from "./links/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
-import { npcLifeEvents, npcLifeGoneFlag, type NpcLifeConfig } from "./npclife/index.js";
+import { npcGoneReason, npcLifeEvents, type NpcLifeConfig } from "./npclife/index.js";
 import { checkPinnacles, type PinnacleRouteDef } from "./pinnacle/index.js";
 import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
 import { readAtom, type LoreConfig } from "./lore/index.js";
@@ -3078,7 +3078,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         // 去った人（引退・旅立ち・死去）は誘えない —— 街にいない人とは歩けない
         if (next.life.companion !== null) break;
         if (!bondWarm(next, command.npc, cfg.life)) break;
-        if (next.flags[npcLifeGoneFlag(command.npc)] === true) break;
+        if (npcGoneReason(next, command.npc) !== null) break;
         if (
           cfg.variance !== undefined &&
           npcAway(next.seed, next.time.day, command.npc, cfg.variance.npc)
@@ -3119,10 +3119,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
         events.push({ type: "companionParted", npc: command.npc });
         break;
       }
+      // 会えない相手（去った人・今日いない人）には届かない —— 「会えなかった」
+      // 出来事だけが記録に残る（X-12：去った人は以後使えない。UI は無効化
+      // するが、コアでもここで受け止める）
       if (
         !isCompanion &&
-        cfg.variance !== undefined &&
-        npcAway(next.seed, next.time.day, command.npc, cfg.variance.npc)
+        (npcGoneReason(next, command.npc) !== null ||
+          (cfg.variance !== undefined &&
+            npcAway(next.seed, next.time.day, command.npc, cfg.variance.npc)))
       ) {
         events.push({
           type: "bonded",
