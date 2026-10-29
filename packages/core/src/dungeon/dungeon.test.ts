@@ -916,4 +916,49 @@ describe("dungeon コマンド（G-03）", () => {
     ).state;
     expect(state.player.fatigue).toBe(plain.player.fatigue - 10);
   });
+
+  it("潜りで負った傷は世界に刻まれる（X-32：数日残る怪我）", () => {
+    const s0 = fresh();
+    const cfg = baseCfg();
+    cfg.combat.injuries = {
+      hitShare: 0.25,
+      days: 4,
+      partWeights: { body: 4, arms: 3, legs: 2, head: 1 },
+      armsFactor: 0.75,
+      legsFactor: 0.75,
+      bodyFactor: 0.75,
+      headFactor: 0.5,
+    };
+    const { state, events } = step(
+      s0,
+      {
+        type: "dungeon",
+        id: "dg0",
+        end: "retreat",
+        rooms: 2,
+        total: 7,
+        injuries: ["body", "arms"],
+      },
+      cfg,
+    );
+    expect(state.injuries).toEqual([
+      { part: "body", untilDay: s0.time.day + 4 },
+      { part: "arms", untilDay: s0.time.day + 4 },
+    ]);
+    expect(events.filter((e) => e.type === "injured")).toHaveLength(2);
+    // 迷宮での死も傷を取る（教会の蘇生は体を立て直す）
+    const died = step(
+      { ...state, time: { ...state.time, action: 0 } },
+      {
+        type: "dungeon",
+        id: "dg1",
+        end: "died",
+        rooms: 1,
+        total: 5,
+        loss: { enemyId: "golem", difficulty: 50 },
+      },
+      cfg,
+    );
+    expect(died.state.injuries).toEqual([]);
+  });
 });

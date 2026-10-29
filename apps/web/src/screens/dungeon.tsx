@@ -5,7 +5,13 @@
  * 迷宮の中身は生成世界から引き直し、進行は counters（dg.rooms.<id>）を読む
  */
 import { useEffect, useMemo, useState } from "react";
-import { combatResult, type CombatAction, type GameState, type LifeOutcome } from "@trace/core";
+import {
+  combatResult,
+  type BodyPart,
+  type CombatAction,
+  type GameState,
+  type LifeOutcome,
+} from "@trace/core";
 import type { EnemyJson } from "@trace/content";
 import { balance } from "@trace/content";
 import {
@@ -108,6 +114,8 @@ export function DungeonScreen({
   const [kiLeft, setKiLeft] = useState<number | null>(null);
   const [manaLeft, setManaLeft] = useState<number | null>(null);
   const [seenSpellsAcc, setSeenSpellsAcc] = useState<string[]>([]);
+  // X-32：潜り中に負った怪我の部位（部屋をまたいで性能に響き、潜りの後も残る）
+  const [injuriesAcc, setInjuriesAcc] = useState<BodyPart[]>([]);
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
 
   // 情景への合図（X-24）：抜いた部屋の通し番号で構図を変え、灯りの減りで霞を深くする
@@ -185,12 +193,14 @@ export function DungeonScreen({
         state,
         e,
         key,
-        kiLeft === null && manaLeft === null
+        kiLeft === null && manaLeft === null && injuriesAcc.length === 0
           ? undefined
           : {
               ...state.player,
               ...(kiLeft !== null ? { ki: kiLeft } : {}),
               ...(manaLeft !== null ? { mana: manaLeft } : {}),
+              // X-32：潜り中に負った傷は次の部屋でも痛む（世界の傷＋この潜りの新傷）
+              injuries: [...state.injuries.map((i) => i.part), ...injuriesAcc],
             },
       ),
     );
@@ -319,6 +329,8 @@ export function DungeonScreen({
       setKiLeft(next.playerKi);
       setManaLeft(next.playerMana);
       setSeenSpellsAcc((acc) => [...acc, ...next.seenSpells.filter((x) => !acc.includes(x))]);
+      // X-32：この部屋で負った傷は次の部屋の戦闘にも響く
+      setInjuriesAcc((acc) => [...acc, ...r.injuries]);
     }
   };
 
@@ -357,6 +369,8 @@ export function DungeonScreen({
         ...(kiLeft !== null ? { kiLeft } : {}),
         ...(manaLeft !== null ? { manaLeft } : {}),
         ...(seenSpellsAcc.length > 0 ? { seenSpells: seenSpellsAcc } : {}),
+        // X-32：潜り中に負った傷を世界へ渡す（数日残る怪我）
+        ...(injuriesAcc.length > 0 ? { injuries: injuriesAcc } : {}),
       },
       {
         format: (ev) => [

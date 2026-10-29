@@ -5,6 +5,7 @@ import {
   combatResult,
   usableArts,
   type AbyssRun,
+  type BodyPart,
   type CombatAction,
   type GameState,
   type StatusId,
@@ -551,6 +552,8 @@ export function CombatScreen({
       // 魔法（M-01）：残った魔力と、見取り稽古で見届けた敵の呪文
       manaLeft: r.manaLeft,
       seenSpells: r.seenSpells,
+      // X-32：重い一撃が残した傷（数日残る怪我として刻まれる）
+      injuries: r.injuries,
     });
     push(
       r.won
@@ -721,6 +724,8 @@ export function AbyssScreen({
   // M-01：層をまたいで持ち越す魔力と、ラン中に見届けた敵の呪文（見取り稽古）
   const [manaLeft, setManaLeft] = useState<number | null>(null);
   const [seenSpellsAcc, setSeenSpellsAcc] = useState<string[]>([]);
+  // X-32：ラン中に負った怪我の部位（層をまたいで性能に響き、深層を出たあとも残る）
+  const [injuriesAcc, setInjuriesAcc] = useState<BodyPart[]>([]);
   // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
   /** 戦闘中の敵の世界補正済み定義（意図の表示用。解決側と同じものを使う） */
@@ -751,12 +756,14 @@ export function AbyssScreen({
         state,
         e,
         key,
-        kiLeft === null && manaLeft === null
+        kiLeft === null && manaLeft === null && injuriesAcc.length === 0
           ? undefined
           : {
               ...state.player,
               ...(kiLeft !== null ? { ki: kiLeft } : {}),
               ...(manaLeft !== null ? { mana: manaLeft } : {}),
+              // X-32：ラン中に負った傷は次の層でも痛む（世界の傷＋このランの新傷）
+              injuries: [...state.injuries.map((i) => i.part), ...injuriesAcc],
             },
       ),
     );
@@ -803,6 +810,8 @@ export function AbyssScreen({
       setKiLeft(next.playerKi);
       setManaLeft(next.playerMana);
       setSeenSpellsAcc((acc) => [...acc, ...next.seenSpells.filter((x) => !acc.includes(x))]);
+      // X-32：この層で負った傷は次の層の戦闘にも響く
+      setInjuriesAcc((acc) => [...acc, ...r.injuries]);
     }
     if (cur.done && cur.end !== null) push(endLine(cur.end));
     setRun(cur);
@@ -831,6 +840,8 @@ export function AbyssScreen({
         // M-01：残りの魔力と、ラン中に見届けた敵の呪文（見取り稽古）
         ...(manaLeft !== null ? { manaLeft } : {}),
         ...(seenSpellsAcc.length > 0 ? { seenSpells: seenSpellsAcc } : {}),
+        // X-32：ラン中に負った傷を世界へ渡す（数日残る怪我）
+        ...(injuriesAcc.length > 0 ? { injuries: injuriesAcc } : {}),
       },
       {
         format: (ev) => [

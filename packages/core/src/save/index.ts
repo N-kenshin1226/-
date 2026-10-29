@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -211,6 +211,11 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
         },
       };
     },
+    /**
+     * 22 → 23: 怪我（X-32、docs/03 §4「部位へのダメージは怪我として
+     * 数日残る」）を追加。旧セーブは無傷 —— 戦闘の重い一撃から刻まれる
+     */
+    22: (old) => ({ ...old, version: 23, injuries: [] }),
   };
 
 export function serialize(state: GameState): string {

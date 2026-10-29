@@ -162,7 +162,7 @@ describe("succeedLife（T-48 同じ世界で次代を継ぐ）", () => {
     const restored = deserialize(serialize(next));
     expect(restored.version).toBe(SAVE_VERSION);
     expect(restored).toEqual(next);
-    // T-48 自体は形を変えない。17=K-01（武器）、18=P-02（日々の営み）、19=K-02（武技・資源・構成）、20=K-03（ユニーク）、21=G-01（生成地方）、22=G-02（地方の地図と旅）
-    expect(SAVE_VERSION).toBe(22);
+    // T-48 自体は形を変えない。17=K-01（武器）、18=P-02（日々の営み）、19=K-02（武技・資源・構成）、20=K-03（ユニーク）、21=G-01（生成地方）、22=G-02（地方の地図と旅）、23=X-32（怪我）
+    expect(SAVE_VERSION).toBe(23);
   });
 });

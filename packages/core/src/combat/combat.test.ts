@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   combatIntent,
   combatResult,
+  playerCombatStats,
   startCombat,
   telegraphLines,
   turn,
@@ -526,5 +527,136 @@ describe("G-04：撃破の戦利品（モンスター素材）", () => {
       dropsCfg(),
     );
     expect(r.events.some((e) => e.type === "itemGot" && e.id === "meat")).toBe(true);
+  });
+});
+
+/* ── X-32：怪我（部位ダメージは怪我として数日残る、docs/03 §4） ── */
+
+const injCfg: CombatConfig = {
+  ...cfg,
+  injuries: {
+    hitShare: 0.25,
+    days: 4,
+    partWeights: { body: 4, arms: 3, legs: 2, head: 1 },
+    armsFactor: 0.75,
+    legsFactor: 0.75,
+    bodyFactor: 0.75,
+    headFactor: 0.5,
+  },
+};
+
+const injStep = (): StepConfig => ({ ...baseCfg(), combat: injCfg });
+
+describe("X-32：怪我（戦闘エンジン）", () => {
+  it("重い一撃が部位の傷を残し、結果に載る（決定的）", () => {
+    // 追い剥ぎの大技（power 28・playerHpMax 50 の 25% 超）は無対応なら傷を残す
+    const run = (seed: string) => {
+      let s = startCombat(bandit, injCfg, mkPlayer(0, 5, 15));
+      let n = 0;
+      while (!s.done && s.injuries.length === 0 && n++ < 80)
+        s = turn(s, "attack", bandit, injCfg, { skill: 0, seed });
+      return s;
+    };
+    const a = run("inj-1");
+    expect(a.injuries.length).toBeGreaterThan(0);
+    // 傷は戦闘ログにも刻まれる
+    expect(a.log.some((e) => e.type === "injured")).toBe(true);
+    // 同じシードは同じ傷
+    expect(run("inj-1").injuries).toEqual(a.injuries);
+    // 結果に載る（step が GameState.injuries に畳む）
+    expect(combatResult(a).injuries).toEqual(a.injuries);
+  });
+
+  it("怪我の設定が無ければ傷は残らない（従来どおり）", () => {
+    let s = startCombat(bandit, cfg, mkPlayer(0, 5, 15));
+    while (!s.done && s.turn < 80) s = turn(s, "attack", bandit, cfg, { skill: 0, seed: "inj-1" });
+    expect(s.injuries.length).toBe(0);
+  });
+
+  it("傷のある部位は対応する性能が落ちる", () => {
+    const p = mkPlayer(0, 10, 20);
+    const whole = playerCombatStats(p, injCfg);
+    // 腕の怪我 → 威力が落ちる（敏捷は変わらない）
+    const arms = playerCombatStats({ ...p, injuries: ["arms"] }, injCfg);
+    expect(arms.attack).toBeLessThan(whole.attack);
+    expect(arms.agility).toBe(whole.agility);
+    // 脚の怪我 → 敏捷が落ちる（CT にも響く）
+    const legs = playerCombatStats({ ...p, injuries: ["legs"] }, injCfg);
+    expect(legs.agility).toBeLessThan(whole.agility);
+    expect(legs.ct).toBeGreaterThan(whole.ct);
+    // 胴の怪我 → 体力が落ちる
+    const body = playerCombatStats({ ...p, injuries: ["body"] }, injCfg);
+    expect(body.hp).toBeLessThan(whole.hp);
+    // 頭の怪我 → 観察が落ちる
+    const smart = { ...p, skills: { ...p.skills, observation: { value: 40 } } };
+    const head = playerCombatStats({ ...smart, injuries: ["head"] }, injCfg);
+    expect(head.observe).toBeLessThan(40);
+  });
+});
+
+describe("X-32：怪我（step への畳み込み）", () => {
+  const mk = (seed: string) =>
+    newGame(seed, "名無し", { skillIds: SKILL_IDS, initialPotential: 100, initialStatValue: 10 });
+
+  it("戦闘の傷が GameState.injuries に刻まれ、癒え日が設定される", () => {
+    const { state, events } = step(
+      mk("seed-inj"),
+      { type: "combat", enemyId: "wolf", difficulty: 15, won: false, injuries: ["arms"] },
+      injStep(),
+    );
+    expect(state.injuries).toEqual([{ part: "arms", untilDay: 0 + 4 }]);
+    expect(events.some((e) => e.type === "injured" && e.part === "arms")).toBe(true);
+  });
+
+  it("同じ部位を再び痛めると、より遅い癒え日が残る", () => {
+    const s0 = {
+      ...mk("seed-inj"),
+      injuries: [{ part: "arms" as const, untilDay: 2 }],
+      time: { day: 1, action: 0 },
+    };
+    const { state } = step(
+      s0,
+      { type: "combat", enemyId: "wolf", difficulty: 15, won: false, injuries: ["arms"] },
+      injStep(),
+    );
+    // 1 + 4 = 5 が既存の 2 を押しのける
+    expect(state.injuries).toEqual([{ part: "arms", untilDay: 5 }]);
+  });
+
+  it("癒え日を越えた傷は行動の前に取れ、癒えの行が届く", () => {
+    const s0 = {
+      ...mk("seed-inj"),
+      injuries: [
+        { part: "arms" as const, untilDay: 1 },
+        { part: "legs" as const, untilDay: 9 },
+      ],
+      time: { day: 2, action: 0 },
+    };
+    const { state, events } = step(s0, { type: "wait" }, injStep());
+    expect(state.injuries).toEqual([{ part: "legs", untilDay: 9 }]);
+    expect(events.some((e) => e.type === "injuryHealed" && e.part === "arms")).toBe(true);
+  });
+
+  it("死んで蘇ると傷は取れる（教会の蘇生は体を立て直す）", () => {
+    const s0 = {
+      ...mk("seed-inj"),
+      injuries: [{ part: "arms" as const, untilDay: 9 }],
+    };
+    const { state } = step(
+      s0,
+      { type: "combat", enemyId: "wolf", difficulty: 15, won: false, died: true },
+      injStep(),
+    );
+    expect(state.injuries).toEqual([]);
+  });
+
+  it("深層の傷も同じく刻まれる", () => {
+    const r = step(
+      mk("seed-inj"),
+      { type: "abyss", end: "retreat", kills: [], injuries: ["legs"] },
+      injStep(),
+    );
+    expect(r.state.injuries).toEqual([{ part: "legs", untilDay: 4 }]);
+    expect(r.events.some((e) => e.type === "injured" && e.part === "legs")).toBe(true);
   });
 });

@@ -239,6 +239,8 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
     uniques: cfg.carryoverUniques !== undefined ? { ...cfg.carryoverUniques } : {},
     // 世界の地図（G-01、v21〜）：省略時は固定マップのまま（旧来どおり）
     world: cfg.world ?? { kind: "legacy", recipe: 0 },
+    // 怪我（X-32、v23〜）：新しい人生は無傷で始まる
+    injuries: [],
   };
 }
 

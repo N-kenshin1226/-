@@ -297,6 +297,8 @@
     "combatSwitched": "――《{name}》に持ち替えた。",
     "uniqueDefeated": "――際立つ個体を討ち取った。《{name}》の記録が図鑑に刻まれた。",
     "combatLost": "――力尽きた。……教会で目を覚ました。未定着の経験が半分失われた。",
+    "combatInjured": "――《{part}》を痛めた。数日は尾を引くだろう",
+    "combatInjuryHealed": "――《{part}》の怪我が癒えた",
     "deathByAge": "――天命に達した（{age}歳）。この生は静かに終わる。",
     "combatFled": "――命だけは拾った。",
     "combatGain": "《{skill}》の経験 +{amount}（未定着）",

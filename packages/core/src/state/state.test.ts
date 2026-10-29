@@ -458,6 +458,25 @@ describe("save", () => {
     expect(restored.life.rep).toEqual({});
   });
 
+  it("version 22 のセーブ（injuries 無し）は怪我の列を補って最新版へ移行される（X-32）", () => {
+    const g = newGame("seed-23", "移行11", newGameCfg);
+    const v22 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v22["version"] = 22;
+    delete v22["injuries"];
+    const restored = deserialize(JSON.stringify(v22));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.injuries).toEqual([]);
+  });
+
+  it("怪我の列はセーブ往復で保たれる（X-32）", () => {
+    const g = {
+      ...newGame("seed-inj", "怪我", newGameCfg),
+      injuries: [{ part: "arms" as const, untilDay: 6 }],
+    };
+    const restored = deserialize(serialize(g));
+    expect(restored.injuries).toEqual([{ part: "arms", untilDay: 6 }]);
+  });
+
   it("生成世界の world 刻印はセーブ往復で保たれる（地図は seed から引き直す）", () => {
     const g = newGame("seed-gen", "生成", {
       ...newGameCfg,

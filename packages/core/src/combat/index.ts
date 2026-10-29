@@ -271,6 +271,32 @@ export interface CombatConfig {
    * 省略時は spell 節のある技もただの武技として解決される（魔力を使わない）
    */
   magic?: MagicConfig;
+  /**
+   * 怪我（X-32、docs/03 §4「部位へのダメージは怪我として数日残る」）。
+   * 指定すると、一撃で playerHpMax × hitShare 以上を削る被弾が部位の傷を
+   * 残す（CombatResult.injuries）。傷のある部位は次の戦闘で対応する性能が
+   * 落ちる（CombatPlayer.injuries を playerCombatStats が読む）。
+   * 省略時は従来どおり怪我しない
+   */
+  injuries?: InjuryConfig;
+}
+
+/** 怪我の設定（balance.combat.injuries） */
+export interface InjuryConfig {
+  /** 傷になる一撃の割合（playerHpMax に対する割合以上の被弾） */
+  hitShare: number;
+  /** 傷が残る日数（untilDay = 被弾日 + days。step が刻む） */
+  days: number;
+  /** 着弾部位の重み（胴が多く頭は稀） */
+  partWeights: { body: number; arms: number; legs: number; head: number };
+  /** 腕の怪我：攻撃力に掛かる係数 */
+  armsFactor: number;
+  /** 脚の怪我：敏捷（CT・命中・回避・逃走の元）に掛かる係数 */
+  legsFactor: number;
+  /** 胴の怪我：戦闘の体力に掛かる係数 */
+  bodyFactor: number;
+  /** 頭の怪我：観察（予兆の精度）に掛かる係数 */
+  headFactor: number;
 }
 
 /**
@@ -341,7 +367,9 @@ export interface CombatEvent {
     /** 属性の相性が発火した（濡れ＋雷・油＋火・凍結＋打撃・風＋火） */
     | "reaction"
     /** 観察中に敵の呪文の発動を見届けた（見取り稽古。spell に呪文ID） */
-    | "spellSeen";
+    | "spellSeen"
+    /** 重い一撃が部位の傷を残した（X-32。part に傷の部位） */
+    | "injured";
   text: string;
   damage?: number;
   /** 回復量（playerSpell の治癒呪文） */
@@ -467,6 +495,8 @@ export interface CombatState {
   afterEvade: boolean;
   /** 直前の行動が武技ならそのID（chain.* タグ用） */
   lastArtId: string | null;
+  /** この戦闘で負った怪我の部位（X-32。step が GameState.injuries に畳む） */
+  injuries: BodyPart[];
   /* ── M-01：魔力・詠唱・適性・見取り ── */
   /** 魔力（開始時点の残り。戦闘をまたいで一日は続く） */
   playerMana: number;
@@ -500,6 +530,9 @@ export interface CombatResult {
   manaLeft: number;
   /** 観察中に見届けた敵の呪文（step が flags["spell.seen.<id>"] に畳む） */
   seenSpells: string[];
+  /* ── X-32 ── */
+  /** この戦闘で負った怪我の部位（step が GameState.injuries に畳む） */
+  injuries: BodyPart[];
 }
 
 const clamp = (lo: number, hi: number, v: number) => Math.min(hi, Math.max(lo, v));
@@ -532,6 +565,9 @@ export interface CombatPlayer {
     passives?: readonly (string | null)[];
     weapons?: readonly (string | null)[];
   };
+  /* ── X-32 ── */
+  /** まだ癒えていない怪我の部位（GameState.injuries。傷の性能低下に使う） */
+  injuries?: readonly BodyPart[];
 }
 
 /**
@@ -587,8 +623,15 @@ export function playerCombatStats(
     beastAttack: linkSum(cfg.links, "beast.attack", player.skills),
   };
   const agility = player.stats["agility"] ?? 0;
+  // X-32：怪我している部位は対応する性能が落ちる
+  // （腕＝威力・脚＝敏捷・胴＝体力・頭＝観察。数日で癒える）
+  const icfg = cfg.injuries;
+  const hurt = (p: BodyPart) => icfg !== undefined && (player.injuries ?? []).includes(p);
   return {
-    hp: Math.round(cfg.baseHp + (player.stats["endurance"] ?? 0) * cfg.hpPerEndurance),
+    hp: Math.round(
+      (cfg.baseHp + (player.stats["endurance"] ?? 0) * cfg.hpPerEndurance) *
+        (hurt("body") ? icfg!.bodyFactor : 1),
+    ),
     attack:
       Math.round(
         (cfg.attackBase +
@@ -597,11 +640,16 @@ export function playerCombatStats(
           weapon.power) *
           attackFactor *
           (1 + links.attack) *
+          (hurt("arms") ? icfg!.armsFactor : 1) *
           10,
       ) / 10,
-    ct: Math.max(cfg.ctMin, (cfg.ctBase - agility * cfg.ctPerAgility) * weapon.ctFactor),
-    agility,
-    observe: player.skills["observation"]?.value ?? 0,
+    ct: Math.max(
+      cfg.ctMin,
+      (cfg.ctBase - agility * (hurt("legs") ? icfg!.legsFactor : 1) * cfg.ctPerAgility) *
+        weapon.ctFactor,
+    ),
+    agility: agility * (hurt("legs") ? icfg!.legsFactor : 1),
+    observe: (player.skills["observation"]?.value ?? 0) * (hurt("head") ? icfg!.headFactor : 1),
     weaponSkill,
     evasion: player.skills["evasion"]?.value ?? 0,
     weapon,
@@ -720,6 +768,8 @@ export function startCombat(
     afterParry: false,
     afterEvade: false,
     lastArtId: null,
+    // X-32：この戦闘で負った怪我（重い被弾が残した傷）
+    injuries: [],
     // M-01：魔力・適性・見取り（cfg.magic/arts が無い世界では 0 のまま動く）
     playerMana: player.mana ?? manaMax,
     playerManaMax: manaMax,
@@ -1601,6 +1651,29 @@ export function turn(
     s.damageTaken += dmg;
     s.hitsTaken++;
     s.afterGuard = guarded;
+    // X-32：重い一撃は部位の傷を残す（数日残る怪我 —— step が
+    // GameState.injuries に畳む）。受け流し・回避で届かなかった
+    // 一撃だけが傷になる —— 対応できた痛みは残らない
+    if (cfg.injuries !== undefined && dmg >= s.playerHpMax * cfg.injuries.hitShare) {
+      const w = cfg.injuries.partWeights;
+      const part = r.weighted([
+        { item: "body" as BodyPart, weight: w.body },
+        { item: "arms" as BodyPart, weight: w.arms },
+        { item: "legs" as BodyPart, weight: w.legs },
+        { item: "head" as BodyPart, weight: w.head },
+      ]);
+      if (!s.injuries.includes(part)) {
+        s.injuries.push(part);
+        push(
+          {
+            type: "injured",
+            part,
+            text: `――《${PART_NAMES[part]}》に深い傷を負った。`,
+          },
+          tick,
+        );
+      }
+    }
     tryInterrupt(tick); // M-01：詠唱中の被弾は術を途切らせうる
     push(
       {
@@ -1753,6 +1826,7 @@ export function combatResult(s: CombatState): CombatResult {
     uses: s.uses,
     manaLeft: s.playerMana,
     seenSpells: s.seenSpells,
+    injuries: s.injuries,
   };
 }
 

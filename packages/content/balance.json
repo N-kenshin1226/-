@@ -427,6 +427,15 @@
       "powerJitter": 0.1,
       "agilityJitter": 2
     },
+    "injuries": {
+      "hitShare": 0.25,
+      "days": 4,
+      "partWeights": { "body": 4, "arms": 3, "legs": 2, "head": 1 },
+      "armsFactor": 0.75,
+      "legsFactor": 0.75,
+      "bodyFactor": 0.75,
+      "headFactor": 0.5
+    },
     "attackPerWeaponSkill": 0.12,
     "hitPerWeaponSkill": 0.002,
     "critPerWeaponSkill": 0.002

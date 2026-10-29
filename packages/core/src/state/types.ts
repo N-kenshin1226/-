@@ -1,4 +1,4 @@
-import type { ArtState, BuildState } from "../arts/index.js";
+import type { ArtState, BodyPart, BuildState } from "../arts/index.js";
 import type { RolledWind } from "../growth/tailwind.js";
 import type { RngState } from "../rng/index.js";
 import type { GameTime } from "../time/index.js";
@@ -418,4 +418,11 @@ export interface GameState {
    * 生成される町・地域・道は core/world が seed から決定論的に導く
    */
   world: WorldState;
+  /**
+   * 怪我（docs/03 §4「部位へのダメージは怪我として数日残る」。v23〜）。
+   * 戦闘で重い一撃を受けた部位に残る傷 —— untilDay の朝に癒える。
+   * 部位ごとの効き（腕＝威力・脚＝敏捷・胴＝耐久・頭＝観察）は
+   * balance.combat.injuries が決める
+   */
+  injuries: { part: BodyPart; untilDay: number }[];
 }

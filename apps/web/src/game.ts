@@ -1900,6 +1900,12 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         const name = enemies.enemies.find((x) => x.id === e.enemy)?.name ?? e.enemy;
         return [tpl(t.text.roadEncounterLine, { name })];
       }
+      case "injured":
+        // 怪我の刻印（X-32）：重い一撃が残した傷
+        return [tpl(t.text.combatInjured, { part: t.display.partNames[e.part] ?? e.part })];
+      case "injuryHealed":
+        // 怪我の経過（X-32）：癒えた朝の行
+        return [tpl(t.text.combatInjuryHealed, { part: t.display.partNames[e.part] ?? e.part })];
       case "mapHeard":
         // 噂・朝刊で名を聞き覚えた（G-02。地図の霧が晴れる）
         return [tpl(t.text.life.mapHeard, { name: mapPlaceName(state, e.place) })];
@@ -2329,10 +2335,12 @@ export function beginCombat(
   const def = worldEnemyDef(state, enemy, encounterKey);
   const p: CombatPlayer = player ?? state.player;
   // M-01：魔力・属性適性（出自とシードの引き。同じ世界なら同じ適性）と、
-  // 装備中の武器に刻まれた付与の威力を畳む
+  // 装備中の武器に刻まれた付与の威力を畳む。X-32：癒え途中の傷は
+  // そのまま入れ、戦闘での係数に響かせる（差し替え player が無い場合は state の傷）
   const origin = origins.origins.find((o) => o.id === state.player.origin);
   const withMagic: CombatPlayer = {
     ...p,
+    injuries: p.injuries ?? state.injuries.map((i) => i.part),
     mana: p.mana ?? state.player.mana,
     aptitude:
       p.aptitude ??
@@ -3483,6 +3491,13 @@ export function tagsOf(events: ActionEvent[], state?: GameState): FxTag[] {
         out.push({ text: tpl(t.text.discoveryFound, { name: def?.name ?? e.id }), tone: "plain" });
         break;
       }
+      // 怪我の刻印（X-32）：通知Bランク —— 痛めた部位だけ札で知らせる
+      case "injured":
+        out.push({
+          text: tpl(t.text.combatInjured, { part: t.display.partNames[e.part] ?? e.part }),
+          tone: "plain",
+        });
+        break;
       // 名所の初訪（X-29）：通知Bランク —— 踏んだ名だけ札で知らせる
       case "landmarkFound":
         out.push({

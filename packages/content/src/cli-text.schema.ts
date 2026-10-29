@@ -172,6 +172,10 @@ export const cliTextSchema = z
         /** 強個体討伐の知らせ（T-44。{name} は素の敵名） */
         uniqueDefeated: z.string(),
         combatLost: z.string(),
+        /** 怪我の刻印（X-32。{part} は部位の表示名） */
+        combatInjured: z.string(),
+        /** 怪我が癒えた朝の行（X-32。{part} は部位の表示名） */
+        combatInjuryHealed: z.string(),
         /** 老衰死（T-36。{age} にその朝の年齢） */
         deathByAge: z.string(),
         combatFled: z.string(),

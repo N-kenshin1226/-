@@ -355,6 +355,13 @@ export type ActionEvent =
    */
   | { type: "mapRevealed" }
   /**
+   * 部位に怪我を負った（X-32、docs/03 §4「部位へのダメージは怪我として
+   * 数日残る」。重い一撃が残した傷 —— 通知Bランク相当）
+   */
+  | { type: "injured"; part: string }
+  /** 怪我が癒えた（X-32。untilDay を越えた朝に傷が取れる） */
+  | { type: "injuryHealed"; part: string }
+  /**
    * 町の評判が上がった（G-01、docs/10 §4。掲示板・仕事・寄付でその町の
    * 分だけ積み上がる。amount は増分、total は増分後の評判）
    */

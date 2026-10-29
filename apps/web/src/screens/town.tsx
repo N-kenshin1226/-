@@ -882,6 +882,21 @@ function PersonPanel({ state }: { state: GameState }) {
           {Math.round(state.player.fatigue)}/100
         </span>
       </div>
+      {/* 怪我（X-32）：数日残る部位の傷。残り日数は今日からの数え */}
+      {state.injuries.length > 0 && (
+        <p
+          data-testid="status-injuries"
+          style={{ margin: "8px 0 0", fontSize: 13, color: "#e8b9a0" }}
+        >
+          怪我：
+          {state.injuries
+            .map(
+              (i) =>
+                `${t.display.partNames[i.part] ?? i.part}（残${Math.max(0, i.untilDay - state.time.day)}日）`,
+            )
+            .join("・")}
+        </p>
+      )}
       {/* 寿命の気配（T-36）：満ちた月に近いほど色が変わる */}
       <p
         style={{

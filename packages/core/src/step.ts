@@ -427,6 +427,11 @@ export type Command =
        * それぞれ flags["spell.seen.<id>"] に畳まれる（見取り稽古で覚える道）
        */
       seenSpells?: readonly string[];
+      /**
+       * この戦闘で負った怪我の部位（X-32、combatResult.injuries）。
+       * 重い一撃を受けた部位が数日の傷として state.injuries に刻まれる
+       */
+      injuries?: readonly string[];
     }
   /**
    * 深層ダンジョンのランの結果を世界に反映する（06 §3B、T-43）。
@@ -454,6 +459,8 @@ export type Command =
       manaLeft?: number;
       /** ラン中に見届けた敵の呪文（M-01。flags["spell.seen.<id>"] に畳む） */
       seenSpells?: readonly string[];
+      /** ラン中に負った怪我の部位（X-32。combat と同じ畳み込み） */
+      injuries?: readonly string[];
     }
   /**
    * 有限迷宮の潜りの結果を世界に反映する（G-03、docs/10 §6）。
@@ -503,6 +510,8 @@ export type Command =
       kiLeft?: number;
       manaLeft?: number;
       seenSpells?: readonly string[];
+      /** この潜りで負った怪我の部位（X-32、combat と同じ畳み込み） */
+      injuries?: readonly string[];
     }
   /** 打診を受けて立場・職業の認定を受ける（03 §1）。行動は消費しない */
   | { type: "acceptOffer"; id: string }
@@ -720,6 +729,39 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       events.push({ type: "mapHeard", place: id });
     }
   }
+
+  // 怪我の経過（X-32、docs/03 §4「怪我として数日残る」）：untilDay を
+  // 越えた傷は取れる —— 入力 state で見るのは発火と同じく、この行動の
+  // 前の世界が元になっているため（癒えた朝が先、行動が後の語り順）
+  if (next.injuries.length > 0) {
+    const healed = next.injuries.filter((i) => i.untilDay <= state.time.day);
+    if (healed.length > 0) {
+      const keep = next.injuries.filter((i) => i.untilDay > state.time.day);
+      next = { ...next, injuries: keep };
+      for (const h of healed) events.push({ type: "injuryHealed", part: h.part });
+    }
+  }
+
+  // 怪我の刻印（X-32。combat/abyss/dungeon 共通）：重い一撃が残した傷を
+  // 刻む。同じ部位を再び痛めたときは、より遅い癒え日が残る
+  const foldInjuries = (parts: readonly string[] | undefined) => {
+    if (parts === undefined || parts.length === 0) return;
+    const until = next.time.day + (cfg.combat.injuries?.days ?? 0);
+    const injuries = [...next.injuries];
+    for (const part of parts) {
+      const i = injuries.findIndex((x) => x.part === part);
+      if (i >= 0) {
+        if (injuries[i]!.untilDay < until) injuries[i] = { ...injuries[i]!, untilDay: until };
+      } else {
+        injuries.push({
+          part: part as GameState["injuries"][number]["part"],
+          untilDay: until,
+        });
+      }
+      events.push({ type: "injured", part });
+    }
+    next = { ...next, injuries };
+  };
 
   // K-03：響き合い（合成）とユニークスキルの判定。習得判定（checkArtsLearn）と
   // 同じ場面で呼ぶ —— 技・技能・刻印が揃った瞬間に新しい技が生まれ、
@@ -1586,6 +1628,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 獣との戦い（K-01）：狩猟・動物知識などに少し経験が入る（beast.exp）
       if (command.beast === true) grantLinkGains("beast.exp");
 
+      // X-32：重い一撃が残した傷を刻む（docs/03 §4「怪我として数日残る」）
+      foldInjuries(command.injuries);
+
       // K-02：戦闘の武技まわりを世界に畳む（09 §1・§7.1）。
       // 気力の持ち越し → 使用記録の集計 → 技の経験（眠りで定着）→ 習得判定
       if (cfg.arts !== undefined) {
@@ -1730,7 +1775,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           const s = skills[id]!;
           skills[id] = { ...s, pending: s.pending * keep };
         }
-        next = { ...next, player: { ...next.player, skills } };
+        // 蘇生で身体は整う —— 怪我も取れる（X-32）
+        next = { ...next, player: { ...next.player, skills }, injuries: [] };
         events.push({ type: "died" });
       }
       next = { ...next, counters };
@@ -1832,6 +1878,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       for (const k of command.kills ?? []) applyFight(k, true);
       // 未決着の層（逃走・死亡・灯り切れで中断した戦闘）も失敗経験を入れる
       if (command.loss !== undefined) applyFight(command.loss, false);
+
+      // X-32：ラン中に受けた重い傷を刻む
+      foldInjuries(command.injuries);
 
       // K-02：ラン中の武技まわりを畳む（combat と同じ処理。経験は最深の格で入る）
       if (cfg.arts !== undefined) {
@@ -1939,7 +1988,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           const s = skills[id]!;
           skills[id] = { ...s, pending: s.pending * keep };
         }
-        next = { ...next, player: { ...next.player, skills } };
+        // 蘇生で身体は整う —— 怪我も取れる（X-32）
+        next = { ...next, player: { ...next.player, skills }, injuries: [] };
         events.push({ type: "died" });
       }
       next = { ...next, counters };
@@ -2029,6 +2079,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       };
       for (const k of command.kills ?? []) applyFight(k, true);
       if (command.loss !== undefined) applyFight(command.loss, false);
+
+      // X-32：潜り中に受けた重い傷を刻む
+      foldInjuries(command.injuries);
 
       // K-02：潜り中の武技まわりを畳む（深層と同じ処理。経験は最深の格で入る）
       if (cfg.arts !== undefined) {
@@ -2194,7 +2247,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           const s = skills[id]!;
           skills[id] = { ...s, pending: s.pending * keep };
         }
-        next = { ...next, player: { ...next.player, skills } };
+        // 蘇生で身体は整う —— 怪我も取れる（X-32）
+        next = { ...next, player: { ...next.player, skills }, injuries: [] };
         events.push({ type: "died" });
       }
       next = { ...next, counters };
@@ -2510,7 +2564,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           const s = skills[id]!;
           skills[id] = { ...s, pending: s.pending * keep };
         }
-        next = { ...next, player: { ...next.player, skills } };
+        // 蘇生で身体は整う —— 怪我も取れる（X-32）
+        next = { ...next, player: { ...next.player, skills }, injuries: [] };
         events.push({ type: "died" });
       }
       break;
@@ -2611,7 +2666,8 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           const s = skills[id]!;
           skills[id] = { ...s, pending: s.pending * keep };
         }
-        next = { ...next, player: { ...next.player, skills } };
+        // 蘇生で身体は整う —— 怪我も取れる（X-32）
+        next = { ...next, player: { ...next.player, skills }, injuries: [] };
         events.push({ type: "died" });
       }
       break;

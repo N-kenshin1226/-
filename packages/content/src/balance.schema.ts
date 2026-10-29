@@ -338,6 +338,33 @@ export const balanceSchema = z
             agilityJitter: z.number().nonnegative(),
           })
           .strict(),
+        /**
+         * X-32：怪我（docs/03 §4「部位へのダメージは怪我として数日残る」）。
+         * 一撃で体力の hitShare 以上を削る被弾が部位の傷を残し、
+         * 傷のある部位は対応する性能が落ちる
+         */
+        injuries: z
+          .object({
+            /** 傷になる一撃の割合（playerHpMax に対する） */
+            hitShare: z.number().min(0).max(1),
+            /** 傷が残る日数 */
+            days: z.number().int().positive(),
+            /** 着弾部位の重み */
+            partWeights: z
+              .object({
+                body: z.number().nonnegative(),
+                arms: z.number().nonnegative(),
+                legs: z.number().nonnegative(),
+                head: z.number().nonnegative(),
+              })
+              .strict(),
+            /** 腕の怪我（威力）・脚の怪我（敏捷）・胴の怪我（体力）・頭の怪我（観察）の係数 */
+            armsFactor: z.number().min(0).max(1),
+            legsFactor: z.number().min(0).max(1),
+            bodyFactor: z.number().min(0).max(1),
+            headFactor: z.number().min(0).max(1),
+          })
+          .strict(),
       })
       .strict(),
     /**
