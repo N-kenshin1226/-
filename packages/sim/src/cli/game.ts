@@ -559,6 +559,13 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
       if (e.type === "incidentResolved") {
         return [e.text];
       }
+      // 同行者（X-37）：迎え・別れの一行。{name} は住人の名
+      if (e.type === "companionJoined") {
+        return [tpl(t.text.life.companionJoined, { name: endingNames.npc(e.npc) })];
+      }
+      if (e.type === "companionParted") {
+        return [tpl(t.text.life.companionParted, { name: endingNames.npc(e.npc) })];
+      }
       return [];
     });
 

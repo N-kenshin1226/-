@@ -340,6 +340,34 @@ describe("可用性：退場した人物は使えなくなる（X-12）", () => 
     expect(currentMentor(s, cfg.mentors)).toBeNull();
   });
 
+  it("同行者が街を去ると同行は解かれ、別れの出来事が刻まれる（X-37）", () => {
+    const cfg: StepConfig = {
+      ...base(),
+      npcLife: lifeWith({
+        at: { time: { day: { eq: 2 } } },
+        kind: "depart",
+        text: "{name}が旅立った。",
+      }),
+    };
+    let s = mkState();
+    s = {
+      ...s,
+      life: { ...s.life, companion: { npc: "npc.test", sinceDay: 0 } },
+    };
+    // day 2 の朝に旅立つ —— 別れを告げる間もなく同行は解かれる
+    let parted: string | undefined;
+    for (let i = 0; i < 2; i++) {
+      const r = step(s, { type: "sleep" }, cfg);
+      const ev = r.events.find((e) => e.type === "companionParted");
+      if (ev?.type === "companionParted") parted = ev.npc;
+      s = r.state;
+    }
+    expect(parted).toBe("npc.test");
+    expect(s.life.companion).toBeNull();
+    expect(npcGoneReason(s, "npc.test")).toBe("depart");
+    expect(s.counters["companion.parted"]).toBe(1);
+  });
+
   it("引退したライバルはランキングから外れる（顔ぶれ自体は変わらない）", () => {
     const pool: RivalNamePool = {
       names: ["ア", "イ", "ウ", "エ", "オ", "カ", "キ", "ク"],

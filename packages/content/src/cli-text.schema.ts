@@ -644,6 +644,10 @@ export const cliTextSchema = z
             newsHeard: z.string(),
             /** 町ごとの評判が積まれた（G-01。記録の行のみ） */
             repGained: z.string(),
+            /** 同行者を迎えた（X-37。{name} は人の名） */
+            companionJoined: z.string(),
+            /** 同行者と別れた（X-37。{name} は人の名） */
+            companionParted: z.string(),
           })
           .strict(),
         eof: z.string(),

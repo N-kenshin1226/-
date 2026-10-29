@@ -10,6 +10,7 @@ import {
   canAct,
   canEnchant,
   canLifeSpell,
+  bondWarm,
   enchantLevel,
   lifeBuffOf,
   npcAway,
@@ -289,6 +290,12 @@ function SocialView({
   const here = placeOf(state, place)?.npcs ?? [];
   // その場所の住人（G-01：生成地方は生成の住人の名簿から引く）
   const residents = npcListOf(state).filter((n) => here.includes(n.id));
+  // 同行者（X-37）：一緒に旅をしているので、その場所の住人でなくても側にいる
+  const companionId = state.life.companion?.npc ?? null;
+  const shown =
+    companionId !== null && !residents.some((n) => n.id === companionId)
+      ? [...residents, { id: companionId, name: npcName(state, companionId) }]
+      : residents;
   // 贈れる品：値段の付く持ち物（贈り物の効きは品の値段から決まる）
   const gifts = Object.entries(state.life.items)
     .filter(([id, n]) => n > 0 && (itemDefs[id]?.price ?? 0) > 0)
@@ -297,17 +304,20 @@ function SocialView({
 
   const entries: MenuEntry[] =
     npc === null
-      ? residents.map((n): MenuEntry => {
+      ? shown.map((n): MenuEntry => {
+          const isCompanion = companionId === n.id;
           const gone = npcGoneReason(state, n.id);
           const away =
+            !isCompanion &&
             cfg.variance !== undefined &&
             npcAway(state.seed, state.time.day, n.id, cfg.variance.npc);
           const bond = bondOfNow(state, n.id);
           return {
             id: `social-${n.id}`,
             label: n.name,
-            sub:
-              gone !== null
+            sub: isCompanion
+              ? "同行中"
+              : gone !== null
                 ? (t.display.npcGoneNames[gone] ?? gone)
                 : away
                   ? "今日はいないようだ"
@@ -351,6 +361,31 @@ function SocialView({
               sub: "持ち物から1つ",
               onPick: () => setGifting(true),
             },
+            // 同行者（X-37）：仲が深まった相手を旅に誘う・同行中なら別れを告げる
+            ...(companionId === npc
+              ? [
+                  {
+                    id: "way-part",
+                    label: "別れを告げる",
+                    sub: "同行を解く",
+                    onPick: () => act({ type: "social", npc, way: "part" as const }),
+                  },
+                ]
+              : companionId === null &&
+                  cfg.life !== undefined &&
+                  bondWarm(state, npc, cfg.life) &&
+                  npcGoneReason(state, npc) === null &&
+                  (cfg.variance === undefined ||
+                    !npcAway(state.seed, state.time.day, npc, cfg.variance.npc))
+                ? [
+                    {
+                      id: "way-invite",
+                      label: "旅に誘う",
+                      sub: "一緒に歩いてもらう",
+                      onPick: () => act({ type: "social", npc, way: "invite" as const }),
+                    },
+                  ]
+                : []),
           ];
   return (
     <LifeWindow

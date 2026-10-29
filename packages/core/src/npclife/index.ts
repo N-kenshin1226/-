@@ -226,12 +226,20 @@ export function npcLifeEvents(
         }
       }
 
+      // 退場系：同行者（X-37）が街を去ったなら同行は自然に解かれる ——
+      // 別れを告げる間もなく人はいなくなる（呼び出し側が companionParted を出す）
+      let life = next.life;
+      if (gone && life.companion?.npc === npc.npcId) {
+        life = { ...life, companion: null };
+      }
+
       next = {
         ...next,
         counters: { ...next.counters, [npcLifeDoneKey(npc.npcId, index)]: day },
         flags,
         crisis,
         mentor,
+        life,
       };
       fired.push({ npcId: npc.npcId, index, kind: ev.kind, name, text, day });
       if (gone) break; // その人はもう街に居ない —— この生での後続の出来事は起きない

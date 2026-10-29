@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { gotoPlace, placeAct, skipIntro, waitVeil } from "./helpers.js";
+import { newGame, serialize } from "@trace/core";
+import { dismissFx, gotoPlace, placeAct, skipIntro, waitVeil } from "./helpers.js";
 
 // P-02「行動の種類を増やす」：日々の営みの e2e。
 // 市場・料理・賭け・人・掲示板・祈り・食事・棚・散策・採集・旅の各窓が
@@ -60,6 +62,57 @@ test("人と過ごす：住人を選んで話すと仲が深まる", async ({ pa
   await page.getByTestId("way-talk").click();
   await expect(page.getByTestId("log")).toContainText("仲が深まった");
   await page.screenshot({ path: "e2e/artifacts/trace-life-social.png", fullPage: true });
+});
+
+/**
+ * X-37：同行者（docs/10 §13「仲間との会話」の最小版）。仲が深まった
+ * 住人を旅に誘うと一緒に歩く —— 状態画面に同行の行が出て、
+ * 別れを告げれば同行は解かれる。仲の値は注入セーブで温めておく
+ * （seed "e2e" は 0 日目にイルダが酒場にいる決定的な種）
+ */
+test("人と過ごす：仲の深い住人を旅に誘い、別れを告げる（X-37）", async ({ page }) => {
+  const skills = JSON.parse(
+    readFileSync(new URL("../../../packages/content/skills.json", import.meta.url), "utf8"),
+  ) as { skills: { id: string }[] };
+  const g = newGame("e2e", "旅人", {
+    skillIds: skills.skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+  });
+  // 仲 60（bondRespectMin=40 以上）：誘える水準に温めた状態で始める
+  const save = serialize({ ...g, life: { ...g.life, bonds: { "npc.ilda": 60 } } });
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  // 酒場のイルダを旅に誘う —— 迎えの一行が記録に残り、一覧は「同行中」になる
+  await placeAct(page, "tavern", "social");
+  await expect(page.getByTestId("screen-social")).toBeVisible();
+  await page.getByTestId("social-npc.ilda").click();
+  await expect(page.getByTestId("way-invite")).toBeVisible();
+  await page.getByTestId("way-invite").click();
+  await expect(page.getByTestId("log")).toContainText("一緒に来ることになった");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("social-npc.ilda")).toContainText("同行中");
+  await page.screenshot({ path: "e2e/artifacts/trace-companion.png", fullPage: true });
+  // 一覧 → 場所（社交の窓を畳む）
+  await page.keyboard.press("Escape");
+
+  // 自室の状態画面にも同行の行が出る
+  await gotoPlace(page, "home");
+  await page.getByTestId("place-status").click();
+  await expect(page.getByTestId("status-companion")).toContainText("同行：イルダ");
+  await page.keyboard.press("Escape");
+
+  // 別れを告げると同行は解かれる
+  await placeAct(page, "tavern", "social");
+  await page.getByTestId("social-npc.ilda").click();
+  await page.getByTestId("way-part").click();
+  await expect(page.getByTestId("log")).toContainText("別れた");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("social-npc.ilda")).toContainText("仲");
+  await expect(page.getByTestId("social-npc.ilda")).not.toContainText("同行中");
 });
 
 test("祈る：教会で祈ると記録に残る", async ({ page }) => {

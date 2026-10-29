@@ -599,7 +599,9 @@
       "landmarkFoundLore": "――見聞録に《{name}》の頁が加わった",
       "mapRevealed": "――地方の地図を手に入れた。見知らぬ土地の名が書き込まれた",
       "newsHeard": "――朝刊の噂：《{name}》の名を聞き覚えた",
-      "repGained": "――{town}での評判が少し広まった"
+      "repGained": "――{town}での評判が少し広まった",
+      "companionJoined": "――{name}が一緒に来ることになった",
+      "companionParted": "――{name}と別れた。またいつか"
     },
     "combatManaLine": "（魔力 {mana}/{max}）",
     "combatSpellsLabel": "呪文",

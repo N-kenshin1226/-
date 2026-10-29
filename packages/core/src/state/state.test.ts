@@ -477,6 +477,26 @@ describe("save", () => {
     expect(restored.injuries).toEqual([{ part: "arms", untilDay: 6 }]);
   });
 
+  it("version 23 のセーブ（companion 無し）は一人旅として移行される（X-37）", () => {
+    const g = newGame("seed-24", "移行12", newGameCfg);
+    const v23 = JSON.parse(serialize(g)) as Record<string, unknown>;
+    v23["version"] = 23;
+    delete (v23["life"] as Record<string, unknown>)["companion"];
+    const restored = deserialize(JSON.stringify(v23));
+    expect(restored.version).toBe(SAVE_VERSION);
+    expect(restored.life.companion).toBeNull();
+  });
+
+  it("同行者はセーブ往復で保たれる（X-37）", () => {
+    const g = newGame("seed-comp", "同行", newGameCfg);
+    const withCompanion = {
+      ...g,
+      life: { ...g.life, companion: { npc: "garo", sinceDay: 3 } },
+    };
+    const restored = deserialize(serialize(withCompanion));
+    expect(restored.life.companion).toEqual({ npc: "garo", sinceDay: 3 });
+  });
+
   it("生成世界の world 刻印はセーブ往復で保たれる（地図は seed から引き直す）", () => {
     const g = newGame("seed-gen", "生成", {
       ...newGameCfg,

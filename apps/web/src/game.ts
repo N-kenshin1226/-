@@ -1944,6 +1944,12 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       case "repGained":
         // 町ごとの評判（G-01）：顔が売れた一行は記録にだけ残す（通知ではない）
         return [tpl(t.text.life.repGained, { town: townName(state, e.town) })];
+      case "companionJoined":
+        // 同行者（X-37）：一緒に来ることになった一行
+        return [tpl(t.text.life.companionJoined, { name: npcName(state, e.npc) })];
+      case "companionParted":
+        // 同行者（X-37）：別れの一行（告げた別れも、去った別れも同じ文）
+        return [tpl(t.text.life.companionParted, { name: npcName(state, e.npc) })];
       default:
         return [];
     }
@@ -3528,6 +3534,19 @@ export function tagsOf(events: ActionEvent[], state?: GameState): FxTag[] {
       case "landmarkFound":
         out.push({
           text: tpl(t.text.life.landmarkFound, { name: mapPlaceName(state, e.place) }),
+          tone: "plain",
+        });
+        break;
+      // 同行者（X-37）：通知Bランク —— 迎え・別れの名だけ札で知らせる
+      case "companionJoined":
+        out.push({
+          text: tpl(t.text.life.companionJoined, { name: npcName(state, e.npc) }),
+          tone: "plain",
+        });
+        break;
+      case "companionParted":
+        out.push({
+          text: tpl(t.text.life.companionParted, { name: npcName(state, e.npc) }),
           tone: "plain",
         });
         break;

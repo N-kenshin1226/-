@@ -364,6 +364,13 @@ export type ActionEvent =
   /** 怪我が癒えた（X-32。untilDay を越えた朝に傷が取れる） */
   | { type: "injuryHealed"; part: string }
   /**
+   * 同行者を迎えた（X-37、docs/10 §13「仲間との会話」）。仲が深まった
+   * 住人を旅に誘い、同行が始まった —— 行動ログの1行
+   */
+  | { type: "companionJoined"; npc: string }
+  /** 同行者と別れた（X-37。別れを告げて同行を解いた） */
+  | { type: "companionParted"; npc: string }
+  /**
    * 町の評判が上がった（G-01、docs/10 §4。掲示板・仕事・寄付でその町の
    * 分だけ積み上がる。amount は増分、total は増分後の評判）
    */
@@ -398,10 +405,15 @@ export const counterSubscriber: Subscriber = (state, event) => {
       };
     }
     case "slept": {
-      return {
-        ...state,
-        counters: { ...state.counters, "days.slept": (state.counters["days.slept"] ?? 0) + 1 },
+      const counters: Record<string, number> = {
+        ...state.counters,
+        "days.slept": (state.counters["days.slept"] ?? 0) + 1,
       };
+      // 同行の日数（X-37）：誰かと歩いている日は companion.days に刻む
+      if (state.life.companion !== null) {
+        counters["companion.days"] = (counters["companion.days"] ?? 0) + 1;
+      }
+      return { ...state, counters };
     }
     case "titleGained": {
       return {
@@ -468,6 +480,28 @@ export const counterSubscriber: Subscriber = (state, event) => {
           ...state.counters,
           "injury.total": (state.counters["injury.total"] ?? 0) + 1,
           [`injury.${event.part}`]: (state.counters[`injury.${event.part}`] ?? 0) + 1,
+        },
+      };
+    }
+    case "companionJoined": {
+      // 同行の記録（X-37）：迎えた回数と人ごとの回数を刻む
+      // （companion.joined / companion.joined.<npc>。条件DSLから読める）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "companion.joined": (state.counters["companion.joined"] ?? 0) + 1,
+          [`companion.joined.${event.npc}`]:
+            (state.counters[`companion.joined.${event.npc}`] ?? 0) + 1,
+        },
+      };
+    }
+    case "companionParted": {
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "companion.parted": (state.counters["companion.parted"] ?? 0) + 1,
         },
       };
     }

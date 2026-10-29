@@ -6,7 +6,7 @@ import type { GameState } from "../state/types.js";
  * （AGENTS.md 絶対ルール）。年代記は別領域・別バージョン（chronicle/、M3）。
  */
 
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 
 /** migrations[n] はバージョン n のデータを n+1 へ変換する */
 export const migrations: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> =
@@ -216,6 +216,14 @@ export const migrations: Record<number, (old: Record<string, unknown>) => Record
      * 数日残る」）を追加。旧セーブは無傷 —— 戦闘の重い一撃から刻まれる
      */
     22: (old) => ({ ...old, version: 23, injuries: [] }),
+    /**
+     * 23 → 24: 同行者（X-37、docs/10 §13「仲間との会話」）を追加。
+     * 旧セーブは一人旅 —— 仲の深い住人を旅に誘うと刻まれる
+     */
+    23: (old) => {
+      const life = (old.life ?? {}) as Record<string, unknown>;
+      return { ...old, version: 24, life: { ...life, companion: null } };
+    },
   };
 
 export function serialize(state: GameState): string {

@@ -71,6 +71,7 @@ import {
 import { passiveFxOf, type CombatConfig, type WeaponDef } from "./combat/index.js";
 import {
   bondOf,
+  bondWarm,
   canErrand,
   cookQuality,
   drawGamble,
@@ -112,7 +113,7 @@ import {
 } from "./life/index.js";
 import { linkFlat, linkFlatCap, linkSum, type SkillLinks } from "./links/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
-import { npcLifeEvents, type NpcLifeConfig } from "./npclife/index.js";
+import { npcLifeEvents, npcLifeGoneFlag, type NpcLifeConfig } from "./npclife/index.js";
 import { checkPinnacles, type PinnacleRouteDef } from "./pinnacle/index.js";
 import { acceptOffer, goalAchieved, newOffers, type SocietyDefs } from "./society/index.js";
 import { readAtom, type LoreConfig } from "./lore/index.js";
@@ -651,7 +652,13 @@ export type Command =
    * （item=贈る品物の id）。仲の値が育ち、社交の技能（social.gain リンク）に
    * 少し経験が入る。相手が今日街にいない日は会えない（行動も消費しない）
    */
-  | { type: "social"; npc: string; way: "talk" | "drink" | "gift"; item?: string }
+  | {
+      type: "social";
+      npc: string;
+      /** invite/part は同行者（X-37）：仲が深まった相手を旅に誘う・別れを告げる */
+      way: "talk" | "drink" | "gift" | "invite" | "part";
+      item?: string;
+    }
   /**
    * 掲示板の依頼を果たす（1行動）。id は life.json errands の id。
    * 納める品が揃い、日限・日の上限の内なら品を納めて報酬を得る
@@ -3063,7 +3070,57 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 人と過ごす：話す・飲む・贈る。仲の値が育ち社交の技能に少し経験が入る。
       // 相手が今日街にいない日は会えない（人の揺らぎ、R-01）
       if (cfg.life === undefined || !canAct(next.time, cfg.time)) break;
+      // 同行者（X-37）：仲が深まった相手を旅に誘う・別れを告げる。
+      // 同行中の相手は「今日いない」にはならない —— 一緒にいるから
+      const isCompanion = next.life.companion?.npc === command.npc;
+      if (command.way === "invite") {
+        // 旅に誘う：仲が深まった相手を同行者に迎える（同行者はひとりだけ）。
+        // 去った人（引退・旅立ち・死去）は誘えない —— 街にいない人とは歩けない
+        if (next.life.companion !== null) break;
+        if (!bondWarm(next, command.npc, cfg.life)) break;
+        if (next.flags[npcLifeGoneFlag(command.npc)] === true) break;
+        if (
+          cfg.variance !== undefined &&
+          npcAway(next.seed, next.time.day, command.npc, cfg.variance.npc)
+        )
+          break;
+        next.time = advanceTime(next.time, cfg.time);
+        next = applyActionLoad(next, "social", cfg.body);
+        events.push({
+          type: "actionPerformed",
+          kind: "social",
+          day: next.time.day,
+          target: command.npc,
+          variant: "invite",
+        });
+        next = {
+          ...next,
+          life: {
+            ...next.life,
+            companion: { npc: command.npc, sinceDay: next.time.day },
+          },
+        };
+        events.push({ type: "companionJoined", npc: command.npc });
+        break;
+      }
+      if (command.way === "part") {
+        // 別れを告げる：同行を解く（同行中の相手にだけ届く）
+        if (!isCompanion) break;
+        next.time = advanceTime(next.time, cfg.time);
+        next = applyActionLoad(next, "social", cfg.body);
+        events.push({
+          type: "actionPerformed",
+          kind: "social",
+          day: next.time.day,
+          target: command.npc,
+          variant: "part",
+        });
+        next = { ...next, life: { ...next.life, companion: null } };
+        events.push({ type: "companionParted", npc: command.npc });
+        break;
+      }
       if (
+        !isCompanion &&
         cfg.variance !== undefined &&
         npcAway(next.seed, next.time.day, command.npc, cfg.variance.npc)
       ) {
@@ -3397,8 +3454,16 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // 発火した出来事は世界の記録（crisis.log）と counters/flags に刻まれ、
   // 二度は発火しない（その生の done 刻印＋世代をまたぐ記録の2層）
   if (cfg.npcLife !== undefined) {
+    const companionBefore = next.life.companion;
     const res = npcLifeEvents(next, cfg.npcLife, cfg.time, condEnv);
     next = res.state;
+    // 同行者が街を去った（X-37）：出来事として別れが刻まれる
+    if (companionBefore !== null && next.life.companion === null) {
+      const event: ActionEvent = { type: "companionParted", npc: companionBefore.npc };
+      for (const sub of subscribers) next = sub(next, event);
+      next = recordAction(next, event, cfg.actionLogMax);
+      events.push(event);
+    }
     for (const f of res.fired) {
       const event: ActionEvent = {
         type: "npcEvent",

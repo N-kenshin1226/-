@@ -254,6 +254,7 @@ describe("newGame の life 初期状態（v18）", () => {
       town: "ardi",
       items: {},
       bonds: {},
+      companion: null,
       rep: {},
       mealDay: -1,
       mealQuality: 0,
@@ -467,6 +468,70 @@ describe("人と過ごす", () => {
   });
 });
 
+describe("同行者（X-37）", () => {
+  const warm = (g: GameState): GameState => ({
+    ...g,
+    life: { ...g.life, bonds: { "npc.marta": 50 } },
+  });
+
+  it("仲が深まった相手を旅に誘うと同行者になる", () => {
+    const r = step(warm(game()), { type: "social", npc: "npc.marta", way: "invite" }, cfg);
+    expect(r.state.time.action).toBe(1);
+    expect(r.state.life.companion).toEqual({ npc: "npc.marta", sinceDay: r.state.time.day });
+    expect(r.events.some((e) => e.type === "companionJoined" && e.npc === "npc.marta")).toBe(true);
+    expect(r.state.counters["companion.joined"]).toBe(1);
+    expect(r.state.counters["companion.joined.npc.marta"]).toBe(1);
+  });
+
+  it("仲が浅い相手は誘えない", () => {
+    const r = step(game(), { type: "social", npc: "npc.marta", way: "invite" }, cfg);
+    expect(r.state.life.companion).toBeNull();
+    expect(r.events.some((e) => e.type === "companionJoined")).toBe(false);
+  });
+
+  it("街を去った人は誘えない", () => {
+    let g = warm(game());
+    g = { ...g, flags: { ...g.flags, "npc.gone.npc.marta": true } };
+    const r = step(g, { type: "social", npc: "npc.marta", way: "invite" }, cfg);
+    expect(r.state.life.companion).toBeNull();
+    expect(r.events.some((e) => e.type === "companionJoined")).toBe(false);
+  });
+
+  it("同行者がいる間は別の人は誘えない", () => {
+    const g = step(warm(game()), { type: "social", npc: "npc.marta", way: "invite" }, cfg).state;
+    const r = step(
+      { ...g, life: { ...g.life, bonds: { "npc.edel": 60 } } },
+      { type: "social", npc: "npc.edel", way: "invite" },
+      cfg,
+    );
+    expect(r.state.life.companion?.npc).toBe("npc.marta");
+    expect(r.events.some((e) => e.type === "companionJoined")).toBe(false);
+  });
+
+  it("別れを告げると同行が解かれる", () => {
+    const g = step(warm(game()), { type: "social", npc: "npc.marta", way: "invite" }, cfg).state;
+    const r = step(g, { type: "social", npc: "npc.marta", way: "part" }, cfg);
+    expect(r.state.life.companion).toBeNull();
+    expect(r.events.some((e) => e.type === "companionParted" && e.npc === "npc.marta")).toBe(true);
+    expect(r.state.counters["companion.parted"]).toBe(1);
+  });
+
+  it("同行していない相手には別れは届かない", () => {
+    const g = step(warm(game()), { type: "social", npc: "npc.marta", way: "invite" }, cfg).state;
+    const r = step(g, { type: "social", npc: "npc.edel", way: "part" }, cfg);
+    expect(r.state.life.companion?.npc).toBe("npc.marta");
+    expect(r.events.some((e) => e.type === "companionParted")).toBe(false);
+  });
+
+  it("同行している日は眠りで同行の日数が刻まれる", () => {
+    let g = step(warm(game()), { type: "social", npc: "npc.marta", way: "invite" }, cfg).state;
+    g = step(g, { type: "sleep" }, cfg).state;
+    expect(g.counters["companion.days"]).toBe(1);
+    g = step(g, { type: "sleep" }, cfg).state;
+    expect(g.counters["companion.days"]).toBe(2);
+  });
+});
+
 describe("掲示板の依頼", () => {
   const stocked = (g: GameState): GameState => ({
     ...g,
@@ -614,6 +679,7 @@ describe("セーブの移行（v17 → v22）", () => {
       town: "ardi",
       items: {},
       bonds: {},
+      companion: null,
       rep: {},
       mealDay: -1,
       mealQuality: 0,

@@ -27,6 +27,7 @@ import {
   innQuality,
   inns,
   loadChronicle,
+  npcName,
   originList,
   qualityLabel,
   skillChip,
@@ -895,6 +896,16 @@ function PersonPanel({ state }: { state: GameState }) {
                 `${t.display.partNames[i.part] ?? i.part}（残${Math.max(0, i.untilDay - state.time.day)}日）`,
             )
             .join("・")}
+        </p>
+      )}
+      {/* 同行者（X-37）：一緒に旅をしている人。何日目からかを添える */}
+      {state.life.companion !== null && (
+        <p
+          data-testid="status-companion"
+          style={{ margin: "8px 0 0", fontSize: 13, color: "#a8c8e8" }}
+        >
+          同行：{npcName(state, state.life.companion.npc)}（{state.life.companion.sinceDay}
+          日目から）
         </p>
       )}
       {/* 寿命の気配（T-36）：満ちた月に近いほど色が変わる */}

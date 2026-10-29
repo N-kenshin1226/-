@@ -223,6 +223,8 @@ export function newGame(seed: string, name: string, cfg: NewGameConfig): GameSta
       town: cfg.initialTown ?? "ardi",
       items: {},
       bonds: {},
+      // 同行者（X-37、v24〜）：まだ一人旅
+      companion: null,
       // 町ごとの評判（G-01、v21〜）：まだどこにも名が通っていない
       rep: {},
       mealDay: -1,

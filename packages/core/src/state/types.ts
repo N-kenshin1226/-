@@ -247,6 +247,12 @@ export interface LifeState {
   /** 人との仲の値（voices.json の npc id / 生成世界では npc.<町>.<役割> → 0〜100） */
   bonds: Record<string, number>;
   /**
+   * 同行者（X-37、docs/10 §13「仲間との会話」の最小版。v24〜）。
+   * 仲が深まった住人を旅に誘うと、離れるまで一緒にいる —— 旅も場所も
+   * 同じように歩く。null なら一人旅
+   */
+  companion: { npc: string; sinceDay: number } | null;
+  /**
    * 町ごとの評判（G-01、docs/10 §4「ある町では有名、別の町では無名」。v20〜）。
    * 町 id → 値。掲示板の依頼・仕事・寄付でその町の評判が積み上がり、
    * 市場の相場に少し効く。立場（society.standing）は世界全体の肩書で、
