@@ -102,7 +102,7 @@ test("旅：ベルンへの道を野営で進み、隣町に着く", async ({ pa
   await startNewGame(page);
   // 門 → 旅立つ（1行動消費、旅が始まる）
   await gotoPlace(page, "gate");
-  await page.getByTestId("place-journey-bergen").click();
+  await page.getByTestId("place-journey-bergen-foot").click();
   await expect(page.getByTestId("screen-journey")).toBeVisible();
   await expect(page.getByTestId("screen-journey")).toContainText("ベルンへの道");
   await page.screenshot({ path: "e2e/artifacts/trace-life-journey.png", fullPage: true });

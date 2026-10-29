@@ -15,6 +15,7 @@ import {
   dungeonProgress,
   eventLines,
   incidentPendingChoice,
+  journeyWayName,
   journeyWayOptions,
   LAKE_ORDER,
   mapRoadOther,
@@ -566,36 +567,47 @@ function actionEntries(
       ];
     case "journey": {
       // 旅（隣町）：数日の野営を経て着く。出発は1行動。
-      // 閉ざされた道・払えない関所では出られない —— 地図側と同じ判定を
-      // 門にも畳む（地図を見ずに門から出ても同じ結論になるよう揃える）
+      // 通い方は道の種別で決まる —— 地図側と同じ選択肢を門にも並べる
+      // （門から出るときも徒歩・隊商・騎乗・船を選べる。閉ざされた道・
+      // 払えない運賃は選べないのも地図と同じ結論に揃える）
       const town = a.to !== undefined ? townName(state, a.to) : "";
       const model = regionMapOf(state);
       const road =
         model !== null && a.to !== undefined
           ? mapRoadsFrom(state, model).find((r) => mapRoadOther(r, townOf(state)) === a.to)
           : undefined;
-      const foot =
-        road !== undefined
-          ? journeyWayOptions(state, road.id).find((w) => w.way === "foot")
-          : undefined;
-      const fee = foot?.fee ?? 0;
-      const cant = road !== undefined && (road.closed !== null || state.player.money < fee);
-      return [
-        {
-          id: `place-journey-${a.to}`,
-          label: `${town}へ旅立つ`,
-          sub:
-            road !== undefined
-              ? `${tpl(t.text.journeyDays, { days: road.days })}${fee > 0 ? `・${tpl(t.text.journeyFee, { fee })}` : ""}`
-              : "数日の道のり",
-          disabled: !canActNow || cant,
+      if (road === undefined) {
+        return [
+          {
+            id: `place-journey-${a.to}`,
+            label: `${town}へ旅立つ`,
+            sub: "数日の道のり",
+            disabled: !canActNow,
+            onPick: () => {
+              if (a.to === undefined) return;
+              act({ type: "journey", to: a.to });
+              setScreen({ name: "journey" });
+            },
+          },
+        ];
+      }
+      const closed = road.closed !== null;
+      const ways = journeyWayOptions(state, road.id);
+      return ways.map(({ way, days, fee }): MenuEntry => {
+        const wayName = journeyWayName(way);
+        return {
+          id: `place-journey-${a.to}-${way}`,
+          label: ways.length > 1 ? `${town}へ旅立つ（${wayName}）` : `${town}へ旅立つ`,
+          sub: `${tpl(t.text.journeyDays, { days })}${fee > 0 ? `・${tpl(t.text.journeyFee, { fee })}` : ""}`,
+          disabled: !canActNow || closed || state.player.money < fee,
+          primary: way === "foot",
           onPick: () => {
             if (a.to === undefined) return;
-            act({ type: "journey", to: a.to });
+            act({ type: "journey", to: a.to, way });
             setScreen({ name: "journey" });
           },
-        },
-      ];
+        };
+      });
     }
     case "travel": {
       const dest = placeOf(state, a.to);
