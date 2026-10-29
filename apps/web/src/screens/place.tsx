@@ -15,14 +15,19 @@ import {
   dungeonProgress,
   eventLines,
   incidentPendingChoice,
+  journeyWayOptions,
   LAKE_ORDER,
+  mapRoadOther,
+  mapRoadsFrom,
   mentorsAt,
   occasionOffers,
   placeOf,
   placeVoice,
+  regionMapOf,
   t,
   tpl,
   townName,
+  townOf,
   travelOutCost,
 } from "../game.js";
 import { gatePlaceOf, isGenWorld, npcListOf, type PlaceLike } from "../world.js";
@@ -560,14 +565,30 @@ function actionEntries(
         },
       ];
     case "journey": {
-      // 旅（隣町）：数日の野営を経て着く。出発は1行動
+      // 旅（隣町）：数日の野営を経て着く。出発は1行動。
+      // 閉ざされた道・払えない関所では出られない —— 地図側と同じ判定を
+      // 門にも畳む（地図を見ずに門から出ても同じ結論になるよう揃える）
       const town = a.to !== undefined ? townName(state, a.to) : "";
+      const model = regionMapOf(state);
+      const road =
+        model !== null && a.to !== undefined
+          ? mapRoadsFrom(state, model).find((r) => mapRoadOther(r, townOf(state)) === a.to)
+          : undefined;
+      const foot =
+        road !== undefined
+          ? journeyWayOptions(state, road.id).find((w) => w.way === "foot")
+          : undefined;
+      const fee = foot?.fee ?? 0;
+      const cant = road !== undefined && (road.closed !== null || state.player.money < fee);
       return [
         {
           id: `place-journey-${a.to}`,
           label: `${town}へ旅立つ`,
-          sub: "数日の道のり",
-          disabled: !canActNow,
+          sub:
+            road !== undefined
+              ? `${tpl(t.text.journeyDays, { days: road.days })}${fee > 0 ? `・${tpl(t.text.journeyFee, { fee })}` : ""}`
+              : "数日の道のり",
+          disabled: !canActNow || cant,
           onPick: () => {
             if (a.to === undefined) return;
             act({ type: "journey", to: a.to });

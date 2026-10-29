@@ -75,6 +75,10 @@ test("地方の地図から隣町へ旅ができる（霧・旅日数・道中�
 
   // 門の「地方の地図を開く」→ 地方の見取り図（町・道・地域・凡例）
   await gotoPlace(page, "t0.gate");
+  // 門の旅立ち行動も道の情報を出す —— 地図を見ずに門から出ても同じ結論（X-02）
+  const gateGo = page.getByTestId("place-journey-t1");
+  await expect(gateGo).toBeVisible();
+  await expect(gateGo).toContainText("2日の道のり");
   await page.getByTestId("place-map").click();
   const map = page.getByTestId("screen-map");
   await expect(map).toBeVisible();
