@@ -1,5 +1,49 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import {
+  emptyCrisisFields,
+  generateWorld,
+  newGame,
+  serialize,
+  WORLD_RECIPE,
+  type GameState,
+} from "@trace/core";
 import { dismissFx, gotoPlace, skipIntro, wakeUp, waitVeil } from "./helpers.js";
+
+const jsonAt = (rel: string) =>
+  JSON.parse(readFileSync(new URL(`../../../packages/content/${rel}`, import.meta.url), "utf8"));
+
+/**
+ * 生成地方のセーブを組み立てる（seed → 世界を引き、始まりの町で始める）。
+ * crisis を渡せばその危機状態を畳んだセーブになる（?crisis=sample と
+ * 合わせて使う —— 公開サンプルの型表で typeId を引ける）
+ */
+function genSave(seed: string, crisis: GameState["crisis"] = null): string {
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  const w = generateWorld(
+    seed,
+    worldJson,
+    { ...balanceJson.world, dungeons: balanceJson.dungeons },
+    challenge,
+  );
+  const g = newGame(seed, "旅人", {
+    skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+    initialTown: w.startTown,
+    world: { kind: "gen", recipe: WORLD_RECIPE },
+  });
+  return serialize({ ...g, crisis });
+}
 
 /**
  * 生成地方（G-01、docs/10_world_generation.md）の煙テスト。
@@ -138,4 +182,67 @@ test("地方の地図から隣町へ旅ができる（霧・旅日数・道中�
   // 隣町 t1 に着いている（着いた町の場所が並ぶ）
   await expect(page.getByTestId("menu-place-t1.gate")).toBeVisible();
   await page.screenshot({ path: "e2e/artifacts/trace-gen-journey-arrived.png", fullPage: true });
+});
+
+/**
+ * 危機の地図表現（W-01、docs/08）：閉ざされた道は破線＋✕、荒れた地域は
+ * ⚔ の印＋「荒れている」で旅に出せない。生成地方では地域の"型"で照合する
+ * （X-13。seed=e2e-map は森型の地域 forest.2 と街道だけの道を持つ）。
+ * 型表は ?crisis=sample で公開サンプルに固定する
+ */
+const crisisOf = (typeId: string, stageIndex: number): GameState["crisis"] => ({
+  typeId,
+  stageIndex,
+  seasonsInStage: 0,
+  boundaries: 0,
+  factions: [],
+  hero: emptyCrisisFields(),
+  finales: [],
+  variables: {},
+  npcGone: [],
+  log: [{ day: 0, kind: "draw", ref: typeId }],
+  outcome: "ongoing",
+});
+
+test("危機で荒れた地域が地図と旅欄に出る（⚔・立ち入れない）", async ({ page }) => {
+  // 深層の鳴動・段階2（closeAreas:["forest"]）：森型の地域が荒れる
+  const save = genSave("e2e-map", crisisOf("crisis.sample_deep", 2));
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
+  await page.goto("/?crisis=sample");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t0.gate");
+  await page.getByTestId("place-map").click();
+  const map = page.getByTestId("screen-map");
+  await expect(map).toBeVisible();
+  // 荒れた地域は旅欄で「荒れている」と出て選べない（⚔ は SVG の印）
+  await expect(map).toContainText("⚔");
+  const forest = page.getByTestId("map-travel-forest.2");
+  await expect(forest).toBeVisible();
+  await expect(forest).toContainText("荒れている");
+  await expect(forest).toBeDisabled();
+  // この危機では道は閉じていない（隣町へは出られる）
+  await expect(page.getByTestId("map-go-t1")).toBeEnabled();
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-crisis-areas.png", fullPage: true });
+});
+
+test("危機で閉ざされた道が地図と旅欄に出る（破線＋✕・旅立てない）", async ({ page }) => {
+  // 境の霧・段階2（closeRoads:["highway"]）：街道が全て閉ざされる
+  const save = genSave("e2e-map", crisisOf("crisis.sample_mist", 2));
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
+  await page.goto("/?crisis=sample");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t0.gate");
+  await page.getByTestId("place-map").click();
+  const map = page.getByTestId("screen-map");
+  await expect(map).toBeVisible();
+  // 道は破線＋✕。旅欄は「危機で道は閉ざされている」で選べない
+  await expect(map).toContainText("✕");
+  const go = page.getByTestId("map-go-t1");
+  await expect(go).toContainText("危機で道は閉ざされている");
+  await expect(go).toBeDisabled();
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-crisis-roads.png", fullPage: true });
 });

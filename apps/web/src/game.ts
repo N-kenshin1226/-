@@ -646,6 +646,18 @@ export function errandsNow(state: GameState) {
   const life = lifeCfgFor(state);
   return life !== undefined ? coreErrandsFor(townOf(state), life) : [];
 }
+/**
+ * 地域が危機で閉じられているか（W-01、docs/08）。
+ * 固定マップは地域 id がそのまま敵の area タグ。生成地方は地域の"型"
+ * （world.json の areaTypes —— 敵 area と同じ名札）で照合する（X-13。
+ * closeAreas は "forest" のような型の名札で、生成地域の実体 id は合わない）
+ */
+export function areaClosedNow(state: GameState, id: string): boolean {
+  if (crisisAreaClosed(state, cfg.crisis, id)) return true;
+  const typeId = genWorld(state)?.areas.find((a) => a.id === id)?.typeId;
+  return typeId !== undefined && crisisAreaClosed(state, cfg.crisis, typeId);
+}
+
 /** その町の市場に並ぶ品の id */
 export function marketStockNow(state: GameState): string[] {
   const life = lifeCfgFor(state);
@@ -838,7 +850,7 @@ export function regionMapOf(state: GameState): RegionMapModel | null {
         pos,
         known: known.has(p.id),
         visited: mapVisited(state, p.id),
-        ravaged: crisisAreaClosed(state, cfg.crisis, p.id),
+        ravaged: areaClosedNow(state, p.id),
       };
     });
   return { towns, roads, regions };

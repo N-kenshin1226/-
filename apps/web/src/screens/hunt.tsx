@@ -13,10 +13,10 @@ import type { EnemyJson } from "@trace/content";
 import { balance } from "@trace/content";
 import {
   abyssFloorEnemy,
+  areaClosedNow,
   beginCombat,
   bioLines,
   cfg,
-  crisisAreaClosed,
   crisisEnemyChallengeBonus,
   crisisEnemyTouchpoints,
   endRun,
@@ -333,7 +333,7 @@ export function HuntScreen({
   const entries: MenuEntry[] = areas.flatMap(([area, group]): MenuEntry[] => {
     const areaName = areaNameOf(state, area, t.display.huntAreas);
     // 危機の段階で閉じられたエリアは「立ち入れない」とだけ出す（W-01。段階が変われば解放）
-    if (crisisAreaClosed(state, cfg.crisis, area)) {
+    if (areaClosedNow(state, area)) {
       return [{ kind: "header", text: tpl(t.text.huntAreaClosed, { name: areaName }) }];
     }
     return [
