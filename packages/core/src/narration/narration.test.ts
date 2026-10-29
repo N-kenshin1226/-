@@ -48,6 +48,7 @@ const text: NarrationTemplates = {
     standing: ["立場{standing}。{profession}"],
     goal: ["目標「{goals}」を果たした。"],
     peak: ["頂きは{skill}の{value}。"],
+    injury: ["傷は{count}度。{part}の古傷が語る。"],
     pinnacle: ["頂点《{pinnacle}》に至った。"],
     cause: {
       retire: ["引退によって記録は閉じた。"],
@@ -275,6 +276,7 @@ describe("TemplateProvider（07 §6）", () => {
         profession: "鍛冶師",
         goals: "最初の作品を作る",
         peakSkill: { name: "鍛冶", value: 92.3 },
+        injuries: { count: 3, part: "腕" },
         pinnacle: "伝説の職人",
         cause: "retire",
       },
@@ -291,6 +293,9 @@ describe("TemplateProvider（07 §6）", () => {
     expect(text).toContain("最初の作品を作る");
     expect(text).toContain("鍛冶");
     expect(text).toContain("92.3");
+    // 傷の記録（X-35）：生涯で負った数と古傷の部位を語る
+    expect(text).toContain("傷は3度");
+    expect(text).toContain("腕");
     // 頂点記述（T-41）：事実の行の最後・終わりの行の手前に置く
     expect(text).toContain("頂点《伝説の職人》に至った");
     expect(text).toContain("引退");

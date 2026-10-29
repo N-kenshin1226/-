@@ -158,6 +158,8 @@ export const narrationSchema = z
         standing: z.array(z.string()).min(1),
         goal: z.array(z.string()).min(1),
         peak: z.array(z.string()).min(1),
+        /** 傷の記述（X-35。{count}/{part} を差し込む） */
+        injury: z.array(z.string()).min(1),
         /** 頂点記述（T-41。{pinnacle} を差し込む） */
         pinnacle: z.array(z.string()).min(1),
         cause: z

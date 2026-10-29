@@ -1,4 +1,5 @@
 import type { GameState, Work } from "../state/types.js";
+import type { BodyPart } from "../arts/index.js";
 import { reachedPinnacles, type PinnacleRouteDef } from "../pinnacle/index.js";
 
 /**
@@ -25,6 +26,9 @@ export interface BiographyMaterial {
   deaths: number;
   /** 頂点に至ったルートID（T-41。routes を渡したときだけ摘む） */
   pinnacleIds: string[];
+  /** 生涯で負った傷の記録（X-35。傷自体は癒えて消えるが、負った数と
+   *  最も痛めた部位はこの生の語りに残る。一度も負っていなければ null） */
+  injuries: { total: number; worstPart: BodyPart } | null;
 }
 
 export function biographyMaterial(
@@ -42,6 +46,18 @@ export function biographyMaterial(
   for (const [id, s] of Object.entries(state.player.skills)) {
     if (peakSkill === null || s.peak > peakSkill.value) peakSkill = { id, value: s.peak };
   }
+  // 傷の生涯記録（X-35）：step が刻んだ injury.<部位> カウンタを摘む
+  const injuryTotal = state.counters["injury.total"] ?? 0;
+  let injuries: BiographyMaterial["injuries"] = null;
+  if (injuryTotal > 0) {
+    let worst: { part: BodyPart; n: number } | null = null;
+    for (const [key, n] of Object.entries(state.counters)) {
+      if (!key.startsWith("injury.") || key === "injury.total" || n <= 0) continue;
+      if (worst === null || n > worst.n)
+        worst = { part: key.slice("injury.".length) as BodyPart, n };
+    }
+    if (worst !== null) injuries = { total: injuryTotal, worstPart: worst.part };
+  }
   return {
     name: state.player.name,
     days: state.time.day,
@@ -55,5 +71,6 @@ export function biographyMaterial(
     peakSkill,
     deaths: state.counters["death.count"] ?? 0,
     pinnacleIds: pinnacleRoutes !== undefined ? reachedPinnacles(state, pinnacleRoutes) : [],
+    injuries,
   };
 }

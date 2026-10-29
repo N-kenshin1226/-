@@ -1212,6 +1212,15 @@ export function bioLines(
             },
           }
         : {}),
+      // 生涯の傷（X-35）：カウンタが摘んだ通算と古傷の部位を語りに渡す
+      ...(m.injuries !== null
+        ? {
+            injuries: {
+              count: m.injuries.total,
+              part: t.display.partNames[m.injuries.worstPart] ?? m.injuries.worstPart,
+            },
+          }
+        : {}),
       ...(pinnacleNames !== "" ? { pinnacle: pinnacleNames } : {}),
       ...(cause !== undefined ? { cause } : {}),
     },

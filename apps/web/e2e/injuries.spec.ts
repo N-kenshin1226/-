@@ -31,12 +31,13 @@ function genWorldFor(seed: string) {
   );
 }
 
-/** 生成地方のセーブ（worldgen.spec.ts の genSave と同じ組み立て＋怪我の上書き可） */
+/** 生成地方のセーブ（worldgen.spec.ts の genSave と同じ組み立て＋怪我・カウンタの上書き可） */
 function genSave(
   seed: string,
   town: string,
   heard: string[],
   injuries: GameState["injuries"] = [],
+  counters: Record<string, number> = {},
 ): string {
   const w = genWorldFor(seed);
   const g = newGame(seed, "旅人", {
@@ -49,6 +50,7 @@ function genSave(
   return serialize({
     ...g,
     injuries,
+    counters: { ...g.counters, ...counters },
     life: {
       ...g.life,
       town,
@@ -132,4 +134,42 @@ test("重い一撃は怪我として残り、状態に出て、癒え日に取�
   await gotoPlace(page, "t1.home");
   await page.getByTestId("place-status").click();
   await expect(page.getByTestId("status-injuries")).toHaveCount(0);
+});
+
+/**
+ * X-35：怪我の語り（docs/03 §4 の続き —— 傷は癒えて消えるが、生涯で
+ * 負った傷の記録は伝記が語る）。戦いで刻まれた injury.* カウンタは
+ * 「これまでの記録」（伝記の途中経過）に傷の行として届く
+ */
+test("負った傷の通算は記録の伝記に語られる（X-35）", async ({ page }) => {
+  // 戦いを重ねて腕に2度・脚に1度の傷を負った生（injury.* カウンタ）
+  const save = genSave("inj-3", "t1", ["mountain"], [], {
+    "injury.total": 3,
+    "injury.arms": 2,
+    "injury.legs": 1,
+  });
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  // 記録画面の伝記（これまでの記録）に傷の行が届く
+  await gotoPlace(page, "t1.guild");
+  await page.getByTestId("place-records").click();
+  await expect(page.getByTestId("screen-records")).toBeVisible();
+  const bio = page.getByTestId("records-bio");
+  await expect(bio).toContainText("傷");
+  await expect(bio).toContainText("腕");
+  await page.screenshot({ path: "e2e/artifacts/trace-bio-injury.png", fullPage: true });
+
+  // 傷を負っていない生には傷の行が出ない
+  const clean = genSave("inj-3", "t1", ["mountain"]);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), clean);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, "t1.guild");
+  await page.getByTestId("place-records").click();
+  await expect(page.getByTestId("records-bio")).toContainText("これまでの記録");
+  await expect(page.getByTestId("records-bio")).not.toContainText("傷");
 });

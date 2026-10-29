@@ -121,12 +121,14 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
               .join("")}
           </div>
           {/* ここまでの記録（T-37 伝記の途中経過プレビュー） */}
-          <PaperHead>これまでの記録</PaperHead>
-          {bioLines(state).map((l, i) => (
-            <div key={i} style={{ color: P.text, padding: "1px 0" }}>
-              {l}
-            </div>
-          ))}
+          <div data-testid="records-bio">
+            <PaperHead>これまでの記録</PaperHead>
+            {bioLines(state).map((l, i) => (
+              <div key={i} style={{ color: P.text, padding: "1px 0" }}>
+                {l}
+              </div>
+            ))}
+          </div>
           {/* 討伐図鑑（T-44）：kill.species.* / kill.unique.* カウンタから実績一覧 */}
           <PaperHead>{t.text.recordsHunt}</PaperHead>
           {enemies.enemies.map((e) => {

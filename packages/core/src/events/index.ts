@@ -459,6 +459,18 @@ export const counterSubscriber: Subscriber = (state, event) => {
         counters: { ...state.counters, [key]: (state.counters[key] ?? 0) + 1 },
       };
     }
+    case "injured": {
+      // 生涯で負った傷の記録（X-35、docs/03 §4）：傷自体は癒えて消えるが、
+      // 負った数と部位の通算は伝記が語る（injury.total / injury.<部位>）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "injury.total": (state.counters["injury.total"] ?? 0) + 1,
+          [`injury.${event.part}`]: (state.counters[`injury.${event.part}`] ?? 0) + 1,
+        },
+      };
+    }
     case "crisisEnded": {
       // 危機の終幕を数える（世界の記録の根拠にもなる。W-01）
       const key = `crisis.end.${event.outcome}`;

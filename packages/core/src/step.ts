@@ -743,7 +743,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   }
 
   // 怪我の刻印（X-32。combat/abyss/dungeon 共通）：重い一撃が残した傷を
-  // 刻む。同じ部位を再び痛めたときは、より遅い癒え日が残る
+  // 刻む。同じ部位を再び痛めたときは、より遅い癒え日が残る。
+  // 生涯の通算は injured イベントを購読する counterSubscriber が刻む
+  // （X-35。癒えて消えても、負った傷の数はこの生の記録になる）
   const foldInjuries = (parts: readonly string[] | undefined) => {
     if (parts === undefined || parts.length === 0) return;
     const until = next.time.day + (cfg.combat.injuries?.days ?? 0);

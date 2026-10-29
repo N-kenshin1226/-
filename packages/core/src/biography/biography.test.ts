@@ -71,6 +71,22 @@ describe("biographyMaterial（T-37 伝記の素材）", () => {
     expect(m.achievedGoalIds).toEqual(["goal.first_work"]);
   });
 
+  it("生涯の傷：通算と最も痛めた部位を摘む（X-35）", () => {
+    const s = state();
+    // 傷を負ったことがなければ null
+    expect(biographyMaterial(s).injuries).toBeNull();
+    // 通算と部位別のカウンタから摘む
+    s.counters["injury.total"] = 4;
+    s.counters["injury.arms"] = 3;
+    s.counters["injury.legs"] = 1;
+    const m = biographyMaterial(s);
+    expect(m.injuries).toEqual({ total: 4, worstPart: "arms" });
+    // total が立っていても部位別が無ければ null（古いセーブの不整合に耐える）
+    const s2 = state();
+    s2.counters["injury.total"] = 1;
+    expect(biographyMaterial(s2).injuries).toBeNull();
+  });
+
   it("頂点に至ったルートIDを摘む（T-41。ルートを渡したときだけ）", () => {
     const routes = [
       {

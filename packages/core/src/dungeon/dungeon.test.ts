@@ -948,6 +948,25 @@ describe("dungeon コマンド（G-03）", () => {
       { part: "arms", untilDay: s0.time.day + 4 },
     ]);
     expect(events.filter((e) => e.type === "injured")).toHaveLength(2);
+    // 生涯の記録（X-35）：癒えて消えても、負った傷の通算は残る
+    expect(state.counters["injury.total"]).toBe(2);
+    expect(state.counters["injury.body"]).toBe(1);
+    expect(state.counters["injury.arms"]).toBe(1);
+    // 同じ部位を再び痛めても、通算は刻み続ける
+    const again = step(
+      state,
+      {
+        type: "dungeon",
+        id: "dg0",
+        end: "retreat",
+        rooms: 1,
+        total: 7,
+        injuries: ["body"],
+      },
+      cfg,
+    ).state;
+    expect(again.counters["injury.total"]).toBe(3);
+    expect(again.counters["injury.body"]).toBe(2);
     // 迷宮での死も傷を取る（教会の蘇生は体を立て直す）
     const died = step(
       { ...state, time: { ...state.time, action: 0 } },

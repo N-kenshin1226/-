@@ -78,6 +78,8 @@ export interface NarrationTemplates {
     goal: string[];
     /** {skill}/{value} */
     peak: string[];
+    /** {count}/{part}（X-35。生涯で負った傷の数と、最も痛めた部位名） */
+    injury: string[];
     /** {pinnacle}（T-41。頂点に至ったルート名を差し込む頂点記述の行） */
     pinnacle: string[];
     cause: { retire: string[]; death: string[] };
@@ -144,6 +146,8 @@ export type NarrationRequest =
       profession?: string;
       goals?: string;
       peakSkill?: { name: string; value: number };
+      /** 生涯の傷（X-35）：負った回数と、最も痛めた部位の表示名 */
+      injuries?: { count: number; part: string };
       /** 頂点に至ったルート名（T-41。複数ある場合は呼び出し側で繋げる） */
       pinnacle?: string;
       cause?: "retire" | "death";
@@ -308,6 +312,14 @@ export class TemplateProvider implements NarrationProvider {
             tpl(this.pick(b.peak, rng), {
               skill: req.peakSkill.name,
               value: req.peakSkill.value,
+            }),
+          );
+        // 傷の記録（X-35）：負った傷は癒えて消えるが、伝記はその数を語る
+        if (req.injuries !== undefined && req.injuries.count > 0)
+          lines.push(
+            tpl(this.pick(b.injury, rng), {
+              count: req.injuries.count,
+              part: req.injuries.part,
             }),
           );
         // 頂点記述（T-41）：事実の行の最後・終わりの行の手前に置く（生涯のクライマックス）
