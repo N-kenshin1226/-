@@ -145,7 +145,9 @@ export function DungeonScreen({
           ? t.text.dungeonRetreat
           : end === "fled"
             ? t.text.combatFled
-            : t.text.combatLost;
+            : end === "cleared"
+              ? tpl(t.text.dungeonConquered, { name: dgn.name })
+              : t.text.combatLost;
 
   /** 部屋を抜いたあとの灯り決済（尽きたらその潜りは閉じる。extra は罠の追加ロス） */
   const spendLight = (cur: Dive, extra = 0): Dive => {

@@ -1,5 +1,10 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { generateWorld, newGame, serialize, WORLD_RECIPE, type GameState } from "@trace/core";
 import { dismissFx, gotoPlace, placeAct, skipIntro, waitVeil, wakeUp } from "./helpers.js";
+
+const jsonAt = (rel: string) =>
+  JSON.parse(readFileSync(new URL(`../../../packages/content/${rel}`, import.meta.url), "utf8"));
 
 /**
  * 有限迷宮（G-03、docs/10_world_generation.md §6）の e2e。
@@ -82,6 +87,116 @@ test("門から迷宮へ出て、潜って引き上げられる", async ({ page 
   const dgRec = page.getByTestId("records-dungeons");
   await expect(dgRec).toContainText("迷宮");
   await expect(dgRec).toContainText("室");
+});
+
+test("迷宮を制覇すると締めは「制覇した」になる（X-11：敗北文は出さない）", async ({ page }) => {
+  // 制覇の締め行だけを見る —— 主の間までの長い潜りは sim:growth/dungeon が見る。
+  // 強化した旅人＋dg0 を残り1室（主の間直前）まで進めたセーブを注入する
+  const seed = "e2e-dgn-clear";
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  const genCfg = { ...balanceJson.world, dungeons: balanceJson.dungeons };
+  const w = generateWorld(seed, worldJson, genCfg, challenge);
+  const dg0 = w.dungeons.find((d) => d.id === "dg0")!;
+  const total = dg0.floors.reduce((s, f) => s + f.rooms.length, 0);
+
+  const g = newGame(seed, "旅人", {
+    skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+    initialMoney: 200,
+    initialWeapons: ["fist", "war_axe"],
+    initialWeapon: "war_axe",
+    initialTown: w.startTown,
+    world: { kind: "gen", recipe: WORLD_RECIPE },
+  });
+  const skills = Object.fromEntries(
+    Object.keys(g.player.skills).map((id) => [
+      id,
+      { ...g.player.skills[id]!, value: 60, peak: 60 },
+    ]),
+  );
+  const patched: GameState = {
+    ...g,
+    player: { ...g.player, skills },
+    counters: { ...g.counters, [`dg.rooms.dg0`]: total - 1 },
+  };
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), serialize(patched));
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t0.gate");
+  await page.getByTestId("place-go-dg0").click();
+  await waitVeil(page);
+  await page.waitForTimeout(500);
+  // 強化セーブでは技能由来のA通知（称号・技開放）が何件も連なって届く ——
+  // 通知カードを直接押して全部飛ばす（Enter が窓に届かないことがある）
+  const dropNotices = async () => {
+    // 連なる通知を「しばらく出ない」まで押し続ける（連鎖する技能開放で
+    // 閉じても次がすぐ出る。クリックで確実に done を踏む）
+    let quiet = 0;
+    for (let k = 0; k < 60 && quiet < 3; k++) {
+      let hit = false;
+      for (const id of ["notice-a", "notice-s"]) {
+        const el = page.getByTestId(id);
+        if (await el.isVisible().catch(() => false)) {
+          await el.click().catch(() => undefined);
+          hit = true;
+          await page.waitForTimeout(200);
+        }
+      }
+      quiet = hit ? 0 : quiet + 1;
+      if (!hit) await page.waitForTimeout(200);
+    }
+  };
+  await dropNotices();
+  await page.getByTestId("place-dungeon").click();
+  await expect(page.getByTestId("screen-dungeon")).toBeVisible();
+
+  // 主の間の戦い：決着まで攻め続け、結果ボタンが出るのを待つ
+  for (let i = 0; i < 80; i++) {
+    if (
+      await page
+        .getByTestId("dungeon-commit")
+        .isVisible()
+        .catch(() => false)
+    )
+      break;
+    await dropNotices();
+    if (
+      await page
+        .getByTestId("combat-attack")
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await page.getByTestId("combat-attack").click();
+      continue;
+    }
+    if (
+      await page
+        .getByTestId("dungeon-advance")
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await page.getByTestId("dungeon-advance").click();
+      continue;
+    }
+    await page.waitForTimeout(200);
+  }
+  await expect(page.getByTestId("dungeon-commit")).toBeVisible();
+  const dive = page.getByTestId("screen-dungeon");
+  await expect(dive).toContainText("制覇した");
+  await expect(dive).not.toContainText("力尽きた");
+  await page.screenshot({ path: "e2e/artifacts/dungeon-cleared.png", fullPage: true });
 });
 
 test("迷宮で野営すると迷宮の中で眠り、翌日の潜りは行動を要さない", async ({ page }) => {
