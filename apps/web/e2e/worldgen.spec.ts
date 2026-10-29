@@ -228,6 +228,30 @@ test("危機で荒れた地域が地図と旅欄に出る（⚔・立ち入れ�
 });
 
 /**
+ * 生成町の師匠（X-16）：師匠は住人の居場所で訪ねる。mentor 行動が無い
+ * 場所の師匠（9/13）は到達不能だった —— e2e-map の始まりの町は農村で、
+ * 畑の番人（fieldmaster@fields）がその一人
+ */
+test("生成町の師匠は居場所で訪ねられる", async ({ page }) => {
+  const save = genSave("e2e-map");
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t0.fields");
+  const mentor = page.getByTestId("place-mentor");
+  await expect(mentor).toBeVisible();
+  await mentor.click();
+  const screen = page.getByTestId("screen-mentor");
+  await expect(screen).toBeVisible();
+  // 師匠がいる場所では「いない」見出しを出さず、技能はIDでなく名で示す
+  await expect(screen).not.toContainText("師匠はいない");
+  await expect(screen).toContainText("《農耕》");
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-mentor.png", fullPage: true });
+});
+
+/**
  * 季節の通行止め（G-02、docs/10 §7「閉ざされる道」）：山道は冬（季節3）に
  * 閉ざされる。seed=e2e-map は t2 から山道が2本出る（t3-t2・t5-t2）。
  * 冬の日（90日目＝季節3）に t2 に居るセーブを畳んで検証する

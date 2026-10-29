@@ -171,7 +171,11 @@ export function runDungeon(): number {
   const fails: Fail[] = [];
   const startedAt = Date.now();
   const skillIds = skills.skills.map((s) => s.id);
-  const worldCfg = { ...balance.world, dungeons: balance.dungeons };
+  const worldCfg = {
+    ...balance.world,
+    dungeons: balance.dungeons,
+    skillNames: Object.fromEntries(skills.skills.map((s) => [s.id, s.name])),
+  };
 
   const ok = (metric: string, detail: string, pass: boolean) => {
     if (!pass) fails.push({ metric, detail });

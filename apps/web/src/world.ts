@@ -16,6 +16,7 @@ import {
   mentors as mentorsContent,
   orders,
   places as placesContent,
+  skills as skillsContent,
   voices,
   world as worldFile,
   type EnemyJson,
@@ -58,7 +59,12 @@ export function genWorld(state: GameState): GeneratedWorld | null {
   const w = worldFor(
     state,
     worldFile,
-    { ...balance.world, dungeons: balance.dungeons },
+    {
+      ...balance.world,
+      dungeons: balance.dungeons,
+      // 師匠の説明文に出る技能名（X-16。core は skills.json を知らない）
+      skillNames: Object.fromEntries(skillsContent.skills.map((s) => [s.id, s.name])),
+    },
     enemyChallenge,
   );
   worldCache.set(key, w);

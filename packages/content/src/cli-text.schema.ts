@@ -516,6 +516,7 @@ export const cliTextSchema = z
         /** 師匠（T-27）：一覧・入門・稽古・別れの各行 */
         mentorHeaderCurrent: z.string(),
         mentorHeaderNone: z.string(),
+        mentorHeaderList: z.string(),
         mentorListLine: z.string(),
         mentorDescLine: z.string(),
         mentorMarkOk: z.string(),

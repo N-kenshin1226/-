@@ -39,7 +39,7 @@ import type { GameState } from "../state/types.js";
  * 追加はそれぞれ専用の系列（rng.fork）で畳むので、古い版で生成された世界と
  * 町・地域・人の並びは同じ —— 新しい版は枠だけが増える
  */
-export const WORLD_RECIPE = 6;
+export const WORLD_RECIPE = 7;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
@@ -135,6 +135,11 @@ export interface WorldGenConfig {
   };
   /** 有限迷宮の生成ルール（balance.dungeons、G-03。省略時は迷宮を作らない） */
   dungeons?: DungeonConfig;
+  /**
+   * 技能 id → 表示名（skills.json 由来。core は skills.json を知らないので
+   * 呼び出し側が注入する。省略時は説明文に id がそのまま出る —— X-16）
+   */
+  skillNames?: Record<string, string>;
 }
 
 /* ── world.json の型の最小形（core は定義の形だけを知る） ── */
@@ -847,6 +852,12 @@ export function generateWorld(
       const place = places.find((pl) => pl.id === placeId);
       place?.npcs.push(npcId);
       if (n.mentorSkills !== undefined && n.mentorSkills.length > 0) {
+        // 師匠はその住人の居場所で訪ねる —— mentor 行動が無い場所には足す
+        // （テンプレで宣言済みの場所（barracks・library 等）は重複させない。
+        // 行動の追加なので recipe を上げる）
+        if (place !== undefined && !place.actions.some((a) => a.type === "mentor")) {
+          place.actions.push({ type: "mentor" });
+        }
         const skill = rngDetail.pick(n.mentorSkills);
         const mentorId = `mentor.${town.id}.${n.id}`;
         mentors.push({
@@ -862,9 +873,9 @@ export function generateWorld(
           place: placeId,
           desc: file.mentorText.desc
             .replaceAll("{town}", town.name)
-            .replaceAll("{skill}", skillNameOr(skill)),
+            .replaceAll("{skill}", cfg.skillNames?.[skill] ?? skill),
           note: file.mentorText.note
-            .replaceAll("{skill}", skillNameOr(skill))
+            .replaceAll("{skill}", cfg.skillNames?.[skill] ?? skill)
             .replaceAll("{condition}", String(cfg.mentor.condition)),
         });
       }
@@ -995,11 +1006,6 @@ export function generateWorld(
 /** 小数の丸め（相場係数の見た目を揃える） */
 function round3(v: number): number {
   return Math.round(v * 1000) / 1000;
-}
-
-/** 師匠の説明文に使う技能名（skills.json は core から見えないので id のまま） */
-function skillNameOr(id: string): string {
-  return id;
 }
 
 /**

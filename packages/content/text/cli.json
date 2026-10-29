@@ -434,6 +434,7 @@
     "armsOwnedTag": "所持",
     "mentorHeaderCurrent": "── 師匠：《{name}》（《{skill}》の師・{days}日目の弟子）",
     "mentorHeaderNone": "── 師匠はいない",
+    "mentorHeaderList": "── 師匠を訪ねる",
     "mentorListLine": "  {i}) {name}（《{skill}》・稽古 {fee}G）{mark}",
     "mentorDescLine": "      ― {desc}",
     "mentorMarkOk": "（弟子入りできる）",

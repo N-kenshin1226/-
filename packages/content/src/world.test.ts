@@ -155,6 +155,22 @@ describe("world.json での地方生成（G-01）", () => {
     }
   });
 
+  it("師匠の居場所には必ず「師匠を訪ねる」行動がある（200シード）", () => {
+    // 師匠は居場所の npcs 経由で画面が絞られる —— 場所に mentor 行動が
+    // 無ければ登録された師匠にも辿り着けない（X-16。テンプレで宣言済みの
+    // 場所は 4 箇所だけで、9/13 の師匠は到達不能だった）
+    for (let i = 0; i < 200; i++) {
+      const w = generateWorld(`mentor-reach:${i}`, world, genCfg, challenge);
+      for (const m of w.mentors) {
+        const p = w.places.find((pl) => pl.id === m.place);
+        expect(
+          p?.actions.some((a) => a.type === "mentor"),
+          `seed=mentor-reach:${i}: 師匠 ${m.id} の居場所 ${m.place} に mentor 行動がない`,
+        ).toBe(true);
+      }
+    }
+  });
+
   it("同じシードで再生成した世界は完全一致（save/load と同じ形で復元できる）", () => {
     const w1 = generateWorld("save-seed", world, genCfg, challenge);
     const w2 = generateWorld("save-seed", world, genCfg, challenge);

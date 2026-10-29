@@ -339,7 +339,11 @@ export function MentorScreen({
       <WorldFrame
         style={{ ...pos({ left: 28, top: 120, width: 640, bottom: 200 }), padding: "14px 4px" }}
       >
-        <WinHead kicker="MENTOR" title={t.text.mentorHeaderNone} />
+        <WinHead
+          kicker="MENTOR"
+          // 師匠のいる場所では「訪ねる」見出し、いない場所だけ「いない」
+          title={here.length > 0 ? t.text.mentorHeaderList : t.text.mentorHeaderNone}
+        />
         <div className="scroll" style={{ maxHeight: "78%", overflowY: "auto" }}>
           <CommandMenu entries={entries} onBack={back} />
         </div>
