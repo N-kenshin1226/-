@@ -20,7 +20,7 @@ const jsonAt = (rel: string) =>
  * crisis を渡せばその危機状態を畳んだセーブになる（?crisis=sample と
  * 合わせて使う —— 公開サンプルの型表で typeId を引ける）
  */
-function genSave(seed: string, crisis: GameState["crisis"] = null, day = 0): string {
+function genWorldFor(seed: string) {
   const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
   const balanceJson = jsonAt("balance.json") as {
     world: Parameters<typeof generateWorld>[2];
@@ -31,12 +31,16 @@ function genSave(seed: string, crisis: GameState["crisis"] = null, day = 0): str
       (e) => [e.id, e.challenge],
     ),
   );
-  const w = generateWorld(
+  return generateWorld(
     seed,
     worldJson,
     { ...balanceJson.world, dungeons: balanceJson.dungeons },
     challenge,
   );
+}
+
+function genSave(seed: string, crisis: GameState["crisis"] = null, day = 0, town?: string): string {
+  const w = genWorldFor(seed);
   const g = newGame(seed, "旅人", {
     skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
     initialPotential: 100,
@@ -44,7 +48,12 @@ function genSave(seed: string, crisis: GameState["crisis"] = null, day = 0): str
     initialTown: w.startTown,
     world: { kind: "gen", recipe: WORLD_RECIPE },
   });
-  return serialize({ ...g, crisis, time: { ...g.time, day } });
+  return serialize({
+    ...g,
+    crisis,
+    time: { ...g.time, day },
+    life: town === undefined ? g.life : { ...g.life, town },
+  });
 }
 
 /**
@@ -533,4 +542,63 @@ test("生成地方の住人にも歳月が来る", async ({ page }) => {
   await waitVeil(page);
   // 起きると節目の日 —— 生成の住人の記事文が届く
   await expect(page.locator("body")).toContainText(ev.text);
+});
+
+/**
+ * 釣りの注文名は水域で出る（X-23）：町の港は「海の釣り」、川の地域は「川の釣り」。
+ * 港と川が揃うシードを先に探す（生成はシード由来 —— 決定的）
+ */
+const WATER_SEEDS = ["e2e-map", "e2e-gen", "w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8"];
+function waterSeed() {
+  for (const s of WATER_SEEDS) {
+    const w = genWorldFor(s);
+    const harbor = w.places.find((p) => p.id.endsWith(".harbor"));
+    const river = w.areas.find((a) => a.typeId === "river");
+    if (harbor && river) return { seed: s, harbor, river };
+  }
+  throw new Error("港と川の揃うシードが見つからない");
+}
+
+test("港の釣りは「海の釣り」と出る", async ({ page }) => {
+  const { seed, harbor } = waterSeed();
+  const town = harbor.id.split(".")[0]!;
+  const save = genSave(seed, null, 0, town);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, harbor.id);
+  await page.getByTestId("place-fish").click();
+  const mode = page.getByTestId("screen-workmode");
+  await expect(mode).toBeVisible();
+  await expect(mode).toContainText("海の釣り");
+  await expect(mode).not.toContainText("湖の釣り");
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-fish-sea.png", fullPage: true });
+});
+
+test("川の釣りは「川の釣り」と出る", async ({ page }) => {
+  const { seed, river } = waterSeed();
+  const g = JSON.parse(genSave(seed, null, 0, river.town)) as GameState;
+  // 地域の名は「訪れた町に属する場所」で知れる —— その町を訪問済みにする
+  const moved: GameState = {
+    ...g,
+    life: {
+      ...g.life,
+      map: { visited: [...g.life.map.visited, river.town], heard: [...g.life.map.heard] },
+    },
+  };
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), serialize(moved));
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, `${river.town}.gate`);
+  await page.getByTestId("place-map").click();
+  await page.getByTestId(`map-travel-${river.id}`).click();
+  await page.getByTestId("place-fish").click();
+  const mode = page.getByTestId("screen-workmode");
+  await expect(mode).toBeVisible();
+  await expect(mode).toContainText("川の釣り");
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-fish-river.png", fullPage: true });
 });

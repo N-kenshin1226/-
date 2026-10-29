@@ -1056,6 +1056,33 @@ export const LAKE_ORDER = {
   rewardMoney: 0,
 } satisfies Order;
 
+/**
+ * 釣り場の水域（X-23）：注文名を「湖/川/海の釣り」で出し分ける。
+ * 生成地方では町の港と海岸が海、川は川、それ以外（湖・fixed の湖畔）は湖。
+ */
+export function fishWaterOf(state: GameState, placeId: string): "lake" | "river" | "sea" {
+  const w = genWorld(state);
+  if (w !== null) {
+    if (placeId.endsWith(".harbor")) return "sea";
+    const typeId = w.areas.find((a) => a.id === placeId)?.typeId;
+    if (typeId === "coast") return "sea";
+    if (typeId === "river") return "river";
+  }
+  return "lake";
+}
+
+/** 釣りの注文 —— 名は水域に合わせる（中身は LAKE_ORDER と同じ野趣） */
+export function fishOrderOf(state: GameState, placeId: string): Order {
+  const water = fishWaterOf(state, placeId);
+  const name =
+    water === "sea"
+      ? t.text.fishNameSea
+      : water === "river"
+        ? t.text.fishNameRiver
+        : t.text.fishNameLake;
+  return { ...LAKE_ORDER, name };
+}
+
 /** 現在の空（P-01）：背景の時間帯・天候はここから引く（導出値なので状態は持たない） */
 export function skyNow(state: GameState): { tod: TimeOfDay; weather: string } {
   const d = describe(state.time, cfg.time);

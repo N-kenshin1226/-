@@ -129,6 +129,10 @@ export const cliTextSchema = z
         performanceBeat: z.string(),
         performancePress: z.string(),
         performanceDetail: z.string(),
+        /** 釣りの注文名（X-23）：水域ごとの呼び名（湖・川・海） */
+        fishNameLake: z.string(),
+        fishNameRiver: z.string(),
+        fishNameSea: z.string(),
         /** 釣り（タイミングの皮）同 */
         fishingStart: z.string(),
         fishingBeat: z.string(),

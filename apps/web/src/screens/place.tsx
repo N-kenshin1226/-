@@ -17,7 +17,7 @@ import {
   incidentPendingChoice,
   journeyWayName,
   journeyWayOptions,
-  LAKE_ORDER,
+  fishOrderOf,
   mapRoadOther,
   mapRoadsFrom,
   mentorsAt,
@@ -251,7 +251,8 @@ function actionEntries(
           id: "place-fish",
           label: "釣りをする",
           disabled: !canActNow,
-          onPick: () => setScreen({ name: "workMode", order: LAKE_ORDER, place: place.id }),
+          onPick: () =>
+            setScreen({ name: "workMode", order: fishOrderOf(state, place.id), place: place.id }),
         },
       ];
     case "abyss":
