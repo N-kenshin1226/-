@@ -146,6 +146,19 @@ export function npcNameOf(state: GameState, id: string): string {
   return voices.npcs.find((n) => n.id === id)?.name ?? id;
 }
 
+/**
+ * その人物がこの世界に実在するか（X-19：危機の離散・死亡の記録対象。
+ * 生成地方なら生成の住人・師匠の名簿だけ —— canon の人物は居ないので
+ * 記録・語りに出さない。固定マップは canon の人物表どおり＝常に居る）
+ */
+export function npcExistsIn(state: GameState, id: string): boolean {
+  const w = genWorld(state);
+  if (w !== null) {
+    return w.npcs.some((n) => n.id === id) || w.mentors.some((m) => m.npc === id || m.id === id);
+  }
+  return true;
+}
+
 /** 会話・出来事に出せる人の名簿（生成地方なら生成の住人、固定は voices.json） */
 export function npcListOf(state: GameState): { id: string; name: string; role: string }[] {
   const w = genWorld(state);

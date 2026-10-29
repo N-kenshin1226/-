@@ -287,6 +287,12 @@ export interface CrisisConfig {
    * 省略時は関与の仕組み自体を出さない（打診もライバルの活躍も起きない）
    */
   involvement?: CrisisInvolvementConfig;
+  /**
+   * その人物がこの世界に居るか（X-19。段階の離散・死亡効果は「居る人」
+   * だけに記録する —— 生成地方では canon の人物は居ないので、居ない人の
+   * 離散を記録・語りに出さない。省略時は効果をそのまま記録する）
+   */
+  npcExists?: (state: GameState, id: string) => boolean;
 }
 
 /** 分野ごとの備えの初期値（全部 0） */
@@ -422,7 +428,9 @@ export function crisisSeasonTurn(
     next = { ...next, log: [...next.log, { day, kind: "stage", ref: newStage.id }] };
     events.push({ type: "crisisStageChanged", stage: newStage.id });
     // NPC の離散・死亡はこの段階に入った時点で記録され、元に戻らない
+    // （この世界に居る人物に限る —— 生成地方では canon の人物は居ない）
     for (const n of newStage.effects?.npc ?? []) {
+      if (cfg.npcExists !== undefined && !cfg.npcExists(state, n.id)) continue;
       if (!next.npcGone.some((x) => x.id === n.id)) {
         next = {
           ...next,

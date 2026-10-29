@@ -287,3 +287,20 @@ describe("crisisOfferSpeaker / crisisSceneHaze（打診の運び手・景色の�
     ).toBe(0);
   });
 });
+
+describe("npcExists（X-19：居る人物に限る離散・死亡の記録）", () => {
+  it("居ない人物は段階が進んでも離散・死亡として記録されない（生成地方対応）", () => {
+    // sample の両方の deep 段には npc.sado の離散がある（実コンテンツ）。
+    // npcExists が全員「居ない」と返す世界では npcGone・ログに残らない
+    const none: CrisisConfig = { ...CFG, npcExists: () => false };
+    const s = endWorld("w04-npcx", none);
+    expect(s.crisis?.npcGone ?? []).toEqual([]);
+    expect(
+      (s.crisis?.log ?? []).filter((l) => l.kind === "npc.leave" || l.kind === "npc.die"),
+    ).toEqual([]);
+  });
+  it("npcExists 省略時は従来どおり記録される（固定マップ・後方互換）", () => {
+    const s = endWorld("w04-npcy");
+    expect((s.crisis?.npcGone ?? []).some((n) => n.id === "npc.sado")).toBe(true);
+  });
+});

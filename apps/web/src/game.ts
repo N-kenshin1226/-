@@ -197,6 +197,7 @@ import {
   genWorld,
   mentorsAtPlace,
   mentorsOf,
+  npcExistsIn,
   npcListOf,
   npcNameOf,
   placeOfState,
@@ -383,6 +384,8 @@ export const cfg: StepConfig = {
               size: balance.rivals.size,
             },
           },
+    /** 段階の離散・死亡はこの世界に居る人物に限る（X-19。生成地方では canon の人物は居ない） */
+    npcExists: npcExistsIn,
   },
   /**
    * 勝負所の行事（X-10、docs/03 §2。occasions.json の行事表＋balance.occasions の

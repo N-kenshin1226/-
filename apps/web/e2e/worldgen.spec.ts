@@ -326,3 +326,75 @@ test("既定の新規開始は生成世界 —— イントロに町名が出て
   await expect(page.getByTestId("menu-place-t0.guild")).toBeVisible();
   await page.screenshot({ path: "e2e/artifacts/trace-gen-firstday.png", fullPage: true });
 });
+
+/**
+ * 終幕（X-19）：生成地方では canon の人物は居ない —— 段階の離散・死亡は
+ * 「この世界に居る人」だけに記録される。終幕の語り・年代記の頁に
+ * 会ったことのない人物の名が出ないこと
+ */
+test("生成地方の終幕に canon の人物名は出ない", async ({ page }) => {
+  // 霧の型（deep 段に npc.sado の離散）を抽選で引いた世界を組み立て、
+  // 拡大段・最終決着の1変わり目前（季節の最終日）に畳む
+  const mist = (jsonAt("crises/sample.json") as { crises: { id: string }[] }).crises.filter(
+    (c) => c.id === "crisis.sample_mist",
+  );
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+    crisis: { strongFields: number; weakFieldFactor: number };
+    time: { daysPerSeason: number };
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  const w = generateWorld(
+    "e2e-map",
+    worldJson,
+    { ...balanceJson.world, dungeons: balanceJson.dungeons },
+    challenge,
+  );
+  const g = newGame("e2e-map", "旅人", {
+    skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+    initialMoney: 100,
+    initialTown: w.startTown,
+    world: { kind: "gen", recipe: WORLD_RECIPE },
+    crisis: {
+      types: mist as never,
+      strongFields: balanceJson.crisis.strongFields,
+      weakFieldFactor: balanceJson.crisis.weakFieldFactor,
+    },
+  });
+  const crisis = g.crisis!;
+  const save = serialize({
+    ...g,
+    time: { ...g.time, day: balanceJson.time.daysPerSeason - 1, action: 0 },
+    crisis: {
+      ...crisis,
+      stageIndex: 1,
+      seasonsInStage: 0,
+      boundaries: 3,
+      finales: crisis.finales.map((f) => ({ ...f, resolved: false })),
+    },
+  });
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
+  await page.goto("/?crisis=sample");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  // 家で眠ると季節の変わり目 —— 段階が深刻へ進み、両方の決着が判定されて終幕へ
+  await gotoPlace(page, "t0.home");
+  await page.getByTestId("place-rest").click();
+  await waitVeil(page);
+  await expect(page.getByTestId("notice-s")).toBeVisible();
+  await page.getByTestId("notice-s").click();
+  const ending = page.getByTestId("screen-ending");
+  await expect(ending).toBeVisible();
+  // 離散したはずの canon 人物「サド」はこの世界に居ない —— 語りにも頁にも名が出ない
+  await expect(ending).not.toContainText("サド");
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-ending.png", fullPage: true });
+});
