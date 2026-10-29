@@ -198,6 +198,7 @@ import {
   mentorsAtPlace,
   mentorsOf,
   npcExistsIn,
+  occasionStandIn,
   npcListOf,
   npcNameOf,
   placeOfState,
@@ -395,6 +396,8 @@ export const cfg: StepConfig = {
     occasions: occasions.occasions,
     ...balance.occasions,
     npcs: voices.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role })),
+    /** 生成地方に canon の持ちかけ人は居ない —— 役割の近い住人が代わる（X-21） */
+    speakerSubstitute: occasionStandIn,
     rivals: {
       names: rivals.names,
       epithets: rivals.epithets,
@@ -1697,13 +1700,17 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
         return line === null ? [] : [line];
       }
       // 勝負所の行事（X-10、docs/03 §2）：打診は人物の口から届き、
-      // 勝敗は機械的な一行として刻む（数値・名の解決は core の刻印から）
+      // 勝敗は機械的な一行として刻む（数値・名の解決は core の刻印から）。
+      // 話者の名簿はこの世界の住人で引く（X-21 —— 生成地方では canon の
+      // 持ちかけ人は居ないので、名簿を cfgFor でこの世界の名簿に替えて
+      // 引かないと canon の名がそのまま出てしまう）
       case "occasionOffered": {
-        const def = cfg.occasions !== undefined ? occasionDef(cfg.occasions, e.id) : undefined;
+        const oc = (state !== undefined ? cfgFor(state) : cfg).occasions;
+        const def = oc !== undefined ? occasionDef(oc, e.id) : undefined;
         const name = def?.name ?? e.id;
         const speaker =
-          cfg.occasions !== undefined && def !== undefined && state !== undefined
-            ? occasionSpeaker(state, cfg.occasions, def)
+          oc !== undefined && def !== undefined && state !== undefined
+            ? occasionSpeaker(state, oc, def)
             : undefined;
         return [
           tpl(t.text.occasionOffered, { name }),

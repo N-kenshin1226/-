@@ -162,6 +162,34 @@ export function npcExistsIn(state: GameState, id: string): boolean {
   return true;
 }
 
+/**
+ * 行事の持ちかけ人の代打（X-21）：canon の人物が居ない世界では、
+ * 役割の近いこの世界の住人が代わりに持ちかける。canon の役割から
+ * 生成住人の役割への対応表で引き、見つからなければ古老・先頭の住人。
+ * 固定マップでは canon 話者が名簿に居るのでこの関数は呼ばれない
+ */
+const SPEAKER_STANDIN_ROLES: Record<string, readonly string[]> = {
+  宿屋の主: ["宿屋の主", "酒場の主"],
+  行商人: ["行商人", "市場の商人"],
+  礼拝堂の番人: ["神官", "信心深い町人", "村の古老"],
+  採掘場のまとめ役: ["坑夫長", "鍛冶の親方", "村の古老"],
+};
+
+export function occasionStandIn(
+  state: GameState,
+  canonNpcId: string,
+): { name: string; role?: string } | undefined {
+  const w = genWorld(state);
+  if (w === null) return undefined;
+  const canonRole = voices.npcs.find((n) => n.id === canonNpcId)?.role;
+  const wanted = canonRole !== undefined ? (SPEAKER_STANDIN_ROLES[canonRole] ?? []) : [];
+  const pick =
+    wanted.map((role) => w.npcs.find((n) => n.role === role)).find((n) => n !== undefined) ??
+    w.npcs.find((n) => n.role === "村の古老") ??
+    w.npcs[0];
+  return pick !== undefined ? { name: pick.name, role: pick.role } : undefined;
+}
+
 /** 会話・出来事に出せる人の名簿（生成地方なら生成の住人、固定は voices.json） */
 export function npcListOf(state: GameState): { id: string; name: string; role: string }[] {
   const w = genWorld(state);

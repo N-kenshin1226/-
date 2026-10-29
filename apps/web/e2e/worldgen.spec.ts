@@ -4,9 +4,11 @@ import {
   emptyCrisisFields,
   generateWorld,
   newGame,
+  occasionPending,
   serialize,
   WORLD_RECIPE,
   type GameState,
+  type OccasionsConfig,
 } from "@trace/core";
 import { dismissFx, gotoPlace, skipIntro, wakeUp, waitVeil } from "./helpers.js";
 
@@ -417,4 +419,73 @@ test("生成地方では canon の人物の歳月は動かない", async ({ page
   await page.getByTestId("place-rest").click();
   await waitVeil(page);
   await expect(page.locator("body")).not.toContainText("サド");
+});
+
+/**
+ * 行事の代打（X-21）：canon の持ちかけ人が居ない生成地方では、役割の近い
+ * この世界の住人が代わりに持ちかける（話者行に生成の住人の名が出る）
+ */
+test("生成地方の行事はこの世界の住人が持ちかける", async ({ page }) => {
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+    occasions: Omit<OccasionsConfig, "occasions" | "npcs" | "rivals" | "speakerSubstitute">;
+    rivals: { size: number; scoreMin: number; scoreMax: number; growthPerDay: number };
+    time: Parameters<typeof occasionPending>[2];
+  };
+  const occasionsJson = jsonAt("occasions.json") as { occasions: OccasionsConfig["occasions"] };
+  const rivalsJson = jsonAt("rivals.json") as {
+    names: string[];
+    epithets: string[];
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  const w = generateWorld(
+    "e2e-map",
+    worldJson,
+    { ...balanceJson.world, dungeons: balanceJson.dungeons },
+    challenge,
+  );
+  const g = newGame("e2e-map", "旅人", {
+    skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+    initialTown: w.startTown,
+    world: { kind: "gen", recipe: WORLD_RECIPE },
+  });
+  // ブラウザ側と同じ行事の設定（名簿はこの世界の住人 —— cfgFor と同じ配線）
+  const occCfg: OccasionsConfig = {
+    occasions: occasionsJson.occasions,
+    ...balanceJson.occasions,
+    npcs: w.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role })),
+    rivals: { names: rivalsJson.names, epithets: rivalsJson.epithets, ...balanceJson.rivals },
+  };
+  // 住人が持ちかける行事が届く最初の日を探す（日付＋世界シードの決定的な抽選）
+  let day = -1;
+  for (let d = 0; d < 120 && day < 0; d++) {
+    const s = { ...g, time: { ...g.time, day: d } };
+    const def = occasionPending(s, occCfg, balanceJson.time).find((o) => o.speaker.kind === "npc");
+    if (def !== undefined) day = d;
+  }
+  expect(day).toBeGreaterThanOrEqual(0);
+
+  await page.addInitScript(
+    (s) => localStorage.setItem("trace.save.v1", s),
+    serialize({ ...g, time: { ...g.time, day } }),
+  );
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  // その日の行動で打診が届く —— 話者行にはこの世界の住人の名が出る
+  await gotoPlace(page, "t0.square");
+  await page.getByTestId("place-stroll").click();
+  await waitVeil(page);
+  const body = await page.locator("body").innerText();
+  const speaker = /(\S+)――「/.exec(body)?.[1];
+  const names = new Set(w.npcs.map((n) => n.name));
+  expect(speaker !== undefined && names.has(speaker)).toBe(true);
 });

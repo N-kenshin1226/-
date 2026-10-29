@@ -576,6 +576,22 @@ describe("話し手（打診は人物から届く）", () => {
     const g2 = startWorld("w-occ-speaker");
     expect(occasionSpeaker(g2, cfg.occasions!, rivalDef)?.name).toBe(rsp?.name);
   });
+
+  it("名簿に居ない話者は代打が持ちかける（X-21：生成地方の canon 話者）", () => {
+    const g = startWorld("w-occ-sub");
+    const def: OccasionDef = {
+      ...OCCASIONS[0]!,
+      id: "occ.absent",
+      speaker: { kind: "npc", id: "npc.marta" },
+    };
+    const subCfg = occConfig({
+      speakerSubstitute: (_s, id) =>
+        id === "npc.marta" ? { name: "ユリア", role: "宿屋の主" } : undefined,
+    });
+    expect(occasionSpeaker(g, subCfg, def)).toEqual({ name: "ユリア", role: "宿屋の主" });
+    // 代打が無い・見つからなければ話者行なしで届く（従来どおり）
+    expect(occasionSpeaker(g, occConfig(), def)).toBeUndefined();
+  });
 });
 
 describe("勝敗が物語を動かす（称号・条件への接続）", () => {

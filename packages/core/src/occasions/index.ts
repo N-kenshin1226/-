@@ -100,6 +100,15 @@ export interface OccasionsConfig {
   npcs?: readonly { id: string; name: string; role: string }[];
   /** 話者にライバルを使うための母集団（rivals.json ＋ balance.rivals） */
   rivals?: RivalNamePool & Pick<RivalsConfig, "size" | "scoreMin" | "scoreMax" | "growthPerDay">;
+  /**
+   * npc 話者が名簿に居ないときの代打（X-21。生成地方では canon の人物は
+   * 居ない —— 役割の近いこの世界の住人が代わりに持ちかける。省略時・
+   * undefined を返したときは話者行なしで届く従来どおり）
+   */
+  speakerSubstitute?: (
+    state: GameState,
+    speakerNpcId: string,
+  ) => { name: string; role?: string } | undefined;
 }
 
 // ---- counters/flags の刻印（GameState の形は変えない） ----
@@ -248,5 +257,7 @@ export function occasionSpeaker(
     return r !== undefined ? { name: r.name, role: r.epithet } : undefined;
   }
   const n = cfg.npcs?.find((x) => x.id === sp.id);
-  return n !== undefined ? { name: n.name, role: n.role } : undefined;
+  if (n !== undefined) return { name: n.name, role: n.role };
+  // 名簿に居ない話者（生成地方では canon の人物は居ない）は代打が持ちかける
+  return cfg.speakerSubstitute?.(state, sp.id);
 }
