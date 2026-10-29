@@ -21,7 +21,11 @@ const jsonAt = (rel: string) =>
  * 合わせて使う —— 公開サンプルの型表で typeId を引ける）
  */
 function genWorldFor(seed: string) {
-  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  // hidden/landmarks.json は生成に畳まれる（X-25。名所の数・配置は世界シード由来）
+  const worldJson = {
+    ...(jsonAt("world.json") as Parameters<typeof generateWorld>[1]),
+    landmarks: (jsonAt("hidden/landmarks.json") as { landmarks: unknown[] }).landmarks,
+  } as Parameters<typeof generateWorld>[1];
   const balanceJson = jsonAt("balance.json") as {
     world: Parameters<typeof generateWorld>[2];
     dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
@@ -39,7 +43,13 @@ function genWorldFor(seed: string) {
   );
 }
 
-function genSave(seed: string, crisis: GameState["crisis"] = null, day = 0, town?: string): string {
+function genSave(
+  seed: string,
+  crisis: GameState["crisis"] = null,
+  day = 0,
+  town?: string,
+  heard?: string[],
+): string {
   const w = genWorldFor(seed);
   const g = newGame(seed, "旅人", {
     skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
@@ -48,11 +58,18 @@ function genSave(seed: string, crisis: GameState["crisis"] = null, day = 0, town
     initialTown: w.startTown,
     world: { kind: "gen", recipe: WORLD_RECIPE },
   });
+  const map =
+    heard === undefined || town === undefined
+      ? g.life.map
+      : { visited: [...g.life.map.visited, town], heard: [...g.life.map.heard, town, ...heard] };
   return serialize({
     ...g,
     crisis,
     time: { ...g.time, day },
-    life: town === undefined ? g.life : { ...g.life, town },
+    life:
+      town === undefined && heard === undefined
+        ? g.life
+        : { ...g.life, ...(town !== undefined ? { town } : {}), map },
   });
 }
 
@@ -601,4 +618,56 @@ test("川の釣りは「川の釣り」と出る", async ({ page }) => {
   await expect(mode).toBeVisible();
   await expect(mode).toContainText("川の釣り");
   await page.screenshot({ path: "e2e/artifacts/trace-gen-fish-river.png", fullPage: true });
+});
+
+test("名所は聞き覚えるまで霧の中 —— 名を聞くと地図に出て、旅して立ち寄れる（X-25）", async ({
+  page,
+}) => {
+  // e2e-map の世界に出る名所と、その名所がぶら下がる町を引く（名所の名は
+  // 世界から取る —— 内容物は hidden のため spec には書かない）
+  const w = genWorldFor("e2e-map");
+  const found = Object.entries(w.life.places).find(([, p]) => p.landmark === true);
+  expect(found, "e2e-map に名所が出ない").toBeDefined();
+  const [lmId, lm] = found!;
+  const town = lm.town!;
+  const lmName = lm.name ?? lmId;
+
+  // ── 町を訪れていても、名を聞き覚えていない名所は「？」のまま ──
+  const hidden = genSave("e2e-map", null, 0, town, []);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), hidden);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, `${town}.gate`);
+  await page.getByTestId("place-map").click();
+  const hiddenBtn = page.getByTestId(`map-travel-${lmId}`);
+  await expect(hiddenBtn).toBeVisible();
+  await expect(hiddenBtn).toContainText("？");
+  await expect(hiddenBtn).toBeDisabled();
+
+  // ── 名を聞き覚えると、地図に名が出て旅できる ──
+  const heard = genSave("e2e-map", null, 0, town, [lmId]);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), heard);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, `${town}.gate`);
+  await page.getByTestId("place-map").click();
+  const knownBtn = page.getByTestId(`map-travel-${lmId}`);
+  await expect(knownBtn).toContainText(lmName);
+  await knownBtn.click();
+  await waitVeil(page);
+
+  // 名所の画面：説明と「立ち寄る」行動がある
+  await expect(page.getByTestId("place-name")).toContainText(lmName);
+  const spotBtn = page.getByTestId(`place-spot-${lmId}`);
+  await expect(spotBtn).toBeVisible();
+  // 立ち寄ると名所の出来事が記録の末尾に届く（内容物は hidden —— 行が増えることだけ見る）
+  const before = await page.getByTestId("log").innerText();
+  await spotBtn.click();
+  await expect
+    .poll(async () => (await page.getByTestId("log").innerText()).length)
+    .toBeGreaterThan(before.length);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark.png", fullPage: true });
 });

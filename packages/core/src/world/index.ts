@@ -40,7 +40,7 @@ import type { GameState } from "../state/types.js";
  * 追加はそれぞれ専用の系列（rng.fork）で畳むので、古い版で生成された世界と
  * 町・地域・人の並びは同じ —— 新しい版は枠だけが増える
  */
-export const WORLD_RECIPE = 8;
+export const WORLD_RECIPE = 9;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
@@ -76,6 +76,11 @@ export interface WorldGenConfig {
   dangerChallengePer: number;
   /** 地域に作る地点の数の範囲 */
   spots: { min: number; max: number };
+  /**
+   * 名所の数の範囲（X-25、docs/10 §3「2〜5、手作りの特別な場所」）。
+   * 母集団は world.json landmarks 節 —— 省略時は名所を作らない
+   */
+  landmarks?: { min: number; max: number };
   /** 見取り図の位置ゆらぎ（%） */
   placeJitter: number;
   /**
@@ -238,6 +243,28 @@ export interface WorldSpotKind {
   outcomes: readonly LifeOutcome[];
 }
 
+/**
+ * 名所（X-25、docs/10 §3「手作りの特別な場所」）。地域として町に
+ * ぶら下がるが、訪れた町に属しても地図の霧から自動では晴れない
+ * （噂・発見で名を聞き覚えたときだけ出る）
+ */
+export interface WorldLandmark {
+  /** 場所 id（"lm.<slug>" —— そのまま地域の場所 id になる） */
+  id: string;
+  name: string;
+  /** 場所の説明（場所の画面の頭に出る） */
+  desc: string;
+  /** 立つ土地（地域の型 id。情景・危機の閉鎖はこの型に従う） */
+  scene: string;
+  /**
+   * ぶら下がりうる町の輪の範囲（始まりの町からの距離。
+   * 省略時は始まりの町以外のすべての町）
+   */
+  rings?: readonly [number, number];
+  /** 名所そのものへ立ち寄る出来事表（spot 行動） */
+  spot: readonly LifeOutcome[];
+}
+
 /** world.json 全体の形（型定義表） */
 export interface WorldTypeFile {
   townBase: {
@@ -254,6 +281,11 @@ export interface WorldTypeFile {
   npcNames: readonly string[];
   npcVoice: { greet: readonly string[]; respect: readonly string[] };
   mentorText: { desc: string; note: string };
+  /**
+   * 名所の母集団（X-25、world.json landmarks —— 中身は hidden/landmarks.json が
+   * 畳み込まれる）。世界シードで選んだものが町にぶら下がる特別な地域になる
+   */
+  landmarks?: readonly WorldLandmark[];
   /**
    * 生成される住人の歳月（X-22、world.json npcLife。誰に・いつ・どの
    * 節目が来るかは世界シードで決定的に引く。省略時は歳月を作らない）
@@ -367,7 +399,7 @@ export interface GenLifeContrib {
   /** 町ごとの掲示依頼 */
   errands: ErrandDef[];
   /** 場所の帰属（場所 id → 町・型・表示名。LifeConfig.places） */
-  places: Record<string, { town: string; type: string; name?: string }>;
+  places: Record<string, { town: string; type: string; name?: string; landmark?: true }>;
   /** 地点の出来事表（LifeConfig.spots） */
   spots: Record<string, LifeOutcome[]>;
 }
@@ -991,6 +1023,55 @@ export function generateWorld(
       actions: [{ type: "dungeon" }, { type: "travel", to: `${d.town}.gate` }],
     });
     lifePlaces[d.id] = { town: d.town, type: `dg.${d.type}` };
+  }
+
+  // 名所（X-25、docs/10 §3「2〜5、手作りの特別な場所」）：世界シードで
+  // 何か所かが現れる。門の旅先には載せず、地図でも訪れた町に属しても
+  // 名は晴れない —— 噂・新聞・地図で聞き覚えたときだけ出る特別な地域。
+  // 場所には名所への「立ち寄る」行動（spot）だけが付く
+  if (cfg.landmarks !== undefined && file.landmarks !== undefined) {
+    const rngLm = rng.fork("landmarks");
+    const nLm = rngLm.int(cfg.landmarks.min, Math.min(cfg.landmarks.max, file.landmarks.length));
+    // どの名所が現れるかも世界シードで決める（決定的シャッフル）。
+    // 輪の範囲で宿る町が見つからない名所はその世界には出ず、
+    // 母集団の次の候補が代わりに立つ（数の下限は守る）
+    const pool = [...file.landmarks];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = rngLm.int(0, i);
+      const tmp = pool[i]!;
+      pool[i] = pool[j]!;
+      pool[j] = tmp;
+    }
+    let placed = 0;
+    for (const def of pool) {
+      if (placed >= nLm) break;
+      const [rMin, rMax] = def.rings ?? [1, Number.MAX_SAFE_INTEGER];
+      const hosts = towns.filter((t) => t.ring >= rMin && t.ring <= rMax);
+      if (hosts.length === 0) continue;
+      placed += 1;
+      const host = hosts[rngLm.int(0, hosts.length - 1)]!;
+      places.push({
+        id: def.id,
+        name: def.name,
+        kind: "region",
+        town: host.id,
+        scene: def.scene,
+        desc: def.desc,
+        npcs: [],
+        actions: [
+          { type: "stroll" },
+          { type: "spot", spot: def.id },
+          { type: "travel", to: `${host.id}.gate` },
+        ],
+      });
+      lifePlaces[def.id] = {
+        town: host.id,
+        type: def.scene,
+        name: def.name,
+        landmark: true,
+      };
+      lifeSpots[def.id] = [...def.spot];
+    }
   }
 
   // 市場の品揃え：品 → 並ぶ町（market.stock の towns 付きエントリに畳む）

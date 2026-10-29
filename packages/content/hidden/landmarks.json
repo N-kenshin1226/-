@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "landmarks": [
+    {
+      "id": "lm.echoing_stone",
+      "name": "響き石の丘",
+      "desc": "丘の頂に立つ黒い巨石。叩けば谷の底まで音が届くと云う",
+      "scene": "hills",
+      "rings": [1, 9],
+      "spot": [
+        {
+          "weight": 4,
+          "text": "石に掌を当てると、指先に微かな鳴動が伝わった。長い年月をここに立つ石",
+          "fatigue": -8
+        },
+        {
+          "weight": 3,
+          "text": "石を叩くと低い音が谷へ滑り落ちていく。いつまでも尾を引く響きだった",
+          "gain": { "skill": "observation", "amount": 5 },
+          "fatigue": 4
+        },
+        {
+          "weight": 2,
+          "text": "石の根元に供えられた小さな石積みを見つけた",
+          "flag": "flag.lm.echoing_stone"
+        }
+      ]
+    },
+    {
+      "id": "lm.sunken_bell",
+      "name": "沈み鐘の磯",
+      "desc": "干潮の磯に半身を沈める大きな鐘。鳴らしたのは誰の手か",
+      "scene": "coast",
+      "rings": [1, 9],
+      "spot": [
+        {
+          "weight": 4,
+          "text": "鐘の内側に貝が張り付いている。海に呑まれた年月がそこにあった",
+          "gain": { "skill": "swimming", "amount": 6 },
+          "fatigue": 5
+        },
+        {
+          "weight": 3,
+          "text": "潮の満ち引きに合わせて、鐘の口から低い唸りが漏れた",
+          "fatigue": -6
+        },
+        {
+          "weight": 2,
+          "text": "磯の窪みに打ち上げられた光る欠片を拾った",
+          "items": { "shell": 1 },
+          "flag": "flag.lm.sunken_bell"
+        }
+      ]
+    },
+    {
+      "id": "lm.ghost_grove",
+      "name": "木魂の杜",
+      "desc": "深い森の奥、ひときわ年嵩の木々が環をなす静かな場所",
+      "scene": "deep_forest",
+      "rings": [2, 9],
+      "spot": [
+        {
+          "weight": 4,
+          "text": "木漏れ日の輪の中央で目を閉じる。葉擦れが幾重にも重なって聞こえた",
+          "fatigue": -14
+        },
+        {
+          "weight": 3,
+          "text": "古木の洞に、ずいぶん古い誰かの忘れ物があった",
+          "money": 15,
+          "fatigue": 3
+        },
+        { "weight": 2, "text": "杜の中央に手を合わせた。今夜は少し眠れそうだ", "pray": true }
+      ]
+    },
+    {
+      "id": "lm.old_cairn",
+      "name": "古の積石",
+      "desc": "峠の風の通る所に、名も知れぬ誰かが積み上げた石の標",
+      "scene": "mountain",
+      "rings": [1, 9],
+      "spot": [
+        {
+          "weight": 4,
+          "text": "積石にひとつ石を足した。先達も皆、同じことをしてきたのだろう",
+          "gain": { "skill": "geography", "amount": 6 },
+          "fatigue": 5
+        },
+        {
+          "weight": 3,
+          "text": "積石の陰で風を避けて小休止した。眼下に街道が伸びている",
+          "fatigue": -10
+        },
+        {
+          "weight": 2,
+          "text": "積石の根元に古い旅道具の欠片が混ざっていた",
+          "flag": "flag.lm.old_cairn"
+        }
+      ]
+    },
+    {
+      "id": "lm.weeping_spring",
+      "name": "涙の泉",
+      "desc": "湿地の底冷えする窪みに、絶えず水が滲み出す小さな泉",
+      "scene": "marsh",
+      "rings": [1, 9],
+      "spot": [
+        {
+          "weight": 4,
+          "text": "滲み水を掬って飲んだ。鉄の味のあとに、不思議と体が軽くなった",
+          "fatigue": -14
+        },
+        {
+          "weight": 3,
+          "text": "泉の周りにだけ、見慣れない白い花が咲いていた",
+          "items": { "herb.wild": 2 }
+        },
+        { "weight": 2, "text": "泉の底に古い硬貨が沈んでいるのが見えた", "money": 20, "fatigue": 4 }
+      ]
+    },
+    {
+      "id": "lm.fallen_colossus",
+      "name": "倒れた巨像",
+      "desc": "遺跡の野の中央で、何世紀も前に倒れたままの石の巨像",
+      "scene": "ruins_field",
+      "rings": [2, 9],
+      "spot": [
+        {
+          "weight": 4,
+          "text": "巨像の掌の大きさに立ち尽くした。造った者たちのことは誰も覚えていない",
+          "gain": { "skill": "archaeology", "amount": 8 },
+          "fatigue": 5
+        },
+        {
+          "weight": 3,
+          "text": "苔むした刻文を指でなぞった。途切れた文字の連なりが名を残している",
+          "fatigue": 4
+        },
+        {
+          "weight": 2,
+          "text": "像の肩の割れ目に、細工の残った小片を見つけた",
+          "flag": "flag.lm.fallen_colossus"
+        }
+      ]
+    }
+  ]
+}

@@ -198,9 +198,11 @@ export type {
 } from "../crises/schema.js";
 // 地方生成（G-01、docs/10。町・地域・地点の「型」の定義表）
 export { world } from "./world.js";
+export { bundledLandmarks } from "./landmarks.js";
 export {
   areaTypeSchema,
   dungeonTypeSchema,
+  landmarkSchema,
   npcTemplateSchema,
   spotKindSchema,
   townErrandSchema,

@@ -872,6 +872,26 @@ describe("地図の霧（G-02）", () => {
     }
     expect(r.state.life.map.visited).toEqual(["ardi"]);
   });
+
+  it("名所は訪れた町に属しても霧のまま —— 聞き覚えたときだけ名が出る（X-25）", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.test": { town: "ardi", name: "試しの名所", landmark: true },
+      },
+    };
+    const known = mapKnownSet(game(), lmCfg);
+    // 同じ町の普通の地域は常識として知れるが、名所は霧の中に留まる
+    expect(known.has("forest")).toBe(true);
+    expect(known.has("lm.test")).toBe(false);
+    // 噂・発見で聞き覚えると名が出る
+    const heard: GameState = {
+      ...game(),
+      life: { ...game().life, map: { visited: ["ardi"], heard: ["ardi", "lm.test"] } },
+    };
+    expect(mapKnownSet(heard, lmCfg).has("lm.test")).toBe(true);
+  });
 });
 
 describe("道中の遭遇（G-02）", () => {

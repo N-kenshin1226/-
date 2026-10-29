@@ -564,3 +564,114 @@ describe("generateWorld（G-01 地方の生成）", () => {
     }
   });
 });
+
+/* ── 名所（X-25、docs/10 §3「2〜5、手作りの特別な場所」） ── */
+
+const cfgLm: WorldGenConfig = { ...cfg, landmarks: { min: 2, max: 3 } };
+const fileLm: WorldTypeFile = {
+  ...file,
+  landmarks: [
+    {
+      id: "lm.test_a",
+      name: "試しの名所甲",
+      desc: "甲の説明",
+      scene: "forest",
+      spot: [{ weight: 1, text: "甲に立ち寄った", fatigue: -5 }],
+    },
+    {
+      id: "lm.test_b",
+      name: "試しの名所乙",
+      desc: "乙の説明",
+      scene: "forest",
+      rings: [2, 9],
+      spot: [{ weight: 1, text: "乙に立ち寄った", money: 10 }],
+    },
+    {
+      id: "lm.test_c",
+      name: "試しの名所丙",
+      desc: "丙の説明",
+      scene: "forest",
+      spot: [{ weight: 1, text: "丙に立ち寄った" }],
+    },
+    {
+      id: "lm.test_d",
+      name: "試しの名所丁",
+      desc: "丁の説明",
+      scene: "forest",
+      spot: [{ weight: 1, text: "丁に立ち寄った" }],
+    },
+  ],
+};
+
+describe("名所の生成（X-25、docs/10 §3）", () => {
+  it("世界シードで2〜5か所が現れ、場所・地図・出来事表に揃う（300シード）", () => {
+    for (let i = 0; i < 300; i++) {
+      const w = generateWorld(`lm-${i}`, fileLm, cfgLm);
+      const lm = Object.entries(w.life.places).filter(([, p]) => p.landmark === true);
+      expect(lm.length, `seed=lm-${i}: 名所の数 ${lm.length}`).toBeGreaterThanOrEqual(
+        cfgLm.landmarks!.min,
+      );
+      expect(lm.length).toBeLessThanOrEqual(cfgLm.landmarks!.max);
+      const placeIds = new Set(w.places.map((p) => p.id));
+      for (const [id, p] of lm) {
+        // 場所として揃っている（region の場所＋立ち寄る行動）
+        expect(placeIds.has(id), `${id}: 場所がない`).toBe(true);
+        const place = w.places.find((x) => x.id === id)!;
+        expect(place.kind).toBe("region");
+        expect(place.town).toBe(p.town);
+        expect(place.actions.some((a) => a.type === "spot" && a.spot === id)).toBe(true);
+        // ぶら下がる町は輪の範囲内
+        const def = fileLm.landmarks!.find((d) => d.id === id)!;
+        const [rMin, rMax] = def.rings ?? [1, Number.MAX_SAFE_INTEGER];
+        const ring = w.towns.find((t) => t.id === p.town)!.ring;
+        expect(ring, `${id}: 輪 ${ring} が範囲外 [${rMin},${rMax}]`).toBeGreaterThanOrEqual(rMin);
+        expect(ring).toBeLessThanOrEqual(rMax);
+        // 出来事表が載っている
+        expect(w.life.spots[id], `${id}: 出来事表がない`).toBeDefined();
+        expect(w.life.spots[id]!.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("どの名所が出るかも世界シードで変わる", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 60; i++) {
+      const w = generateWorld(`lm-var-${i}`, fileLm, cfgLm);
+      for (const [id, p] of Object.entries(w.life.places)) {
+        if (p.landmark === true) seen.add(id);
+      }
+    }
+    // 母集団4件に対し、違うシードで違う名所が出る
+    expect(seen.size).toBeGreaterThan(2);
+  });
+
+  it("同じシードなら同じ名所が同じ町に出る（決定性）", () => {
+    const a = generateWorld("lm-det", fileLm, cfgLm);
+    const b = generateWorld("lm-det", fileLm, cfgLm);
+    const lmOf = (w: typeof a) =>
+      Object.fromEntries(
+        Object.entries(w.life.places)
+          .filter(([, p]) => p.landmark === true)
+          .map(([id, p]) => [id, p.town]),
+      );
+    expect(lmOf(a)).toEqual(lmOf(b));
+  });
+
+  it("名所は門の旅先に載らない（霧の中の場所）", () => {
+    for (let i = 0; i < 100; i++) {
+      const w = generateWorld(`lm-gate-${i}`, fileLm, cfgLm);
+      const lmIds = new Set(
+        Object.entries(w.life.places)
+          .filter(([, p]) => p.landmark === true)
+          .map(([id]) => id),
+      );
+      for (const gate of w.places.filter((p) => p.id.endsWith(".gate"))) {
+        for (const a of gate.actions) {
+          if (a.type === "travel" && a.to !== undefined) {
+            expect(lmIds.has(a.to), `${a.to} が ${gate.id} の旅先にある`).toBe(false);
+          }
+        }
+      }
+    }
+  });
+});

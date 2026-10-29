@@ -35,7 +35,7 @@ import { artsFileSchema } from "./arts.schema.js";
 import { spellsFileSchema } from "./spells.schema.js";
 import { crisesFileSchema } from "../crises/schema.js";
 import { k03FileSchema } from "../k03/schema.js";
-import { worldFileSchema } from "./world.schema.js";
+import { landmarkSchema, worldFileSchema } from "./world.schema.js";
 import { sceneryFileSchema } from "./scenery.schema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -1818,6 +1818,82 @@ try {
   if (ok && names.length > 0) console.log(`✓ hidden/k03/（${names.length} 件、スキーマ適合）`);
 } catch {
   // hidden/k03 が無ければ無視
+}
+/* 名所（X-25）：hidden/landmarks.json もスキーマ適合だけを見る。
+ * 加えて出来事表が参照する技能・品物・見聞アトムの id が実在するかを
+ * 中身を出さずに突き合わせる（出すのは技術的な id だけ） */
+try {
+  const lmRaw = JSON.parse(readFileSync(join(root, "hidden", "landmarks.json"), "utf8")) as {
+    landmarks?: unknown[];
+  };
+  const lms: { id?: string; scene?: string; spot?: unknown[] }[] = [];
+  let ok = true;
+  for (const raw of lmRaw.landmarks ?? []) {
+    const parsed = landmarkSchema.safeParse(raw);
+    if (!parsed.success) {
+      console.error("✗ hidden/landmarks.json: 名所のスキーマに合いません");
+      ok = false;
+      failed = true;
+      continue;
+    }
+    lms.push(parsed.data);
+  }
+  if (ok) {
+    // 立つ土地は world.json の地域の型に実在するものに限る
+    const read = (name: string) =>
+      JSON.parse(readFileSync(join(root, name), "utf8")) as Record<string, unknown>;
+    const areaIds = new Set(
+      ((read("world.json") as { areaTypes?: { id?: string }[] }).areaTypes ?? []).map((a) => a.id),
+    );
+    const itemIds = new Set(
+      ((read("items.json") as { items?: { id?: string }[] }).items ?? []).map((i) => i.id),
+    );
+    const skillIds = new Set(
+      ((read("skills.json") as { skills?: { id?: string }[] }).skills ?? []).map((s) => s.id),
+    );
+    const atomIds = new Set<string>();
+    for (const f of readdirSync(join(root, "lore", "atoms"))) {
+      if (!f.endsWith(".json")) continue;
+      const atom = JSON.parse(readFileSync(join(root, "lore", "atoms", f), "utf8")) as {
+        id?: string;
+      };
+      if (atom.id !== undefined) atomIds.add(atom.id);
+    }
+    for (const lm of lms) {
+      if (lm.scene !== undefined && !areaIds.has(lm.scene)) {
+        console.error(`✗ hidden/landmarks.json: 未定義の地域の型 ${lm.scene}`);
+        ok = false;
+        failed = true;
+      }
+      for (const o of (lm.spot ?? []) as {
+        items?: Record<string, number>;
+        gain?: { skill?: string };
+        atom?: string;
+      }[]) {
+        for (const id of Object.keys(o.items ?? {})) {
+          if (!itemIds.has(id)) {
+            console.error(`✗ hidden/landmarks.json: 未定義の品 ${id}`);
+            ok = false;
+            failed = true;
+          }
+        }
+        if (o.gain?.skill !== undefined && !skillIds.has(o.gain.skill)) {
+          console.error(`✗ hidden/landmarks.json: 未定義の技能 ${o.gain.skill}`);
+          ok = false;
+          failed = true;
+        }
+        if (o.atom !== undefined && !atomIds.has(o.atom)) {
+          console.error(`✗ hidden/landmarks.json: 未定義の見聞アトム ${o.atom}`);
+          ok = false;
+          failed = true;
+        }
+      }
+    }
+  }
+  if (ok && lms.length > 0)
+    console.log(`✓ hidden/landmarks.json（名所 ${lms.length} 件、スキーマ適合）`);
+} catch {
+  // hidden/landmarks.json が無ければ無視
 }
 
 if (failed) {

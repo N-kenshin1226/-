@@ -272,6 +272,26 @@ export const dungeonTypeSchema = z
   })
   .strict();
 
+/** 名所（X-25、docs/10 §3「手作りの特別な場所」）1件の形 */
+export const landmarkSchema = z
+  .object({
+    /** 場所 id（"lm.<slug>" —— そのまま地域の場所 id になる） */
+    id: z.string().regex(/^lm\.[a-z0-9_]+$/, "名所 id は lm.<slug> の形"),
+    name: z.string().min(1),
+    /** 場所の説明（場所の画面の頭に出る） */
+    desc: z.string().min(1),
+    /** 立つ土地（areaTypes の id —— 情景・散策表・危機の閉鎖はこの型に従う） */
+    scene: z.string().min(1),
+    /**
+     * ぶら下がりうる町の輪の範囲（始まりの町からの距離。
+     * 省略時は始まりの町以外のすべての町）
+     */
+    rings: z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]).optional(),
+    /** 名所そのものへ立ち寄る出来事表（spot 行動。必ず1件以上） */
+    spot: z.array(lifeOutcomeSchema).min(1),
+  })
+  .strict();
+
 export const worldFileSchema = z
   .object({
     version: z.literal(1),
@@ -304,6 +324,11 @@ export const worldFileSchema = z
       .strict(),
     /** 生成される師匠の説明テンプレート（{town}/{skill}/{condition} 語彙） */
     mentorText: z.object({ desc: z.string().min(1), note: z.string().min(1) }).strict(),
+    /**
+     * 名所（X-25、docs/10 §3「2〜5、手作りの特別な場所」）の母集団。
+     * 世界シードで何か所かが現れる —— 内容物は hidden/landmarks.json が担う
+     */
+    landmarks: z.array(landmarkSchema).optional(),
     /**
      * 生成される住人の歳月（X-22。誰に一生の節目が来るか・いつ来るか・
      * どの種目かは世界シードで決定的に引く。{role}・{name} 語彙）
@@ -424,6 +449,21 @@ export const worldFileSchema = z
             message: `${a.id}: 未知の地点の型 ${s.kind}`,
           });
         }
+      }
+    }
+    // 名所：id の重複・立つ土地は地域の型・輪の範囲は [min,max] の順
+    const lmIds = new Set<string>();
+    for (const lm of file.landmarks ?? []) {
+      if (lmIds.has(lm.id)) ctx.addIssue({ code: "custom", message: `名所 id の重複: ${lm.id}` });
+      lmIds.add(lm.id);
+      if (!areaIds.has(lm.scene)) {
+        ctx.addIssue({ code: "custom", message: `名所 ${lm.id}: 未知の地域の型 ${lm.scene}` });
+      }
+      if (lm.rings !== undefined && lm.rings[0] > lm.rings[1]) {
+        ctx.addIssue({
+          code: "custom",
+          message: `名所 ${lm.id}: 輪の範囲が逆順 [${lm.rings[0]},${lm.rings[1]}]`,
+        });
       }
     }
     // 住人の居場所はその町の場所 key にある（基本 −omit ＋追加）。

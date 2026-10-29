@@ -1175,6 +1175,14 @@ export const balanceSchema = z
           .object({ min: z.number().int().min(0), max: z.number().int().min(0) })
           .strict()
           .refine((s) => s.min <= s.max, { message: "spots.min <= max が必要" }),
+        /**
+         * 名所の数の範囲（X-25、docs/10 §3「2〜5、手作りの特別な場所」）。
+         * 母集団は hidden/landmarks.json —— 世界シードで選んだものが出る
+         */
+        landmarks: z
+          .object({ min: z.number().int().min(0), max: z.number().int().min(0) })
+          .strict()
+          .refine((s) => s.min <= s.max, { message: "landmarks.min <= max が必要" }),
         /** 見取り図での場所の位置ゆらぎ（%座標の散りの半幅） */
         placeJitter: z.number().nonnegative(),
         /** 見取り図の場所の印どうしの最小間隔（%座標の軸ごとの下限） */

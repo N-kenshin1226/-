@@ -679,7 +679,11 @@ export function errandsNow(state: GameState) {
  */
 export function areaClosedNow(state: GameState, id: string): boolean {
   if (crisisAreaClosed(state, cfg.crisis, id)) return true;
-  const typeId = genWorld(state)?.areas.find((a) => a.id === id)?.typeId;
+  const w = genWorld(state);
+  // 名所は areas には載らない（地域の型は life.places の scene に従う —— X-25）
+  const typeId =
+    w?.areas.find((a) => a.id === id)?.typeId ??
+    (w?.life.places[id]?.landmark === true ? w.life.places[id]?.type : undefined);
   return typeId !== undefined && crisisAreaClosed(state, cfg.crisis, typeId);
 }
 

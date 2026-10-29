@@ -135,9 +135,12 @@ export interface LifeConfig {
   /**
    * 場所の帰属（場所 id → 属する町 id・型 id・表示名）。散策の型別表の
    * 選択と町の結線に使う（G-01）。G-02 では name を地域・場所の表示名
-   * として地図・噂の文が引く。省略時（固定マップ）は解決しない
+   * として地図・噂の文が引く。省略時（固定マップ）は解決しない。
+   * landmark は名所（X-25、docs/10 §3「手作りの特別な場所」）——
+   * 訪れた町に属しても地図の霧から自動では晴れず、噂や発見で聞き覚えた
+   * ときだけ名が出る
    */
-  places?: Record<string, { town?: string; type?: string; name?: string }>;
+  places?: Record<string, { town?: string; type?: string; name?: string; landmark?: true }>;
   /**
    * 地域の中の小さな地点の出来事表（G-01。地点 id → 表）。
    * spot 行動がここから1件引く
@@ -389,6 +392,8 @@ export function mapKnownSet(state: GameState, cfg: LifeConfig): Set<string> {
       if (j.to === town) known.add(j.from);
     }
     for (const [id, p] of Object.entries(cfg.places ?? {})) {
+      // 名所は訪れた町に属しても噂として知れる —— 聞き覚えるまで霧の中
+      if (p.landmark === true) continue;
       if (p.town === town) known.add(id);
     }
   }

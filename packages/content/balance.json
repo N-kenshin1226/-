@@ -478,6 +478,10 @@
       "min": 1,
       "max": 3
     },
+    "landmarks": {
+      "min": 2,
+      "max": 5
+    },
     "placeJitter": 4,
     "placeMarkGap": { "x": 15, "y": 20 },
     "market": {
