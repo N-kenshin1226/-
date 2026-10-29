@@ -1,6 +1,14 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { generateWorld, newGame, serialize, WORLD_RECIPE, type GameState } from "@trace/core";
+import {
+  generateWorld,
+  isBossRoom,
+  newGame,
+  roomAt,
+  serialize,
+  WORLD_RECIPE,
+  type GameState,
+} from "@trace/core";
 import { dismissFx, gotoPlace, placeAct, skipIntro, waitVeil, wakeUp } from "./helpers.js";
 
 const jsonAt = (rel: string) =>
@@ -223,4 +231,55 @@ test("迷宮で野営すると迷宮の中で眠り、翌日の潜りは行動�
   await dive.click();
   await expect(page.getByTestId("screen-dungeon")).toBeVisible();
   await page.screenshot({ path: "e2e/artifacts/dungeon-camp.png", fullPage: true });
+});
+
+/**
+ * 潜りの情景は部屋ごとに変わる（X-24）：抜いた部屋の通し番号で構図を変え、
+ * 灯りの減りで霞を深くする。罠か宝の部屋（=1手で抜ける）が先頭のシードを
+ * 探して、1部屋抜く前後で背景の svg が変わることを確かめる
+ */
+test("潜りの情景は部屋ごとに変わる", async ({ page }) => {
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  let seed = "";
+  for (let i = 0; i < 40 && seed === ""; i++) {
+    const s = i === 0 ? "e2e-dgn" : `dg-seed-${i}`;
+    const w = generateWorld(
+      s,
+      worldJson,
+      { ...balanceJson.world, dungeons: balanceJson.dungeons },
+      challenge,
+    );
+    const d0 = w.dungeons.find((d) => d.id === "dg0");
+    const r = d0 !== undefined ? roomAt(d0, 0) : null;
+    if (
+      d0 !== undefined &&
+      r !== null &&
+      !isBossRoom(d0, 0) &&
+      (r.room.kind === "trap" || r.room.kind === "treasure")
+    )
+      seed = s;
+  }
+  expect(seed).not.toBe("");
+
+  await toDungeonPlace(page, seed);
+  await page.getByTestId("place-dungeon").click();
+  await expect(page.getByTestId("screen-dungeon")).toBeVisible();
+
+  const sceneHtml = () => scene(page).evaluate((el) => el.innerHTML);
+  const before = await sceneHtml();
+  // 1部屋抜く（罠・宝は即座に解決する）—— 情景は次の部屋の構図へ変わる
+  await page.getByTestId("dungeon-advance").click();
+  await expect(page.getByTestId("screen-dungeon")).toBeVisible();
+  const after = await sceneHtml();
+  expect(after).not.toBe(before);
+  await page.screenshot({ path: "e2e/artifacts/dungeon-room-scene.png", fullPage: true });
 });

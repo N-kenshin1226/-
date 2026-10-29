@@ -93,6 +93,7 @@ import { MapScreen } from "./screens/map.js";
 import { dateLabel, type Notice as NoticeData } from "./game.js";
 import { townTypeNameOf } from "./world.js";
 import { sceneryForScreen } from "./scenery.js";
+import { useSceneryHint } from "./scenery-hint.js";
 import { Scenery } from "./ui/scenery.js";
 
 /** 幕の時間（P-01。「演出を短く」で短い側。theme.fx → --trv-* へ書き込む値） */
@@ -236,6 +237,10 @@ export function App() {
     day: number;
     ids: ReadonlySet<string>;
   }>({ day: -1, ids: new Set() });
+
+  // 潜りから情景への合図（X-24）：迷宮の部屋番号と灯りの減りが背景に届く。
+  // フックは全ての早期 return より先に呼ぶ（フック順の約束）
+  const sceneryHint = useSceneryHint();
 
   useEffect(() => {
     const g = loadGame();
@@ -615,11 +620,11 @@ export function App() {
   const scene = sceneOf(state, effScreen, lastPlaceRef.current);
   // 情景の部品（G-05）：屋外の場所は型のレシピで組み立てた情景を描く。
   // 屋内・読みもの用の固定背景は従来どおり SceneBackground に倒れる
-  const scenerySpec = sceneryForScreen(state, effScreen, lastPlaceRef.current);
+  const scenerySpec = sceneryForScreen(state, effScreen, lastPlaceRef.current, sceneryHint);
   const notice = notices[0];
   // 危機の段階による景色の霞（W-04、docs/08 §3「景色の差分」）。
   // 段階の数字は出さず、世界の気配として背景に滲ませる
-  const haze = crisisSceneHaze(state, cfg.crisis);
+  const haze = crisisSceneHaze(state, cfg.crisis) + (sceneryHint?.haze ?? 0);
   // 現在の空（P-01）：時間帯と天候は state から導出する値 —— 背景にだけ効く
   const sky = skyNow(state);
   // 名札の場所：場所の画面・場所に縛られた画面はその場所、それ以外は最後に居た場所。

@@ -96,6 +96,7 @@ export function sceneryForScreen(
   state: GameState,
   s: Screen,
   lastPlace: string | null,
+  hint?: { variant?: string },
 ): ScenerySpec | null {
   switch (s.name) {
     // 読みもの用の固定背景（机・夜の窓など）は情景レシピの対象外
@@ -130,7 +131,8 @@ export function sceneryForScreen(
       return {
         id: `dungeon.${dgType}`,
         recipe,
-        variant: `${state.seed}:scenery:${s.place}`,
+        // 潜りの合図（部屋番号）があれば畳む —— 部屋ごとに構図が変わる（X-24）
+        variant: `${state.seed}:scenery:${s.place}${hint?.variant ?? ""}`,
       };
     }
     // 旅の途中（P-02）：町と町の間は街道の情景

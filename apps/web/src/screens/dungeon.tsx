@@ -4,7 +4,7 @@
  * 「出る／野営する」で step の dungeon コマンドにまとめて畳む（深層と同じ構造）。
  * 迷宮の中身は生成世界から引き直し、進行は counters（dg.rooms.<id>）を読む
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { combatResult, type CombatAction, type GameState } from "@trace/core";
 import type { EnemyJson } from "@trace/content";
 import { balance } from "@trace/content";
@@ -32,6 +32,7 @@ import {
   type CombatState,
 } from "../game.js";
 import { useCombatPlayback } from "../fx/combat.js";
+import { setSceneryHint } from "../scenery-hint.js";
 import { artEntries, CombatArena, IntentLine, switchEntries, weaponName } from "./hunt.js";
 import {
   CellGauge,
@@ -104,6 +105,19 @@ export function DungeonScreen({
   const [manaLeft, setManaLeft] = useState<number | null>(null);
   const [seenSpellsAcc, setSeenSpellsAcc] = useState<string[]>([]);
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
+
+  // 情景への合図（X-24）：抜いた部屋の通し番号で構図を変え、灯りの減りで霞を深くする
+  useEffect(() => {
+    if (dive.end !== null) {
+      setSceneryHint(undefined);
+      return;
+    }
+    const room = start + dive.rooms;
+    const dark = 1 - dive.light / dungeonLight();
+    setSceneryHint({ variant: `:${room}`, haze: Math.max(0, dark * 0.45) });
+  }, [start, dive.rooms, dive.light, dive.end]);
+  // 画面を離れるときは合図を下ろす
+  useEffect(() => () => setSceneryHint(undefined), []);
 
   /** この潜りの遭遇鍵（潜りの番号で分ける —— 同じ部屋の再潜は別の個体） */
   const diveKey = useMemo(

@@ -145,6 +145,26 @@ describe("画面から情景を引く（生成地方）", () => {
     }
   });
 
+  it("潜りの合図で迷宮の情景は部屋ごとに変わる（X-24）", () => {
+    const d = w.dungeons[0]!;
+    const base = sceneryForScreen(state, { name: "dungeon", place: d.id }, null);
+    const r3 = sceneryForScreen(state, { name: "dungeon", place: d.id }, null, {
+      variant: ":3",
+    });
+    const r7 = sceneryForScreen(state, { name: "dungeon", place: d.id }, null, {
+      variant: ":7",
+    });
+    expect(r3?.id).toBe(base?.id);
+    expect(r3?.variant).toBe(`${state.seed}:scenery:${d.id}:3`);
+    expect(r7?.variant).toBe(`${state.seed}:scenery:${d.id}:7`);
+    // 部屋ごとに構図が変わる（variant が違えば配置も変わる）
+    expect(r3?.variant).not.toBe(r7?.variant);
+    // 場所の画面は合図を畳まない（潜りの画面だけが変わる）
+    expect(
+      sceneryForScreen(state, { name: "place", place: d.id }, null, { variant: ":3" })?.variant,
+    ).toBe(`${state.seed}:scenery:${d.id}`);
+  });
+
   it("読みもの用の画面は情景を引かない（従来の固定背景へ）", () => {
     for (const name of ["status", "settings", "wake", "news", "lore", "book", "records"] as const) {
       // wake 等の payload は解決に関係ないので name だけ渡す
