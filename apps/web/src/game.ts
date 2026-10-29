@@ -971,8 +971,13 @@ export function dungeonTrapRoll(state: GameState, id: string, index: number) {
 export function dungeonRecordLines(state: GameState): string[] {
   const ds = dungeonsOf(state);
   if (ds.length === 0) return [];
+  // まだ知れていない迷宮の名は出さない —— 地図の霧と同じ知識で歩調を
+  // 合わせる（地図で「？」の迷宮の名が記録に先走って載ることはない）
+  const life = lifeCfgFor(state);
+  const known = life !== undefined ? mapKnownSet(state, life) : undefined;
   const lines = [t.text.recordsDungeons];
   for (const d of ds) {
+    if (known !== undefined && !known.has(d.id)) continue;
     const p = dgProgress(state.counters, state.flags, d);
     lines.push(
       tpl(t.text.recordsDungeonLine, {
@@ -984,7 +989,7 @@ export function dungeonRecordLines(state: GameState): string[] {
       }),
     );
   }
-  return lines;
+  return lines.length > 1 ? lines : [];
 }
 
 /**

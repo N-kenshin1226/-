@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { dismissFx, gotoPlace, skipIntro, waitVeil, wakeUp } from "./helpers.js";
+import { dismissFx, gotoPlace, placeAct, skipIntro, waitVeil, wakeUp } from "./helpers.js";
 
 /**
  * 有限迷宮（G-03、docs/10_world_generation.md §6）の e2e。
@@ -76,6 +76,12 @@ test("門から迷宮へ出て、潜って引き上げられる", async ({ page 
   // 場所の画面へ戻る（進行があれば「迷宮に潜る」に金の帯が残る）
   await expect(page.getByTestId("place")).toHaveAttribute("data-place", "dg0");
   await expect(page.getByTestId("place-dungeon")).toBeVisible();
+
+  // 街の記録の迷宮の欄：訪れた迷宮は名と進行が載る（まだ知れていない迷宮の名は出ない）
+  await placeAct(page, "t0.guild", "records");
+  const dgRec = page.getByTestId("records-dungeons");
+  await expect(dgRec).toContainText("迷宮");
+  await expect(dgRec).toContainText("室");
 });
 
 test("迷宮で野営すると迷宮の中で眠り、翌日の潜りは行動を要さない", async ({ page }) => {

@@ -7,6 +7,7 @@ import {
   bioLines,
   cfg,
   crisisRecordLines,
+  dungeonRecordLines,
   occasionRecordLines,
   eventLines,
   loadChronicle,
@@ -150,6 +151,18 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
                   best: state.counters["abyss.best"] ?? 0,
                   runs: state.counters["abyss.runs"] ?? 0,
                 })}
+          </div>
+          {/* 有限迷宮（G-03）：生成世界の迷宮と抜いた室数。制覇は《制覇》の印 */}
+          <div data-testid="records-dungeons">
+            {dungeonRecordLines(state).map((l, i) =>
+              i === 0 ? (
+                <PaperHead key="head">{l}</PaperHead>
+              ) : (
+                <div key={i} style={{ color: P.sub }}>
+                  {l}
+                </div>
+              ),
+            )}
           </div>
           {/* ライバル・ランキング（T-47。派生値：state.rng は消費しない） */}
           <div data-testid="records-rivals">
