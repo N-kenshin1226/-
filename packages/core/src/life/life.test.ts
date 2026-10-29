@@ -953,6 +953,54 @@ describe("地図の霧（G-02）", () => {
     ).toBe(false);
   });
 
+  it("人が去った町にだけ現れる名所（X-31）—— 宿主町の退場の旗で条件が立つ", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.well": {
+          town: "ardi",
+          name: "空き家の井戸",
+          landmark: true,
+          when: { npcGone: { min: 1 } },
+        },
+      },
+    };
+    const cond = { time: fogStepCfg.time };
+    const g = (flags: Record<string, boolean>): GameState => ({
+      ...game(),
+      flags: { ...game().flags, ...flags },
+    });
+    // 誰も去っていない町では霧のまま
+    expect(mapKnownSet(g({}), lmCfg, cond).has("lm.well")).toBe(false);
+    // 別の町で人が去っても宿主町（ardi）の条件は立たない
+    expect(mapKnownSet(g({ "npc.gone.npc.bergen.smith": true }), lmCfg, cond).has("lm.well")).toBe(
+      false,
+    );
+    // 宿主町から1人でも去ると名が出る
+    expect(
+      mapKnownSet(g({ "npc.gone.npc.ardi.innkeeper": true }), lmCfg, cond).has("lm.well"),
+    ).toBe(true);
+    // 去った印は累積 —— min:2 なら2人の退場が要る
+    const twoCfg: LifeConfig = {
+      ...lmCfg,
+      places: {
+        ...lmCfg.places,
+        "lm.well": { ...lmCfg.places!["lm.well"]!, when: { npcGone: { min: 2 } } },
+      },
+    };
+    expect(
+      mapKnownSet(g({ "npc.gone.npc.ardi.innkeeper": true }), twoCfg, cond).has("lm.well"),
+    ).toBe(false);
+    expect(
+      mapKnownSet(
+        g({ "npc.gone.npc.ardi.innkeeper": true, "npc.gone.npc.ardi.smith": true }),
+        twoCfg,
+        cond,
+      ).has("lm.well"),
+    ).toBe(true);
+  });
+
   it("条件付きの名所は噂・朝刊では知れない（revealPick の候補外）", () => {
     const lmCfg: LifeConfig = {
       ...fogCfg,
@@ -1057,6 +1105,47 @@ describe("地図の霧（G-02）", () => {
     // 名所以外の場所への旅では届かない
     const r3 = step(r1.state, { type: "travel", to: "forest" }, lmStepCfg);
     expect(r3.events.filter((e) => e.type === "landmarkFound")).toHaveLength(0);
+  });
+
+  it("人が去った町の名所は去りのあと世界が知らせる —— 噂として聞き覚えに刻まれる（X-31）", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.well": {
+          town: "ardi",
+          name: "空き家の井戸",
+          landmark: true,
+          when: { npcGone: { min: 1 } },
+        },
+      },
+    };
+    const lmStepCfg: StepConfig = { ...fogStepCfg, life: lmCfg };
+
+    // 誰も去っていない —— 届かない
+    const r0 = step(game(), { type: "stroll" }, lmStepCfg);
+    expect(r0.events.filter((e) => e.type === "mapHeard")).toHaveLength(0);
+    expect(r0.state.life.map.heard).not.toContain("lm.well");
+
+    // 別の町で人が去っただけでは届かない
+    const other: GameState = {
+      ...game(),
+      flags: { "npc.gone.npc.bergen.smith": true },
+    };
+    const r1 = step(other, { type: "stroll" }, lmStepCfg);
+    expect(r1.events.filter((e) => e.type === "mapHeard" && e.place === "lm.well")).toHaveLength(0);
+
+    // 宿主町から人が去ると届く —— 聞き覚えに刻まれ、以後は既知
+    const departed: GameState = {
+      ...game(),
+      flags: { "npc.gone.npc.ardi.innkeeper": true },
+    };
+    const r2 = step(departed, { type: "stroll" }, lmStepCfg);
+    expect(r2.events.some((e) => e.type === "mapHeard" && e.place === "lm.well")).toBe(true);
+    expect(r2.state.life.map.heard).toContain("lm.well");
+    // 二度目は届かない
+    const r3 = step(r2.state, { type: "stroll" }, lmStepCfg);
+    expect(r3.events.filter((e) => e.type === "mapHeard" && e.place === "lm.well")).toHaveLength(0);
   });
 });
 

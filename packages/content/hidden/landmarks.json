@@ -144,6 +144,33 @@
       ]
     },
     {
+      "id": "lm.hollow_well",
+      "name": "空き家の井戸",
+      "desc": "誰も住まなくなった家の裏に、手入れの痕だけが残る井戸",
+      "scene": "farm",
+      "rings": [1, 9],
+      "when": { "npcGone": { "min": 1 } },
+      "spot": [
+        {
+          "weight": 4,
+          "text": "水を汲み上げると、綱はまだ新しい。去った者が使う誰かのために、整えて行ったのだろう",
+          "fatigue": -10
+        },
+        {
+          "weight": 3,
+          "text": "井戸端に、持ちきれず置いていったのだろう品がひとつ残されていた",
+          "items": { "herb.wild": 1 },
+          "flag": "flag.lm.hollow_well"
+        },
+        {
+          "weight": 2,
+          "text": "空き家の戸口を眺めた。人の去った場所は、静かに野へ還ろうとしている",
+          "gain": { "skill": "observation", "amount": 6 },
+          "fatigue": 4
+        }
+      ]
+    },
+    {
       "id": "lm.refuge_road",
       "name": "避難の古道",
       "desc": "山肌に沿って延びる、苔むした石段の古道。古い危機のたびに人が通ったと云う",

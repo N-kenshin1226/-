@@ -90,5 +90,19 @@ export const condSchema: z.ZodType<Cond> = z.lazy(() =>
      * 技×技・技能×技の組み合わせを読む条件（合成レシピ・ユニークの要求）に使う
      */
     z.object({ art: z.string().min(1) }).strict(),
+    /**
+     * 町から去った住人の数（X-31、docs/10 §13「人が去った町にだけ現れる場所」）。
+     * town 省略時は評価中の場所の宿主町（env.town）を読む
+     */
+    z
+      .object({
+        npcGone: z
+          .object({
+            town: z.string().min(1).optional(),
+            min: z.number().int().positive().optional(),
+          })
+          .strict(),
+      })
+      .strict(),
   ]),
 );

@@ -221,6 +221,24 @@ describe("evaluate: 各演算", () => {
     expect(ev({ work: { count: { atLeast: 1 } } })).toBe(false);
   });
 
+  it("npcGone: 町から去った住人の数（X-31。宿主町は env.town）", () => {
+    const g = state();
+    g.flags["npc.gone.npc.t3.smith"] = true;
+    g.flags["npc.gone.npc.t3.innkeeper"] = true;
+    g.flags["npc.gone.npc.t5.mentor"] = true;
+    g.flags["npc.gone.marta"] = true; // 正史世界の住人 —— 町を内包しない
+    g.flags["npc.married.npc.t3.priest"] = true; // 退場でない印は数えない
+    // 既定 min=1、町は env.town（評価中の場所の宿主町）
+    expect(evaluate({ npcGone: {} }, g, time, { town: "t3" })).toBe(true);
+    expect(evaluate({ npcGone: {} }, g, time, { town: "t9" })).toBe(false);
+    // 明示 town と min
+    expect(evaluate({ npcGone: { town: "t3", min: 2 } }, g, time)).toBe(true);
+    expect(evaluate({ npcGone: { town: "t3", min: 3 } }, g, time)).toBe(false);
+    expect(evaluate({ npcGone: { town: "t5" } }, g, time)).toBe(true);
+    // town も env.town も無い → 成立しない
+    expect(evaluate({ npcGone: {} }, g, time)).toBe(false);
+  });
+
   it("money: 所持金の比較（X-9。累計売上は counter の money.earned を使う）", () => {
     const g = state();
     g.player.money = 500;

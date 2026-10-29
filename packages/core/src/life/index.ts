@@ -419,7 +419,9 @@ export function mapKnownSet(
   if (cond !== undefined) {
     for (const [id, p] of Object.entries(cfg.places ?? {})) {
       if (p.when === undefined || known.has(id)) continue;
-      if (evaluate(p.when, state, cond.time, cond.env)) known.add(id);
+      // 場所の宿主町を評価環境に乗せる（X-31）—— 町単位の条件
+      // （{npcGone} など）が、その場所の属する町の刻印を読める
+      if (evaluate(p.when, state, cond.time, { ...cond.env, town: p.town })) known.add(id);
     }
   }
   return known;

@@ -49,6 +49,7 @@ function genSave(
   day = 0,
   town?: string,
   heard?: string[],
+  flags?: Record<string, boolean>,
 ): string {
   const w = genWorldFor(seed);
   const g = newGame(seed, "旅人", {
@@ -65,12 +66,29 @@ function genSave(
   return serialize({
     ...g,
     crisis,
+    ...(flags !== undefined ? { flags: { ...g.flags, ...flags } } : {}),
     time: { ...g.time, day },
     life:
       town === undefined && heard === undefined
         ? g.life
         : { ...g.life, ...(town !== undefined ? { town } : {}), map },
   });
+}
+
+/**
+ * 条件付き名所の出るシードを探す。名所の母集団の更新で特定シードの
+ * 選択は変わりうるため、シードは固定せず when の形で探す（名所が出る
+ * まで種を順に試す —— 生成は決定的なので見つかった種は毎回同じ）
+ */
+function seedWithLandmark(pred: (when: object) => boolean) {
+  for (const seed of ["e2e-map", "e2e-map-2", "e2e-map-3", "e2e-gen-a", "e2e-gen", "lm-4"]) {
+    const w = genWorldFor(seed);
+    const found = Object.entries(w.life.places).find(
+      ([, p]) => p.landmark === true && p.when !== undefined && pred(p.when),
+    );
+    if (found !== undefined) return { seed, world: w, lmId: found[0], lm: found[1] };
+  }
+  return undefined;
 }
 
 /**
@@ -683,17 +701,14 @@ test("名所は聞き覚えるまで霧の中 —— 名を聞くと地図に出
 });
 
 test("条件付きの名所は危機の深まりで地図に現れる（X-27）", async ({ page }) => {
-  const w = genWorldFor("e2e-map");
-  const found = Object.entries(w.life.places).find(
-    ([, p]) => p.landmark === true && p.when !== undefined,
-  );
-  expect(found, "e2e-map に条件付きの名所が出ない").toBeDefined();
-  const [lmId, lm] = found!;
+  const hit = seedWithLandmark((when) => "crisis" in when);
+  expect(hit, "危機条件の名所が出るシードが無い").toBeDefined();
+  const { seed, lmId, lm } = hit!;
   const town = lm.town!;
   const lmName = lm.name ?? lmId;
 
   // ── 平時（危機なし）では噂も届かず「？」のまま ──
-  const peace = genSave("e2e-map", null, 0, town, []);
+  const peace = genSave(seed, null, 0, town, []);
   await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), peace);
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
@@ -706,7 +721,7 @@ test("条件付きの名所は危機の深まりで地図に現れる（X-27）"
   await expect(hiddenBtn).toBeDisabled();
 
   // ── 危機が段階1に進むと、聞き覚えがなくても名が出て旅できる ──
-  const crisis = genSave("e2e-map", crisisOf("crisis.sample_deep", 1), 0, town, []);
+  const crisis = genSave(seed, crisisOf("crisis.sample_deep", 1), 0, town, []);
   await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), crisis);
   await page.goto("/");
   await expect(page.getByTestId("menu")).toBeVisible();
@@ -722,4 +737,50 @@ test("条件付きの名所は危機の深まりで地図に現れる（X-27）"
   await page.getByTestId(`place-spot-${lmId}`).click();
   await expect(page.getByTestId("log")).toContainText(lmName);
   await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark-crisis.png", fullPage: true });
+});
+
+test("人が去った町にだけ現れる名所（X-31）—— 宿主町の退場で条件が立つ", async ({ page }) => {
+  const hit = seedWithLandmark((when) => "npcGone" in when);
+  expect(hit, "npcGone の名所が出るシードが無い").toBeDefined();
+  const { seed, world, lmId, lm } = hit!;
+  const town = lm.town!;
+  const lmName = lm.name ?? lmId;
+  // 宿主町の実在の住人 —— その人が去った刻印で条件を立てる
+  const npc = world.npcs.find((n) => n.id.startsWith(`npc.${town}.`));
+  expect(npc, `${town} に住人がいない`).toBeDefined();
+
+  // ── 誰も去っていない町では「？」のまま ──
+  const peace = genSave(seed, null, 0, town, []);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), peace);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, `${town}.gate`);
+  await page.getByTestId("place-map").click();
+  const hiddenBtn = page.getByTestId(`map-travel-${lmId}`);
+  await expect(hiddenBtn).toBeVisible();
+  await expect(hiddenBtn).toContainText("？");
+  await expect(hiddenBtn).toBeDisabled();
+
+  // ── 町の住人が去ると、条件の到来が噂として届き、名が出て旅できる ──
+  const departed = genSave(seed, null, 0, town, [], {
+    [`npc.gone.${npc!.id}`]: true,
+  });
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), departed);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, `${town}.square`);
+  // 条件の到来は世界が知らせる —— 行動すると噂の行に名所の名が届く（X-28 と同じ配管）
+  await page.getByTestId("place-stroll").click();
+  await expect(page.getByTestId("log")).toContainText(lmName);
+  // 地図にも名が出て、旅できる
+  await gotoPlace(page, `${town}.gate`);
+  await page.getByTestId("place-map").click();
+  const knownBtn = page.getByTestId(`map-travel-${lmId}`);
+  await expect(knownBtn).toContainText(lmName);
+  await knownBtn.click();
+  await waitVeil(page);
+  await expect(page.getByTestId("place-name")).toContainText(lmName);
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark-gone.png", fullPage: true });
 });

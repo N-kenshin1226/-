@@ -23,6 +23,12 @@ import { weatherOf, type WeatherConfig } from "../weather/index.js";
 export interface CondEnv {
   /** 天候表（weather.json 由来＋balance.weather。{weather} 条件の判定に使う） */
   weather?: WeatherConfig;
+  /**
+   * 評価対象の場所の宿主町（X-31。mapKnownSet が名所ごとに p.town を渡す）。
+   * {npcGone} で町を省略した条件が読む文脈 —— 宿主町の無い評価では
+   * 町省略の {npcGone} は成立しない
+   */
+  town?: string;
 }
 
 /** 数値の比較（gte/lte/eq は複数指定で AND。全部省略は「存在する」で true） */
@@ -80,7 +86,14 @@ export type Cond =
    * 習得済みの技（K-03、docs/09 §7）：player.arts にこのIDの技があるか。
    * 「技と技の組み合わせ」を読む条件（合成レシピ・ユニークの要求）に使う
    */
-  | { art: string };
+  | { art: string }
+  /**
+   * 町から去った住人の数（X-31、docs/10 §13「人が去った町にだけ現れる場所」）。
+   * `npc.gone.npc.<町>.<役割>` の旗を数える —— 生成世界の住人 id が町を内包
+   * するため、町別の退場（引退・死・旅立ちの総数）として読める。
+   * town 省略時は env.town（評価中の場所の宿主町）。どちらも無ければ成立しない
+   */
+  | { npcGone: { town?: string; min?: number } };
 
 function compareNum(v: number, c: Compare): boolean {
   if (c.gte !== undefined && v < c.gte) return false;
@@ -131,6 +144,19 @@ export function evaluate(cond: Cond, state: GameState, time: TimeConfig, env?: C
   if ("art" in cond) {
     // 習得済みの技（K-03）：進化・合成・ユニークの組み合わせ条件が読む語彙
     return state.player.arts[cond.art] !== undefined;
+  }
+  if ("npcGone" in cond) {
+    // 町から去った住人（X-31）：npclife が退場時に立てる
+    // `npc.gone.npc.<町>.<役割>` の旗を、旗自体から決定的に数える
+    // （刻印を増やさず、旗の履歴そのものを読む —— 過去の退場も数に入る）
+    const town = cond.npcGone.town ?? env?.town;
+    if (town === undefined) return false;
+    const prefix = `npc.gone.npc.${town}.`;
+    let n = 0;
+    for (const [k, v] of Object.entries(state.flags)) {
+      if (v === true && k.startsWith(prefix)) n += 1;
+    }
+    return n >= (cond.npcGone.min ?? 1);
   }
   if ("time" in cond) {
     const t = cond.time;

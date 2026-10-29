@@ -713,7 +713,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 訪れ自体が見つけることになる（landmarkFound が担う）
       if (command.type === "travel" && command.to === id) continue;
       if (state.life.map.heard.includes(id) || state.life.map.visited.includes(id)) continue;
-      if (!evaluate(p.when, state, cfg.time, condEnv)) continue;
+      // 場所の宿主町を評価環境に乗せる（X-31）—— 町単位の条件
+      // （{npcGone}）が、その場所の属する町の刻印を読める
+      if (!evaluate(p.when, state, cfg.time, { ...condEnv, town: p.town })) continue;
       next = { ...next, life: { ...next.life, map: markHeard(next.life.map, id) } };
       events.push({ type: "mapHeard", place: id });
     }
