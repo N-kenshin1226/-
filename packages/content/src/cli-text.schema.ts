@@ -11,7 +11,9 @@ export const cliTextSchema = z
         homeName: z.string(),
         /** 旅の野営（P-02）の起床ログに出す場所名 */
         campName: z.string(),
-        dinnerNames: z.object({ with: z.string(), without: z.string() }).strict(),
+        dinnerNames: z
+          .object({ with: z.string(), without: z.string(), withoutShort: z.string() })
+          .strict(),
         seasonNames: z.array(z.string()).length(4),
         weekdayNames: z.array(z.string()).length(7),
         timeOfDayNames: z

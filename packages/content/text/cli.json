@@ -10,7 +10,8 @@
     "campName": "野営",
     "dinnerNames": {
       "with": "シチュー",
-      "without": "夕食なし"
+      "without": "夕食なし",
+      "withoutShort": "なし"
     },
     "seasonNames": ["春", "夏", "秋", "冬"],
     "weekdayNames": ["日", "月", "火", "水", "木", "金", "土"],

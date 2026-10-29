@@ -3244,7 +3244,8 @@ export function wakePack(
       : atHome
         ? t.display.homeName
         : t.display.innNames[report.inn],
-    dinner: !atHome && report.dinner ? t.display.dinnerNames.with : t.display.dinnerNames.without,
+    dinner:
+      !atHome && report.dinner ? t.display.dinnerNames.with : t.display.dinnerNames.withoutShort,
     skillLines: report.lines
       .filter((l) => l.kind === "skill")
       .map((l) => ({
