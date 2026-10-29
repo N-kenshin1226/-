@@ -39,7 +39,7 @@ import type { GameState } from "../state/types.js";
  * 追加はそれぞれ専用の系列（rng.fork）で畳むので、古い版で生成された世界と
  * 町・地域・人の並びは同じ —— 新しい版は枠だけが増える
  */
-export const WORLD_RECIPE = 4;
+export const WORLD_RECIPE = 5;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
@@ -77,6 +77,12 @@ export interface WorldGenConfig {
   spots: { min: number; max: number };
   /** 見取り図の位置ゆらぎ（%） */
   placeJitter: number;
+  /**
+   * 見取り図の場所の印どうしの最小間隔（%）。印はラベルつきのボタンで
+   * 箱形の当たりを持つ —— 横 x・縦 y のどちらかがこの値以上に開くまで
+   * ジッターのあとに互いを押し離す
+   */
+  placeMarkGap: { x: number; y: number };
   market: { cheapFactor: number; dearFactor: number; townJitter: number };
   mentor: {
     feeMin: number;
@@ -741,6 +747,7 @@ export function generateWorld(
     if (type.stroll !== undefined) lifeStroll[`town.${type.id}`] = [...type.stroll];
 
     // 場所：基本 −omit ＋ 型固有。gate は道・地域への出口が乗る
+    const townStart = places.length;
     const tmpl = [...file.townBase.places.filter((p) => !omit.has(p.key)), ...(type.places ?? [])];
     const areaIds = areas.filter((a) => a.town === town.id).map((a) => a.id);
     const dgIds = dungeons.filter((d) => d.town === town.id).map((d) => d.id);
@@ -787,6 +794,42 @@ export function generateWorld(
         name: type.placeNames?.[p.key] ?? p.name,
       };
       if (p.gather !== undefined) lifeGather[id] = p.gather;
+    }
+
+    // 見取り図の印が重なって押せなくなることを防ぐ（X-09）：テンプレ
+    // 座標＋ジッターでは、同じ高さに近い印どうし（聖地の巡礼宿と酒場・
+    // 市場が実例）が触れ合う。印はタグつきのボタンで箱形の当たりを
+    // 持つ —— 横 gap.x・縦 gap.y のどちらかが開くまで、欠損の小さい
+    // 軸に互いを押し離す（乱数は消費しない）
+    const gx = cfg.placeMarkGap.x;
+    const gy = cfg.placeMarkGap.y;
+    const clampPosMark = (v: number) => Math.min(100, Math.max(0, v));
+    for (let iter = 0; iter < 30; iter++) {
+      let moved = false;
+      for (let i = townStart; i < places.length; i++) {
+        for (let j = i + 1; j < places.length; j++) {
+          const ap = places[i]!.pos;
+          const bp = places[j]!.pos;
+          if (ap === undefined || bp === undefined) continue;
+          const dx = bp[0] - ap[0];
+          const dy = bp[1] - ap[1];
+          if (Math.abs(dx) >= gx || Math.abs(dy) >= gy) continue;
+          // 押す向き（完全に重なっている軸は添字で決定的に割る）
+          const sx = dx !== 0 ? Math.sign(dx) : j % 2 === 0 ? 1 : -1;
+          const sy = dy !== 0 ? Math.sign(dy) : j % 2 === 0 ? -1 : 1;
+          const needX = (gx - Math.abs(dx)) * 0.5 + 0.3;
+          const needY = (gy - Math.abs(dy)) * 0.5 + 0.3;
+          if (needX <= needY) {
+            places[i]!.pos = [clampPosMark(ap[0] - sx * needX), ap[1]];
+            places[j]!.pos = [clampPosMark(bp[0] + sx * needX), bp[1]];
+          } else {
+            places[i]!.pos = [ap[0], clampPosMark(ap[1] - sy * needY)];
+            places[j]!.pos = [bp[0], clampPosMark(bp[1] + sy * needY)];
+          }
+          moved = true;
+        }
+      }
+      if (!moved) break;
     }
 
     // 住人：基本＋型固有。師匠になれる技能を持つ住人は師匠としても登録

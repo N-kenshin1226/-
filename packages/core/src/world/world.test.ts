@@ -27,6 +27,7 @@ const cfg: WorldGenConfig = {
   dangerChallengePer: 2,
   spots: { min: 1, max: 2 },
   placeJitter: 3,
+  placeMarkGap: { x: 15, y: 20 },
   market: { cheapFactor: 0.8, dearFactor: 1.25, townJitter: 0.1 },
   mentor: { feeMin: 40, feeMax: 60, potentialRecover: 20, gainVs: 1, condition: 8 },
   rep: { max: 100, errand: 4, work: 2, donate: 3, pricePer: 0.002 },
@@ -159,6 +160,16 @@ const file: WorldTypeFile = {
           pos: [40, 40],
           desc: "{town}の鍛冶場",
           actions: [{ type: "work", kinds: ["smith"] }],
+        },
+        {
+          // 市場 [50,50] のすぐ隣 —— ジッター込みで必ず印が重なる座標を
+          // 仕込み、離散化が解くことを下の間隔テストで検証する（X-09）
+          key: "keep",
+          name: "主塔",
+          scene: "town",
+          pos: [52, 52],
+          desc: "{town}の主塔",
+          actions: [{ type: "work", kinds: ["guard"] }],
         },
       ],
       npcs: [{ id: "smith", label: "鍛冶職人", place: "forge", mentorSkills: ["craft"] }],
@@ -518,6 +529,36 @@ describe("generateWorld（G-01 地方の生成）", () => {
             d,
             `seed=map-sep-${i}: ${w.towns[a]!.id}(${ax},${ay}) ↔ ${w.towns[b]!.id}(${bx},${by})`,
           ).toBeGreaterThanOrEqual(cfg.map.minTownDist - 0.5);
+        }
+      }
+    }
+  });
+
+  it("町の見取り図の場所の印は押せる間隔を保つ（500シード）", () => {
+    // テンプレ座標＋ジッターでは同じ高さの印が重なって押せなくなる
+    // （聖地の巡礼宿と酒場が実例）。離散化で横か縦の間隔が開くはず（X-09）
+    const gap = cfg.placeMarkGap;
+    for (let i = 0; i < 500; i++) {
+      const w = generateWorld(`place-sep-${i}`, file, cfg);
+      const byTown = new Map<string, { id: string; pos: readonly [number, number] }[]>();
+      for (const p of w.places) {
+        if (p.kind !== "town" || p.town === undefined || p.pos === undefined) continue;
+        const list = byTown.get(p.town) ?? [];
+        list.push({ id: p.id, pos: p.pos });
+        byTown.set(p.town, list);
+      }
+      for (const [town, list] of byTown) {
+        for (let a = 0; a < list.length; a++) {
+          for (let b = a + 1; b < list.length; b++) {
+            // 箱形の当たり：横か縦のどちらかが開いていれば重ならない
+            const ok =
+              Math.abs(list[b]!.pos[0] - list[a]!.pos[0]) >= gap.x - 0.5 ||
+              Math.abs(list[b]!.pos[1] - list[a]!.pos[1]) >= gap.y - 0.5;
+            expect(
+              ok,
+              `seed=place-sep-${i} ${town}: ${list[a]!.id}(${list[a]!.pos}) ↔ ${list[b]!.id}(${list[b]!.pos})`,
+            ).toBe(true);
+          }
         }
       }
     }

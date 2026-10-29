@@ -479,6 +479,7 @@
       "max": 3
     },
     "placeJitter": 4,
+    "placeMarkGap": { "x": 15, "y": 20 },
     "market": {
       "cheapFactor": 0.75,
       "dearFactor": 1.35,

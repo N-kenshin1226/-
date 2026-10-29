@@ -1177,6 +1177,8 @@ export const balanceSchema = z
           .refine((s) => s.min <= s.max, { message: "spots.min <= max が必要" }),
         /** 見取り図での場所の位置ゆらぎ（%座標の散りの半幅） */
         placeJitter: z.number().nonnegative(),
+        /** 見取り図の場所の印どうしの最小間隔（%座標の軸ごとの下限） */
+        placeMarkGap: z.object({ x: z.number().positive(), y: z.number().positive() }).strict(),
         /** 特産・不足の市場係数と町ごとの揺らぎ */
         market: z
           .object({

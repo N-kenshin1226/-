@@ -304,6 +304,7 @@ const worldCfg: WorldGenConfig = {
   dangerChallengePer: 2,
   spots: { min: 1, max: 2 },
   placeJitter: 3,
+  placeMarkGap: { x: 15, y: 20 },
   market: { cheapFactor: 0.8, dearFactor: 1.25, townJitter: 0.1 },
   mentor: { feeMin: 40, feeMax: 60, potentialRecover: 20, gainVs: 1, condition: 8 },
   rep: { max: 100, errand: 4, work: 2, donate: 3, pricePer: 0.002 },
