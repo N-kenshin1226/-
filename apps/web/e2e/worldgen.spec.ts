@@ -18,7 +18,7 @@ const jsonAt = (rel: string) =>
  * crisis を渡せばその危機状態を畳んだセーブになる（?crisis=sample と
  * 合わせて使う —— 公開サンプルの型表で typeId を引ける）
  */
-function genSave(seed: string, crisis: GameState["crisis"] = null): string {
+function genSave(seed: string, crisis: GameState["crisis"] = null, day = 0): string {
   const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
   const balanceJson = jsonAt("balance.json") as {
     world: Parameters<typeof generateWorld>[2];
@@ -42,7 +42,7 @@ function genSave(seed: string, crisis: GameState["crisis"] = null): string {
     initialTown: w.startTown,
     world: { kind: "gen", recipe: WORLD_RECIPE },
   });
-  return serialize({ ...g, crisis });
+  return serialize({ ...g, crisis, time: { ...g.time, day } });
 }
 
 /**
@@ -397,4 +397,24 @@ test("生成地方の終幕に canon の人物名は出ない", async ({ page })
   // 離散したはずの canon 人物「サド」はこの世界に居ない —— 語りにも頁にも名が出ない
   await expect(ending).not.toContainText("サド");
   await page.screenshot({ path: "e2e/artifacts/trace-gen-ending.png", fullPage: true });
+});
+
+/**
+ * NPCの歳月（X-20）：生成地方に canon の人物は居ない —— 暦条件を
+ * 満たす日が来ても居ない人の出来事は発火しない（通知・年代記に名が出ない）
+ */
+test("生成地方では canon の人物の歳月は動かない", async ({ page }) => {
+  // npc.sado は2年目（year index 1）の春7日目＝通算119日目に祝言を挙げる定義。
+  // 118日目のセーブから眠るとその日をまたぐ —— 生成地方にサドは居ない
+  await page.addInitScript(
+    (s) => localStorage.setItem("trace.save.v1", s),
+    genSave("e2e-map", null, 118),
+  );
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, "t0.home");
+  await page.getByTestId("place-rest").click();
+  await waitVeil(page);
+  await expect(page.locator("body")).not.toContainText("サド");
 });

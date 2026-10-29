@@ -70,6 +70,12 @@ export interface NpcLifeConfig {
    * npc.* は voices/canon から。注入しない場合は定義の name か ID を使う）
    */
   name?: (state: GameState, npcId: string) => string | undefined;
+  /**
+   * その人物がこの世界に居るか（X-20。生成地方では canon の人物は居ない
+   * ので、居ない人の歳月の出来事は発火も記録もしない。省略時は定義の
+   * 全員が居るものとして従来どおり発火する＝後方互換）
+   */
+  npcExists?: (state: GameState, npcId: string) => boolean;
 }
 
 /** この生で発火した出来事の刻印キー（counters） */
@@ -174,6 +180,8 @@ export function npcLifeEvents(
   if (cfg === undefined) return { state, fired };
   let next = state;
   for (const npc of cfg.npcs) {
+    // この世界に居ない人物（生成地方では canon の人物は居ない）は発火しない
+    if (cfg.npcExists !== undefined && !cfg.npcExists(next, npc.npcId)) continue;
     if (npcGoneReason(next, npc.npcId) !== null) continue; // もう街に居ない
     for (let index = 0; index < npc.events.length; index++) {
       const ev = npc.events[index]!;

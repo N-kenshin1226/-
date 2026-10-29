@@ -423,3 +423,45 @@ describe("記録と素材：新聞・噂・年代記（X-12）", () => {
     expect(res.fired).toHaveLength(0);
   });
 });
+
+describe("npcExists（X-20：居る人物に限る歳月の発火 —— 生成地方対応）", () => {
+  it("居ない人物は暦条件を満たしても発火・刻印・記録・退場しない", () => {
+    const cfg: StepConfig = {
+      ...base(),
+      crisis: crisisCfg(),
+      npcLife: {
+        ...lifeWith({
+          at: { time: { day: { eq: 2 } } },
+          kind: "retire",
+          text: "{name}が引退した。",
+        }),
+        npcExists: () => false,
+      },
+    };
+    const s = sleepDays(mkState("absent", cfg.crisis), cfg, 4);
+    expect(s.counters[npcLifeDoneKey("npc.test", 0)]).toBeUndefined();
+    expect(s.flags[npcLifeMarkFlag("npc.test", "retire")]).toBeUndefined();
+    expect(s.flags[npcLifeGoneFlag("npc.test")]).toBeUndefined();
+    expect(npcLifeLog(s)).toEqual([]);
+    expect(npcGoneReason(s, "npc.test")).toBeNull();
+    expect(s.counters["npc.events"]).toBeUndefined();
+  });
+
+  it("npcExists が true を返す人物は従来どおり発火する（ライバル相当）", () => {
+    const cfg: StepConfig = {
+      ...base(),
+      crisis: crisisCfg(),
+      npcLife: {
+        ...lifeWith({
+          at: { time: { day: { eq: 2 } } },
+          kind: "retire",
+          text: "{name}が引退した。",
+        }),
+        npcExists: (_s, id) => id === "npc.test",
+      },
+    };
+    const s = sleepDays(mkState("present", cfg.crisis), cfg, 3);
+    expect(s.counters[npcLifeDoneKey("npc.test", 0)]).toBe(2);
+    expect(npcGoneReason(s, "npc.test")).toBe("retire");
+  });
+});

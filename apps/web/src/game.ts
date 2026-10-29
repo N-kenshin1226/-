@@ -441,6 +441,9 @@ export const cfg: StepConfig = {
   npcLife: {
     npcs: npcLifecycle.npcs,
     mentors: mentors.mentors,
+    /** 歳月の出来事はこの世界に居る人物に限る（X-20。生成地方では
+     *  canon の人物は居ない。ライバルは世界シードの抽選で常に居る） */
+    npcExists: npcExistsIn,
     name: (state, npcId) => {
       if (npcId.startsWith("rival.")) {
         const index = Number.parseInt(npcId.slice("rival.".length), 10);

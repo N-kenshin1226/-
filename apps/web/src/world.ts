@@ -148,10 +148,13 @@ export function npcNameOf(state: GameState, id: string): string {
 
 /**
  * その人物がこの世界に実在するか（X-19：危機の離散・死亡の記録対象。
- * 生成地方なら生成の住人・師匠の名簿だけ —— canon の人物は居ないので
- * 記録・語りに出さない。固定マップは canon の人物表どおり＝常に居る）
+ * X-20：NPCの歳月の発火対象にも使う。生成地方なら生成の住人・師匠の
+ * 名簿だけ —— canon の人物は居ないので記録・語り・出来事に出さない。
+ * ライバル（rival.<index>）は世界シードの抽選でどの世界にも居る。
+ * 固定マップは canon の人物表どおり＝常に居る）
  */
 export function npcExistsIn(state: GameState, id: string): boolean {
+  if (id.startsWith("rival.")) return true;
   const w = genWorld(state);
   if (w !== null) {
     return w.npcs.some((n) => n.id === id) || w.mentors.some((m) => m.npc === id || m.id === id);
