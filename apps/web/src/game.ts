@@ -3219,6 +3219,12 @@ export interface WakePack {
    */
   rankUps: { name: string; rank: string; fromRank: number; toRank: number }[];
   gifts: string[];
+  /**
+   * この眠りで新しい技能・武技を得たか（X-07。surprises は錆・体調・加齢の
+   * 知らせで「新しい技能」は絶対に入らない —— 帯のキッカーを NEW SKILL に
+   * してよいかは、獲得系イベントの有無でだけ決める）
+   */
+  newSkill: boolean;
   winds: { direction: WindDirection; label: string }[];
   /**
    * 今朝の天候の1行（X-13。テンプレート cli.json wake.weatherLine 済みの文。
@@ -3270,6 +3276,9 @@ export function wakePack(
       .filter((l) => l.kind === "stat")
       .map((l) => ({ name: t.display.statNames[l.id] ?? l.id, delta: l.delta })),
     gifts: report.surprises,
+    newSkill: events.some(
+      (e) => e.type === "skillUnlocked" || e.type === "artLearned" || e.type === "artEvolved",
+    ),
     winds: report.tailwinds.map((x) => ({ direction: x.direction, label: x.label })),
     weather:
       report.weather === undefined

@@ -277,7 +277,7 @@ export function WakeScreen({
                 color: B.glow,
               }}
             >
-              {p.gifts.length > 0 ? "NEW SKILL" : "REPORTS"}
+              {p.newSkill ? "NEW SKILL" : "REPORTS"}
             </p>
             {[...p.gifts, ...p.others].map((g, i) => (
               <p key={i} style={{ margin: "6px 0 0", fontSize: 15, color: "#f2fcfe" }}>
