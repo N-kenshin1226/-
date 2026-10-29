@@ -139,6 +139,22 @@ describe("world.json での地方生成（G-01）", () => {
     }
   });
 
+  it("「人と過ごす」のある場所には必ず住人がいる（200シード）", () => {
+    // 生成町は型固有の住人しかいないため、酒場・市場・鍛冶場・教会で
+    // 人と過ごすを開くと誰もいない空の窓になった（X-10）。social 行動を
+    // 持つ場所は名簿が空であってはいけない（townBase の基礎住人で担保）
+    for (let i = 0; i < 200; i++) {
+      const w = generateWorld(`npc-dens:${i}`, world, genCfg, challenge);
+      for (const p of w.places) {
+        if (p.kind !== "town" || !p.actions.some((a) => a.type === "social")) continue;
+        expect(
+          p.npcs.length,
+          `seed=npc-dens:${i}: ${p.id}(${p.name}) に住人がいない`,
+        ).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+
   it("同じシードで再生成した世界は完全一致（save/load と同じ形で復元できる）", () => {
     const w1 = generateWorld("save-seed", world, genCfg, challenge);
     const w2 = generateWorld("save-seed", world, genCfg, challenge);

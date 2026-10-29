@@ -399,14 +399,29 @@ export const worldFileSchema = z
         }
       }
     }
-    // 住人の居場所はその町の場所 key にある（基本 −omit ＋追加）
+    // 住人の居場所はその町の場所 key にある（基本 −omit ＋追加）。
+    // 基本の住人は一部の型に場所が無くてもよい（その町では静かに
+    // 割り当てない。X-10：酒場の主などの土台住人）が、どこかの場所には
+    // 存在しなくてはいけない。型固有の住人はその型に場所が必須
+    const anyKeys = new Set([
+      ...file.townBase.places.map((p) => p.key),
+      ...file.townTypes.flatMap((t) => (t.places ?? []).map((p) => p.key)),
+    ]);
+    for (const n of file.townBase.npcs) {
+      if (!anyKeys.has(n.place)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `基本の住人 ${n.id} の居場所 ${n.place} はどの型にもない`,
+        });
+      }
+    }
     for (const t of file.townTypes) {
       const omit = new Set(t.omit ?? []);
       const keys = new Set([
         ...file.townBase.places.filter((p) => !omit.has(p.key)).map((p) => p.key),
         ...(t.places ?? []).map((p) => p.key),
       ]);
-      for (const n of [...file.townBase.npcs, ...(t.npcs ?? [])]) {
+      for (const n of t.npcs ?? []) {
         if (!keys.has(n.place)) {
           ctx.addIssue({
             code: "custom",

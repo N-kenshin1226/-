@@ -257,6 +257,26 @@
         "id": "gatekeeper",
         "label": "門番",
         "place": "gate"
+      },
+      {
+        "id": "barkeep",
+        "label": "酒場の主",
+        "place": "tavern"
+      },
+      {
+        "id": "trader",
+        "label": "市場の商人",
+        "place": "market"
+      },
+      {
+        "id": "smith",
+        "label": "鍛冶の親方",
+        "place": "forge"
+      },
+      {
+        "id": "believer",
+        "label": "信心深い町人",
+        "place": "church"
       }
     ],
     "market": {
@@ -1140,7 +1160,7 @@
         {
           "id": "pilgrimnpc",
           "label": "巡礼者",
-          "place": "inn"
+          "place": "pilgrim"
         }
       ],
       "market": {

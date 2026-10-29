@@ -39,7 +39,7 @@ import type { GameState } from "../state/types.js";
  * 追加はそれぞれ専用の系列（rng.fork）で畳むので、古い版で生成された世界と
  * 町・地域・人の並びは同じ —— 新しい版は枠だけが増える
  */
-export const WORLD_RECIPE = 5;
+export const WORLD_RECIPE = 6;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
