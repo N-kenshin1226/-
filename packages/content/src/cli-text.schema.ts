@@ -637,6 +637,8 @@ export const cliTextSchema = z
             mapHeard: z.string(),
             /** 名所の初訪（X-29。{name} は場所の名） */
             landmarkFound: z.string(),
+            /** 名所の頁が見聞録に加わった（X-33。{name} は頁の名） */
+            landmarkFoundLore: z.string(),
             mapRevealed: z.string(),
             /** 朝刊の噂で名が知れた起床ログの行（{name} は場所の名） */
             newsHeard: z.string(),

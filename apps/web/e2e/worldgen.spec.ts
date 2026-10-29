@@ -10,7 +10,7 @@ import {
   type GameState,
   type OccasionsConfig,
 } from "@trace/core";
-import { dismissFx, gotoPlace, skipIntro, wakeUp, waitVeil } from "./helpers.js";
+import { dismissFx, gotoPlace, skipIntro, toMap, wakeUp, waitVeil } from "./helpers.js";
 
 const jsonAt = (rel: string) =>
   JSON.parse(readFileSync(new URL(`../../../packages/content/${rel}`, import.meta.url), "utf8"));
@@ -783,4 +783,57 @@ test("人が去った町にだけ現れる名所（X-31）—— 宿主町の退
   await waitVeil(page);
   await expect(page.getByTestId("place-name")).toContainText(lmName);
   await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark-gone.png", fullPage: true });
+});
+
+test("名所を踏むと見聞録に頁が加わり、読むと事実が分かる（X-33）", async ({ page }) => {
+  // 頁（atom）のある名所と宿主町を世界から引く（頁の内容物は hidden ——
+  // 名と機構だけを検証する）。条件なしの名所は聞き覚えで届く
+  const w = genWorldFor("e2e-map");
+  const found = Object.entries(w.life.places).find(
+    ([, p]) => p.landmark === true && p.atom !== undefined && p.when === undefined,
+  );
+  expect(found, "e2e-map に頁のある名所が出ない").toBeDefined();
+  const [lmId, lm] = found!;
+  const town = lm.town!;
+  const lmName = lm.name ?? lmId;
+  const atomId = lm.atom!;
+
+  const heard = genSave("e2e-map", null, 0, town, [lmId]);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), heard);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  // ── 踏む前：見聞録に頁は無い（条件の立つまで名を出さない） ──
+  await gotoPlace(page, `${town}.church`);
+  await page.getByTestId("place-lore").click();
+  await expect(page.getByTestId("screen-lore")).toBeVisible();
+  await expect(page.getByTestId(`atom-${atomId}`)).toHaveCount(0);
+
+  // ── 踏む：発見の行のあと、見聞録に頁が加わった旨が届く ──
+  await page.keyboard.press("Escape");
+  await toMap(page);
+  await gotoPlace(page, `${town}.gate`);
+  await page.getByTestId("place-map").click();
+  await page.getByTestId(`map-travel-${lmId}`).click();
+  await waitVeil(page);
+  await expect(page.getByTestId("place-name")).toContainText(lmName);
+  await expect(page.getByTestId("log")).toContainText("を踏んだ");
+  await expect(page.getByTestId("log")).toContainText(`見聞録に《${lmName}》の頁が加わった`);
+
+  // ── 見聞録に頁が現れ、読むと頁が開く ──
+  await page.getByTestId(`place-go-${town}.gate`).click();
+  await waitVeil(page);
+  await gotoPlace(page, `${town}.church`);
+  await page.getByTestId("place-lore").click();
+  const row = page.getByTestId(`atom-${atomId}`);
+  await expect(row).toBeVisible();
+  await expect(row).toContainText(lmName);
+  await row.click();
+  await expect(page.getByTestId("lore-atom")).toContainText("まだ読んでいない");
+  await page.getByTestId("lore-read").click();
+  await waitVeil(page);
+  // 読了：頁の本文が開き、「まだ読んでいない」は消える（中身は hidden のため文面は見ない）
+  await expect(page.getByTestId("lore-atom")).not.toContainText("まだ読んでいない");
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark-lore.png", fullPage: true });
 });

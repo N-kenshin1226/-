@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "atoms": [
+    {
+      "id": "place.lm.echoing_stone",
+      "kind": "place",
+      "title": "響き石の丘",
+      "text": "巨石の側面に、風化してなお残る幾筋もの引っ掻き跡がある。空を覆う影の年の記録に見られる獣の爪跡とは、深さも向きも違う",
+      "refs": ["event.sky_beast"],
+      "reveals": ["fact.beast_claw_marks_differ"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.echoing_stone", "gte": 1 }
+    },
+    {
+      "id": "place.lm.sunken_bell",
+      "kind": "place",
+      "title": "沈み鐘の磯",
+      "text": "鐘の肩に残る打刻は、巡礼路の標に打たれたものと同じ印だった。旅の僧が道の節目に鐘を据え、鳴らして次の宿を知らせたと伝わる",
+      "refs": ["event.pilgrim_road", "place.east_bridge"],
+      "reveals": ["fact.bell_marked_pilgrim_road"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.sunken_bell", "gte": 1 }
+    },
+    {
+      "id": "place.lm.ghost_grove",
+      "kind": "place",
+      "title": "木魂の杜",
+      "text": "環をなす木々の奥で、空を覆った獣は追い払われてなお息づいている。この杜は討たれなかった獣が落ち延びた先だと、古老は語った",
+      "refs": ["event.sky_beast"],
+      "reveals": ["fact.beast_driven_not_slain"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.ghost_grove", "gte": 1 }
+    },
+    {
+      "id": "place.lm.old_cairn",
+      "kind": "place",
+      "title": "古の積石",
+      "text": "積石の最下段に、焼け焦げた旗の金具が埋まっている。旗印の乱の終わりに、焼かれた旗の残りを葬ったものがあった",
+      "refs": ["event.banner_war"],
+      "reveals": ["fact.horde_banner_burned"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.old_cairn", "gte": 1 }
+    },
+    {
+      "id": "place.lm.weeping_spring",
+      "kind": "place",
+      "title": "涙の泉",
+      "text": "泉の底に、病の年に封じられた井戸の名残と同じ石蓋が沈んでいる。滲み出す水は、封じたまま涸れなかった証だった",
+      "refs": ["event.pale_fever"],
+      "reveals": ["fact.fever_well_sealed"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.weeping_spring", "gte": 1 }
+    },
+    {
+      "id": "place.lm.fallen_colossus",
+      "kind": "place",
+      "title": "倒れた巨像",
+      "text": "巨像の台座に刻まれた道標の紋は、巡礼路の整備よりもずっと古い刻み方をしている。街道が通る以前の、失われた道の標だった",
+      "refs": ["event.pilgrim_road"],
+      "reveals": ["fact.colossus_marks_old_road"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.fallen_colossus", "gte": 1 }
+    },
+    {
+      "id": "place.lm.hollow_well",
+      "kind": "place",
+      "title": "空き家の井戸",
+      "text": "井戸の縁の石蓋には、青白い熱の年に封じられた井戸と同じ印が残る。家の主は病に斃れ、井戸だけが封じられたまま残った",
+      "refs": ["event.pale_fever"],
+      "reveals": ["fact.fever_well_sealed"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.hollow_well", "gte": 1 }
+    },
+    {
+      "id": "place.lm.refuge_road",
+      "kind": "place",
+      "title": "避難の古道",
+      "text": "石段の折り返しごとに、人が大勢で腰を下ろした跡が苔の下に残る。旗印の乱の年、堤で魔の群れを退けたあとも、人はこの道で避け続けた",
+      "refs": ["event.banner_war"],
+      "reveals": ["fact.horde_repelled_by_levee"],
+      "reliability": "fact",
+      "unlock": null,
+      "visible": { "counter": "landmark.found.lm.refuge_road", "gte": 1 }
+    }
+  ]
+}

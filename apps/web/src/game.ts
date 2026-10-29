@@ -1909,9 +1909,16 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       case "mapHeard":
         // 噂・朝刊で名を聞き覚えた（G-02。地図の霧が晴れる）
         return [tpl(t.text.life.mapHeard, { name: mapPlaceName(state, e.place) })];
-      case "landmarkFound":
-        // 名所の初訪（X-29）：踏んだ記録が残る一行
-        return [tpl(t.text.life.landmarkFound, { name: mapPlaceName(state, e.place) })];
+      case "landmarkFound": {
+        // 名所の初訪（X-29）：踏んだ記録が残る一行。
+        // 名所の頁があるなら見聞録に加わった旨の二行目（X-33）
+        const lines = [tpl(t.text.life.landmarkFound, { name: mapPlaceName(state, e.place) })];
+        if (e.atom !== undefined) {
+          const title = atomList.find((a) => a.id === e.atom)?.title ?? e.atom;
+          lines.push(tpl(t.text.life.landmarkFoundLore, { name: title }));
+        }
+        return lines;
+      }
       case "mapRevealed":
         // 地方の地図を手に入れた（G-02。地方すべての名が聞き覚えに刻まれる）
         return [t.text.life.mapRevealed];

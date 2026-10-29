@@ -1043,7 +1043,12 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           cfg.life.places?.[command.to]?.landmark === true;
         next = { ...next, life: { ...next.life, map: markVisited(next.life.map, command.to) } };
         if (firstLandmark) {
-          events.push({ type: "landmarkFound", place: command.to });
+          const atom = cfg.life.places?.[command.to]?.atom;
+          events.push({
+            type: "landmarkFound",
+            place: command.to,
+            ...(atom !== undefined ? { atom } : {}),
+          });
         }
       }
       break;

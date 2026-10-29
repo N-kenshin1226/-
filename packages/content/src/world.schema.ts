@@ -301,6 +301,12 @@ export const landmarkSchema = z
      * 立っている間だけ地図に名が出る —— 噂・地図の購入では知れない
      */
     when: condSchema.optional(),
+    /**
+     * この名所の頁（X-33。見聞アトムの id —— hidden/atoms.json）。
+     * 踏んだとき見聞録に頁が現れる（アトム側の visible 条件が
+     * landmark.found.<id> の刻印を読む）
+     */
+    atom: z.string().optional(),
   })
   .strict();
 

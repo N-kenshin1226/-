@@ -30,9 +30,13 @@
   "refs": ["npc.berna", "event.great_fire", "place.old_forge"], // つながり先（正史の要素ID）
   "reveals": ["fact.berna_survived_fire"],                       // 読むと分かる事実
   "reliability": "fact",       // fact（事実）／ rumor（噂：間違っていてもよい）
-  "unlock": { "flag": "found.old_forge.cellar" }
+  "unlock": { "flag": "found.old_forge.cellar" },
+  "visible": { "counter": "landmark.found.lm.x", "gte": 1 } // 省略可。見聞録の一覧に出る条件（X-33）
 }
 ```
+
+- `visible`（省略可）は見聞録の一覧に頁が現れる条件。立つまで名も出ない ——
+  名所の頁のように「その場を踏んで初めて存在を知る」アトムに使う
 
 ## 3. つながりの仕組み（遊びに効かせる）
 

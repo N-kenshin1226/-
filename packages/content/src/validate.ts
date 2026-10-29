@@ -37,6 +37,10 @@ import { crisesFileSchema } from "../crises/schema.js";
 import { k03FileSchema } from "../k03/schema.js";
 import { landmarkSchema, worldFileSchema } from "./world.schema.js";
 import { sceneryFileSchema } from "./scenery.schema.js";
+import { z } from "zod";
+import { atomSchema } from "./atom.schema.js";
+import { canonSchema } from "./canon.schema.js";
+import { canonIds } from "./lore.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -1829,7 +1833,13 @@ try {
   const lmRaw = JSON.parse(readFileSync(join(root, "hidden", "landmarks.json"), "utf8")) as {
     landmarks?: unknown[];
   };
-  const lms: { id?: string; scene?: string; spot?: unknown[]; when?: unknown }[] = [];
+  const lms: {
+    id?: string;
+    scene?: string;
+    spot?: unknown[];
+    when?: unknown;
+    atom?: string;
+  }[] = [];
   let ok = true;
   for (const raw of lmRaw.landmarks ?? []) {
     const parsed = landmarkSchema.safeParse(raw);
@@ -1862,9 +1872,24 @@ try {
       };
       if (atom.id !== undefined) atomIds.add(atom.id);
     }
+    // 隠しアトム（X-33）も参照先として数える
+    try {
+      const ha = JSON.parse(readFileSync(join(root, "hidden", "atoms.json"), "utf8")) as {
+        atoms?: { id?: string }[];
+      };
+      for (const a of ha.atoms ?? []) if (a.id !== undefined) atomIds.add(a.id);
+    } catch {
+      // hidden/atoms.json が無ければ公開アトムだけが候補
+    }
     for (const lm of lms) {
       if (lm.scene !== undefined && !areaIds.has(lm.scene)) {
         console.error(`✗ hidden/landmarks.json: 未定義の地域の型 ${lm.scene}`);
+        ok = false;
+        failed = true;
+      }
+      // 名所の頁（X-33）：見聞アトムの id に限る
+      if (lm.atom !== undefined && !atomIds.has(lm.atom)) {
+        console.error(`✗ hidden/landmarks.json: 未定義の見聞アトム ${lm.atom}`);
         ok = false;
         failed = true;
       }
@@ -1911,6 +1936,49 @@ try {
     console.log(`✓ hidden/landmarks.json（名所 ${lms.length} 件、スキーマ適合）`);
 } catch {
   // hidden/landmarks.json が無ければ無視
+}
+
+/* 名所の頁などの隠しアトム（X-33）：hidden/atoms.json もスキーマ適合と、
+ * refs・reveals の正史の id が実在するかを中身を出さずに突き合わせる */
+try {
+  const haRaw = JSON.parse(readFileSync(join(root, "hidden", "atoms.json"), "utf8")) as {
+    atoms?: unknown[];
+  };
+  const parsed = z
+    .object({ version: z.literal(1), atoms: z.array(atomSchema).min(1) })
+    .safeParse(haRaw);
+  if (!parsed.success) {
+    console.error("✗ hidden/atoms.json: アトムのスキーマに合いません");
+    failed = true;
+  } else {
+    const canon = canonSchema.parse(
+      JSON.parse(readFileSync(join(root, "lore", "canon.json"), "utf8")),
+    );
+    const ids = canonIds(canon);
+    const factIds = new Set(canon.facts.map((f) => f.id));
+    let ok = true;
+    for (const a of parsed.data.atoms) {
+      for (const r of a.refs) {
+        if (!ids.has(r)) {
+          console.error(`✗ hidden/atoms.json: 正史に無い参照 ${r}`);
+          ok = false;
+          failed = true;
+        }
+      }
+      for (const f of a.reveals) {
+        if (!factIds.has(f)) {
+          console.error(`✗ hidden/atoms.json: 正史に無い事実 ${f}`);
+          ok = false;
+          failed = true;
+        }
+      }
+    }
+    if (ok)
+      console.log(`✓ hidden/atoms.json（アトム ${parsed.data.atoms.length} 件、スキーマ適合）`);
+  }
+} catch (err) {
+  if (err instanceof z.ZodError) throw err;
+  // hidden/atoms.json が無ければ無視
 }
 
 if (failed) {

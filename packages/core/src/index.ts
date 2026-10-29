@@ -258,7 +258,7 @@ export { acceptOffer, goalAchieved, newOffers, suggestGoals } from "./society/in
 export type { LifeGoalDef, ProfessionDef, SocietyDefs, StandingDef } from "./society/index.js";
 export { activeEffects, damageFactor, gainModifier, priceFactor } from "./effects/index.js";
 export type { Effect, EffectBearer } from "./effects/index.js";
-export { readAtom } from "./lore/index.js";
+export { readAtom, visibleAtoms } from "./lore/index.js";
 export type { AtomDef, ConnectionDef, LoreConfig, ReadAtomResult } from "./lore/index.js";
 export { TemplateProvider } from "./narration/index.js";
 export type { NarrationProvider, NarrationRequest, NarrationTemplates } from "./narration/index.js";

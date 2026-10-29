@@ -147,7 +147,15 @@ export interface LifeConfig {
    */
   places?: Record<
     string,
-    { town?: string; type?: string; name?: string; landmark?: true; when?: Cond }
+    {
+      town?: string;
+      type?: string;
+      name?: string;
+      landmark?: true;
+      when?: Cond;
+      /** この名所の頁（X-33。見聞アトム id —— 踏んだとき見聞録に現れる） */
+      atom?: string;
+    }
   >;
   /**
    * 地域の中の小さな地点の出来事表（G-01。地点 id → 表）。

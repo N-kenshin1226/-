@@ -7,6 +7,7 @@
       "desc": "丘の頂に立つ黒い巨石。叩けば谷の底まで音が届くと云う",
       "scene": "hills",
       "rings": [1, 9],
+      "atom": "place.lm.echoing_stone",
       "spot": [
         {
           "weight": 4,
@@ -32,6 +33,7 @@
       "desc": "干潮の磯に半身を沈める大きな鐘。鳴らしたのは誰の手か",
       "scene": "coast",
       "rings": [1, 9],
+      "atom": "place.lm.sunken_bell",
       "spot": [
         {
           "weight": 4,
@@ -58,6 +60,7 @@
       "desc": "深い森の奥、ひときわ年嵩の木々が環をなす静かな場所",
       "scene": "deep_forest",
       "rings": [2, 9],
+      "atom": "place.lm.ghost_grove",
       "spot": [
         {
           "weight": 4,
@@ -79,6 +82,7 @@
       "desc": "峠の風の通る所に、名も知れぬ誰かが積み上げた石の標",
       "scene": "mountain",
       "rings": [1, 9],
+      "atom": "place.lm.old_cairn",
       "spot": [
         {
           "weight": 4,
@@ -104,6 +108,7 @@
       "desc": "湿地の底冷えする窪みに、絶えず水が滲み出す小さな泉",
       "scene": "marsh",
       "rings": [1, 9],
+      "atom": "place.lm.weeping_spring",
       "spot": [
         {
           "weight": 4,
@@ -124,6 +129,7 @@
       "desc": "遺跡の野の中央で、何世紀も前に倒れたままの石の巨像",
       "scene": "ruins_field",
       "rings": [2, 9],
+      "atom": "place.lm.fallen_colossus",
       "spot": [
         {
           "weight": 4,
@@ -150,6 +156,7 @@
       "scene": "farm",
       "rings": [1, 9],
       "when": { "npcGone": { "min": 1 } },
+      "atom": "place.lm.hollow_well",
       "spot": [
         {
           "weight": 4,
@@ -177,6 +184,7 @@
       "scene": "mountain",
       "rings": [1, 9],
       "when": { "crisis": { "minStage": 1 } },
+      "atom": "place.lm.refuge_road",
       "spot": [
         {
           "weight": 4,

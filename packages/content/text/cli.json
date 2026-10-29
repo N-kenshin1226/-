@@ -596,6 +596,7 @@
       "journeyStartedWay": "――{town}への旅に出た（{way}）。{days}日の道のり",
       "mapHeard": "――《{name}》の名を聞き覚えた",
       "landmarkFound": "――《{name}》を踏んだ。初めての訪れが記録に刻まれた",
+      "landmarkFoundLore": "――見聞録に《{name}》の頁が加わった",
       "mapRevealed": "――地方の地図を手に入れた。見知らぬ土地の名が書き込まれた",
       "newsHeard": "――朝刊の噂：《{name}》の名を聞き覚えた",
       "repGained": "――{town}での評判が少し広まった"

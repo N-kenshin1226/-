@@ -1,5 +1,5 @@
 /** 記録・見聞系の画面（UI-01：書かれた記録は「紙」の上に並べる） */
-import { canAct, createRng, rivalsOf, type GameState } from "@trace/core";
+import { canAct, createRng, rivalsOf, visibleAtoms, type GameState } from "@trace/core";
 import { balance, enemies, pinnacles, rivals, titles } from "@trace/content";
 import {
   allArtDefs,
@@ -328,7 +328,9 @@ export function LoreScreen({
   setScreen: (s: Screen) => void;
   act: Act;
 }) {
-  const atom = atomList.find((a) => a.id === atomId);
+  // X-33：見聞録に出るのは条件の立った頁だけ（名所の頁は踏んだ刻印で現れる）
+  const visAtoms = visibleAtoms(state, atomList, cfg.time);
+  const atom = visAtoms.find((a) => a.id === atomId);
   const canActNow = canAct(state.time, cfg.time);
   if (atom) {
     const read = state.lore.read.includes(atom.id);
@@ -408,7 +410,7 @@ export function LoreScreen({
       </div>
     );
   }
-  const entries: MenuEntry[] = atomList.map((a) => ({
+  const entries: MenuEntry[] = visAtoms.map((a) => ({
     id: `atom-${a.id}`,
     label: (
       <>
@@ -440,11 +442,11 @@ export function LoreScreen({
         >
           {tpl(t.text.loreListHeader, {
             read: state.lore.read.length,
-            total: atomList.length,
+            total: visAtoms.length,
             facts: state.lore.facts.length,
           })}
         </p>
-        {atomList.length === 0 && <div style={{ color: P.dim }}>{t.text.loreNone}</div>}
+        {visAtoms.length === 0 && <div style={{ color: P.dim }}>{t.text.loreNone}</div>}
         <div className="scroll" style={{ height: "82%", overflowY: "auto" }}>
           <CommandMenu
             paper

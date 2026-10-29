@@ -193,6 +193,10 @@
     {
       "id": "fact.beast_claw_marks_differ",
       "text": "空の主の爪痕は、獣のどの傷とも違う"
+    },
+    {
+      "id": "fact.colossus_marks_old_road",
+      "text": "野の巨像は、巡礼路より古い道の標だった"
     }
   ],
   "styleLint": {

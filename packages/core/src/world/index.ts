@@ -271,6 +271,12 @@ export interface WorldLandmark {
    * 知れず、条件の到来が唯一の入口）
    */
   when?: Cond;
+  /**
+   * この名所の頁（X-33。見聞アトムの id）。踏んだとき landmarkFound が
+   * 運び、見聞録に頁が現れる（アトム側の visible 条件が
+   * landmark.found.<id> の刻印を読む）
+   */
+  atom?: string;
 }
 
 /** world.json 全体の形（型定義表） */
@@ -409,7 +415,7 @@ export interface GenLifeContrib {
   /** 場所の帰属（場所 id → 町・型・表示名。LifeConfig.places） */
   places: Record<
     string,
-    { town: string; type: string; name?: string; landmark?: true; when?: Cond }
+    { town: string; type: string; name?: string; landmark?: true; when?: Cond; atom?: string }
   >;
   /** 地点の出来事表（LifeConfig.spots） */
   spots: Record<string, LifeOutcome[]>;
@@ -1081,6 +1087,7 @@ export function generateWorld(
         name: def.name,
         landmark: true,
         when: def.when,
+        atom: def.atom,
       };
       lifeSpots[def.id] = [...def.spot];
     }

@@ -1107,6 +1107,37 @@ describe("地図の霧（G-02）", () => {
     expect(r3.events.filter((e) => e.type === "landmarkFound")).toHaveLength(0);
   });
 
+  it("名所の頁は landmarkFound が atom を運ぶ —— 頁のない名所は運ばない（X-33）", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.page": {
+          town: "ardi",
+          name: "頁のある名所",
+          landmark: true,
+          atom: "place.lm.page",
+        },
+        "lm.bare": { town: "ardi", name: "頁のない名所", landmark: true },
+      },
+    };
+    const lmStepCfg: StepConfig = { ...fogStepCfg, life: lmCfg };
+    const heard: GameState = {
+      ...game(),
+      life: {
+        ...game().life,
+        map: { visited: ["ardi"], heard: ["ardi", "lm.page", "lm.bare"] },
+      },
+    };
+    const r1 = step(heard, { type: "travel", to: "lm.page" }, lmStepCfg);
+    const found = r1.events.find((e) => e.type === "landmarkFound");
+    expect(found).toMatchObject({ type: "landmarkFound", place: "lm.page", atom: "place.lm.page" });
+    const r2 = step(r1.state, { type: "travel", to: "lm.bare" }, lmStepCfg);
+    const found2 = r2.events.find((e) => e.type === "landmarkFound");
+    expect(found2).toMatchObject({ type: "landmarkFound", place: "lm.bare" });
+    expect(found2 !== undefined && "atom" in found2 ? found2.atom : undefined).toBeUndefined();
+  });
+
   it("人が去った町の名所は去りのあと世界が知らせる —— 噂として聞き覚えに刻まれる（X-31）", () => {
     const lmCfg: LifeConfig = {
       ...fogCfg,

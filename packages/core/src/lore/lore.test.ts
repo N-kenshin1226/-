@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame } from "../state/newGame.js";
 import { step, type StepConfig } from "../step.js";
-import { readAtom, type LoreConfig } from "./index.js";
+import { readAtom, visibleAtoms, type LoreConfig } from "./index.js";
 
 const SKILL_IDS = ["swordplay", "evasion", "observation", "smithing", "mining", "eloquence"];
 
@@ -172,5 +172,36 @@ describe("見聞録（07 §3）", () => {
           e.type === "loreConnection" && e.id === "event.fire" && e.flag === "quest.fire_truth",
       ),
     ).toBe(true);
+  });
+});
+
+describe("見聞録の頁の出る条件（X-33）", () => {
+  it("visible 条件のあるアトムは条件が立つまで一覧に出ない", () => {
+    const atoms = [
+      { id: "item.hammer", reveals: [], unlock: null },
+      {
+        id: "place.lm.hill",
+        reveals: [],
+        unlock: null,
+        visible: { counter: "landmark.found.lm.hill", gte: 1 } as const,
+      },
+      {
+        id: "place.lm.grove",
+        reveals: [],
+        unlock: null,
+        visible: { flag: "found.lm.grove" } as const,
+      },
+    ];
+    const g = newGame("s", "t", newGameCfg);
+    const before = visibleAtoms(g, atoms, cfg().time).map((a) => a.id);
+    expect(before).toEqual(["item.hammer"]);
+    // 刻印が立つと頁が現れる
+    const stamped = {
+      ...g,
+      counters: { ...g.counters, "landmark.found.lm.hill": 1 },
+      flags: { ...g.flags, "found.lm.grove": true },
+    };
+    const after = visibleAtoms(stamped, atoms, cfg().time).map((a) => a.id);
+    expect(after).toEqual(["item.hammer", "place.lm.hill", "place.lm.grove"]);
   });
 });

@@ -12,6 +12,10 @@ import atom8 from "../lore/atoms/place.snow_hermit.json";
 import atom9 from "../lore/atoms/place.moon_bell.json";
 import atom10 from "../lore/atoms/place.night_market.json";
 import atom11 from "../lore/atoms/place.rain_well.json";
+import { z } from "zod";
+// 隠しアトム（X-33。名所の頁など、条件が立つまで見聞録に出ないもの）——
+// hidden/ は1ファイル束で静的 import する（ブラウザは fs を使えない）
+import hiddenAtomsJson from "../hidden/atoms.json";
 import { atomSchema, type Atom } from "./atom.schema.js";
 import { canonSchema, type Canon } from "./canon.schema.js";
 
@@ -24,13 +28,23 @@ export const canon: Canon = (() => {
 
 const atomRaws = [atom1, atom2, atom3, atom4, atom5, atom6, atom7, atom8, atom9, atom10, atom11];
 
-/** アトム全件。id の重複などは lore:check が別途検査する */
-export const atoms: Atom[] = atomRaws.map((raw, i) => {
-  const parsed = atomSchema.safeParse(raw);
-  if (!parsed.success)
-    throw new Error(`atoms[${i}] がアトムのスキーマ違反: ${parsed.error.message}`);
-  return parsed.data;
+const hiddenAtomsFileSchema = z.object({
+  version: z.literal(1),
+  atoms: z.array(atomSchema).min(1),
 });
+
+/** アトム全件。id の重複などは lore:check が別途検査する */
+export const atoms: Atom[] = (() => {
+  const publicAtoms = atomRaws.map((raw, i) => {
+    const parsed = atomSchema.safeParse(raw);
+    if (!parsed.success)
+      throw new Error(`atoms[${i}] がアトムのスキーマ違反: ${parsed.error.message}`);
+    return parsed.data;
+  });
+  const hidden = hiddenAtomsFileSchema.safeParse(hiddenAtomsJson);
+  if (!hidden.success) throw new Error(`hidden/atoms.json がスキーマ違反: ${hidden.error.message}`);
+  return [...publicAtoms, ...hidden.data.atoms];
+})();
 
 /** 正史が持つ参照可能なID全体（アトムの refs が指せるのはこれだけ） */
 export function canonIds(c: Canon): Set<string> {

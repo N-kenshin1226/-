@@ -1,3 +1,5 @@
+import { evaluate, type Cond } from "../conditions/index.js";
+import type { TimeConfig } from "../time/index.js";
 import type { GameState } from "../state/types.js";
 
 /**
@@ -5,6 +7,15 @@ import type { GameState } from "../state/types.js";
  * アトムを読むと、分かった事実（reveals）とフラグ（unlock）が記録される。
  * 出来事に関わる事実が揃うと「つながりの報酬」として隠しフラグが立つ
  */
+
+/** 見聞録の一覧に出るアトム（X-33。visible 条件の立っているものだけ） */
+export function visibleAtoms<T extends { visible?: Cond }>(
+  state: GameState,
+  atoms: readonly T[],
+  time: TimeConfig,
+): T[] {
+  return atoms.filter((a) => a.visible === undefined || evaluate(a.visible, state, time));
+}
 
 /** core が必要とするアトムの最小形（content の Atom と同じフィールドの部分集合） */
 export interface AtomDef {

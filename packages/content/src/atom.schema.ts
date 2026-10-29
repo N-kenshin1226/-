@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { condSchema } from "./conditions.schema.js";
 
 /**
  * ストーリー・アトム（docs/07_story.md §2）。
@@ -23,6 +24,12 @@ export const atomSchema = z
       .object({ flag: z.string().min(1) })
       .strict()
       .nullable(),
+    /**
+     * 見聞録の一覧に出る条件（X-33、docs/07 §2。条件DSL）。
+     * 省略時は常に載る。立つまで一覧に名を出さない ——
+     * 名所の頁は「その名所を踏んだ」刻印で現れる
+     */
+    visible: condSchema.optional(),
   })
   .strict();
 

@@ -345,9 +345,11 @@ export type ActionEvent =
   | { type: "mapHeard"; place: string }
   /**
    * 名所の初訪（X-29、docs/10 §14b）：landmark 印の場所へ初めて立った。
-   * 踏んだ記録が残る（counter landmark.found / landmark.found.<id>）
+   * 踏んだ記録が残る（counter landmark.found / landmark.found.<id>）。
+   * atom はその名所の頁（X-33。見聞アトム id）—— あれば見聞録に頁が
+   * 現れる（アトム側の visible 条件が landmark.found.<id> を読む）
    */
-  | { type: "landmarkFound"; place: string }
+  | { type: "landmarkFound"; place: string; atom?: string }
   /**
    * 地方の地図を手に入れた（G-02、docs/10 §7「地図の購入で霧が晴れる」。
    * map 品（items.json の reveal:"map"）を買ったとき。地方すべての町と
