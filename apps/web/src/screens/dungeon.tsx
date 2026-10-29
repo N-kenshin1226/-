@@ -249,7 +249,7 @@ export function DungeonScreen({
     if (here.room.kind === "event") {
       // 出来事の部屋（X-30）：型の表の結末を潜りの積算へ（コミット時に世界へ畳む）
       push(t.text.dungeonRoomEvent);
-      const ev = dungeonRoomEvent(state, place, i);
+      const ev = dungeonRoomEvent(state, place, i, dive.events);
       if (ev !== undefined) {
         push(`\u3000${ev.outcome.text}`);
         setDive((cur) =>

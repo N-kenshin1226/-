@@ -3515,13 +3515,32 @@
         {
           "weight": 2,
           "text": "岩の隙間から清水が滲み出ている。喉を潤し、顔を洗うと少し楽になった",
-          "fatigue": -6
+          "fatigue": -6,
+          "link": {
+            "flag": "mural_seen",
+            "outcome": {
+              "weight": 2,
+              "text": "煤の絵に描かれていた通りに進むと、清水に辿り着いた。……古い絵は本物だったらしい",
+              "fatigue": -8
+            }
+          }
         },
         {
           "weight": 2,
           "text": "魔物の寝床を漁った。食い散らかされた骨の間から、使えそうな牙を拾った",
           "items": {
             "fang": 1
+          },
+          "link": {
+            "flag": "mural_treasure",
+            "outcome": {
+              "weight": 2,
+              "text": "煤の絵に印されていた寝床を漁った。骨の下に、誰かが隠した品が残っていた",
+              "items": {
+                "fang": 2,
+                "herb.dried": 1
+              }
+            }
           }
         },
         {
@@ -3530,6 +3549,15 @@
           "gain": {
             "skill": "observation",
             "amount": 8
+          },
+          "flag": "mural_seen",
+          "link": {
+            "flag": "mural_seen",
+            "outcome": {
+              "weight": 1,
+              "text": "煤で描かれた絵をもう一度確かめた。絵の端に、宝の在り処らしき印を見つけた",
+              "flag": "mural_treasure"
+            }
           }
         }
       ]
@@ -3620,12 +3648,30 @@
           "text": "坑道の壁に光る脈を見つけた。緩んだ岩を崩して採った",
           "items": {
             "ore.copper": 2
+          },
+          "link": {
+            "flag": "miners_named",
+            "outcome": {
+              "weight": 2,
+              "text": "坑道の壁に光る脈を見つけた。碑にあった名の誰かが掘った脈なのだろうか――採った鉱に、かすかな温もりを感じた",
+              "items": {
+                "ore.copper": 2
+              }
+            }
           }
         },
         {
           "weight": 2,
           "text": "坑木の下に油紙の包みが落ちている。硬くなった乾き食と少しの金が入っていた",
-          "money": 8
+          "money": 8,
+          "link": {
+            "flag": "miners_named",
+            "outcome": {
+              "weight": 2,
+              "text": "坑木の下に油紙の包みが落ちている。包みの裏に、碑と同じ名が並んでいた――誰かが置いていった弔いらしい",
+              "money": 12
+            }
+          }
         },
         {
           "weight": 1,
@@ -3633,6 +3679,14 @@
           "gain": {
             "skill": "mining",
             "amount": 6
+          },
+          "flag": "miners_named",
+          "link": {
+            "flag": "miners_named",
+            "outcome": {
+              "weight": 1,
+              "text": "閉山を告げる碑の前に、もう一度立った。読み覚えた名をひとつひとつ指でなぞった"
+            }
           }
         }
       ]
@@ -3721,18 +3775,46 @@
         {
           "weight": 2,
           "text": "名の削れた墓の前で手を合わせた。冷たい空気の中で、心が静まった",
-          "pray": true
+          "pray": true,
+          "flag": "nameless_mourned",
+          "link": {
+            "flag": "nameless_mourned",
+            "outcome": {
+              "weight": 2,
+              "text": "名の削れた墓に、もう一度手を合わせた。削られた名の下に、小さな紋が残っていた",
+              "pray": true,
+              "flag": "crest_seen"
+            }
+          }
         },
         {
           "weight": 2,
           "text": "崩れた棺の底に、金貨の欠片が残っていた",
-          "money": 15
+          "money": 15,
+          "link": {
+            "flag": "nameless_mourned",
+            "outcome": {
+              "weight": 2,
+              "text": "名の削れた墓の石の陰に、小さな銀貨が置かれていた――誰かが弔いに来ている",
+              "money": 10
+            }
+          }
         },
         {
           "weight": 1,
           "text": "墓の隙間に、冷気を好む草がひっそり生えている",
           "items": {
             "herb": 1
+          },
+          "link": {
+            "flag": "crest_seen",
+            "outcome": {
+              "weight": 1,
+              "text": "墓の隙間の草は、紋に刻まれた薬草と同じ種だ。弔いのために植えられたのかもしれない",
+              "items": {
+                "herb": 1
+              }
+            }
           }
         }
       ]
@@ -3932,6 +4014,15 @@
           "gain": {
             "skill": "archaeology",
             "amount": 8
+          },
+          "flag": "stele_copied",
+          "link": {
+            "flag": "stele_copied",
+            "outcome": {
+              "weight": 2,
+              "text": "写し取った碑文を読み返した。読み取れなかった行間に、小さく刻まれた名を見つけた",
+              "flag": "stele_named"
+            }
           }
         },
         {
@@ -3939,12 +4030,34 @@
           "text": "崩れた祭壇の下に供え物の名残がある。錆びた遺物を拾い上げた",
           "items": {
             "relic": 1
+          },
+          "link": {
+            "flag": "stele_copied",
+            "outcome": {
+              "weight": 2,
+              "text": "崩れた祭壇の刻みが、写し取った碑文の文様と一致した。……名もなき王を弔う遺跡らしい",
+              "items": {
+                "relic": 1
+              },
+              "gain": {
+                "skill": "archaeology",
+                "amount": 6
+              }
+            }
           }
         },
         {
           "weight": 1,
           "text": "天井の落ちた広間に外の光が差し込んでいる。ここだけは穏やかだ",
-          "fatigue": -8
+          "fatigue": -8,
+          "link": {
+            "flag": "stele_named",
+            "outcome": {
+              "weight": 1,
+              "text": "光の差す広間で、碑文に見つけた名を口にしてみる。静けさが、ほんの少しだけ優しくなった気がした",
+              "fatigue": -10
+            }
+          }
         }
       ]
     },

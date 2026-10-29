@@ -505,6 +505,39 @@ export const dgUniqueKey = (id: string) => `dg.unique.${id}`;
 /** 世界のユニーク討伐の合計 */
 export const dgUniqueTotalKey = "dg.unique";
 
+/**
+ * 迷宮の出来事の旗（X-34）：迷宮ごとに名指しする
+ * （同じ型の別の迷宮や次の生には漏れない。表の中の flag/link.flag は
+ * 接頭辞なしで書き、解決するときにこの名指しに畳む）
+ */
+export const dgEventFlagKey = (dgId: string, flag: string) => `dg.event.${dgId}.${flag}`;
+
+/**
+ * 出来事の部屋の結末（X-30 拡張・X-34）：部屋の eventIdx で表から引き、
+ * 続き（link）の旗が立っていれば続きの結末に差し替える。
+ * 旗は表の中で受け渡せる（続きの結末が立てた旗が、別の項の続きを解く）。
+ * 返す結末の flag は迷宮 id 付きに名指し済み —— 畳まれるとその迷宮だけに旗が立つ。
+ * `flags` には世界の旗に加えて、同じ潜りで既に畳み込み待ちの結末が立てた
+ * 旗（名指し済みのものをそのまま）を含めて渡す —— 連鎖は同じ潜りの中でも続く
+ */
+export function dungeonEventOutcome(
+  dgId: string,
+  events: readonly LifeOutcome[] | undefined,
+  eventIdx: number | undefined,
+  flags: Record<string, boolean>,
+): LifeOutcome | undefined {
+  if (events === undefined || eventIdx === undefined) return undefined;
+  let o = events[eventIdx];
+  if (o === undefined) return undefined;
+  const seen = new Set<string>();
+  while (o.link !== undefined && !seen.has(o.link.flag)) {
+    seen.add(o.link.flag);
+    if (flags[dgEventFlagKey(dgId, o.link.flag)] !== true) break;
+    o = o.link.outcome;
+  }
+  return o.flag === undefined ? o : { ...o, flag: dgEventFlagKey(dgId, o.flag) };
+}
+
 /** 進行（抜いた室数・全室数・制覇。counters/flags から導出） */
 export function dgProgress(
   counters: Record<string, number>,

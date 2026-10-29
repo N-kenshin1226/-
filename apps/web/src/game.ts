@@ -15,6 +15,7 @@ import {
   canFightUnique,
   createRng,
   describe,
+  dungeonEventOutcome,
   effectiveGraceDays,
   endRun,
   floorEnemy,
@@ -1012,15 +1013,24 @@ export function dungeonBossEnemy(state: GameState, id: string) {
 }
 
 /**
- * 出来事の部屋の結末（X-30）：型の events 表から部屋の eventIdx で引く。
+ * 出来事の部屋の結末（X-30・X-34）：型の events 表から部屋の eventIdx で引き、
+ * 続きの旗が立っていれば続きに差し替える（`earlier` は同じ潜りで畳み込み待ちの
+ * 結末 —— 立てた旗を読めるので、連鎖は同じ潜りの中でも続く）。
  * 解決は step の dungeon コマンドの events で畳まれる（散策と同じ語彙）
  */
-export function dungeonRoomEvent(state: GameState, id: string, index: number) {
+export function dungeonRoomEvent(
+  state: GameState,
+  id: string,
+  index: number,
+  earlier: readonly { flag?: string }[] = [],
+) {
   const d = dungeonOf(state, id);
   const at = d === undefined ? null : roomAt(d, index);
   if (d === undefined || at === null || at.room.kind !== "event" || at.room.eventIdx === undefined)
     return undefined;
-  const o = dungeonTypeDefs[d.type]?.events?.[at.room.eventIdx];
+  const flags = { ...state.flags };
+  for (const e of earlier) if (e.flag !== undefined) flags[e.flag] = true;
+  const o = dungeonEventOutcome(d.id, dungeonTypeDefs[d.type]?.events, at.room.eventIdx, flags);
   return o === undefined ? undefined : { outcome: o, floor: at.floorIndex };
 }
 

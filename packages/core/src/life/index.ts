@@ -40,6 +40,14 @@ export interface LifeOutcome {
   gain?: { skill: string; amount: number };
   fatigue?: number;
   flag?: string;
+  /**
+   * 出来事の続き（X-34、docs/10 §13。迷宮の出来事の部屋でだけ解決される）：
+   * 旗 `dg.event.<迷宮id>.<flag>` が立っていれば、この結末の代わりに続きを畳む。
+   * 続きの結末も flag を立てられるので、表の中で旗を受け渡せば
+   * 連続した出来事（碑を写す → 祭壇の文様と一致する → …）になる。
+   * 続き側の weight は抽選に使われない（表の項の重みだけが部屋の抽選を決める）
+   */
+  link?: { flag: string; outcome: LifeOutcome };
   /** 祈りの刻印（G-01。祠などの地点の出来事。その日の眠りが少し深くなる） */
   pray?: true;
   /**

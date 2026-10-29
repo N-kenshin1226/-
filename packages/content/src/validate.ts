@@ -236,7 +236,13 @@ try {
       enemies?: { id?: string }[];
       bosses?: { enemy?: string }[];
       treasure?: { item?: string }[];
-      events?: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string }[];
+      events?: {
+        items?: Record<string, number>;
+        gain?: { skill?: string };
+        atom?: string;
+        flag?: string;
+        link?: { flag?: string; outcome?: ChkOutcome };
+      }[];
     }[];
   };
   const itemIds = new Set(
@@ -269,15 +275,23 @@ try {
   const chkSkill = (id: string | undefined, where: string) => {
     if (id !== undefined && !skillIds.has(id)) bad.push(`${where}: 未定義の技能 ${id}`);
   };
-  const chkOutcome = (
-    o: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string } | undefined,
-    where: string,
-  ) => {
+  type ChkOutcome = {
+    items?: Record<string, number>;
+    gain?: { skill?: string };
+    atom?: string;
+    flag?: string;
+    link?: { flag?: string; outcome?: ChkOutcome };
+  };
+  const chkOutcome = (o: ChkOutcome | undefined, where: string, linkOk = false) => {
     if (o === undefined) return;
     for (const id of Object.keys(o.items ?? {})) chkItem(id, where);
     chkSkill(o.gain?.skill, where);
     if (o.atom !== undefined && !atomIds.has(o.atom))
       bad.push(`${where}: 未定義の見聞アトム ${o.atom}`);
+    if (o.link === undefined) return;
+    // 連続した出来事（X-34）：迷宮の出来事の部屋の表でだけ解決される
+    if (!linkOk) bad.push(`${where}: link は迷宮の出来事の部屋でだけ意味を持つ`);
+    chkOutcome(o.link.outcome, `${where}.link`, linkOk);
   };
   const chkMarket = (
     m: { stock?: string[]; cheap?: string[]; dear?: string[] } | undefined,
@@ -330,8 +344,26 @@ try {
         bad.push(`${where}: 未定義の主 ${b.enemy}`);
     }
     for (const t of d.treasure ?? []) chkItem(t.item, `${where}.treasure`);
-    // 出来事の部屋の表（X-30）：品・技能・見聞アトムの参照は既存JSONに実在するものに限る
-    for (const o of d.events ?? []) chkOutcome(o, `${where}.events`);
+    // 出来事の部屋の表（X-30）：品・技能・見聞アトムの参照は既存JSONに実在するものに限る。
+    // 連続した出来事（X-34）：flag/link.flag は解決時に dg.event.<迷宮id>. で
+    // 名指しされるので接頭辞なしで書き、link.flag は同じ表が立てられる旗に限る
+    for (const o of d.events ?? []) chkOutcome(o, `${where}.events`, true);
+    const stamped = new Set<string>();
+    const collectFlags = (o: ChkOutcome) => {
+      if (o.flag !== undefined) stamped.add(o.flag);
+      if (o.link?.outcome !== undefined) collectFlags(o.link.outcome);
+    };
+    for (const o of d.events ?? []) collectFlags(o);
+    const checkChainFlag = (o: ChkOutcome, label: string) => {
+      for (const f of [o.flag, o.link?.flag]) {
+        if (f !== undefined && f.startsWith("dg."))
+          bad.push(`${label}: 迷宮の出来事の旗は接頭辞なしで書く (${f})`);
+      }
+      if (o.link?.flag !== undefined && !stamped.has(o.link.flag))
+        bad.push(`${label}: 続きの旗 ${o.link.flag} はこの表のどの結末も立てない`);
+      if (o.link?.outcome !== undefined) checkChainFlag(o.link.outcome, `${label}.link`);
+    };
+    for (const o of d.events ?? []) checkChainFlag(o, `${where}.events`);
   }
   if (bad.length > 0) {
     console.error(`✗ world.json の参照が未定義: ${bad.join(", ")}`);
@@ -1897,7 +1929,14 @@ try {
         items?: Record<string, number>;
         gain?: { skill?: string };
         atom?: string;
+        link?: unknown;
       }[]) {
+        // 連続した出来事（X-34）：迷宮の出来事の部屋でだけ解決される
+        if (o.link !== undefined) {
+          console.error(`✗ hidden/landmarks.json: link は迷宮の出来事の部屋でだけ意味を持つ`);
+          ok = false;
+          failed = true;
+        }
         for (const id of Object.keys(o.items ?? {})) {
           if (!itemIds.has(id)) {
             console.error(`✗ hidden/landmarks.json: 未定義の品 ${id}`);

@@ -10,10 +10,12 @@ import {
   bossName,
   dgCampKey,
   dgClearedKey,
+  dgEventFlagKey,
   dgProgress,
   dgRoomsKey,
   dgUniqueKey,
   dgUniqueTotalKey,
+  dungeonEventOutcome,
   floorRooms,
   generateDungeons,
   isBossRoom,
@@ -960,5 +962,89 @@ describe("dungeon コマンド（G-03）", () => {
       cfg,
     );
     expect(died.state.injuries).toEqual([]);
+  });
+});
+
+describe("迷宮の連続した出来事（X-34、docs/10 §13）", () => {
+  const base = { weight: 2, text: "碑を写し取った" };
+  const flagged = { ...base, flag: "stele_copied" };
+  const linked = {
+    ...flagged,
+    link: { flag: "stele_copied", outcome: { weight: 1, text: "読み返すと名が見つかった" } },
+  };
+  const table = [
+    linked,
+    {
+      weight: 2,
+      text: "祭壇の供え物",
+      link: {
+        flag: "stele_copied",
+        outcome: { weight: 2, text: "碑文と祭壇の刻みが一致した", flag: "altar_seen" },
+      },
+    },
+    {
+      weight: 1,
+      text: "光の広間",
+      link: { flag: "stele_named", outcome: { weight: 1, text: "名を口にした" } },
+    },
+  ];
+
+  it("旗が立っていなければ基の結末を返し、旗は迷宮 id 付きに名指しされる", () => {
+    const o = dungeonEventOutcome("dg2", table, 0, {});
+    expect(o?.text).toBe("碑を写し取った");
+    expect(o?.flag).toBe(dgEventFlagKey("dg2", "stele_copied"));
+  });
+
+  it("旗が立っていれば続きの結末に差し替わる（別の迷宮の旗には響かない）", () => {
+    const flags = { [dgEventFlagKey("dg2", "stele_copied")]: true };
+    const o = dungeonEventOutcome("dg2", table, 0, flags);
+    expect(o?.text).toBe("読み返すと名が見つかった");
+    // 別の迷宮の旗では続かない —— 旗は迷宮ごとに名指しされる
+    expect(dungeonEventOutcome("dg5", table, 0, flags)?.text).toBe("碑を写し取った");
+  });
+
+  it("続きの結末が立てる旗は名指し済みで畳まれ、別の項の続きを解ける", () => {
+    // 祭壇の続きは altar_seen を立てる —— 名指し済みの旗が返る
+    const o1 = dungeonEventOutcome("dg2", table, 1, {
+      [dgEventFlagKey("dg2", "stele_copied")]: true,
+    });
+    expect(o1?.text).toBe("碑文と祭壇の刻みが一致した");
+    expect(o1?.flag).toBe(dgEventFlagKey("dg2", "altar_seen"));
+    // stele_named が立てば広間の続きが解ける（表の中で旗を受け渡す連鎖）
+    expect(
+      dungeonEventOutcome("dg2", table, 2, {
+        [dgEventFlagKey("dg2", "stele_named")]: true,
+      })?.text,
+    ).toBe("名を口にした");
+  });
+
+  it("同じ潜りで畳み込み待ちの旗も読める（呼び出し側が世界の旗に足して渡す）", () => {
+    const first = dungeonEventOutcome("dg2", table, 0, {});
+    const seen = { [first!.flag!]: true };
+    // 同じ潜りの後の部屋でも続きが出る —— 名指し済みの旗をそのまま渡せばよい
+    expect(dungeonEventOutcome("dg2", table, 1, seen)?.text).toBe("碑文と祭壇の刻みが一致した");
+  });
+
+  it("link が閉じていても有限で返す（循環のある表は基の結末で止まる）", () => {
+    const cyclic = [
+      {
+        weight: 1,
+        text: "A",
+        link: {
+          flag: "a",
+          outcome: { weight: 1, text: "B", link: { flag: "a", outcome: { weight: 1, text: "A" } } },
+        },
+      },
+    ];
+    // flag "a" が立っていれば B に差し替わる。B の続きは再び "a" を読むが、
+    // 既に辿った旗なのでそれ以上は進まない
+    const o = dungeonEventOutcome("dg2", cyclic, 0, { [dgEventFlagKey("dg2", "a")]: true });
+    expect(o?.text).toBe("B");
+  });
+
+  it("link の無い結末はそのまま返る（従来の表と同じ動き）", () => {
+    expect(dungeonEventOutcome("dg2", [base], 0, {})).toEqual(base);
+    expect(dungeonEventOutcome("dg2", [base], 3, {})).toBeUndefined();
+    expect(dungeonEventOutcome("dg2", undefined, 0, {})).toBeUndefined();
   });
 });

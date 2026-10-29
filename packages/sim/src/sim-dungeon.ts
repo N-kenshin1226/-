@@ -9,6 +9,7 @@ import {
   dgRoomsKey,
   dgUniqueKey,
   dgUniqueTotalKey,
+  dungeonEventOutcome,
   generateWorld,
   isBossRoom,
   newGame,
@@ -98,11 +99,12 @@ function runDive(state: GameState, d: GenDungeon): { command: Command; end: "lig
         light -= rolled.light;
       }
     } else if (at.room.kind === "event") {
-      // 出来事の部屋（X-30）：型の表の結末を dungeon コマンドの events へ畳む
-      const ev =
-        at.room.eventIdx === undefined
-          ? undefined
-          : dgTypeById.get(d.type)?.events?.[at.room.eventIdx];
+      // 出来事の部屋（X-30・X-34）：型の表の結末を dungeon コマンドの events へ畳む。
+      // 続きの旗は世界の旗＋この潜りで畳み込み待ちの結末が立てた旗から読む
+      // （連鎖は同じ潜りの中でも続く。解決済みの結末の flag は名指し済み）
+      const seen = { ...state.flags };
+      for (const e of events) if (e.flag !== undefined) seen[e.flag] = true;
+      const ev = dungeonEventOutcome(d.id, dgTypeById.get(d.type)?.events, at.room.eventIdx, seen);
       if (ev !== undefined) events.push(ev);
     } else {
       for (const l of at.room.loot) items[l.item] = (items[l.item] ?? 0) + l.n;

@@ -13,39 +13,59 @@ import { z } from "zod";
  * 抽選は世界シード×日付×回目の独立した乱数列で決定的に行う。
  */
 
+/** 散策・道中の出来事1件の効果の形（link だけが別枠 —— 続きの結末に続きは付かない） */
+const lifeOutcomeShape = {
+  /** 結果の抽選の重み */
+  weight: z.number().positive(),
+  /** 結末の一文（記録の行。「――」始まりの地の文） */
+  text: z.string().min(1),
+  /** 動く金（G。負の値で損失。所持金は 0 未満にならない） */
+  money: z.number().optional(),
+  /** 拾い物（items.json の id → 個数） */
+  items: z.record(z.string().min(1), z.number().positive()).optional(),
+  /** 出会った人（voices.json の npc id。仲の値が育つ） */
+  npc: z.string().min(1).optional(),
+  /** 仲の値の増分（npc と一緒に。省略時は小さな値） */
+  bond: z.number().positive().optional(),
+  /** 見聞録に記すアトムの id（手がかり系の結果。lore/atoms の id） */
+  atom: z.string().min(1).optional(),
+  /** 未定着経験（skill は skills.json の id） */
+  gain: z
+    .object({ skill: z.string().min(1), amount: z.number() })
+    .strict()
+    .optional(),
+  /** 疲労の増減（負の値で回復） */
+  fatigue: z.number().optional(),
+  /** 立つ旗印（縁・手がかりの刻印。条件DSLが読める） */
+  flag: z.string().min(1).optional(),
+  /** 祈りの刻印（祠などの地点の出来事。その日の眠りが少し深くなる） */
+  pray: z.literal(true).optional(),
+  /**
+   * 噂話（G-02、docs/10 §7）：聞き覚えのある町・地域が1つ増える
+   * （旅人・行商人の口から届く名。地図の霧が晴れる）
+   */
+  reveal: z.literal(true).optional(),
+} as const;
+
 /** 散策・道中の出来事1件：結末の文と小さな効果 */
 export const lifeOutcomeSchema = z
   .object({
-    /** 結果の抽選の重み */
-    weight: z.number().positive(),
-    /** 結末の一文（記録の行。「――」始まりの地の文） */
-    text: z.string().min(1),
-    /** 動く金（G。負の値で損失。所持金は 0 未満にならない） */
-    money: z.number().optional(),
-    /** 拾い物（items.json の id → 個数） */
-    items: z.record(z.string().min(1), z.number().positive()).optional(),
-    /** 出会った人（voices.json の npc id。仲の値が育つ） */
-    npc: z.string().min(1).optional(),
-    /** 仲の値の増分（npc と一緒に。省略時は小さな値） */
-    bond: z.number().positive().optional(),
-    /** 見聞録に記すアトムの id（手がかり系の結果。lore/atoms の id） */
-    atom: z.string().min(1).optional(),
-    /** 未定着経験（skill は skills.json の id） */
-    gain: z
-      .object({ skill: z.string().min(1), amount: z.number() })
+    ...lifeOutcomeShape,
+    /**
+     * 出来事の続き（X-34、docs/10 §13。迷宮の出来事の部屋でだけ解決される）：
+     * 旗が立っていれば、この結末の代わりに続きを畳む。迷宮の出来事の flag は
+     * 解決時に `dg.event.<迷宮id>.<flag>` へ名指しされる —— 表には接頭辞なしで書く。
+     * 続き側の weight は抽選に使われない（表の項の重みだけが部屋の抽選を決める）
+     */
+    link: z
+      .object({
+        /** 続きを解く旗（迷宮では名指し前の素の名で書く） */
+        flag: z.string().min(1),
+        /** 旗が立っているときに畳まれる続きの結末（続きに続きは付かない） */
+        outcome: z.object(lifeOutcomeShape).strict(),
+      })
       .strict()
       .optional(),
-    /** 疲労の増減（負の値で回復） */
-    fatigue: z.number().optional(),
-    /** 立つ旗印（縁・手がかりの刻印。条件DSLが読める） */
-    flag: z.string().min(1).optional(),
-    /** 祈りの刻印（祠などの地点の出来事。その日の眠りが少し深くなる） */
-    pray: z.literal(true).optional(),
-    /**
-     * 噂話（G-02、docs/10 §7）：聞き覚えのある町・地域が1つ増える
-     * （旅人・行商人の口から届く名。地図の霧が晴れる）
-     */
-    reveal: z.literal(true).optional(),
   })
   .strict();
 

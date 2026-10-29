@@ -357,3 +357,98 @@ test("出来事の部屋：抜くと型の表の結末が届き、畳むと世�
   await waitVeil(page);
   await expect(page.getByTestId("log")).toContainText(evText);
 });
+
+test("連続した出来事：先の部屋の出来事が、後の部屋の結末を続きに変える（X-34）", async ({
+  page,
+}) => {
+  // dg0 洞窟で 絵の部屋 → 戦闘 → 清水の部屋 が並ぶシード（生成は決定的。
+  // 並びが変わったら下の断言が先に落ちる —— 種の変更で静かに壊れない）
+  const seed = "x34c-29";
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  const w = generateWorld(
+    seed,
+    worldJson,
+    { ...balanceJson.world, dungeons: balanceJson.dungeons },
+    challenge,
+  );
+  const d0 = w.dungeons.find((d) => d.id === "dg0");
+  expect(d0?.type).toBe("cave");
+  const r1 = roomAt(d0!, 1);
+  const r3 = roomAt(d0!, 3);
+  expect(r1?.room.kind).toBe("event");
+  expect(r1?.room.eventIdx).toBe(2); // 煤の絵（旗を立てる項）
+  expect(r3?.room.kind).toBe("event");
+  expect(r3?.room.eventIdx).toBe(0); // 清水（旗が立てば続きになる項）
+
+  const g = newGame(seed, "旅人", {
+    skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+    initialMoney: 200,
+    initialWeapons: ["fist", "war_axe"],
+    initialWeapon: "war_axe",
+    initialTown: w.startTown,
+    world: { kind: "gen", recipe: WORLD_RECIPE },
+  });
+  const patched: GameState = {
+    ...g,
+    counters: { ...g.counters, "dg.rooms.dg0": 1 },
+  };
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), serialize(patched));
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t0.gate");
+  await page.getByTestId("place-go-dg0").click();
+  await waitVeil(page);
+  await page.getByTestId("place-dungeon").click();
+  await expect(page.getByTestId("screen-dungeon")).toBeVisible();
+
+  // 1部屋目：煤の絵 —— 旗が立つ（基の結末が届く）
+  await page.getByTestId("dungeon-advance").click();
+  await expect(page.getByTestId("log")).toContainText("煤で描かれた古い絵");
+
+  // 2部屋目は戦闘 —— 勝って抜く
+  await page.getByTestId("dungeon-advance").click();
+  for (let i = 0; i < 40; i++) {
+    if (
+      await page
+        .getByTestId("dungeon-advance")
+        .isVisible()
+        .catch(() => false)
+    )
+      break;
+    if (
+      await page
+        .getByTestId("combat-attack")
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await page.getByTestId("combat-attack").click();
+      continue;
+    }
+    await page.waitForTimeout(200);
+  }
+  await expect(page.getByTestId("dungeon-advance")).toBeVisible();
+
+  // 3部屋目：清水 —— 先の部屋で立った旗が畳み込み待ちでも読まれ、続きが届く
+  await page.getByTestId("dungeon-advance").click();
+  await expect(page.getByTestId("log")).toContainText("煤の絵に描かれていた通りに進むと");
+
+  // 畳むと続きの一文も世界側の記録に届く
+  await page.getByTestId("dungeon-retreat").click();
+  await page.getByTestId("dungeon-commit").click();
+  await waitVeil(page);
+  await expect(page.getByTestId("log")).toContainText("煤の絵に描かれていた通りに進むと");
+  await page.screenshot({ path: "e2e/artifacts/dungeon-event-chain.png", fullPage: true });
+});
