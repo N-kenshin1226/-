@@ -67,6 +67,8 @@ function genSave(
  * 癒え日を越えれば朝に取れる
  */
 test("重い一撃は怪我として残り、状態に出て、癒え日に取れる（X-32）", async ({ page }) => {
+  // 戦闘＋癒え日までの眠りの反復で30秒を超えるため、遅い印を付ける（3倍枠）
+  test.slow();
   const save = genSave("inj-3", "t1", ["mountain"]);
   await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), save);
   await page.goto("/");

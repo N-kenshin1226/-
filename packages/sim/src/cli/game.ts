@@ -1614,6 +1614,7 @@ export async function playCli(opts: PlayCliOptions): Promise<GameState | null> {
           won: r.won,
           fled: r.fled,
           died: r.died,
+          ...(r.injuries.length > 0 ? { injuries: r.injuries } : {}),
           ...(isUnique ? { unique: true } : {}),
           // 接点の相手なら接点の id を渡す（W-02。勝利時に備えへ寄与。逃げ・敗北では何も起きない）
           ...(picked.tp !== undefined ? { touchpoint: picked.tp } : {}),

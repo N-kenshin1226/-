@@ -19,6 +19,7 @@ import {
   withWorldMods,
   worldMods,
   type ActionEvent,
+  type BodyPart,
   type CombatAction,
   type CombatState,
   type EnemyDef,
@@ -96,7 +97,13 @@ export async function fightEnemy(
   enemy: EnemyJson,
   seed: string,
   st: GameState,
-  opts?: { spend?: () => void; aborted?: () => boolean; individual?: boolean },
+  opts?: {
+    spend?: () => void;
+    aborted?: () => boolean;
+    individual?: boolean;
+    /** X-32：ランの中間で負った怪我（GameState.injuries に足される） */
+    injuries?: readonly BodyPart[];
+  },
 ): Promise<CombatState | null> {
   const { out, outAll, ask, t, cfg } = io;
   // 称号・認定職・師匠・読了書物の与ダメージ効果（T-35・T-27・T-26。例《百狼斬り》の damageVs.wolf）
@@ -116,7 +123,12 @@ export async function fightEnemy(
     opts?.individual !== false,
   );
   const foeName = indivName(t, enemy, trait);
-  let cs = startCombat(worldEnemy, balance.combat, st.player, atkFactor);
+  // X-32：癒え途中の傷は係数として響く（web の beginCombat と同じ畳み方）
+  const cp = {
+    ...st.player,
+    injuries: [...st.injuries.map((i) => i.part), ...(opts?.injuries ?? [])],
+  };
+  let cs = startCombat(worldEnemy, balance.combat, cp, atkFactor);
   out(tpl(t.text.combatStart, { name: foeName }));
   let printed = 0;
   while (!cs.done && !(opts?.aborted?.() ?? false)) {
@@ -176,11 +188,14 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
   let run = startRun(abyssRunSeed(state.seed, state.counters["abyss.runs"] ?? 0), balance.abyss);
   out(tpl(t.text.abyssStart, { light: run.light }));
   let loss: { enemyId: string; difficulty: number } | undefined;
+  // X-32：層の中間で負った怪我は次の層の戦闘にも響き、ランの終わりに畳まれる
+  let injuriesAcc: BodyPart[] = [];
   while (!run.done) {
     const floor = run.floor;
     const enemy = floorEnemy(run.seed, floor, enemies.enemies, balance.abyss);
     out(tpl(t.text.abyssFloor, { floor }));
     const cs = await fightEnemy(io, enemy, `${run.seed}:f${floor}`, state, {
+      injuries: injuriesAcc,
       spend: () => {
         run = spendLight(run);
       },
@@ -188,6 +203,7 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
     });
     if (cs === null) return null;
     const r = combatResult(cs);
+    injuriesAcc = [...injuriesAcc, ...r.injuries];
     // 個体差（R-01）込みの挑戦差 —— fightEnemy と同じ抽選鍵で引く
     const foeChallenge =
       indivEnemyDef(state, enemy, `${run.seed}:f${floor}`, cfg).def.challenge +
@@ -227,6 +243,7 @@ export async function runAbyss(io: CombatIo, state: GameState): Promise<GameStat
       end: run.end ?? "light",
       kills: run.kills,
       ...(loss !== undefined ? { loss } : {}),
+      ...(injuriesAcc.length > 0 ? { injuries: injuriesAcc } : {}),
     },
     cfg,
   );
