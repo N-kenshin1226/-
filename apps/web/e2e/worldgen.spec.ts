@@ -306,3 +306,23 @@ test("危機で閉ざされた道が地図と旅欄に出る（破線＋✕・�
   await expect(go).toBeDisabled();
   await page.screenshot({ path: "e2e/artifacts/trace-gen-crisis-roads.png", fullPage: true });
 });
+
+/**
+ * 既定の新規フロー（?world= 無し＝生成地方）：出自を選ぶと生成町の
+ * イントロ（生成町名入りのようこそ・生成住人の宿屋の主）を経て
+ * 初日のメニューに届く。セーブ注入を使わない実経路の回帰
+ */
+test("既定の新規開始は生成世界 —— イントロに町名が出て初日まで届く", async ({ page }) => {
+  await page.goto("/?seed=e2e-map");
+  await page.getByTestId("origin-wanderer").click();
+  const intro = page.getByTestId("screen-intro");
+  await expect(intro).toBeVisible();
+  await expect(intro).toContainText("ようこそ");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  // 生成町の場所は <町>.<key>（t0 が始まりの町）
+  await expect(page.getByTestId("menu-place-t0.gate")).toBeVisible();
+  await expect(page.getByTestId("menu-place-t0.guild")).toBeVisible();
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-firstday.png", fullPage: true });
+});
