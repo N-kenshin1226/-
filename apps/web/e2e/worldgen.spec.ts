@@ -227,6 +227,42 @@ test("危機で荒れた地域が地図と旅欄に出る（⚔・立ち入れ�
   await page.screenshot({ path: "e2e/artifacts/trace-gen-crisis-areas.png", fullPage: true });
 });
 
+/**
+ * 季節の通行止め（G-02、docs/10 §7「閉ざされる道」）：山道は冬（季節3）に
+ * 閉ざされる。seed=e2e-map は t2 から山道が2本出る（t3-t2・t5-t2）。
+ * 冬の日（90日目＝季節3）に t2 に居るセーブを畳んで検証する
+ */
+test("冬は山道が閉ざされる（地図の✕と旅欄の通行止め）", async ({ page }) => {
+  const save = genSave("e2e-map");
+  const g = JSON.parse(save) as GameState;
+  const winter: GameState = {
+    ...g,
+    time: { ...g.time, day: 90 }, // 季節3（冬）
+    life: {
+      ...g.life,
+      town: "t2",
+      map: { visited: ["t0", "t2"], heard: ["t0", "t2"] },
+    },
+  };
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), serialize(winter));
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t2.gate");
+  await page.getByTestId("place-map").click();
+  const map = page.getByTestId("screen-map");
+  await expect(map).toBeVisible();
+  // 山道は破線＋✕。旅欄は「冬は通行止め」で選べない
+  await expect(map).toContainText("✕");
+  const go = page.getByTestId("map-go-t3");
+  await expect(go).toContainText("冬は通行止め");
+  await expect(go).toBeDisabled();
+  // 街道（t2-t0）は冬でも通れる
+  await expect(page.getByTestId("map-go-t0")).toBeEnabled();
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-winter-roads.png", fullPage: true });
+});
+
 test("危機で閉ざされた道が地図と旅欄に出る（破線＋✕・旅立てない）", async ({ page }) => {
   // 境の霧・段階2（closeRoads:["highway"]）：街道が全て閉ざされる
   const save = genSave("e2e-map", crisisOf("crisis.sample_mist", 2));
