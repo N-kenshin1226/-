@@ -235,6 +235,7 @@ export const cliTextSchema = z
         dungeonRoomCombat: z.string(),
         dungeonRoomTrap: z.string(),
         dungeonRoomTreasure: z.string(),
+        dungeonRoomEvent: z.string(),
         dungeonTreasureMoney: z.string(),
         dungeonBoss: z.string(),
         dungeonUnique: z.string(),

@@ -5,7 +5,7 @@
  * 迷宮の中身は生成世界から引き直し、進行は counters（dg.rooms.<id>）を読む
  */
 import { useEffect, useMemo, useState } from "react";
-import { combatResult, type CombatAction, type GameState } from "@trace/core";
+import { combatResult, type CombatAction, type GameState, type LifeOutcome } from "@trace/core";
 import type { EnemyJson } from "@trace/content";
 import { balance } from "@trace/content";
 import {
@@ -18,6 +18,7 @@ import {
   dungeonOf,
   dungeonProgress,
   dungeonRoomEnemy,
+  dungeonRoomEvent,
   dungeonTrapRoll,
   enemyDefOf,
   enemyDisplayName,
@@ -63,6 +64,8 @@ interface Dive {
   items: Record<string, number>;
   money: number;
   trapFatigue: number;
+  /** この潜りで抜いた出来事の部屋の結末（X-30。dungeon コマンドの events へ） */
+  events: LifeOutcome[];
   end: DiveEnd | null;
 }
 
@@ -91,6 +94,7 @@ export function DungeonScreen({
     items: {},
     money: 0,
     trapFatigue: 0,
+    events: [],
     end: null,
   }));
   const [cs, setCs] = useState<CombatState | null>(null);
@@ -232,6 +236,20 @@ export function DungeonScreen({
       }
       return;
     }
+    if (here.room.kind === "event") {
+      // 出来事の部屋（X-30）：型の表の結末を潜りの積算へ（コミット時に世界へ畳む）
+      push(t.text.dungeonRoomEvent);
+      const ev = dungeonRoomEvent(state, place, i);
+      if (ev !== undefined) {
+        push(`\u3000${ev.outcome.text}`);
+        setDive((cur) =>
+          spendLight({ ...cur, rooms: cur.rooms + 1, events: [...cur.events, ev.outcome] }),
+        );
+      } else {
+        setDive((cur) => spendLight({ ...cur, rooms: cur.rooms + 1 }));
+      }
+      return;
+    }
     // 宝物の部屋：品と財貨をこの潜りの積算へ
     push(t.text.dungeonRoomTreasure);
     for (const l of here.room.loot) push(`\u3000${itemName(l.item)} ×${l.n}`);
@@ -333,6 +351,7 @@ export function DungeonScreen({
         ...(Object.keys(dive.items).length > 0 ? { items: dive.items } : {}),
         ...(dive.money > 0 ? { money: dive.money } : {}),
         ...(dive.trapFatigue > 0 ? { trapFatigue: dive.trapFatigue } : {}),
+        ...(dive.events.length > 0 ? { events: dive.events } : {}),
         weapon: cs?.playerWeapon ?? state.player.weapon,
         ...(usesAcc.length > 0 ? { uses: usesAcc } : {}),
         ...(kiLeft !== null ? { kiLeft } : {}),

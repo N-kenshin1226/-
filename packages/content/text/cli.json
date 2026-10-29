@@ -333,6 +333,7 @@
     "dungeonRoomCombat": "――{name}が姿を現した。",
     "dungeonRoomTrap": "――仕掛けの気配がする。",
     "dungeonRoomTreasure": "――宝物の部屋を見つけた。",
+    "dungeonRoomEvent": "――魔物でも罠でもない、何かがここに遺されている。",
     "dungeonTreasureMoney": "――古い財貨を見つけた（{money}G）。",
     "dungeonBoss": "――{name}の主《{boss}》が立ちはだかる。",
     "dungeonUnique": "――この世界に1体の魔物。",

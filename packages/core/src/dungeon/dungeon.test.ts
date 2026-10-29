@@ -134,6 +134,24 @@ const towns4 = [
 const gen = (seed: string) =>
   generateDungeons(createRng(`${seed}:dungeons`), types, towns4, dgCfg, 2, 2);
 
+/** 出来事の部屋つきの型と生成設定（X-30） */
+const typesWithEvents: WorldDungeonType[] = [
+  {
+    ...dgType("cave", "洞窟", 1),
+    events: [
+      { weight: 2, text: "清水が滲み出ている", fatigue: -6 },
+      { weight: 1, text: "古い絵を見つけた", gain: { skill: "observation", amount: 8 } },
+    ],
+  },
+  ...types.slice(1),
+];
+const dgCfgEvents: DungeonConfig = {
+  ...dgCfg,
+  roomWeights: { ...dgCfg.roomWeights, event: 4 },
+};
+const genWithEvents = (seed: string) =>
+  generateDungeons(createRng(`${seed}:dungeons`), typesWithEvents, towns4, dgCfgEvents, 2, 2);
+
 describe("generateDungeons（G-03 迷宮の生成）", () => {
   it("同じシードなら同じ迷宮群が出る（決定性）", () => {
     expect(gen("w")).toEqual(gen("w"));
@@ -176,6 +194,32 @@ describe("generateDungeons（G-03 迷宮の生成）", () => {
       for (const d of ds) counts.set(d.type, (counts.get(d.type) ?? 0) + 1);
       for (const n of counts.values()) expect(n).toBeLessThanOrEqual(dgCfg.typeMaxPerWorld);
     }
+  });
+
+  it("出来事の部屋：events のある型だけに出て、どの出来事かは生成で決まる（X-30）", () => {
+    let seen = 0;
+    for (let i = 0; i < 60; i++) {
+      for (const d of genWithEvents(`ev${i}`)) {
+        for (const f of d.floors) {
+          for (const r of f.rooms) {
+            if (r.kind !== "event") continue;
+            seen++;
+            // 出来事の部屋は出来事を持たない型には出ない
+            expect(d.type).toBe("cave");
+            // eventIdx は型の表の中（決定的 —— 同じシードで同じ部屋）
+            expect(r.eventIdx).toBeDefined();
+            expect(r.eventIdx!).toBeGreaterThanOrEqual(0);
+            expect(r.eventIdx!).toBeLessThan(2);
+          }
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+    // 決定的：同じシードなら同じ出来事の部屋
+    expect(genWithEvents("ev0")).toEqual(genWithEvents("ev0"));
+    // events の無い型では従来どおり（重みは加えられない）
+    const plain = gen("w").flatMap((d) => d.floors.flatMap((f) => f.rooms));
+    expect(plain.every((r) => r.kind !== "event")).toBe(true);
   });
 
   it("部屋は階層×部屋数で組み立てられ、主の間は最後の1室", () => {
@@ -836,5 +880,40 @@ describe("dungeon コマンド（G-03）", () => {
       end: "died",
       done: false,
     });
+  });
+
+  it("出来事の部屋の結末は散策と同じ語彙で畳まれる（X-30：品・金・旗印・祈り・経験）", () => {
+    const s0 = fresh();
+    const { state, events } = step(
+      s0,
+      {
+        type: "dungeon",
+        id: "dg0",
+        end: "retreat",
+        rooms: 2,
+        total: 7,
+        events: [
+          { weight: 1, text: "清水が滲み出ている", fatigue: -10 },
+          { weight: 1, text: "古い金貨を見つけた", money: 30, items: { herb: 2 } },
+          { weight: 1, text: "名もなき墓に手を合わせた", pray: true, flag: "dg.event.tomb" },
+        ],
+      },
+      baseCfg(),
+    );
+    // 結末の一文は strollOutcome の行として届く（行動ログと同じ道）
+    const texts = events.filter((e) => e.type === "strollOutcome").map((e) => e.text);
+    expect(texts).toEqual(["清水が滲み出ている", "古い金貨を見つけた", "名もなき墓に手を合わせた"]);
+    // 品・金・旗印・祈りの刻印が畳まれる
+    expect(state.life.items["herb"]).toBe(2);
+    expect(state.player.money).toBe(s0.player.money + 30);
+    expect(state.flags["dg.event.tomb"]).toBe(true);
+    expect(state.life.prayedDay).toBe(state.time.day);
+    // 疲労は負の増分で回復する（潜りの負荷から -10 される）
+    const plain = step(
+      s0,
+      { type: "dungeon", id: "dg0", end: "retreat", rooms: 2, total: 7 },
+      baseCfg(),
+    ).state;
+    expect(state.player.fatigue).toBe(plain.player.fatigue - 10);
   });
 });

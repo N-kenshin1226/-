@@ -108,6 +108,7 @@ import {
   type ItemDef,
   type JourneyWay,
   type LifeConfig,
+  type LifeOutcome,
 } from "./life/index.js";
 import { linkFlat, linkFlatCap, linkSum, type SkillLinks } from "./links/index.js";
 import { consumeS, emitKehai, resetDailyNotify } from "./notify/index.js";
@@ -486,6 +487,12 @@ export type Command =
       money?: number;
       /** 罠の消耗の合計（疲労に足す） */
       trapFatigue?: number;
+      /**
+       * 出来事の部屋の結末（X-30、docs/10 §13）：この潜りで抜いた
+       * 出来事の部屋の表（解決済みの順）。金・品・経験・旗印・祈りは
+       * 散策・地点と同じ語彙で畳まれる（applyLifeOutcome）
+       */
+      events?: readonly LifeOutcome[];
       /**
        * 潜り中に最後に使った武器のID（深層の weapon と同じ扱い。
        * 省略時は装備中の武器）
@@ -892,7 +899,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
    * 金・拾い物・出会い・見聞・経験・疲労・旗印・祈り —— stroll と spot で同じ処理）。
    * 結末の一文は呼び出し側が strollOutcome イベントとして出す
    */
-  const applyLifeOutcome = (outcome: import("./life/index.js").LifeOutcome): void => {
+  const applyLifeOutcome = (outcome: LifeOutcome): void => {
     if (outcome.money !== undefined && outcome.money !== 0) {
       const amount = Math.trunc(outcome.money);
       next = {
@@ -2135,6 +2142,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
           ...next,
           player: { ...next.player, fatigue: next.player.fatigue + command.trapFatigue },
         };
+      }
+
+      // 出来事の部屋の結末（X-30）：散策・地点と同じ語彙で畳む。
+      // 結末の一文は strollOutcome の行として行動ログに届く
+      for (const o of command.events ?? []) {
+        events.push({ type: "strollOutcome", text: o.text });
+        applyLifeOutcome(o);
       }
 
       // 野営の刻印：この潜りで野営した日を刻み、翌日の潜りを無償にする。

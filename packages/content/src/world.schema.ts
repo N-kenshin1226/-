@@ -270,6 +270,12 @@ export const dungeonTypeSchema = z
     bossTitles: z.array(z.string().min(1)).min(1),
     /** ユニークモンスターの名の候補（世界に1体の主になるとき1つ選ばれる） */
     uniqueNames: z.array(z.string().min(1)).min(1),
+    /**
+     * 出来事の部屋の表（X-30、docs/10 §13「迷宮内の出来事」）。
+     * 置かれた部屋は抜くと表から引いた結末を1回だけ畳む
+     * （散策・地点と同じ語彙。省略時は出来事の部屋が出ない型）
+     */
+    events: z.array(lifeOutcomeSchema).optional(),
   })
   .strict();
 

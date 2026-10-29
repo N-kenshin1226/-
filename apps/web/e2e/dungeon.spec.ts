@@ -283,3 +283,77 @@ test("潜りの情景は部屋ごとに変わる", async ({ page }) => {
   expect(after).not.toBe(before);
   await page.screenshot({ path: "e2e/artifacts/dungeon-room-scene.png", fullPage: true });
 });
+
+test("出来事の部屋：抜くと型の表の結末が届き、畳むと世界に刻まれる（X-30）", async ({ page }) => {
+  // 出来事の部屋（event）を持つ dg0 のシードを決定的に探し、その部屋の
+  // 直前まで進めたセーブを注入する —— 最初の「先へ進む」が出来事の部屋になる
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  const genCfg = { ...balanceJson.world, dungeons: balanceJson.dungeons };
+  let seed = "";
+  let evIndex = -1;
+  let evText = "";
+  for (let i = 0; i < 60 && seed === ""; i++) {
+    const s = `dg-ev-${i}`;
+    const w = generateWorld(s, worldJson, genCfg, challenge);
+    const d0 = w.dungeons.find((d) => d.id === "dg0");
+    if (d0 === undefined) continue;
+    for (let k = 0; k < 8; k++) {
+      const r = roomAt(d0, k);
+      if (r === null || r.room.kind !== "event" || r.room.eventIdx === undefined) continue;
+      const o = worldJson.dungeonTypes?.find((t) => t.id === d0.type)?.events?.[r.room.eventIdx];
+      if (o === undefined) continue;
+      seed = s;
+      evIndex = k;
+      evText = o.text;
+      break;
+    }
+  }
+  expect(seed).not.toBe("");
+
+  const w = generateWorld(seed, worldJson, genCfg, challenge);
+  const g = newGame(seed, "旅人", {
+    skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+    initialMoney: 200,
+    initialWeapons: ["fist", "war_axe"],
+    initialWeapon: "war_axe",
+    initialTown: w.startTown,
+    world: { kind: "gen", recipe: WORLD_RECIPE },
+  });
+  const patched: GameState = {
+    ...g,
+    counters: { ...g.counters, "dg.rooms.dg0": evIndex },
+  };
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), serialize(patched));
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t0.gate");
+  await page.getByTestId("place-go-dg0").click();
+  await waitVeil(page);
+  await page.getByTestId("place-dungeon").click();
+  await expect(page.getByTestId("screen-dungeon")).toBeVisible();
+
+  // 最初の部屋は出来事の部屋 —— 見出しと結末の一文が潜りの記録（log）に出る
+  await page.getByTestId("dungeon-advance").click();
+  await expect(page.getByTestId("log")).toContainText("何かがここに遺されている");
+  await expect(page.getByTestId("log")).toContainText(evText);
+  await page.screenshot({ path: "e2e/artifacts/dungeon-event-room.png", fullPage: true });
+
+  // 引き上げて畳む：結末の一文が世界側の記録にも届く（strollOutcome の行）
+  await page.getByTestId("dungeon-retreat").click();
+  await page.getByTestId("dungeon-commit").click();
+  await waitVeil(page);
+  await expect(page.getByTestId("log")).toContainText(evText);
+});

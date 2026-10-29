@@ -21,6 +21,7 @@ import {
   type Command,
   type GameState,
   type GenDungeon,
+  type LifeOutcome,
 } from "@trace/core";
 import { stepConfig } from "./config.js";
 import { thresholds } from "./thresholds.js";
@@ -49,6 +50,7 @@ interface DiveLog {
 
 const enemyById = new Map<string, EnemyJson>(enemies.enemies.map((e) => [e.id, e]));
 const trapById = new Map((worldFile.trapKinds ?? []).map((t) => [t.id, t]));
+const dgTypeById = new Map((worldFile.dungeonTypes ?? []).map((t) => [t.id, t]));
 const enemyChallenge = Object.fromEntries(enemies.enemies.map((e) => [e.id, e.challenge]));
 
 /** 1回の潜りを回す（web の DungeonScreen と同じ手順：灯りを払いながら部屋を抜く） */
@@ -60,6 +62,7 @@ function runDive(state: GameState, d: GenDungeon): { command: Command; end: "lig
   const items: Record<string, number> = {};
   let money = 0;
   let trapFatigue = 0;
+  const events: LifeOutcome[] = [];
   let boss: { enemyId: string; difficulty: number; unique?: boolean } | undefined;
   let end: "light" | "cleared" = "light";
   const obs = state.player.skills["observation"]?.value ?? 0;
@@ -94,6 +97,13 @@ function runDive(state: GameState, d: GenDungeon): { command: Command; end: "lig
         trapFatigue += rolled.fatigue;
         light -= rolled.light;
       }
+    } else if (at.room.kind === "event") {
+      // 出来事の部屋（X-30）：型の表の結末を dungeon コマンドの events へ畳む
+      const ev =
+        at.room.eventIdx === undefined
+          ? undefined
+          : dgTypeById.get(d.type)?.events?.[at.room.eventIdx];
+      if (ev !== undefined) events.push(ev);
     } else {
       for (const l of at.room.loot) items[l.item] = (items[l.item] ?? 0) + l.n;
       money += at.room.money;
@@ -117,6 +127,7 @@ function runDive(state: GameState, d: GenDungeon): { command: Command; end: "lig
       ...(Object.keys(items).length > 0 ? { items } : {}),
       ...(money > 0 ? { money } : {}),
       ...(trapFatigue > 0 ? { trapFatigue } : {}),
+      ...(events.length > 0 ? { events } : {}),
     },
   };
 }

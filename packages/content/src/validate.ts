@@ -232,6 +232,7 @@ try {
       enemies?: { id?: string }[];
       bosses?: { enemy?: string }[];
       treasure?: { item?: string }[];
+      events?: { items?: Record<string, number>; gain?: { skill?: string }; atom?: string }[];
     }[];
   };
   const itemIds = new Set(
@@ -325,6 +326,8 @@ try {
         bad.push(`${where}: 未定義の主 ${b.enemy}`);
     }
     for (const t of d.treasure ?? []) chkItem(t.item, `${where}.treasure`);
+    // 出来事の部屋の表（X-30）：品・技能・見聞アトムの参照は既存JSONに実在するものに限る
+    for (const o of d.events ?? []) chkOutcome(o, `${where}.events`);
   }
   if (bad.length > 0) {
     console.error(`✗ world.json の参照が未定義: ${bad.join(", ")}`);

@@ -1,4 +1,5 @@
 import type { EnemyDef, EnemyMove } from "../combat/index.js";
+import type { LifeOutcome } from "../life/index.js";
 import { createRng, type Rng } from "../rng/index.js";
 
 /**
@@ -45,6 +46,11 @@ export interface WorldDungeonType {
   bosses: { enemy: string; weight: number }[];
   bossTitles: string[];
   uniqueNames: string[];
+  /**
+   * 出来事の部屋の表（X-30、docs/10 §13「迷宮内の出来事」）。
+   * 省略・空ならその型には出来事の部屋が出ない（戦闘・罠・宝物だけ）
+   */
+  events?: LifeOutcome[];
 }
 
 /** balance.dungeons（生成・潜り・罠の係数） */
@@ -60,7 +66,7 @@ export interface DungeonConfig {
   floorJitter: number;
   floors: { min: number; max: number };
   rooms: { min: number; max: number };
-  roomWeights: { combat: number; trap: number; treasure: number };
+  roomWeights: { combat: number; trap: number; treasure: number; event?: number };
   treasureRolls: number;
   treasureMoneyBase: number;
   treasureMoneyPerDanger: number;
@@ -87,7 +93,9 @@ export interface DungeonConfig {
 
 /** 生成された部屋 */
 export interface GenRoom {
-  kind: "combat" | "trap" | "treasure";
+  kind: "combat" | "trap" | "treasure" | "event";
+  /** event の出来事（型の events 表の添字。生成時に決まり、その迷宮の顔になる） */
+  eventIdx?: number;
   /** combat の敵（enemies.json の id） */
   enemyId?: string;
   /** trap の罠（trapKinds の id） */
@@ -253,6 +261,10 @@ export function generateDungeons(
           { v: "combat" as const, weight: cfg.roomWeights.combat },
           { v: "trap" as const, weight: cfg.roomWeights.trap },
           { v: "treasure" as const, weight: cfg.roomWeights.treasure },
+          // 出来事の部屋（X-30）：型に表が無ければ重みは加えない
+          ...(type.events !== undefined && type.events.length > 0
+            ? [{ v: "event" as const, weight: cfg.roomWeights.event ?? 0 }]
+            : []),
         ]).v;
         if (kind === "combat") {
           rooms.push({
@@ -268,6 +280,13 @@ export function generateDungeons(
             loot: [],
             money: 0,
           });
+        } else if (kind === "event") {
+          // どの出来事が置かれるかも生成で決まる —— 迷宮の顔になる（表の重みで引く）
+          const evIdx = pickWeighted(
+            dgnRng,
+            type.events!.map((e, i) => ({ v: i, weight: e.weight })),
+          ).v;
+          rooms.push({ kind, eventIdx: evIdx, loot: [], money: 0 });
         } else {
           const loot = new Map<string, number>();
           for (let k = 0; k < cfg.treasureRolls; k++) {

@@ -815,12 +815,13 @@ export const balanceSchema = z
         rooms: z
           .object({ min: z.number().int().positive(), max: z.number().int().positive() })
           .strict(),
-        /** 部屋種の重み（combat/trap/treasure） */
+        /** 部屋種の重み（combat/trap/treasure/event。event は出来事の部屋） */
         roomWeights: z
           .object({
             combat: z.number().positive(),
             trap: z.number().nonnegative(),
             treasure: z.number().nonnegative(),
+            event: z.number().nonnegative(),
           })
           .strict(),
         /** 宝物部屋の抽選回数・財貨（money）の基礎と危険度係数 */

@@ -1011,6 +1011,19 @@ export function dungeonBossEnemy(state: GameState, id: string) {
   return { enemy: bossEnemy(base, d, balance.dungeons), name: bossName(d, base.name) };
 }
 
+/**
+ * 出来事の部屋の結末（X-30）：型の events 表から部屋の eventIdx で引く。
+ * 解決は step の dungeon コマンドの events で畳まれる（散策と同じ語彙）
+ */
+export function dungeonRoomEvent(state: GameState, id: string, index: number) {
+  const d = dungeonOf(state, id);
+  const at = d === undefined ? null : roomAt(d, index);
+  if (d === undefined || at === null || at.room.kind !== "event" || at.room.eventIdx === undefined)
+    return undefined;
+  const o = dungeonTypeDefs[d.type]?.events?.[at.room.eventIdx];
+  return o === undefined ? undefined : { outcome: o, floor: at.floorIndex };
+}
+
 /** 罠の見破り（部屋ごとの決定的な抽選。観察の技能値で回避率が動く） */
 export function dungeonTrapRoll(state: GameState, id: string, index: number) {
   const d = dungeonOf(state, id);

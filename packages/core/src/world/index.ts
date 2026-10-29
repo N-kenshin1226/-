@@ -37,10 +37,12 @@ import type { GameState } from "../state/types.js";
 /**
  * 生成レシピの版（state.world.recipe に刻む。生成器の形が変わったら上げる）。
  * v2：道の振り分け（G-02、docs/10 §7）／v3：迷宮の生成（G-03、同 §6）。
+ * v10：迷宮の出来事の部屋（X-30。dungeons 系列の中だけで部屋の並びが変わる
+ * —— 町・地域・名所の並びは変わらない）。
  * 追加はそれぞれ専用の系列（rng.fork）で畳むので、古い版で生成された世界と
  * 町・地域・人の並びは同じ —— 新しい版は枠だけが増える
  */
-export const WORLD_RECIPE = 9;
+export const WORLD_RECIPE = 10;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 

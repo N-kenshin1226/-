@@ -652,7 +652,8 @@
     "roomWeights": {
       "combat": 6,
       "trap": 1,
-      "treasure": 1
+      "treasure": 1,
+      "event": 1
     },
     "treasureRolls": 2,
     "treasureMoneyBase": 20,
