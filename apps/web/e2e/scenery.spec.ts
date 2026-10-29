@@ -155,6 +155,75 @@ test("legacy：アルディは宿場街・地域は型の情景、屋内は部�
   await toMap(page);
 });
 
+test("深層：灯りが減るほど霞が深くなる（X-36）", async ({ page }) => {
+  await page.goto("/?world=legacy&seed=e2e");
+  await page.getByTestId("origin-wanderer").click();
+  await skipIntro(page);
+  await dismissFx(page);
+
+  // 深層の穴へ潜る（街の外 → 穴 → 潜るボタン）
+  await travelTo(page, "abyss");
+  await page.getByTestId("place-abyss").click();
+  await expect(page.getByTestId("screen-abyss")).toBeVisible();
+  await page.getByTestId("abyss-dive").click();
+  // 降りている画面は深層の型の情景（X-24 の迷宮と同じ器）
+  const bg = page.locator("svg[data-scenery='dungeon.abyss']");
+  await expect(bg).toBeAttached();
+
+  // 灯りは1手ごとに減る —— 潜った時点の霞（世界の危機分）を基線に、
+  // 戦闘の1手で灯りの分だけ霞が立ち始める
+  const haze = async () => Number((await bg.getAttribute("data-haze")) ?? "0");
+  const base = await haze();
+  await page.getByTestId("combat-attack").click();
+  await expect.poll(haze).toBeGreaterThan(base);
+  const early = await haze();
+
+  // 灯りを使うほど霞は深くなる —— 層を抜くか次の層へ潜るたびに深く
+  for (let i = 0; i < 20; i++) {
+    if ((await haze()) > early) break;
+    if (
+      await page
+        .getByTestId("abyss-commit")
+        .isVisible()
+        .catch(() => false)
+    )
+      break;
+    if (
+      await page
+        .getByTestId("abyss-dive")
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await page.getByTestId("abyss-dive").click();
+      continue;
+    }
+    if (
+      await page
+        .getByTestId("combat-attack")
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await page.getByTestId("combat-attack").click();
+      continue;
+    }
+    break;
+  }
+  const late = await haze();
+  expect(late, "灯りを使うほど霞は深くなる").toBeGreaterThan(early);
+  await page.screenshot({ path: "e2e/artifacts/scenery-abyss-haze.png", fullPage: true });
+
+  // 引き返してランを閉じると合図は下りる（霞は世界の分だけに戻る）
+  if (
+    await page
+      .getByTestId("abyss-retreat")
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await page.getByTestId("abyss-retreat").click();
+    await expect.poll(haze).toBe(base);
+  }
+});
+
 test("情景の窓は375px幅でも崩れない", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 720 });
   await page.goto("/?scn=town.port&tod=evening&weather=clear&seed=e2e");

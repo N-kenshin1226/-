@@ -116,12 +116,13 @@ export function sceneryForScreen(
     case "succession":
     case "rebirth":
       return null;
-    // 深層の中（降りている画面）はダンジョンの型の情景
+    // 深層の中（降りている画面）はダンジョンの型の情景。
+    // 潜りの合図（層番号）があれば畳む —— 層ごとに構図が変わる（X-36）
     case "abyss":
       return {
         id: "dungeon.abyss",
         recipe: scenery.dungeon.abyss!,
-        variant: `${state.seed}:scenery:abyss`,
+        variant: `${state.seed}:scenery:abyss${hint?.variant ?? ""}`,
       };
     // 有限迷宮の中（G-03）：その迷宮の型のレシピ（洞窟・坑道・地下墓所…）
     case "dungeon": {

@@ -314,6 +314,7 @@ export function SceneBackground({
       data-scene={kind}
       data-tod={tod}
       data-weather={weather}
+      data-haze={haze}
     >
       {kind === "town" && <Town p={p} tod={tod} weather={weather} />}
       {kind === "gate" && <Gate p={p} tod={tod} weather={weather} />}

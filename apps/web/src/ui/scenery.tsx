@@ -262,6 +262,7 @@ export function Scenery({
       data-scenery={spec.id}
       data-tod={tod}
       data-weather={weather}
+      data-haze={haze}
     >
       {spec.recipe.sky === false ? (
         <>

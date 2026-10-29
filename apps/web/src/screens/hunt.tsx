@@ -55,6 +55,7 @@ import {
   type Screen,
 } from "../ui.js";
 import { theme } from "../theme.js";
+import { setSceneryHint } from "../scenery-hint.js";
 import { areaNameOf, enemyAreasOf } from "../world.js";
 
 const W = theme.colors.world;
@@ -728,6 +729,20 @@ export function AbyssScreen({
   const [injuriesAcc, setInjuriesAcc] = useState<BodyPart[]>([]);
   // F-04：1手ぶんの出来事を拍に分けて見せる。現れた行は世界ログにも流す
   const playback = useCombatPlayback((ev) => push(`\u3000${ev.text}`));
+
+  // 情景への合図（X-36）：降りた層で構図を変え、灯りの減りで霞を深くする
+  // （X-24 の有限迷宮と同じ伝達口 —— 深く、暗くなっていくのが見える）
+  useEffect(() => {
+    if (run.done) {
+      setSceneryHint(undefined);
+      return;
+    }
+    const dark = 1 - run.light / balance.abyss.maxTurns;
+    setSceneryHint({ variant: `:${run.floor}`, haze: Math.max(0, dark * 0.45) });
+  }, [run.floor, run.light, run.done]);
+  // 画面を離れるときは合図を下ろす
+  useEffect(() => () => setSceneryHint(undefined), []);
+
   /** 戦闘中の敵の世界補正済み定義（意図の表示用。解決側と同じものを使う） */
   const abyssDef = useMemo(
     () => (enemy === null ? null : enemyDefOf(state, enemy, encKey)),

@@ -165,6 +165,17 @@ describe("画面から情景を引く（生成地方）", () => {
     ).toBe(`${state.seed}:scenery:${d.id}`);
   });
 
+  it("潜りの合図で深層の情景は層ごとに変わる（X-36）", () => {
+    const base = sceneryForScreen(state, { name: "abyss" }, null);
+    const f2 = sceneryForScreen(state, { name: "abyss" }, null, { variant: ":2" });
+    const f9 = sceneryForScreen(state, { name: "abyss" }, null, { variant: ":9" });
+    expect(base?.id).toBe("dungeon.abyss");
+    expect(f2?.variant).toBe(`${state.seed}:scenery:abyss:2`);
+    expect(f9?.variant).toBe(`${state.seed}:scenery:abyss:9`);
+    // 層ごとに構図が変わる（variant が違えば配置も変わる）
+    expect(f2?.variant).not.toBe(f9?.variant);
+  });
+
   it("読みもの用の画面は情景を引かない（従来の固定背景へ）", () => {
     for (const name of ["status", "settings", "wake", "news", "lore", "book", "records"] as const) {
       // wake 等の payload は解決に関係ないので name だけ渡す
