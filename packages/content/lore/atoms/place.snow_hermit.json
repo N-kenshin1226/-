@@ -2,9 +2,9 @@
   "id": "place.snow_hermit",
   "kind": "place",
   "title": "雪隠れの庵",
-  "text": "庵の戸口には薪が積まれ、窓の内側に薄く灯りが残る。誰かがここで、長い冬を越している。",
-  "refs": ["place.hill_chapel", "event.pilgrim_road"],
-  "reveals": ["fact.hermit_beyond_chapel"],
+  "text": "雪の気配の残る庵。戸口には薪が積まれ、窓の内側に薄く灯りが滲む。炉の横に立つ鍛冶道具の柄に〈ベルナ〉の刻印 —— 大火のあと姿を消した職人は、ここで年を重ねている",
+  "refs": ["place.hill_chapel", "event.pilgrim_road", "npc.berna", "event.great_fire"],
+  "reveals": ["fact.hermit_beyond_chapel", "fact.berna_survived_fire"],
   "reliability": "fact",
   "unlock": { "flag": "found.snow_hermit" }
 }

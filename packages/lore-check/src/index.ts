@@ -123,6 +123,33 @@ export function checkLore({ canon, atoms }: LoreCheckInput): Issue[] {
   return issues;
 }
 
+/**
+ * つながりの到達性（全集チェック、X-40）。
+ * 報酬に要る事実は、いずれかのアトムが明かすこと —— どのアトムからも
+ * 明かされない事実を要求するつながりは永遠に揃わない。
+ * atoms には公開アトムに加え hidden/ のアトムも源として畳み込んで渡す
+ * （hidden の頁はゲーム内で読める事実の源なので、到達性の分母に含める）
+ */
+export function checkLoreReachability({ canon, atoms }: LoreCheckInput): Issue[] {
+  const factIds = new Set(canon.facts.map((f) => f.id));
+  const revealed = new Set(atoms.flatMap((a) => a.atom.reveals));
+  const issues: Issue[] = [];
+  for (const ev of canon.events) {
+    if (!ev.reward) continue;
+    for (const f of ev.reward.facts) {
+      // 正史に無い事実への参照切れは checkLore 側の責務（ここでは到達性だけ見る）
+      if (factIds.has(f) && !revealed.has(f)) {
+        issues.push({
+          file: "canon.json",
+          level: "error",
+          message: `届かない事実: ${f}（${ev.id} のつながり報酬）を明かすアトムが無い`,
+        });
+      }
+    }
+  }
+  return issues;
+}
+
 /** 文字bigramの一致率（Dice係数）。空白・句読点を除去して比較 */
 export function similarity(a: string, b: string): number {
   const norm = (s: string) => s.replace(/[\s。、〈〉「」『』（）・ー―…]/g, "");

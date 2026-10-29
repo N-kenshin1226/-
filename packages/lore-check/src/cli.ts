@@ -1,8 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { atomSchema, canonSchema, type Atom } from "@trace/content";
-import { checkLore, type Issue } from "./index.js";
+import { checkLore, checkLoreReachability, type Issue } from "./index.js";
 
 /**
  * pnpm lore:check — 物語アトムの検証CLI（docs/07_story.md §5）。
@@ -46,7 +46,20 @@ for (const file of readdirSync(join(dir, "atoms"))
   atoms.push({ file, atom: parsed.data });
 }
 
+// hidden/atoms.json（あれば）—— 名所の頁など、ゲーム内で読める事実の源。
+// 到達性チェックの分母にだけ畳み込む（lint は公開アトムの責務）
+const hiddenAtoms: { file: string; atom: Atom }[] = [];
+const hiddenPath = join(dirname(fileURLToPath(import.meta.url)), "../../content/hidden/atoms.json");
+if (existsSync(hiddenPath)) {
+  const raw = JSON.parse(readFileSync(hiddenPath, "utf8")) as { atoms?: unknown[] };
+  for (const [i, a] of (raw.atoms ?? []).entries()) {
+    const parsed = atomSchema.safeParse(a);
+    if (parsed.success) hiddenAtoms.push({ file: `hidden/atoms.json#${i}`, atom: parsed.data });
+  }
+}
+
 issues.push(...checkLore({ canon, atoms }));
+issues.push(...checkLoreReachability({ canon, atoms: [...atoms, ...hiddenAtoms] }));
 
 for (const i of issues) {
   const mark = i.level === "error" ? "✗" : "△";

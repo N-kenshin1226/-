@@ -837,3 +837,37 @@ test("名所を踏むと見聞録に頁が加わり、読むと事実が分か�
   await expect(page.getByTestId("lore-atom")).not.toContainText("まだ読んでいない");
   await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark-lore.png", fullPage: true });
 });
+
+test("大火の真相：隠者と鍛冶屋跡の頁を読み合わせると、つながりが完成する（X-40）", async ({
+  page,
+}) => {
+  // 雪の隠者の頁は失踪した職人の生き延びを、焼けた鍛冶屋の頁は火の出元を明かす。
+  // 2枚の頁を読み合わせると「東の大火」のつながりが完成する
+  const g = genSave("e2e-map", null, 0, "t0", undefined, {
+    "found.snow_hermit": true,
+    "found.old_forge": true,
+  });
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), g);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+
+  await gotoPlace(page, "t0.church");
+  await page.getByTestId("place-lore").click();
+  await expect(page.getByTestId("screen-lore")).toBeVisible();
+
+  // ── 1枚目：隠者の頁 —— 職人の生き延びが明かされる（まだ繋がらない） ──
+  await page.getByTestId("atom-place.snow_hermit").click();
+  await page.getByTestId("lore-read").click();
+  await waitVeil(page);
+  await expect(page.getByTestId("log")).not.toContainText("断片が繋がった");
+  await page.getByTestId("lore-list").click();
+
+  // ── 2枚目：鍛冶屋の頁 —— 火の出元が揃い、つながりが完成する ──
+  await page.getByTestId("atom-place.old_forge").click();
+  await page.getByTestId("lore-read").click();
+  await waitVeil(page);
+  await expect(page.getByTestId("log")).toContainText("断片が繋がった");
+  await expect(page.getByTestId("log")).toContainText("東の大火 の真相に近づいた気がする");
+  await page.screenshot({ path: "e2e/artifacts/trace-x40-fire-truth.png", fullPage: true });
+});

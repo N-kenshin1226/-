@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { atomSchema, canon, type Atom } from "@trace/content";
-import { checkLore, similarity } from "./index.js";
+import { checkLore, checkLoreReachability, similarity } from "./index.js";
 
 const atom = (over: Partial<Atom>): Atom =>
   atomSchema.parse({
@@ -94,5 +94,32 @@ describe("similarity", () => {
   it("同文は1、無関係な文は低い", () => {
     expect(similarity("柄に刻まれている", "柄に刻まれている")).toBe(1);
     expect(similarity("柄に刻まれている", "星が瞬く夜に橋を渡る")).toBeLessThan(0.3);
+  });
+});
+
+describe("つながりの到達性（X-40。報酬に要る事実はアトムが明かすこと）", () => {
+  it("どのアトムも明かさない事実を報酬に使うと error", () => {
+    const issues = checkLoreReachability({ canon, atoms: files(atom({})) });
+    // 槌の事実だけを明かすアトム —— 大火・熱・旗・獣の真相は届かない
+    expect(issues.some((i) => i.level === "error" && i.message.includes("届かない事実"))).toBe(
+      true,
+    );
+    expect(issues.some((i) => i.message.includes("fact.fire_started_old_forge"))).toBe(true);
+  });
+
+  it("報酬に要る事実にすべて源があれば通る", () => {
+    const sources = atom({
+      reveals: [
+        "fact.berna_survived_fire",
+        "fact.fire_started_old_forge",
+        "fact.horde_repelled_by_levee",
+        "fact.horde_banner_burned",
+        "fact.fever_well_sealed",
+        "fact.fever_stopped_at_bergen",
+        "fact.beast_driven_not_slain",
+        "fact.beast_claw_marks_differ",
+      ],
+    });
+    expect(checkLoreReachability({ canon, atoms: files(sources) })).toHaveLength(0);
   });
 });
