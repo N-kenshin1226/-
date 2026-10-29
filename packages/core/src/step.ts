@@ -694,6 +694,21 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   // コンテンツ設定。天候表が無い世界では {weather} 条件は成立しない
   const condEnv: CondEnv = cfg.weather !== undefined ? { weather: cfg.weather } : {};
 
+  // 条件付きの場所（X-28）：when の立った名所は届いた噂として聞き覚えに
+  // 刻む —— 危機の深まりで開く避難路など、条件の到来を世界が知らせる。
+  // 判定はこの行動の前の世界（入力 state）で行う：行動の刻印（旅の訪問
+  // 印など）で条件をすり抜けないため、そして噂の行が行動の行より先に
+  // 並ぶ語り順になるため。刻んだあとは恒久的に既知（条件が去っても名は残る）
+  if (cfg.life !== undefined) {
+    for (const [id, p] of Object.entries(cfg.life.places ?? {})) {
+      if (p.when === undefined) continue;
+      if (state.life.map.heard.includes(id) || state.life.map.visited.includes(id)) continue;
+      if (!evaluate(p.when, state, cfg.time, condEnv)) continue;
+      next = { ...next, life: { ...next.life, map: markHeard(next.life.map, id) } };
+      events.push({ type: "mapHeard", place: id });
+    }
+  }
+
   // K-03：響き合い（合成）とユニークスキルの判定。習得判定（checkArtsLearn）と
   // 同じ場面で呼ぶ —— 技・技能・刻印が揃った瞬間に新しい技が生まれ、
   // 厳しい条件を満たしたユニークはその世界で一人だけの手に渡る。

@@ -977,6 +977,59 @@ describe("地図の霧（G-02）", () => {
     const pick = revealPick("when-x", 5, 0, lmCfg, new Set([...known, "forest", "deep_woods"]));
     expect(pick).toBeUndefined();
   });
+
+  it("条件が立った名所は世界が知らせる —— 噂として聞き覚えに刻まれる（X-28）", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.refuge": {
+          town: "ardi",
+          name: "避難の古道",
+          landmark: true,
+          when: { crisis: { minStage: 1 } },
+        },
+      },
+    };
+    const lmStepCfg: StepConfig = { ...fogStepCfg, life: lmCfg };
+    const crisisAt = (
+      stageIndex: number,
+      outcome: CrisisState["outcome"] = "ongoing",
+    ): CrisisState => ({
+      typeId: "crisis.test",
+      stageIndex,
+      seasonsInStage: 0,
+      boundaries: 0,
+      factions: [],
+      hero: emptyCrisisFields(),
+      finales: [],
+      variables: {},
+      npcGone: [],
+      log: [],
+      outcome,
+    });
+
+    // 段階0では届かない
+    const r0 = step({ ...game(), crisis: crisisAt(0) }, { type: "stroll" }, lmStepCfg);
+    expect(r0.events.some((e) => e.type === "mapHeard" && e.place === "lm.refuge")).toBe(false);
+    expect(r0.state.life.map.heard).not.toContain("lm.refuge");
+
+    // 段階1で届く —— 聞き覚えに刻まれ、以後は条件に関わらず既知
+    const r1 = step({ ...game(), crisis: crisisAt(1) }, { type: "stroll" }, lmStepCfg);
+    expect(r1.events.some((e) => e.type === "mapHeard" && e.place === "lm.refuge")).toBe(true);
+    expect(r1.state.life.map.heard).toContain("lm.refuge");
+
+    // 決着しても名は残る。そして二度目は届かない（刻み済み）
+    const r2 = step(
+      { ...r1.state, crisis: crisisAt(1, "resolved") },
+      { type: "stroll" },
+      lmStepCfg,
+    );
+    expect(r2.state.life.map.heard).toContain("lm.refuge");
+    expect(r2.events.filter((e) => e.type === "mapHeard" && e.place === "lm.refuge")).toHaveLength(
+      0,
+    );
+  });
 });
 
 describe("道中の遭遇（G-02）", () => {

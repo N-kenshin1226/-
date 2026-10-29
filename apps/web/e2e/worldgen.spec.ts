@@ -711,5 +711,8 @@ test("条件付きの名所は危機の深まりで地図に現れる（X-27）"
   await knownBtn.click();
   await waitVeil(page);
   await expect(page.getByTestId("place-name")).toContainText(lmName);
+  // 条件の到来は世界が知らせる —— 行動の終わりに噂の行に名所の名が届く（X-28）
+  await page.getByTestId(`place-spot-${lmId}`).click();
+  await expect(page.getByTestId("log")).toContainText(lmName);
   await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark-crisis.png", fullPage: true });
 });
