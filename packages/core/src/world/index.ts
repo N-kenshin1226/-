@@ -39,7 +39,7 @@ import type { GameState } from "../state/types.js";
  * 追加はそれぞれ専用の系列（rng.fork）で畳むので、古い版で生成された世界と
  * 町・地域・人の並びは同じ —— 新しい版は枠だけが増える
  */
-export const WORLD_RECIPE = 3;
+export const WORLD_RECIPE = 4;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
@@ -124,6 +124,8 @@ export interface WorldGenConfig {
     radiusJitter: number;
     /** 端の町が地図の外に出ないようの余白（%） */
     margin: number;
+    /** 町どうしの最小間隔（%）—— 地図で町名が読める距離を保つ */
+    minTownDist: number;
   };
   /** 有限迷宮の生成ルール（balance.dungeons、G-03。省略時は迷宮を作らない） */
   dungeons?: DungeonConfig;
@@ -498,6 +500,41 @@ export function generateWorld(
       clamp(cfg.map.center[1] + Math.sin(angle) * r),
     ];
   });
+
+  // 町どうしの離散化：黄金角はゆらぎ次第で近い輪の町を重ねることがある。
+  // 地図で町名が読める間隔（minTownDist）まで互いを押し離す —— 乱数は
+  // 引かず、位置だけを直すので生成の系列は変わらない。始まりの町は
+  // 地方の中心に固定したまま、動くのは相手側だけ
+  const clampPos = (v: number) => Math.max(cfg.map.margin, Math.min(100 - cfg.map.margin, v));
+  const minTownDist = cfg.map.minTownDist;
+  for (let pass = 0; pass < 12; pass++) {
+    let moved = false;
+    for (let i = 0; i < towns.length; i++) {
+      for (let j = i + 1; j < towns.length; j++) {
+        const a = towns[i]!;
+        const b = towns[j]!;
+        let dx = b.pos[0] - a.pos[0];
+        let dy = b.pos[1] - a.pos[1];
+        const d = Math.hypot(dx, dy);
+        if (d >= minTownDist) continue;
+        if (d < 1e-6) {
+          dx = 1;
+          dy = 0;
+        } else {
+          dx /= d;
+          dy /= d;
+        }
+        const push = minTownDist - Math.max(d, 1e-6);
+        // 片方が始まりの町（中心固定）なら、もう片方が全量ずれる
+        const aShare = i === 0 ? 0 : 0.5;
+        const bShare = i === 0 ? 1 : 0.5;
+        a.pos = [clampPos(a.pos[0] - dx * push * aShare), clampPos(a.pos[1] - dy * push * aShare)];
+        b.pos = [clampPos(b.pos[0] + dx * push * bShare), clampPos(b.pos[1] + dy * push * bShare)];
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
 
   // ── 地域：数・型・配置・危険度 ──
   const nAreas = rngArea.int(cfg.areas.min, cfg.areas.max);

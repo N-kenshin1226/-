@@ -53,6 +53,7 @@ const cfg: WorldGenConfig = {
     angleJitter: 0.5,
     radiusJitter: 5,
     margin: 8,
+    minTownDist: 12,
   },
 };
 
@@ -500,6 +501,25 @@ describe("generateWorld（G-01 地方の生成）", () => {
     // 旅は双方向
     for (const j of w.life.journeys) {
       expect(w.roads.some((r) => r.from === j.from && r.to === j.to)).toBe(true);
+    }
+  });
+
+  it("町どうしは地図で名が読める間隔を保つ（500シード）", () => {
+    // 黄金角の散らしだけでは近い輪の町が重なることがある —— 生成後の
+    // 離散化で minTownDist を下回る対が残っていてはいけない（X-01）
+    for (let i = 0; i < 500; i++) {
+      const w = generateWorld(`map-sep-${i}`, file, cfg);
+      for (let a = 0; a < w.towns.length; a++) {
+        for (let b = a + 1; b < w.towns.length; b++) {
+          const [ax, ay] = w.towns[a]!.pos;
+          const [bx, by] = w.towns[b]!.pos;
+          const d = Math.hypot(bx - ax, by - ay);
+          expect(
+            d,
+            `seed=map-sep-${i}: ${w.towns[a]!.id}(${ax},${ay}) ↔ ${w.towns[b]!.id}(${bx},${by})`,
+          ).toBeGreaterThanOrEqual(cfg.map.minTownDist - 0.5);
+        }
+      }
     }
   });
 });

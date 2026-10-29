@@ -1267,6 +1267,8 @@ export const balanceSchema = z
             radiusJitter: z.number().nonnegative(),
             /** 端の町が地図の外に出ないようの余白（%） */
             margin: z.number().min(0).max(20),
+            /** 町どうしの最小間隔（%）—— 地図で町名が読める距離を保つ */
+            minTownDist: z.number().positive(),
           })
           .strict(),
       })

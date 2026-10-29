@@ -519,7 +519,8 @@
       "radiusPerRing": 24,
       "angleJitter": 0.55,
       "radiusJitter": 5,
-      "margin": 8
+      "margin": 8,
+      "minTownDist": 12
     }
   },
   "life": {

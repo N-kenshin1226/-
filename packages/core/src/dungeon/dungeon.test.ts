@@ -329,6 +329,7 @@ const worldCfg: WorldGenConfig = {
     angleJitter: 0.5,
     radiusJitter: 5,
     margin: 8,
+    minTownDist: 12,
   },
   dungeons: dgCfg,
 };
