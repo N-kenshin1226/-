@@ -365,7 +365,8 @@ export function markHeard(map: GameState["life"]["map"], place: string): GameSta
 /**
  * 地方のすべての場所を聞き覚えた刻印（地図の購入。G-02）。
  * 町と地域の名がすべて書き込まれる —— 訪れた印は立たない（知ることと
- * 行くことは別。霧が晴れても印の濃さは変わらない）
+ * 行くことは別。霧が晴れても印の濃さは変わらない）。
+ * 名所だけは書き込まれない：売り物の地図に載る場所ではない
  */
 export function markAllHeard(
   map: GameState["life"]["map"],
@@ -373,7 +374,11 @@ export function markAllHeard(
 ): GameState["life"]["map"] {
   const heard = new Set(map.heard);
   for (const id of Object.keys(cfg.towns)) heard.add(id);
-  for (const id of Object.keys(cfg.places ?? {})) heard.add(id);
+  for (const [id, p] of Object.entries(cfg.places ?? {})) {
+    // 名所は売り物の地図にも載らない —— 噂・発見でだけ名が知れる（X-25/X-26）
+    if (p.landmark === true) continue;
+    heard.add(id);
+  }
   return { ...map, heard: [...heard] };
 }
 

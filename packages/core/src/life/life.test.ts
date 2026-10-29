@@ -863,6 +863,10 @@ describe("地図の霧（G-02）", () => {
       life: {
         ...fogCfg,
         market: { ...fogCfg.market, stock: [...fogCfg.market.stock, { id: "mat.map.region" }] },
+        places: {
+          ...fogCfg.places,
+          "lm.test": { town: "ardi", name: "試しの名所", landmark: true },
+        },
       },
     };
     const r = step(rich(game()), { type: "buyItem", id: "mat.map.region" }, mapCfg);
@@ -870,6 +874,8 @@ describe("地図の霧（G-02）", () => {
     for (const id of ["ardi", "bergen", "port", "deep", "forest", "deep_woods"]) {
       expect(r.state.life.map.heard).toContain(id);
     }
+    // 名所は買った地図にも載らない（噂・発見でだけ名が知れる —— X-26）
+    expect(r.state.life.map.heard).not.toContain("lm.test");
     expect(r.state.life.map.visited).toEqual(["ardi"]);
   });
 
