@@ -344,6 +344,11 @@ export type ActionEvent =
    */
   | { type: "mapHeard"; place: string }
   /**
+   * 名所の初訪（X-29、docs/10 §14b）：landmark 印の場所へ初めて立った。
+   * 踏んだ記録が残る（counter landmark.found / landmark.found.<id>）
+   */
+  | { type: "landmarkFound"; place: string }
+  /**
    * 地方の地図を手に入れた（G-02、docs/10 §7「地図の購入で霧が晴れる」。
    * map 品（items.json の reveal:"map"）を買ったとき。地方すべての町と
    * 地域の名が聞き覚えに刻まれる）
@@ -796,6 +801,18 @@ export const counterSubscriber: Subscriber = (state, event) => {
         counters: {
           ...state.counters,
           "unique.claimed": (state.counters["unique.claimed"] ?? 0) + 1,
+        },
+      };
+    }
+    case "landmarkFound": {
+      // 名所の発見の累計（「全名所を踏んだ」系の条件が読める語彙）
+      return {
+        ...state,
+        counters: {
+          ...state.counters,
+          "landmark.found": (state.counters["landmark.found"] ?? 0) + 1,
+          [`landmark.found.${event.place}`]:
+            (state.counters[`landmark.found.${event.place}`] ?? 0) + 1,
         },
       };
     }

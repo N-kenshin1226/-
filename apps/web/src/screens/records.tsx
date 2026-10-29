@@ -10,6 +10,7 @@ import {
   dungeonRecordLines,
   occasionRecordLines,
   eventLines,
+  landmarkRecordLines,
   loadChronicle,
   narrator,
   skillList,
@@ -155,6 +156,18 @@ export function RecordsScreen({ state, back }: { state: GameState; back: () => v
           {/* 有限迷宮（G-03）：生成世界の迷宮と抜いた室数。制覇は《制覇》の印 */}
           <div data-testid="records-dungeons">
             {dungeonRecordLines(state).map((l, i) =>
+              i === 0 ? (
+                <PaperHead key="head">{l}</PaperHead>
+              ) : (
+                <div key={i} style={{ color: P.sub }}>
+                  {l}
+                </div>
+              ),
+            )}
+          </div>
+          {/* 名所（X-29）：踏んだ名所が記録に残る —— 霧の中の名は出さない */}
+          <div data-testid="records-landmarks">
+            {landmarkRecordLines(state).map((l, i) =>
               i === 0 ? (
                 <PaperHead key="head">{l}</PaperHead>
               ) : (

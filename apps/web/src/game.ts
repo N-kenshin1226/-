@@ -1048,6 +1048,25 @@ export function dungeonRecordLines(state: GameState): string[] {
   return lines.length > 1 ? lines : [];
 }
 
+/** 記録画面の名所の欄（生成世界のみ。踏んだ名所だけが載る —— 見つけた記録） */
+export function landmarkRecordLines(state: GameState): string[] {
+  const life = lifeCfgFor(state);
+  if (life === undefined) return [];
+  const visited = new Set(state.life.map.visited);
+  const lines = [t.text.recordsLandmarks];
+  for (const [id, p] of Object.entries(life.places ?? {})) {
+    // 踏んだ名所だけ載る —— 霧の中・聞き覚えだけの名所の名は記録に先走らない
+    if (p.landmark !== true || !visited.has(id)) continue;
+    lines.push(
+      tpl(t.text.recordsLandmarkLine, {
+        name: p.name ?? id,
+        town: p.town !== undefined ? townName(state, p.town) : "",
+      }),
+    );
+  }
+  return lines.length > 1 ? lines : [];
+}
+
 /**
  * 湖畔の釣り（P-01）：注文ではない野趣 —— 報酬欄は空で、台帳の
  * 市場価値がそのまま入る（work コマンドの rewardMoney 省略と同じ扱い）
@@ -1871,6 +1890,9 @@ export function eventLines(events: ActionEvent[], state?: GameState): string[] {
       case "mapHeard":
         // 噂・朝刊で名を聞き覚えた（G-02。地図の霧が晴れる）
         return [tpl(t.text.life.mapHeard, { name: mapPlaceName(state, e.place) })];
+      case "landmarkFound":
+        // 名所の初訪（X-29）：踏んだ記録が残る一行
+        return [tpl(t.text.life.landmarkFound, { name: mapPlaceName(state, e.place) })];
       case "mapRevealed":
         // 地方の地図を手に入れた（G-02。地方すべての名が聞き覚えに刻まれる）
         return [t.text.life.mapRevealed];
@@ -3448,6 +3470,13 @@ export function tagsOf(events: ActionEvent[], state?: GameState): FxTag[] {
         out.push({ text: tpl(t.text.discoveryFound, { name: def?.name ?? e.id }), tone: "plain" });
         break;
       }
+      // 名所の初訪（X-29）：通知Bランク —— 踏んだ名だけ札で知らせる
+      case "landmarkFound":
+        out.push({
+          text: tpl(t.text.life.landmarkFound, { name: mapPlaceName(state, e.place) }),
+          tone: "plain",
+        });
+        break;
       // NPCの歳月（X-12）：街の人物の物語が動いた一行
       case "npcEvent":
         out.push({ text: tpl(t.text.npcEvent, { name: e.name, text: e.text }), tone: "plain" });

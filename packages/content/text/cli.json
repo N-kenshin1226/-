@@ -348,6 +348,8 @@
     "recordsDungeonLine": "　{name}（{type}）：{cleared}/{total}室{mark}",
     "recordsDungeonCleared": "《制覇》",
     "recordsDungeonsNone": "　まだ迷宮の記録はない。",
+    "recordsLandmarks": "── 名所 ──",
+    "recordsLandmarkLine": "　{name}（{town}）",
     "newsBossDefeated": "{name}の主が討たれたとの報せ ―― 迷宮の一つが静かになった。",
     "newsUniqueBoss": "世界に1体の魔物《{name}》が{name2}で討たれた ―― 世界初の記録。",
     "kehai": "――何かが、噛み合いかけている。",
@@ -590,6 +592,7 @@
       "journeyStarted": "――{town}への旅に出た。{days}日の道のり",
       "journeyStartedWay": "――{town}への旅に出た（{way}）。{days}日の道のり",
       "mapHeard": "――《{name}》の名を聞き覚えた",
+      "landmarkFound": "――《{name}》を踏んだ。初めての訪れが記録に刻まれた",
       "mapRevealed": "――地方の地図を手に入れた。見知らぬ土地の名が書き込まれた",
       "newsHeard": "――朝刊の噂：《{name}》の名を聞き覚えた",
       "repGained": "――{town}での評判が少し広まった"

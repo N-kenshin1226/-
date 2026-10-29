@@ -671,6 +671,13 @@ test("名所は聞き覚えるまで霧の中 —— 名を聞くと地図に出
   await expect
     .poll(async () => (await page.getByTestId("log").innerText()).length)
     .toBeGreaterThan(before.length);
+  // 名所の初訪は「踏んだ」の行と記録に刻まれる（X-29）
+  await expect(page.getByTestId("log")).toContainText("を踏んだ");
+  await page.getByTestId(`place-go-${town}.gate`).click();
+  await waitVeil(page);
+  await gotoPlace(page, `${town}.guild`);
+  await page.getByTestId("place-records").click();
+  await expect(page.getByTestId("records-landmarks")).toContainText(lmName);
   await page.waitForTimeout(400);
   await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark.png", fullPage: true });
 });

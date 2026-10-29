@@ -1030,6 +1030,34 @@ describe("地図の霧（G-02）", () => {
       0,
     );
   });
+
+  it("名所を踏んだ記録が残る —— 初訪だけ landmarkFound が届く（X-29）", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.test": { town: "ardi", name: "試しの名所", landmark: true },
+      },
+    };
+    const lmStepCfg: StepConfig = { ...fogStepCfg, life: lmCfg };
+    const heard: GameState = {
+      ...game(),
+      life: { ...game().life, map: { visited: ["ardi"], heard: ["ardi", "lm.test"] } },
+    };
+    // 初訪：landmarkFound の届き＋発見の刻印
+    const r1 = step(heard, { type: "travel", to: "lm.test" }, lmStepCfg);
+    expect(r1.events.some((e) => e.type === "landmarkFound" && e.place === "lm.test")).toBe(true);
+    expect(r1.state.counters["landmark.found"]).toBe(1);
+    expect(r1.state.counters["landmark.found.lm.test"]).toBe(1);
+    expect(r1.state.life.map.visited).toContain("lm.test");
+    // 二度目は届かない（訪問印が既に立っている）
+    const r2 = step(r1.state, { type: "travel", to: "lm.test" }, lmStepCfg);
+    expect(r2.events.filter((e) => e.type === "landmarkFound")).toHaveLength(0);
+    expect(r2.state.counters["landmark.found"]).toBe(1);
+    // 名所以外の場所への旅では届かない
+    const r3 = step(r1.state, { type: "travel", to: "forest" }, lmStepCfg);
+    expect(r3.events.filter((e) => e.type === "landmarkFound")).toHaveLength(0);
+  });
 });
 
 describe("道中の遭遇（G-02）", () => {

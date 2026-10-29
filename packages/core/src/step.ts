@@ -702,6 +702,9 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
   if (cfg.life !== undefined) {
     for (const [id, p] of Object.entries(cfg.life.places ?? {})) {
       if (p.when === undefined) continue;
+      // この行動で向かう場所は「届いてから行く」の語りにならない ——
+      // 訪れ自体が見つけることになる（landmarkFound が担う）
+      if (command.type === "travel" && command.to === id) continue;
       if (state.life.map.heard.includes(id) || state.life.map.visited.includes(id)) continue;
       if (!evaluate(p.when, state, cfg.time, condEnv)) continue;
       next = { ...next, life: { ...next.life, map: markHeard(next.life.map, id) } };
@@ -983,7 +986,14 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       grantLinkGains("travel.gain");
       // G-02：行った場所は地図の霧の外に出る（行ったことのある場所は濃い印になる）
       if (command.to !== undefined && cfg.life !== undefined) {
+        // 名所の初訪（X-29）：初めて立った名所は見つけた記録が残る
+        const firstLandmark =
+          !state.life.map.visited.includes(command.to) &&
+          cfg.life.places?.[command.to]?.landmark === true;
         next = { ...next, life: { ...next.life, map: markVisited(next.life.map, command.to) } };
+        if (firstLandmark) {
+          events.push({ type: "landmarkFound", place: command.to });
+        }
       }
       break;
     }

@@ -250,6 +250,8 @@ export const cliTextSchema = z
         recordsDungeonLine: z.string(),
         recordsDungeonCleared: z.string(),
         recordsDungeonsNone: z.string(),
+        recordsLandmarks: z.string(),
+        recordsLandmarkLine: z.string(),
         newsBossDefeated: z.string(),
         newsUniqueBoss: z.string(),
         kehai: z.string(),
@@ -628,6 +630,8 @@ export const cliTextSchema = z
              * （{name} は場所の名）・地方の地図を買った行
              */
             mapHeard: z.string(),
+            /** 名所の初訪（X-29。{name} は場所の名） */
+            landmarkFound: z.string(),
             mapRevealed: z.string(),
             /** 朝刊の噂で名が知れた起床ログの行（{name} は場所の名） */
             newsHeard: z.string(),
