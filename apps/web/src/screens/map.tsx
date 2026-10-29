@@ -184,8 +184,21 @@ export function MapScreen({
                 const [x1, y1, x2, y2] = [svgX(a.pos), svgY(a.pos), svgX(b.pos), svgY(b.pos)];
                 const closed = r.closed !== null;
                 const color = closed ? "#7a3a3a" : (ROAD_COLOR[r.kind] ?? "#4a4258");
+                // 掘り下げた行き先の道は光る下線で示す（どの道へ出るか一目で判る）
+                const drilled = drill !== null && mapRoadOther(r, here) === drill;
                 return (
                   <g key={r.id}>
+                    {drilled && (
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#d8b45a"
+                        strokeWidth={7}
+                        opacity={0.3}
+                      />
+                    )}
                     <line
                       x1={x1}
                       y1={y1}
@@ -274,6 +287,18 @@ export function MapScreen({
                       stroke="#d8b45a"
                       strokeWidth="1.5"
                       opacity="0.7"
+                    />
+                  )}
+                  {drill === tw.id && (
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r="10"
+                      fill="none"
+                      stroke="#d8b45a"
+                      strokeWidth="1.5"
+                      strokeDasharray="3 3"
+                      opacity="0.9"
                     />
                   )}
                   <circle
