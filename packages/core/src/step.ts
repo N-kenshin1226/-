@@ -912,7 +912,13 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
       // 噂話（G-02、docs/10 §7）：知らない町・地域の名が1つ聞き覚えに加わり、
       // 地図の霧が晴れる（旅人・行商人の口から届く名。既知の場所は数えない）
       const seq = next.counters["map.heard.n"] ?? 0;
-      const pick = revealPick(next.seed, next.time.day, seq, cfg.life, mapKnownSet(next, cfg.life));
+      const pick = revealPick(
+        next.seed,
+        next.time.day,
+        seq,
+        cfg.life,
+        mapKnownSet(next, cfg.life, { time: cfg.time, env: condEnv }),
+      );
       if (pick !== undefined) {
         next = {
           ...next,
@@ -1181,7 +1187,7 @@ export function step(state: GameState, command: Command, cfg: StepConfig): StepR
               next.time.day,
               seq,
               cfg.life,
-              mapKnownSet(next, cfg.life),
+              mapKnownSet(next, cfg.life, { time: cfg.time, env: condEnv }),
             );
             if (pick !== undefined) {
               next = {

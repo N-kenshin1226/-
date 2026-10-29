@@ -17,6 +17,7 @@ import {
   mapVisited,
   mealToday,
   repOf,
+  revealPick,
   roadEncounterDayKey,
   townOf,
 } from "./index.js";
@@ -897,6 +898,84 @@ describe("地図の霧（G-02）", () => {
       life: { ...game().life, map: { visited: ["ardi"], heard: ["ardi", "lm.test"] } },
     };
     expect(mapKnownSet(heard, lmCfg).has("lm.test")).toBe(true);
+  });
+
+  it("条件付きの名所は条件の立つ間だけ名が出る（X-27、危機でだけ行ける場所）", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.refuge": {
+          town: "ardi",
+          name: "避難の古道",
+          landmark: true,
+          when: { crisis: { minStage: 1 } },
+        },
+      },
+    };
+    const crisisAt = (
+      stageIndex: number,
+      outcome: CrisisState["outcome"] = "ongoing",
+    ): CrisisState => ({
+      typeId: "crisis.test",
+      stageIndex,
+      seasonsInStage: 0,
+      boundaries: 0,
+      factions: [],
+      hero: emptyCrisisFields(),
+      finales: [],
+      variables: {},
+      npcGone: [],
+      log: [],
+      outcome,
+    });
+    const cond = { time: fogStepCfg.time };
+    const g = (c: CrisisState | null): GameState => ({ ...game(), crisis: c });
+
+    // 平時・危機初期（段階0）では霧のまま —— cond を渡しても出ない
+    expect(mapKnownSet(g(null), lmCfg, cond).has("lm.refuge")).toBe(false);
+    expect(mapKnownSet(g(crisisAt(0)), lmCfg, cond).has("lm.refuge")).toBe(false);
+    // 段階が進むと聞き覚えがなくても名が出る
+    expect(mapKnownSet(g(crisisAt(1)), lmCfg, cond).has("lm.refuge")).toBe(true);
+    // 決着すると再び霧へ —— ただし訪れた場所は知ったまま残る
+    const during: GameState = {
+      ...g(crisisAt(1)),
+      life: {
+        ...g(crisisAt(1)).life,
+        map: { visited: ["ardi", "lm.refuge"], heard: ["ardi"] },
+      },
+    };
+    expect(
+      mapKnownSet({ ...during, crisis: crisisAt(1, "resolved") }, lmCfg, cond).has("lm.refuge"),
+    ).toBe(true);
+    expect(
+      mapKnownSet({ ...g(null), crisis: crisisAt(1, "resolved") }, lmCfg, cond).has("lm.refuge"),
+    ).toBe(false);
+  });
+
+  it("条件付きの名所は噂・朝刊では知れない（revealPick の候補外）", () => {
+    const lmCfg: LifeConfig = {
+      ...fogCfg,
+      places: {
+        ...fogCfg.places,
+        "lm.refuge": {
+          town: "ardi",
+          name: "避難の古道",
+          landmark: true,
+          when: { crisis: { minStage: 1 } },
+        },
+      },
+    };
+    // 全町を聞き覚えたあと、地域の候補は forest/deep_woods/lm.refuge の3件。
+    // 条件付きの lm.refuge は選ばれない —— 何度引いても出ない
+    const known = new Set(["ardi", "bergen", "port", "deep"]);
+    for (let seq = 0; seq < 60; seq++) {
+      const pick = revealPick(`when-${seq}`, 5, seq, lmCfg, known);
+      if (pick !== undefined) expect(pick).not.toBe("lm.refuge");
+    }
+    // ほかの2件を知らせると、あとは何も出ない（条件付きは母数から外れる）
+    const pick = revealPick("when-x", 5, 0, lmCfg, new Set([...known, "forest", "deep_woods"]));
+    expect(pick).toBeUndefined();
   });
 });
 

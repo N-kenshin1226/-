@@ -1,5 +1,7 @@
+import { evaluate, type Cond, type CondEnv } from "../conditions/index.js";
 import { createRng } from "../rng/index.js";
 import type { GameState } from "../state/types.js";
+import type { TimeConfig } from "../time/index.js";
 
 /**
  * 日々の営み（P-02「行動の種類を増やす」、docs/03 §2）。
@@ -138,9 +140,15 @@ export interface LifeConfig {
    * として地図・噂の文が引く。省略時（固定マップ）は解決しない。
    * landmark は名所（X-25、docs/10 §3「手作りの特別な場所」）——
    * 訪れた町に属しても地図の霧から自動では晴れず、噂や発見で聞き覚えた
-   * ときだけ名が出る
+   * ときだけ名が出る。when は名所が現れる条件（X-27、同節「危機でだけ
+   * 行ける場所」）：条件の立っている間は聞き覚えがなくても地図に名が
+   * 出る。条件付きの名所は噂・売り物の地図では知れず、条件の到来だけが
+   * 入口になる
    */
-  places?: Record<string, { town?: string; type?: string; name?: string; landmark?: true }>;
+  places?: Record<
+    string,
+    { town?: string; type?: string; name?: string; landmark?: true; when?: Cond }
+  >;
   /**
    * 地域の中の小さな地点の出来事表（G-01。地点 id → 表）。
    * spot 行動がここから1件引く
@@ -387,8 +395,14 @@ export function markAllHeard(
  *   ・visited/heard に刻んだ場所
  *   ・訪れた町から道で繋がる町（隣町の名は行き先候補として自然に知れる）
  *   ・訪れた町に属する地域（その町の外の名は知っている）
+ *   ・when の立っている条件付きの場所（X-27。cond を渡したときだけ評価
+ *     —— 時計が無ければ条件は立たない扱い）
  */
-export function mapKnownSet(state: GameState, cfg: LifeConfig): Set<string> {
+export function mapKnownSet(
+  state: GameState,
+  cfg: LifeConfig,
+  cond?: { time: TimeConfig; env?: CondEnv },
+): Set<string> {
   const known = new Set<string>([...state.life.map.visited, ...state.life.map.heard]);
   for (const town of state.life.map.visited) {
     if (cfg.towns[town] === undefined) continue;
@@ -402,12 +416,23 @@ export function mapKnownSet(state: GameState, cfg: LifeConfig): Set<string> {
       if (p.town === town) known.add(id);
     }
   }
+  if (cond !== undefined) {
+    for (const [id, p] of Object.entries(cfg.places ?? {})) {
+      if (p.when === undefined || known.has(id)) continue;
+      if (evaluate(p.when, state, cond.time, cond.env)) known.add(id);
+    }
+  }
   return known;
 }
 
 /** 場所の名が知れているか（霧の晴れた場所か） */
-export function mapKnown(state: GameState, cfg: LifeConfig, place: string): boolean {
-  return mapKnownSet(state, cfg).has(place);
+export function mapKnown(
+  state: GameState,
+  cfg: LifeConfig,
+  place: string,
+  cond?: { time: TimeConfig; env?: CondEnv },
+): boolean {
+  return mapKnownSet(state, cfg, cond).has(place);
 }
 
 /** 実際に訪れたことのある場所か */
@@ -442,8 +467,10 @@ export function revealPick(
     return createRng(`${seed}:mapreveal:${day}:${seq}`).pick(dedup);
   }
   // 町がすべて聞き覚えのあとは未知の地域を知る
-  const areaCandidates = Object.keys(cfg.places ?? {})
-    .filter((id) => !known.has(id))
+  // （条件付きの場所は噂では知れない —— 条件の到来だけが入口）
+  const areaCandidates = Object.entries(cfg.places ?? {})
+    .filter(([id, p]) => !known.has(id) && p.when === undefined)
+    .map(([id]) => id)
     .sort();
   if (areaCandidates.length === 0) return undefined;
   return createRng(`${seed}:mapreveal:${day}:${seq}:area`).pick(areaCandidates);

@@ -826,7 +826,7 @@ export interface RegionMapModel {
 export function regionMapOf(state: GameState): RegionMapModel | null {
   const life = lifeCfgFor(state);
   if (life === undefined) return null;
-  const known = mapKnownSet(state, life);
+  const known = mapKnownSet(state, life, { time: cfg.time, env: condEnv });
   const here = townOf(state);
   const season = describe(state.time, cfg.time).season;
   const towns: MapTownMark[] = Object.entries(life.towns).map(([id, t]) => ({
@@ -1029,7 +1029,8 @@ export function dungeonRecordLines(state: GameState): string[] {
   // まだ知れていない迷宮の名は出さない —— 地図の霧と同じ知識で歩調を
   // 合わせる（地図で「？」の迷宮の名が記録に先走って載ることはない）
   const life = lifeCfgFor(state);
-  const known = life !== undefined ? mapKnownSet(state, life) : undefined;
+  const known =
+    life !== undefined ? mapKnownSet(state, life, { time: cfg.time, env: condEnv }) : undefined;
   const lines = [t.text.recordsDungeons];
   for (const d of ds) {
     if (known !== undefined && !known.has(d.id)) continue;

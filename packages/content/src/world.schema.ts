@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { condSchema } from "./conditions.schema.js";
 import { PLACE_SCENES, placeActionSchema } from "./places.schema.js";
 import { gatherEntrySchema, lifeOutcomeSchema } from "./life.schema.js";
 
@@ -289,6 +290,11 @@ export const landmarkSchema = z
     rings: z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]).optional(),
     /** 名所そのものへ立ち寄る出来事表（spot 行動。必ず1件以上） */
     spot: z.array(lifeOutcomeSchema).min(1),
+    /**
+     * 名所が現れる条件（X-27、docs/10 §3「危機でだけ行ける場所」）。
+     * 立っている間だけ地図に名が出る —— 噂・地図の購入では知れない
+     */
+    when: condSchema.optional(),
   })
   .strict();
 

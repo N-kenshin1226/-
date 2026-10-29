@@ -1826,7 +1826,7 @@ try {
   const lmRaw = JSON.parse(readFileSync(join(root, "hidden", "landmarks.json"), "utf8")) as {
     landmarks?: unknown[];
   };
-  const lms: { id?: string; scene?: string; spot?: unknown[] }[] = [];
+  const lms: { id?: string; scene?: string; spot?: unknown[]; when?: unknown }[] = [];
   let ok = true;
   for (const raw of lmRaw.landmarks ?? []) {
     const parsed = landmarkSchema.safeParse(raw);
@@ -1888,6 +1888,20 @@ try {
           failed = true;
         }
       }
+      // 出現条件（when）の技能参照も表と同じく存在する id に限る
+      const walkWhen = (cond: unknown): void => {
+        if (typeof cond !== "object" || cond === null) return;
+        for (const [k, v] of Object.entries(cond as Record<string, unknown>)) {
+          if (k === "skill" && typeof v === "string" && !skillIds.has(v)) {
+            console.error(`✗ hidden/landmarks.json: 未定義の技能 ${v}`);
+            ok = false;
+            failed = true;
+          }
+          if (typeof v === "object" && v !== null) walkWhen(v);
+          if (Array.isArray(v)) for (const x of v) walkWhen(x);
+        }
+      };
+      walkWhen(lm.when);
     }
   }
   if (ok && lms.length > 0)

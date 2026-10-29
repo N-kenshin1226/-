@@ -142,6 +142,32 @@
           "flag": "flag.lm.fallen_colossus"
         }
       ]
+    },
+    {
+      "id": "lm.refuge_road",
+      "name": "避難の古道",
+      "desc": "山肌に沿って延びる、苔むした石段の古道。古い危機のたびに人が通ったと云う",
+      "scene": "mountain",
+      "rings": [1, 9],
+      "when": { "crisis": { "minStage": 1 } },
+      "spot": [
+        {
+          "weight": 4,
+          "text": "石段の途中に、かつて避難した者たちが残した携行食の備蓄があった",
+          "items": { "herb.wild": 2 }
+        },
+        {
+          "weight": 3,
+          "text": "道の傍らに古い標識が残っている。『災いの時、高きへ』と刻まれていた",
+          "flag": "flag.lm.refuge_road",
+          "fatigue": 4
+        },
+        {
+          "weight": 2,
+          "text": "高所から地方を見渡した。危機の気配が、遠くの空に滲んで見えた",
+          "fatigue": -10
+        }
+      ]
     }
   ]
 }

@@ -599,6 +599,7 @@ const fileLm: WorldTypeFile = {
       desc: "丁の説明",
       scene: "forest",
       spot: [{ weight: 1, text: "丁に立ち寄った" }],
+      when: { crisis: { minStage: 1 } },
     },
   ],
 };
@@ -629,6 +630,8 @@ describe("名所の生成（X-25、docs/10 §3）", () => {
         // 出来事表が載っている
         expect(w.life.spots[id], `${id}: 出来事表がない`).toBeDefined();
         expect(w.life.spots[id]!.length).toBeGreaterThan(0);
+        // 出現条件（X-27）はそのまま地図の場所に畳まれる
+        expect(p.when, `${id}: when の引き継ぎ`).toEqual(def.when);
       }
     }
   });

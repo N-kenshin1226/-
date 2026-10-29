@@ -626,7 +626,10 @@ test("名所は聞き覚えるまで霧の中 —— 名を聞くと地図に出
   // e2e-map の世界に出る名所と、その名所がぶら下がる町を引く（名所の名は
   // 世界から取る —— 内容物は hidden のため spec には書かない）
   const w = genWorldFor("e2e-map");
-  const found = Object.entries(w.life.places).find(([, p]) => p.landmark === true);
+  // 噂・発見で知れる名所（条件付きの名所は噂では知れない —— X-27 と分ける）
+  const found = Object.entries(w.life.places).find(
+    ([, p]) => p.landmark === true && p.when === undefined,
+  );
   expect(found, "e2e-map に名所が出ない").toBeDefined();
   const [lmId, lm] = found!;
   const town = lm.town!;
@@ -670,4 +673,43 @@ test("名所は聞き覚えるまで霧の中 —— 名を聞くと地図に出
     .toBeGreaterThan(before.length);
   await page.waitForTimeout(400);
   await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark.png", fullPage: true });
+});
+
+test("条件付きの名所は危機の深まりで地図に現れる（X-27）", async ({ page }) => {
+  const w = genWorldFor("e2e-map");
+  const found = Object.entries(w.life.places).find(
+    ([, p]) => p.landmark === true && p.when !== undefined,
+  );
+  expect(found, "e2e-map に条件付きの名所が出ない").toBeDefined();
+  const [lmId, lm] = found!;
+  const town = lm.town!;
+  const lmName = lm.name ?? lmId;
+
+  // ── 平時（危機なし）では噂も届かず「？」のまま ──
+  const peace = genSave("e2e-map", null, 0, town, []);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), peace);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, `${town}.gate`);
+  await page.getByTestId("place-map").click();
+  const hiddenBtn = page.getByTestId(`map-travel-${lmId}`);
+  await expect(hiddenBtn).toBeVisible();
+  await expect(hiddenBtn).toContainText("？");
+  await expect(hiddenBtn).toBeDisabled();
+
+  // ── 危機が段階1に進むと、聞き覚えがなくても名が出て旅できる ──
+  const crisis = genSave("e2e-map", crisisOf("crisis.sample_deep", 1), 0, town, []);
+  await page.addInitScript((s) => localStorage.setItem("trace.save.v1", s), crisis);
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, `${town}.gate`);
+  await page.getByTestId("place-map").click();
+  const knownBtn = page.getByTestId(`map-travel-${lmId}`);
+  await expect(knownBtn).toContainText(lmName);
+  await knownBtn.click();
+  await waitVeil(page);
+  await expect(page.getByTestId("place-name")).toContainText(lmName);
+  await page.screenshot({ path: "e2e/artifacts/trace-gen-landmark-crisis.png", fullPage: true });
 });

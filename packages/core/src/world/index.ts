@@ -263,6 +263,12 @@ export interface WorldLandmark {
   rings?: readonly [number, number];
   /** 名所そのものへ立ち寄る出来事表（spot 行動） */
   spot: readonly LifeOutcome[];
+  /**
+   * 名所が現れる条件（X-27、docs/10 §3「危機でだけ行ける場所」）。
+   * 条件DSL —— 立っている間だけ地図に名が出る（噂・地図の購入では
+   * 知れず、条件の到来が唯一の入口）
+   */
+  when?: Cond;
 }
 
 /** world.json 全体の形（型定義表） */
@@ -399,7 +405,10 @@ export interface GenLifeContrib {
   /** 町ごとの掲示依頼 */
   errands: ErrandDef[];
   /** 場所の帰属（場所 id → 町・型・表示名。LifeConfig.places） */
-  places: Record<string, { town: string; type: string; name?: string; landmark?: true }>;
+  places: Record<
+    string,
+    { town: string; type: string; name?: string; landmark?: true; when?: Cond }
+  >;
   /** 地点の出来事表（LifeConfig.spots） */
   spots: Record<string, LifeOutcome[]>;
 }
@@ -1069,6 +1078,7 @@ export function generateWorld(
         type: def.scene,
         name: def.name,
         landmark: true,
+        when: def.when,
       };
       lifeSpots[def.id] = [...def.spot];
     }
