@@ -489,3 +489,48 @@ test("生成地方の行事はこの世界の住人が持ちかける", async ({
   const names = new Set(w.npcs.map((n) => n.name));
   expect(speaker !== undefined && names.has(speaker)).toBe(true);
 });
+
+/**
+ * 生成住人の歳月（X-22）：生成の住人にも一生の節目が来る —— 世界シードで
+ * 決まった日に、結婚・引退・旅立ち・死去・抜擢の記事文が届く
+ */
+test("生成地方の住人にも歳月が来る", async ({ page }) => {
+  const worldJson = jsonAt("world.json") as Parameters<typeof generateWorld>[1];
+  const balanceJson = jsonAt("balance.json") as {
+    world: Parameters<typeof generateWorld>[2];
+    dungeons: Parameters<typeof generateWorld>[2]["dungeons"];
+  };
+  const challenge = Object.fromEntries(
+    (jsonAt("enemies.json") as { enemies: { id: string; challenge: number }[] }).enemies.map(
+      (e) => [e.id, e.challenge],
+    ),
+  );
+  const w = generateWorld(
+    "e2e-map",
+    worldJson,
+    { ...balanceJson.world, dungeons: balanceJson.dungeons },
+    challenge,
+  );
+  const g = newGame("e2e-map", "旅人", {
+    skillIds: (jsonAt("skills.json") as { skills: { id: string }[] }).skills.map((s) => s.id),
+    initialPotential: 100,
+    initialStatValue: 30,
+    initialTown: w.startTown,
+    world: { kind: "gen", recipe: WORLD_RECIPE },
+  });
+  // この世界で最初に来る節目の前日に畳む
+  const ev = [...w.npcLife].sort((a, b) => a.day - b.day)[0]!;
+  expect(ev).toBeDefined();
+  await page.addInitScript(
+    (s) => localStorage.setItem("trace.save.v1", s),
+    serialize({ ...g, time: { ...g.time, day: ev.day - 1 } }),
+  );
+  await page.goto("/");
+  await expect(page.getByTestId("menu")).toBeVisible();
+  await dismissFx(page);
+  await gotoPlace(page, "t0.home");
+  await page.getByTestId("place-rest").click();
+  await waitVeil(page);
+  // 起きると節目の日 —— 生成の住人の記事文が届く
+  await expect(page.locator("body")).toContainText(ev.text);
+});

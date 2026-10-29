@@ -171,6 +171,29 @@ describe("world.json での地方生成（G-01）", () => {
     }
   });
 
+  it("住人の歳月は実在の住人に・窓の内側・役目に沿った種目（200シード）", () => {
+    // X-22：生成の住人にも一生の節目が来る。canon の歳月と同じ仕組みに
+    // 載せるため、節目は実在の住人に・窓の内側で・役目に沿った種目でなければ
+    // ならない（年嵩の役目は退場系のみ。結婚した古老が翌年また結婚はしない）
+    const life = world.npcLife!;
+    for (let i = 0; i < 200; i++) {
+      const w = generateWorld(`life:${i}`, world, genCfg, challenge);
+      const npcById = new Map(w.npcs.map((n) => [n.id, n]));
+      for (const e of w.npcLife) {
+        const n = npcById.get(e.npcId);
+        expect(n, `seed=life:${i}: 歳月の対象 ${e.npcId} が住人名簿にない`).toBeDefined();
+        expect(e.day).toBeGreaterThanOrEqual(life.window[0]);
+        expect(e.day).toBeLessThanOrEqual(life.window[1]);
+        const allowed = life.elderRoles.includes(n!.role) ? life.elderKinds : life.defaultKinds;
+        expect(
+          (allowed as readonly string[]).includes(e.kind),
+          `seed=life:${i}: ${n!.role} に ${e.kind}`,
+        ).toBe(true);
+      }
+      expect(w.npcLife.length).toBeGreaterThan(0);
+    }
+  });
+
   it("同じシードで再生成した世界は完全一致（save/load と同じ形で復元できる）", () => {
     const w1 = generateWorld("save-seed", world, genCfg, challenge);
     const w2 = generateWorld("save-seed", world, genCfg, challenge);

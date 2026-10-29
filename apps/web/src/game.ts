@@ -623,6 +623,22 @@ export function cfgFor(state: GameState): StepConfig {
       ? {
           npcLife: {
             ...cfg.npcLife,
+            // 生成の住人の歳月（X-22。canon 定義は npcExists で自然に
+            // 除かれ、生成の住人の節目とライバルの歳月だけが動く）
+            npcs: [
+              ...npcLifecycle.npcs,
+              ...gen.npcLife.map((e) => ({
+                npcId: e.npcId,
+                name: e.name,
+                events: [
+                  {
+                    at: { time: { day: { eq: e.day } } },
+                    kind: e.kind,
+                    text: e.text,
+                  },
+                ],
+              })),
+            ],
             mentors: mentorDefs,
             name: (s: GameState, npcId: string) => {
               if (npcId.startsWith("rival.")) {

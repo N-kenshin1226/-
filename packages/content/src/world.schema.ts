@@ -304,6 +304,33 @@ export const worldFileSchema = z
       .strict(),
     /** 生成される師匠の説明テンプレート（{town}/{skill}/{condition} 語彙） */
     mentorText: z.object({ desc: z.string().min(1), note: z.string().min(1) }).strict(),
+    /**
+     * 生成される住人の歳月（X-22。誰に一生の節目が来るか・いつ来るか・
+     * どの種目かは世界シードで決定的に引く。{role}・{name} 語彙）
+     */
+    npcLife: z
+      .object({
+        /** 住人それぞれに節目が来る割合（0〜1） */
+        chance: z.number().min(0).max(1),
+        /** 発火の窓（通算日の [開始, 終了]） */
+        window: z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]),
+        /** 年嵩の役目（この役目の住人は退場系の節目だけを引く） */
+        elderRoles: z.array(z.string().min(1)),
+        elderKinds: z.array(z.enum(["retire", "die", "depart"])).min(1),
+        defaultKinds: z.array(z.enum(["retire", "marry", "depart", "die", "promote"])).min(1),
+        /** 種目ごとの記事文（{role}・{name} が入る） */
+        kinds: z
+          .object({
+            retire: z.string().min(1),
+            marry: z.string().min(1),
+            depart: z.string().min(1),
+            die: z.string().min(1),
+            promote: z.string().min(1),
+          })
+          .strict(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((file, ctx) => {

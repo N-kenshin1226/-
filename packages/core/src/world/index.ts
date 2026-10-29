@@ -8,6 +8,7 @@ import {
   type WorldDungeonType,
   type WorldTrapKind,
 } from "../dungeon/index.js";
+import type { NpcLifeEventKind } from "../npclife/index.js";
 import { createRng, type Rng } from "../rng/index.js";
 import type { GameState } from "../state/types.js";
 
@@ -39,7 +40,7 @@ import type { GameState } from "../state/types.js";
  * 追加はそれぞれ専用の系列（rng.fork）で畳むので、古い版で生成された世界と
  * 町・地域・人の並びは同じ —— 新しい版は枠だけが増える
  */
-export const WORLD_RECIPE = 7;
+export const WORLD_RECIPE = 8;
 
 /* ── balance.json world 節の形（生成ルールの数値） ── */
 
@@ -253,6 +254,18 @@ export interface WorldTypeFile {
   npcNames: readonly string[];
   npcVoice: { greet: readonly string[]; respect: readonly string[] };
   mentorText: { desc: string; note: string };
+  /**
+   * 生成される住人の歳月（X-22、world.json npcLife。誰に・いつ・どの
+   * 節目が来るかは世界シードで決定的に引く。省略時は歳月を作らない）
+   */
+  npcLife?: {
+    chance: number;
+    window: readonly [number, number];
+    elderRoles: readonly string[];
+    elderKinds: readonly NpcLifeEventKind[];
+    defaultKinds: readonly NpcLifeEventKind[];
+    kinds: Record<NpcLifeEventKind, string>;
+  };
 }
 
 /* ── 生成される世界の形（シリアライズ可能なプレーンデータ） ── */
@@ -323,6 +336,20 @@ export interface GenMentor extends MentorDefLike {
   place: string;
 }
 
+/**
+ * 生成される住人の一生の節目（X-22、world.json npcLife 由来。
+ * canon の歳月と同じ NpcLifeEventDef に畳める形で、発火日・種目・
+ * 記事文（{name}/{role} 解決済み）までここで決める）
+ */
+export interface GenNpcLifeEvent {
+  npcId: string;
+  name: string;
+  kind: NpcLifeEventKind;
+  /** 発火日（通算日。条件DSLの {time:{day:{eq}}} にそのまま使う） */
+  day: number;
+  text: string;
+}
+
 /** LifeConfig への寄与分（呼び出し側が life.json の表と畳み込む） */
 export interface GenLifeContrib {
   /** 町の表（id → 名・型・地図の位置。LifeConfig.towns にそのまま使える） */
@@ -361,6 +388,8 @@ export interface GeneratedWorld {
   places: readonly GenPlace[];
   /** 生成される住人 */
   npcs: readonly GenNpc[];
+  /** 生成される住人の歳月（X-22。一生の節目 —— 誰に来るかは世界シード由来） */
+  npcLife: readonly GenNpcLifeEvent[];
   /** 生成される師匠 */
   mentors: readonly GenMentor[];
   /** 有限迷宮（G-03。洞窟・坑道・地下墓所・古代遺跡・魔物の巣・塔・沈んだ神殿。深層は別） */
@@ -978,6 +1007,29 @@ export function generateWorld(
     towns: [...townIds].sort(),
   }));
 
+  // 住人の歳月（X-22）：一生の節目を住人ごとに世界シードで決定的に引く。
+  // canon の歳月と同じ仕組み（条件DSLの発火日・退場の効果・世界の記録）に
+  // 載るので、師匠の死去なら弟子入りも解消される。住人が多い世界では
+  // 誰に来るかを抽選して密度を揃える（canon は8人分・約4年で一巡）
+  const npcLife: GenNpcLifeEvent[] = [];
+  if (file.npcLife !== undefined) {
+    const life = file.npcLife;
+    for (const n of npcById.values()) {
+      const r = createRng(`${seed}:npclife:${n.id}`);
+      if (r.next() >= life.chance) continue;
+      const pool = life.elderRoles.includes(n.role) ? life.elderKinds : life.defaultKinds;
+      const kind = pool[r.int(0, pool.length - 1)]!;
+      const day = life.window[0] + r.int(0, Math.max(0, life.window[1] - life.window[0]));
+      npcLife.push({
+        npcId: n.id,
+        name: n.name,
+        kind,
+        day,
+        text: life.kinds[kind].replaceAll("{name}", n.name).replaceAll("{role}", n.role),
+      });
+    }
+  }
+
   return {
     seed,
     recipe: WORLD_RECIPE,
@@ -987,6 +1039,7 @@ export function generateWorld(
     roads: enrichedRoads,
     places,
     npcs: [...npcById.values()],
+    npcLife,
     mentors,
     dungeons,
     life: {
