@@ -659,6 +659,20 @@ export function itemPriceNow(state: GameState, id: string, side: "buy" | "sell")
   const rep = repOf(state, townOf(state), life);
   return itemPrice(state.seed, state.time.day, id, townOf(state), side, life, def, rep);
 }
+/**
+ * 市場の品がその町の特産（名産で安い）か品薄（割高）か。
+ * townFactor に品ごとの明示エントリがあるものだけを "*"
+ * （町全体の揺らぎ）と比べる —— その町の個性として語られる値だけを出す（X-12）
+ */
+export function marketNoteOf(state: GameState, id: string): "specialty" | "scarce" | null {
+  const life = lifeCfgFor(state);
+  if (life === undefined) return null;
+  const f = life.market.townFactor[townOf(state)];
+  const v = f?.[id];
+  if (v === undefined) return null;
+  const base = f?.["*"] ?? 1;
+  return v < base ? "specialty" : v > base ? "scarce" : null;
+}
 /** 人物の表示名（生成地方の住人 → 生成名、固定マップ → voices.json） */
 export function npcName(state: GameState | undefined, id: string): string {
   if (state === undefined) return voices.npcs.find((n) => n.id === id)?.name ?? id;

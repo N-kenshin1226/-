@@ -128,4 +128,12 @@ test("旅：ベルンへの道を野営で進み、隣町に着く", async ({ pa
   await expect(page.getByTestId("screen-market")).toBeVisible();
   await expect(page.getByTestId("market-buy-herb")).toBeVisible();
   await expect(page.getByTestId("market-buy-mat.timber")).toBeVisible();
+
+  // 町の個性が値段の横に出る：薬草・材木は特産、パンは品薄、他は何も付かない
+  await expect(page.getByTestId("market-buy-herb")).toContainText("特産");
+  await expect(page.getByTestId("market-buy-mat.timber")).toContainText("特産");
+  await expect(page.getByTestId("market-buy-meal.bread")).toContainText("品薄");
+  await expect(page.getByTestId("market-buy-mat.flour")).not.toContainText("特産");
+  await expect(page.getByTestId("market-buy-mat.flour")).not.toContainText("品薄");
+  await page.screenshot({ path: "e2e/artifacts/trace-life-bergen-market.png", fullPage: true });
 });

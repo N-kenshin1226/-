@@ -30,6 +30,7 @@ import {
   itemPriceNow,
   journeyWayName,
   lifeCfgFor,
+  marketNoteOf,
   marketStockNow,
   npcName,
   placeOf,
@@ -179,10 +180,12 @@ function MarketView({ state, act, back }: { state: GameState; act: Act; back: ()
     ...stock.map((id): MenuEntry => {
       const price = itemPriceNow(state, id, "buy");
       const def = itemDefs[id];
+      const note = marketNoteOf(state, id);
+      const tag = note === "specialty" ? "・特産" : note === "scarce" ? "・品薄" : "";
       return {
         id: `market-buy-${id}`,
         label: itemName(id),
-        sub: `${price}G${def?.food !== undefined ? "・食べられる" : ""}`,
+        sub: `${price}G${tag}${def?.food !== undefined ? "・食べられる" : ""}`,
         disabled: state.player.money < price,
         onPick: () => act({ type: "buyItem", id }),
       };
